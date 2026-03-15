@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    --background: 240 5% 4%;
+    --foreground: 0 0% 100%;
+    --card: 240 6% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 6% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 45 64% 52%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 240 6% 72%;
+    --accent: 240 5% 10%;
+    --accent-foreground: 0 0% 100%;
+    --border: 40 42% 24%;
+    --input: 240 5% 10%;
+    --ring: 45 64% 52%;
+    --sidebar-background: 240 8% 5%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-border: 45 36% 18%;
+
+    --lux-background: #070708;
+    --lux-sidebar: #0b0b0d;
+    --lux-card: #121214;
+    --lux-elevated: #16161a;
+    --lux-text: #ffffff;
+    --lux-text-secondary: #b8b8c2;
+    --lux-text-muted: #8a8a95;
+    --lux-gold: #d4af37;
+    --lux-gold-soft: #b8902c;
+    --lux-gold-border: rgba(212, 175, 55, 0.22);
+    --lux-gold-glow: rgba(212, 175, 55, 0.18);
+    --lux-shell-surface: #0a0a0c;
+    --lux-shell-border: rgba(212, 175, 55, 0.12);
+    --lux-panel-surface: linear-gradient(180deg, rgba(18, 18, 20, 0.96), rgba(13, 13, 15, 0.98));
+    --lux-panel-border: rgba(212, 175, 55, 0.12);
+    --lux-panel-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    --lux-row-surface: rgba(15, 15, 17, 0.96);
+    --lux-row-border: rgba(212, 175, 55, 0.1);
+    --lux-control-surface: rgba(17, 17, 19, 0.88);
+    --lux-control-border: rgba(212, 175, 55, 0.12);
+    --lux-control-hover: rgba(212, 175, 55, 0.06);
+    --lux-heading: #f6e7c8;
+    --lux-soft-text: #efe2c8;
+    --lux-strong-text: #ffffff;
+    --lux-sidebar-active-bg: linear-gradient(180deg, rgba(76, 58, 34, 0.9), rgba(41, 31, 20, 0.85));
+    --lux-sidebar-active-text: #fff3d6;
+    --lux-badge-surface: linear-gradient(180deg, #a97938, #7d5422);
+    --lux-badge-text: #fff1d4;
+    --lux-primary-surface: linear-gradient(180deg, #745a35, #554024);
+    --lux-primary-text: #fff3d7;
+    --lux-danger: #f0a4a4;
+    --lux-danger-soft: rgba(154, 63, 63, 0.16);
+    --lux-success: #7ed6a7;
+    --lux-success-soft: rgba(58, 124, 86, 0.16);
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+
+    --background: 28 26% 96%;
+    --foreground: 238 22% 24%;
+    --card: 0 0% 100%;
+    --card-foreground: 238 22% 24%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 238 22% 24%;
+    --primary: 344 43% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 25 23% 96%;
+    --secondary-foreground: 238 22% 24%;
+    --muted: 25 23% 96%;
+    --muted-foreground: 234 12% 47%;
+    --accent: 25 23% 96%;
+    --accent-foreground: 238 22% 24%;
+    --border: 236 15% 86%;
+    --input: 0 0% 100%;
+    --ring: 344 43% 66%;
+
+    --lux-background: #f6f2ef;
+    --lux-sidebar: #f3edeb;
+    --lux-card: #ffffff;
+    --lux-elevated: #ffffff;
+    --lux-text: #313246;
+    --lux-text-secondary: #6e7084;
+    --lux-text-muted: #9a9baa;
+    --lux-gold: #cf7f90;
+    --lux-gold-soft: #e09d66;
+    --lux-gold-border: rgba(207, 127, 144, 0.22);
+    --lux-gold-glow: rgba(207, 127, 144, 0.16);
+    --lux-shell-surface: #f6f2ef;
+    --lux-shell-border: rgba(49, 50, 70, 0.08);
+    --lux-panel-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 246, 245, 0.98));
+    --lux-panel-border: rgba(49, 50, 70, 0.08);
+    --lux-panel-shadow: 0 18px 40px rgba(49, 50, 70, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    --lux-row-surface: rgba(255, 255, 255, 0.96);
+    --lux-row-border: rgba(49, 50, 70, 0.08);
+    --lux-control-surface: rgba(255, 255, 255, 0.96);
+    --lux-control-border: rgba(49, 50, 70, 0.08);
+    --lux-control-hover: rgba(207, 127, 144, 0.08);
+    --lux-heading: #313246;
+    --lux-soft-text: #44475f;
+    --lux-strong-text: #313246;
+    --lux-sidebar-active-bg: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-sidebar-active-text: #fff8fa;
+    --lux-badge-surface: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-badge-text: #ffffff;
+    --lux-primary-surface: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-primary-text: #ffffff;
+    --lux-danger: #c46a75;
+    --lux-danger-soft: rgba(196, 106, 117, 0.14);
+    --lux-success: #4f9b73;
+    --lux-success-soft: rgba(79, 155, 115, 0.14);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 26%),
+      radial-gradient(circle at top right, rgba(212, 175, 55, 0.06), transparent 24%),
+      radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.02), transparent 20%),
+      linear-gradient(180deg, #070708 0%, #09090a 48%, #070708 100%);
+  }
+
+  :root[data-theme='light'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(207, 127, 144, 0.12), transparent 26%),
+      radial-gradient(circle at top right, rgba(224, 157, 102, 0.12), transparent 24%),
+      linear-gradient(180deg, #f7f3f1 0%, #f4f0ed 48%, #f8f5f3 100%);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 75%);
+    opacity: 0.15;
+  }
+
+  :root[data-theme='light'] body::before {
+    background-image:
+      linear-gradient(to right, rgba(49, 50, 70, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(49, 50, 70, 0.04) 1px, transparent 1px);
+    opacity: 0.08;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .lux-panel {
+    @apply rounded-[28px];
+    border-color: var(--lux-panel-border);
+    background: var(--lux-panel-surface);
+    box-shadow: var(--lux-panel-shadow);
+  }
+
+  .lux-elevated {
+    @apply rounded-[28px];
+    border-color: var(--lux-panel-border);
+    background: var(--lux-panel-surface);
+    box-shadow: var(--lux-panel-shadow);
+  }
+
+  .lux-dashboard-panel {
+    border-color: var(--lux-panel-border);
+    background: var(--lux-panel-surface);
+    box-shadow: var(--lux-panel-shadow);
+  }
+
+  .lux-ring {
+    box-shadow:
+      0 0 0 1px rgba(212, 175, 55, 0.12),
+      0 16px 48px rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .shadow-luxe {
+    box-shadow: var(--lux-panel-shadow);
+  }
+
+  .subtle-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
+  }
+
+  .subtle-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .subtle-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 999px;
+  }
+
+  .subtle-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--lux-gold-soft), var(--lux-gold-border));
+    border-radius: 999px;
+    border: 1px solid var(--lux-gold-border);
+  }
+
+  .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--lux-gold), var(--lux-gold-soft));
+  }
+}

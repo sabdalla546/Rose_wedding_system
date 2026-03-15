@@ -1,0 +1,13 @@
+export const luxuryThemeTokens = {
+  background: '#070708',
+  sidebar: '#0B0B0D',
+  card: '#121214',
+  elevated: '#16161A',
+  text: '#FFFFFF',
+  textSecondary: '#B8B8C2',
+  textMuted: '#8A8A95',
+  gold: '#D4AF37',
+  goldSoft: '#B8902C',
+  goldBorder: 'rgba(212,175,55,0.22)',
+  goldGlow: 'rgba(212,175,55,0.18)',
+} as const
