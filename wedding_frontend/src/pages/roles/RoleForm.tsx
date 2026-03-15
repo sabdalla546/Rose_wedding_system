@@ -30,7 +30,9 @@ import type { Permission } from "@/pages/roles/types";
 const roleSchema = z.object({
   name: z.string().min(2, "Role name is required"),
   description: z.string().optional(),
-  permissionIds: z.array(z.number()).min(1, "At least one permission is required"),
+  permissionIds: z
+    .array(z.number())
+    .min(1, "At least one permission is required"),
 });
 
 type FormValues = z.infer<typeof roleSchema>;
@@ -46,7 +48,8 @@ const RoleFormPage = () => {
   const [permissionSearch, setPermissionSearch] = useState("");
 
   const { data: role, isLoading: roleLoading } = useRole(id);
-  const { data: permissionsRes, isLoading: permissionsLoading } = usePermissions();
+  const { data: permissionsRes, isLoading: permissionsLoading } =
+    usePermissions();
   const permissions = permissionsRes?.data ?? [];
 
   const createMutation = useCreateRole();
@@ -66,7 +69,9 @@ const RoleFormPage = () => {
       form.reset({
         name: role.name,
         description: role.description ?? "",
-        permissionIds: (role.Permissions ?? []).map((permission) => permission.id),
+        permissionIds: (role.Permissions ?? []).map(
+          (permission) => permission.id,
+        ),
       });
     }
   }, [form, isEditMode, role]);
@@ -115,13 +120,8 @@ const RoleFormPage = () => {
     <ProtectedComponent
       permission={isEditMode ? "roles.update" : "roles.create"}
     >
-      <PageContainer
-        className="pb-4 pt-4 text-foreground"
-      >
-        <div
-          dir={i18n.dir()}
-          className="mx-auto w-full max-w-5xl space-y-6"
-        >
+      <PageContainer className="pb-4 pt-4 text-foreground">
+        <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
           <button
             type="button"
             onClick={() => navigate("/settings/team/roles")}
@@ -158,144 +158,152 @@ const RoleFormPage = () => {
                 <p className="text-sm text-[var(--lux-text-secondary)]">
                   {isEditMode
                     ? t("roles.editDescription", {
-                        defaultValue: "Update role details and assigned permissions.",
+                        defaultValue:
+                          "Update role details and assigned permissions.",
                       })
                     : t("roles.createDescription", {
-                        defaultValue: "Create a new role and assign permissions.",
+                        defaultValue:
+                          "Create a new role and assign permissions.",
                       })}
                 </p>
               </div>
             </div>
           </div>
 
-          <Card className="flex min-h-[calc(100dvh-23rem)] flex-col overflow-hidden rounded-[24px]">
-            <div className="flex flex-1 flex-col p-6 md:p-8">
+          <Card className="overflow-hidden rounded-[24px]">
+            <div className="p-6 md:p-8">
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
-                  className="flex flex-1 flex-col"
+                  className="space-y-8"
                 >
-                  <div className="space-y-8">
-                    <section className="space-y-4">
-                      <div
-                        className="border-b pb-3"
-                        style={{ borderColor: "var(--lux-row-border)" }}
-                      >
-                        <h2 className={sectionTitleClass}>
-                          {t("roles.basicInformation", {
-                            defaultValue: "Basic Information",
-                          })}
-                        </h2>
-                        <p className={sectionHintClass}>
-                          {t("roles.basicInformationHint", {
-                            defaultValue: "Enter the main role information.",
-                          })}
-                        </p>
-                      </div>
+                  <section className="space-y-4">
+                    <div
+                      className="border-b pb-3"
+                      style={{ borderColor: "var(--lux-row-border)" }}
+                    >
+                      <h2 className={sectionTitleClass}>
+                        {t("roles.basicInformation", {
+                          defaultValue: "Basic Information",
+                        })}
+                      </h2>
+                      <p className={sectionHintClass}>
+                        {t("roles.basicInformationHint", {
+                          defaultValue: "Enter the main role information.",
+                        })}
+                      </p>
+                    </div>
 
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("roles.name", { defaultValue: "Name" })}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder={t("roles.namePlaceholder", {
-                                    defaultValue: "Enter role name",
-                                  })}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("roles.description", {
-                                  defaultValue: "Description",
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("roles.name", { defaultValue: "Name" })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("roles.namePlaceholder", {
+                                  defaultValue: "Enter role name",
                                 })}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder={t("roles.descriptionPlaceholder", {
-                                    defaultValue: "Enter role description",
-                                  })}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </section>
-
-                    <section className="space-y-4">
-                      <div
-                        className="border-b pb-3"
-                        style={{ borderColor: "var(--lux-row-border)" }}
-                      >
-                        <h2 className={sectionTitleClass}>
-                          {t("roles.permissions", {
-                            defaultValue: "Permissions",
-                          })}
-                        </h2>
-                        <p className={sectionHintClass}>
-                          {t("roles.permissionsHint", {
-                            defaultValue: "Assign one or more permissions to this role.",
-                          })}
-                        </p>
-                      </div>
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={form.control}
-                        name="permissionIds"
-                        render={({ field }) => {
-                          const selected = field.value || [];
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("roles.description", {
+                                defaultValue: "Description",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("roles.descriptionPlaceholder", {
+                                  defaultValue: "Enter role description",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </section>
 
-                          const togglePermission = (permissionId: number) => {
-                            if (selected.includes(permissionId)) {
-                              field.onChange(
-                                selected.filter((value) => value !== permissionId),
-                              );
-                              return;
-                            }
+                  <section className="space-y-4">
+                    <div
+                      className="border-b pb-3"
+                      style={{ borderColor: "var(--lux-row-border)" }}
+                    >
+                      <h2 className={sectionTitleClass}>
+                        {t("roles.permissions", {
+                          defaultValue: "Permissions",
+                        })}
+                      </h2>
+                      <p className={sectionHintClass}>
+                        {t("roles.permissionsHint", {
+                          defaultValue:
+                            "Assign one or more permissions to this role.",
+                        })}
+                      </p>
+                    </div>
 
-                            field.onChange([...selected, permissionId]);
-                          };
+                    <FormField
+                      control={form.control}
+                      name="permissionIds"
+                      render={({ field }) => {
+                        const selected = field.value || [];
 
-                          return (
-                            <FormItem>
-                              <div className="space-y-4">
-                                <Input
-                                  value={permissionSearch}
-                                  onChange={(event) =>
-                                    setPermissionSearch(event.target.value)
-                                  }
-                                  placeholder={t("roles.permissionsSearchPlaceholder", {
+                        const togglePermission = (permissionId: number) => {
+                          if (selected.includes(permissionId)) {
+                            field.onChange(
+                              selected.filter(
+                                (value) => value !== permissionId,
+                              ),
+                            );
+                            return;
+                          }
+
+                          field.onChange([...selected, permissionId]);
+                        };
+
+                        return (
+                          <FormItem>
+                            <div className="space-y-4">
+                              <Input
+                                value={permissionSearch}
+                                onChange={(event) =>
+                                  setPermissionSearch(event.target.value)
+                                }
+                                placeholder={t(
+                                  "roles.permissionsSearchPlaceholder",
+                                  {
                                     defaultValue: "Search permissions...",
-                                  })}
-                                />
+                                  },
+                                )}
+                              />
 
-                                <div
-                                  className="space-y-3 rounded-[20px] border p-4"
-                                  style={{
-                                    background: "var(--lux-control-hover)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  {filteredPermissions.length ? (
-                                    filteredPermissions.map((permission: Permission) => (
+                              <div
+                                className="space-y-3 rounded-[20px] border p-4"
+                                style={{
+                                  background: "var(--lux-control-hover)",
+                                  borderColor: "var(--lux-row-border)",
+                                }}
+                              >
+                                {filteredPermissions.length ? (
+                                  filteredPermissions.map(
+                                    (permission: Permission) => (
                                       <label
                                         key={permission.id}
                                         className="flex cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-3 transition-colors"
@@ -305,8 +313,12 @@ const RoleFormPage = () => {
                                         }}
                                       >
                                         <Checkbox
-                                          checked={selected.includes(permission.id)}
-                                          onCheckedChange={(checked: CheckedState) => {
+                                          checked={selected.includes(
+                                            permission.id,
+                                          )}
+                                          onCheckedChange={(
+                                            checked: CheckedState,
+                                          ) => {
                                             if (checked === "indeterminate") {
                                               return;
                                             }
@@ -325,26 +337,26 @@ const RoleFormPage = () => {
                                           ) : null}
                                         </div>
                                       </label>
-                                    ))
-                                  ) : (
-                                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                                      {t("roles.noPermissionsAvailable", {
-                                        defaultValue: "No permissions available",
-                                      })}
-                                    </p>
-                                  )}
-                                </div>
+                                    ),
+                                  )
+                                ) : (
+                                  <p className="text-sm text-[var(--lux-text-secondary)]">
+                                    {t("roles.noPermissionsAvailable", {
+                                      defaultValue: "No permissions available",
+                                    })}
+                                  </p>
+                                )}
                               </div>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    </section>
-                  </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </section>
 
                   <div
-                    className="mt-auto flex flex-col justify-end gap-3 pt-6 sm:flex-row"
+                    className="flex flex-col justify-end gap-3 pt-6 sm:flex-row"
                     style={{ borderTop: "1px solid var(--lux-row-border)" }}
                   >
                     <Button

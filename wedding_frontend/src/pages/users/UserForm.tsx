@@ -78,7 +78,9 @@ const UserForm = () => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone ?? "",
-        roleIds: (user.Roles ?? []).map((role) => Number(role.id)).filter(Boolean),
+        roleIds: (user.Roles ?? [])
+          .map((role) => Number(role.id))
+          .filter(Boolean),
         isActive: user.isActive,
         password: "",
       });
@@ -114,13 +116,8 @@ const UserForm = () => {
     <ProtectedComponent
       permission={isEditMode ? "users.update" : "users.create"}
     >
-      <PageContainer
-        className="pb-4 pt-4 text-foreground"
-      >
-        <div
-          dir={i18n.dir()}
-          className="mx-auto w-full max-w-5xl space-y-6"
-        >
+      <PageContainer className="pb-4 pt-4 text-foreground">
+        <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
           <button
             type="button"
             onClick={() => navigate("/settings/team/users")}
@@ -168,248 +165,250 @@ const UserForm = () => {
             </div>
           </div>
 
-          <Card className="flex min-h-[calc(100dvh-23rem)] flex-col overflow-hidden rounded-[24px]">
-            <div className="flex flex-1 flex-col p-6 md:p-8">
+          <Card className="overflow-hidden rounded-[24px]">
+            <div className="p-6 md:p-8">
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
-                  className="flex flex-1 flex-col"
+                  className="space-y-8"
                 >
-                  <div className="space-y-8">
-                    <section className="space-y-4">
-                      <div
-                        className="border-b pb-3"
-                        style={{ borderColor: "var(--lux-row-border)" }}
-                      >
-                        <h2 className={sectionTitleClass}>
-                          {t("users.basicInformation", {
-                            defaultValue: "Basic Information",
-                          })}
-                        </h2>
-                        <p className={sectionHintClass}>
-                          {t("users.basicInformationHint", {
-                            defaultValue: "Enter the main user information.",
-                          })}
-                        </p>
-                      </div>
+                  <section className="space-y-4">
+                    <div
+                      className="border-b pb-3"
+                      style={{ borderColor: "var(--lux-row-border)" }}
+                    >
+                      <h2 className={sectionTitleClass}>
+                        {t("users.basicInformation", {
+                          defaultValue: "Basic Information",
+                        })}
+                      </h2>
+                      <p className={sectionHintClass}>
+                        {t("users.basicInformationHint", {
+                          defaultValue: "Enter the main user information.",
+                        })}
+                      </p>
+                    </div>
 
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="fullName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("users.fullName", {
+                                defaultValue: "Full Name",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("users.fullNamePlaceholder", {
+                                  defaultValue: "Enter full name",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("users.email", { defaultValue: "Email" })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                {...field}
+                                placeholder="user@example.com"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("users.phone", { defaultValue: "Phone" })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("users.phonePlaceholder", {
+                                  defaultValue: "Enter phone number",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {!isEditMode ? (
                         <FormField
                           control={form.control}
-                          name="fullName"
+                          name="password"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
-                                {t("users.fullName", {
-                                  defaultValue: "Full Name",
+                                {t("users.password", {
+                                  defaultValue: "Password",
                                 })}
                               </FormLabel>
                               <FormControl>
                                 <Input
+                                  type="password"
                                   {...field}
-                                  placeholder={t("users.fullNamePlaceholder", {
-                                    defaultValue: "Enter full name",
-                                  })}
+                                  placeholder="********"
                                 />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+                      ) : null}
+                    </div>
+                  </section>
 
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("users.email", { defaultValue: "Email" })}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="email"
-                                  {...field}
-                                  placeholder="user@example.com"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                  <section className="space-y-4">
+                    <div
+                      className="border-b pb-3"
+                      style={{ borderColor: "var(--lux-row-border)" }}
+                    >
+                      <h2 className={sectionTitleClass}>
+                        {t("users.rolesSection", { defaultValue: "Roles" })}
+                      </h2>
+                      <p className={sectionHintClass}>
+                        {t("users.rolesSectionHint", {
+                          defaultValue:
+                            "Assign one or more roles to this user.",
+                        })}
+                      </p>
+                    </div>
 
-                        <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("users.phone", { defaultValue: "Phone" })}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder={t("users.phonePlaceholder", {
-                                    defaultValue: "Enter phone number",
-                                  })}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <FormField
+                      control={form.control}
+                      name="roleIds"
+                      render={({ field }) => {
+                        const selected = field.value || [];
 
-                        {!isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="password"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  {t("users.password", {
-                                    defaultValue: "Password",
-                                  })}
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="password"
-                                    {...field}
-                                    placeholder="********"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : null}
-                      </div>
-                    </section>
+                        const toggleRole = (roleId: number) => {
+                          if (selected.includes(roleId)) {
+                            field.onChange(
+                              selected.filter((value) => value !== roleId),
+                            );
+                            return;
+                          }
 
-                    <section className="space-y-4">
-                      <div
-                        className="border-b pb-3"
-                        style={{ borderColor: "var(--lux-row-border)" }}
-                      >
-                        <h2 className={sectionTitleClass}>
-                          {t("users.rolesSection", { defaultValue: "Roles" })}
-                        </h2>
-                        <p className={sectionHintClass}>
-                          {t("users.rolesSectionHint", {
-                            defaultValue:
-                              "Assign one or more roles to this user.",
-                          })}
-                        </p>
-                      </div>
+                          field.onChange([...selected, roleId]);
+                        };
 
-                      <FormField
-                        control={form.control}
-                        name="roleIds"
-                        render={({ field }) => {
-                          const selected = field.value || [];
-
-                          const toggleRole = (roleId: number) => {
-                            if (selected.includes(roleId)) {
-                              field.onChange(selected.filter((value) => value !== roleId));
-                              return;
-                            }
-
-                            field.onChange([...selected, roleId]);
-                          };
-
-                          return (
-                            <FormItem>
-                              <div
-                                className="space-y-3 rounded-[20px] border p-4"
-                                style={{
-                                  background: "var(--lux-control-hover)",
-                                  borderColor: "var(--lux-row-border)",
-                                }}
-                              >
-                                {roles.length ? (
-                                  roles.map((role: RoleOption) => (
-                                    <label
-                                      key={role.id}
-                                      className="flex cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-3 transition-colors"
-                                      style={{
-                                        background: "var(--lux-row-surface)",
-                                        borderColor: "var(--lux-row-border)",
-                                      }}
-                                    >
-                                      <Checkbox
-                                        checked={selected.includes(role.id)}
-                                        onCheckedChange={() => toggleRole(role.id)}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span className="font-medium text-[var(--lux-text)]">
-                                          {role.name}
-                                        </span>
-                                        {role.description ? (
-                                          <span className="text-xs text-[var(--lux-text-secondary)]">
-                                            {role.description}
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    </label>
-                                  ))
-                                ) : (
-                                  <p className="text-sm text-[var(--lux-text-secondary)]">
-                                    {t("users.noRolesAvailable", {
-                                      defaultValue: "No roles available",
-                                    })}
-                                  </p>
-                                )}
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    </section>
-
-                    <section className="space-y-4">
-                      <div
-                        className="border-b pb-3"
-                        style={{ borderColor: "var(--lux-row-border)" }}
-                      >
-                        <h2 className={sectionTitleClass}>
-                          {t("users.statusSection", { defaultValue: "Status" })}
-                        </h2>
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="isActive"
-                        render={({ field }) => (
+                        return (
                           <FormItem>
                             <div
-                              className="flex items-center gap-3 rounded-[20px] border p-4"
+                              className="space-y-3 rounded-[20px] border p-4"
                               style={{
                                 background: "var(--lux-control-hover)",
                                 borderColor: "var(--lux-row-border)",
                               }}
                             >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={(checked: CheckedState) =>
-                                    field.onChange(Boolean(checked))
-                                  }
-                                />
-                              </FormControl>
-                              <FormLabel className="cursor-pointer text-[var(--lux-text)]">
-                                {t("users.activeUser", {
-                                  defaultValue: "Active user",
-                                })}
-                              </FormLabel>
+                              {roles.length ? (
+                                roles.map((role: RoleOption) => (
+                                  <label
+                                    key={role.id}
+                                    className="flex cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-3 transition-colors"
+                                    style={{
+                                      background: "var(--lux-row-surface)",
+                                      borderColor: "var(--lux-row-border)",
+                                    }}
+                                  >
+                                    <Checkbox
+                                      checked={selected.includes(role.id)}
+                                      onCheckedChange={() =>
+                                        toggleRole(role.id)
+                                      }
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-[var(--lux-text)]">
+                                        {role.name}
+                                      </span>
+                                      {role.description ? (
+                                        <span className="text-xs text-[var(--lux-text-secondary)]">
+                                          {role.description}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </label>
+                                ))
+                              ) : (
+                                <p className="text-sm text-[var(--lux-text-secondary)]">
+                                  {t("users.noRolesAvailable", {
+                                    defaultValue: "No roles available",
+                                  })}
+                                </p>
+                              )}
                             </div>
                             <FormMessage />
                           </FormItem>
-                        )}
-                      />
-                    </section>
-                  </div>
+                        );
+                      }}
+                    />
+                  </section>
+
+                  <section className="space-y-4">
+                    <div
+                      className="border-b pb-3"
+                      style={{ borderColor: "var(--lux-row-border)" }}
+                    >
+                      <h2 className={sectionTitleClass}>
+                        {t("users.statusSection", { defaultValue: "Status" })}
+                      </h2>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="isActive"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div
+                            className="flex items-center gap-3 rounded-[20px] border p-4"
+                            style={{
+                              background: "var(--lux-control-hover)",
+                              borderColor: "var(--lux-row-border)",
+                            }}
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(checked: CheckedState) =>
+                                  field.onChange(Boolean(checked))
+                                }
+                              />
+                            </FormControl>
+                            <FormLabel className="cursor-pointer text-[var(--lux-text)]">
+                              {t("users.activeUser", {
+                                defaultValue: "Active user",
+                              })}
+                            </FormLabel>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </section>
 
                   <div
-                    className="mt-auto flex flex-col justify-end gap-3 pt-6 sm:flex-row"
+                    className="flex flex-col justify-end gap-3 pt-6 sm:flex-row"
                     style={{ borderTop: "1px solid var(--lux-row-border)" }}
                   >
                     <Button
