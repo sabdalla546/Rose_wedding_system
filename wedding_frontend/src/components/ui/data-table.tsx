@@ -25,6 +25,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   enableRowNumbers?: boolean;
   rowNumberStart?: number;
+  isLoading?: boolean;
   showExportCSV?: boolean;
   showExportExcel?: boolean;
   showPrint?: boolean;
@@ -36,6 +37,7 @@ export function DataTable<TData, TValue>({
   data,
   enableRowNumbers = false,
   rowNumberStart = 1,
+  isLoading = false,
 }: DataTableProps<TData, TValue>) {
   const { i18n, t } = useTranslation();
   const isRtl = i18n.resolvedLanguage === "ar";
@@ -109,7 +111,24 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.length > 0 ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell className="py-12 text-center" colSpan={finalColumns.length}>
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div
+                    className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
+                    style={{
+                      borderColor: "var(--lux-gold)",
+                      borderTopColor: "transparent",
+                    }}
+                  />
+                  <p className="text-sm text-[var(--lux-text-secondary)]">
+                    {t("common.loading", { defaultValue: "Loading..." })}
+                  </p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows.length > 0 ? (
             table.getRowModel().rows.map((row, index) => (
               <TableRow
                 key={row.id}

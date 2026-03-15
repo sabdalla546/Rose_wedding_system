@@ -89,9 +89,9 @@ export function AppShell() {
     }
   };
   return (
-    <div className="h-screen w-screen overflow-hidden bg-transparent text-white">
+    <div className="h-screen w-full overflow-hidden bg-transparent text-white">
       <div
-        className="h-full w-full overflow-hidden border shadow-[0_32px_80px_rgba(0,0,0,0.16)]"
+        className="box-border h-full w-full overflow-hidden border shadow-[0_32px_80px_rgba(0,0,0,0.16)]"
         dir={isRtl ? "rtl" : "ltr"}
         style={{
           background: "var(--lux-shell-surface)",
@@ -148,7 +148,7 @@ export function AppShell() {
             sidebarOpen={sidebarOpen}
           />
           <main
-            className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] [scrollbar-gutter:stable] md:px-4 md:pb-4"
+            className="subtle-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:px-4 md:pb-4"
             style={{ paddingTop: `${HEADER_FIXED_HEIGHT}px` }}
           >
             <Outlet />

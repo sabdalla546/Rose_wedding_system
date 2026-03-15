@@ -16,9 +16,21 @@ import { routePermissionByHref } from "@/lib/constants/route-permissions";
 import { CalendarPage } from "@/pages/calendar/calendar-page";
 import { DashboardPage } from "@/pages/dashboard/dashboard-page";
 import { LoginPage } from "@/pages/auth/login-page";
+import RoleFormPage from "@/pages/roles/RoleForm";
+import RolesPage from "@/pages/roles/Roles";
+import UserFormPage from "@/pages/users/UserForm";
+import UsersPage from "@/pages/users/Users";
 import { ModulePlaceholderPage } from "@/pages/shared/module-placeholder-page";
 
 const navigationLeaves = flattenNavigationLeaves(navigationItems);
+const explicitModulePaths = new Set([
+  "/settings/team/users",
+  "/settings/team/users/create",
+  "/settings/team/users/edit/:id",
+  "/settings/team/roles",
+  "/settings/team/roles/create",
+  "/settings/team/roles/edit/:id",
+]);
 
 function createModuleRoute(item: NavigationLeaf) {
   if (!item.href) {
@@ -56,14 +68,14 @@ function createModuleRoute(item: NavigationLeaf) {
   return {
     path: item.href.replace(/^\//, ""),
     element: <ModulePlaceholderPage />,
-      handle: {
-        titleKey: item.labelKey,
-        title: item.label,
-        titleAr: item.labelAr,
-        subtitle: item.subtitle,
-        subtitleAr: item.subtitleAr,
-        requiredPermission: routePermissionByHref[item.href],
-      },
+    handle: {
+      titleKey: item.labelKey,
+      title: item.label,
+      titleAr: item.labelAr,
+      subtitle: item.subtitle,
+      subtitleAr: item.subtitleAr,
+      requiredPermission: routePermissionByHref[item.href],
+    },
   };
 }
 
@@ -138,13 +150,38 @@ export const router = createBrowserRouter([
             index: true,
             element: <Navigate replace to="/dashboard" />,
           },
+          {
+            path: "settings/team/users",
+            element: <UsersPage />,
+          },
+          {
+            path: "settings/team/users/create",
+            element: <UserFormPage />,
+          },
+          {
+            path: "settings/team/users/edit/:id",
+            element: <UserFormPage />,
+          },
+          {
+            path: "settings/team/roles",
+            element: <RolesPage />,
+          },
+          {
+            path: "settings/team/roles/create",
+            element: <RoleFormPage />,
+          },
+          {
+            path: "settings/team/roles/edit/:id",
+            element: <RoleFormPage />,
+          },
           ...navigationLeaves
+            .filter((item) => !item.href || !explicitModulePaths.has(item.href))
             .map(createModuleRoute)
             .filter(
               (
-                route
+                route,
               ): route is NonNullable<ReturnType<typeof createModuleRoute>> =>
-                Boolean(route)
+                Boolean(route),
             ),
         ],
       },

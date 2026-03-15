@@ -11,12 +11,15 @@ const buttonVariants = cva(
       variant: {
         default:
           'bg-primary text-primary-foreground shadow-[0_16px_32px_rgba(212,175,55,0.14)] hover:opacity-95',
+        destructive:
+          'border text-[var(--lux-danger)] hover:opacity-95',
         secondary:
           'border text-[var(--lux-text)] hover:border-[var(--lux-gold-border)] hover:bg-[var(--lux-control-hover)]',
         ghost:
           'text-[var(--lux-text-secondary)] hover:bg-[var(--lux-control-hover)] hover:text-[var(--lux-text)]',
         outline:
           'border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] text-[var(--lux-text)] hover:opacity-95',
+        link: 'h-auto rounded-none px-0 text-[var(--lux-gold)] underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-11 px-5',
@@ -49,6 +52,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             color: 'var(--lux-primary-text)',
             boxShadow: '0 16px 32px color-mix(in srgb, var(--lux-gold-glow) 70%, transparent)',
           }
+        : resolvedVariant === 'destructive'
+          ? {
+              background: 'var(--lux-danger-soft)',
+              borderColor: 'color-mix(in srgb, var(--lux-danger) 35%, transparent)',
+              color: 'var(--lux-danger)',
+            }
         : resolvedVariant === 'secondary'
           ? {
               background: 'var(--lux-control-surface)',
@@ -61,6 +70,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 borderColor: 'var(--lux-gold-border)',
                 color: 'var(--lux-text)',
               }
+            : resolvedVariant === 'link'
+              ? {
+                  color: 'var(--lux-gold)',
+                }
             : {
                 color: 'var(--lux-text-secondary)',
               }

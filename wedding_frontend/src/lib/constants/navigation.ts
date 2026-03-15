@@ -17,6 +17,7 @@ import {
   PackageSearch,
   ReceiptText,
   Settings,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
   UserRoundCheck,
@@ -421,6 +422,35 @@ export const navigationItems: NavigationItem[] = [
     ],
   },
 ];
+
+const settingsTeamItem = navigationItems
+  .find((item) => item.id === "settings")
+  ?.children?.find((item) => item.id === "settings-team");
+
+if (settingsTeamItem) {
+  settingsTeamItem.children = [
+    {
+      id: "settings-team-users",
+      labelKey: "sidebar.nav.users",
+      label: "Users",
+      labelAr: "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†",
+      href: "/settings/team/users",
+      icon: UsersRound,
+      subtitle: "Manage system users, status, and assigned roles.",
+      subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙˆØ§Ù„Ø­Ø§Ù„Ø© ÙˆØ§Ù„Ø£Ø¯ÙˆØ§Ø± Ø§Ù„Ù…Ø³Ù†Ø¯Ø©.",
+    },
+    {
+      id: "settings-team-roles",
+      labelKey: "sidebar.nav.roles",
+      label: "Roles",
+      labelAr: "Ø§Ù„Ø£Ø¯ÙˆØ§Ø±",
+      href: "/settings/team/roles",
+      icon: ShieldCheck,
+      subtitle: "Configure role definitions and permission bundles.",
+      subtitleAr: "Ø¥Ø¹Ø¯Ø§Ø¯ ØªØ¹Ø±ÙŠÙØ§Øª Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙˆØ­Ø²Ù… Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª.",
+    },
+  ];
+}
 
 export function flattenNavigationLeaves(
   items: NavigationItem[],
