@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 type SearchInputProps = {
   placeholder?: string
   className?: string
+  inputClassName?: string
+  iconClassName?: string
   value?: string
   onChange?: (value: string) => void
 }
@@ -14,6 +16,8 @@ type SearchInputProps = {
 export function SearchInput({
   placeholder,
   className,
+  inputClassName,
+  iconClassName,
   value,
   onChange,
 }: SearchInputProps) {
@@ -21,9 +25,14 @@ export function SearchInput({
 
   return (
     <div className={cn('relative w-full', className)}>
-      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
+      <Search
+        className={cn(
+          'pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]',
+          iconClassName,
+        )}
+      />
       <Input
-        className="pl-11"
+        className={cn('pl-11', inputClassName)}
         placeholder={placeholder ?? t('common.searchAnything')}
         value={value}
         onChange={(event) => onChange?.(event.target.value)}

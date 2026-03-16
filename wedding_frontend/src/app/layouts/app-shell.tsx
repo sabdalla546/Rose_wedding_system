@@ -73,11 +73,11 @@ export function AppShell() {
       ? {
           top: `${HEADER_TOP_OFFSET}px`,
           left: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
-          right: `calc(${shellInset} + ${desktopOffset + SIDEBAR_CONTENT_GAP}px + ${CONNECTED_EDGE_GUTTER}px)`,
+          right: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
         }
       : {
           top: `${HEADER_TOP_OFFSET}px`,
-          left: `calc(${shellInset} + ${desktopOffset + SIDEBAR_CONTENT_GAP}px + ${CONNECTED_EDGE_GUTTER}px)`,
+          left: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
           right: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
         };
 
@@ -89,14 +89,10 @@ export function AppShell() {
     }
   };
   return (
-    <div className="h-screen w-full overflow-hidden bg-transparent text-white">
+    <div className="min-h-screen w-full bg-transparent text-white">
       <div
-        className="box-border h-full w-full overflow-hidden border shadow-[0_32px_80px_rgba(0,0,0,0.16)]"
+        className="relative w-full"
         dir={isRtl ? "rtl" : "ltr"}
-        style={{
-          background: "var(--lux-shell-surface)",
-          borderColor: "var(--lux-shell-border)",
-        }}
       >
         <div
           className={cn(
@@ -138,7 +134,7 @@ export function AppShell() {
         </div>
 
         <div
-          className="flex h-full min-h-0 flex-col transition-[margin-left,margin-right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="transition-[margin-left,margin-right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={contentOffsetStyle}
         >
           <AppHeader
@@ -148,7 +144,7 @@ export function AppShell() {
             sidebarOpen={sidebarOpen}
           />
           <main
-            className="subtle-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:px-4 md:pb-4"
+            className="overflow-x-hidden px-3 pb-4 md:px-4 md:pb-6"
             style={{ paddingTop: `${HEADER_FIXED_HEIGHT}px` }}
           >
             <Outlet />

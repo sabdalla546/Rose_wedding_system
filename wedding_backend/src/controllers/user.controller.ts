@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { User, Role } from "../models";
 import { createUserSchema, updateUserSchema } from "../validation/user.schemas";
@@ -48,10 +49,21 @@ export const getUsers = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 20;
   const offset = (page - 1) * limit;
+  const search = String(req.query.search ?? "").trim();
+
+  const where = search
+    ? {
+        [Op.or]: [
+          { fullName: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } },
+        ],
+      }
+    : undefined;
 
   const { count, rows } = await User.findAndCountAll({
     attributes: ["id", "email", "fullName", "isActive", "createdAt"],
     include: [{ model: Role }],
+    where,
     order: [["id", "DESC"]],
     limit,
     offset,

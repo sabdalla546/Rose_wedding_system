@@ -67,13 +67,56 @@ export const navigationItems: NavigationItem[] = [
         subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
       },
       {
+        id: "quotations",
+        labelKey: "sidebar.nav.quotations",
+        icon: ClipboardList,
+        children: [
+          {
+            id: "quotations-drafts",
+            labelKey: "sidebar.nav.draftQuotations",
+            label: "Draft Quotations",
+            labelAr: "مسودات العروض",
+            href: "/quotations/drafts",
+            icon: FileClock,
+            subtitle:
+              "Work on quotation drafts before sending them to clients.",
+            subtitleAr: "العمل على مسودات عروض الأسعار قبل إرسالها للعملاء.",
+          },
+          /**
+          *  {
+            id: "quotations-sent",
+            labelKey: "sidebar.nav.sentQuotations",
+            label: "Sent Quotations",
+            labelAr: "العروض المرسلة",
+            href: "/quotations/sent",
+            icon: ReceiptText,
+            subtitle:
+              "Track quotations awaiting feedback, revision, or approval.",
+            subtitleAr: "متابعة العروض بانتظار الرد أو التعديل أو الاعتماد.",
+          },
+          */
+          {
+            id: "quotations-approved",
+            labelKey: "sidebar.nav.approvedQuotations",
+            label: "Approved Quotations",
+            labelAr: "العروض المعتمدة",
+            href: "/quotations/approved",
+            icon: FileCheck2,
+            subtitle: "View approved quotations ready for booking conversion.",
+            subtitleAr: "عرض العروض المعتمدة الجاهزة للتحويل إلى حجوزات.",
+          },
+        ],
+      },
+      /**
+       * {
         id: "calendar-availability",
         labelKey: "sidebar.nav.calendarAvailability",
         label: "Venue Availability",
         labelAr: "توفر المواقع",
         href: "/calendar/availability",
         icon: CalendarCheck2,
-        subtitle: "Review hall availability, blackouts, and pending date holds.",
+        subtitle:
+          "Review hall availability, blackouts, and pending date holds.",
         subtitleAr: "مراجعة توفر القاعات وفترات الإغلاق والحجوزات المعلقة.",
       },
       {
@@ -86,9 +129,11 @@ export const navigationItems: NavigationItem[] = [
         subtitle: "Track coordinator schedules and execution readiness by day.",
         subtitleAr: "متابعة جداول المنسقين وجاهزية التنفيذ حسب اليوم.",
       },
+       */
     ],
   },
-  {
+  /**
+  *  {
     id: "leads",
     labelKey: "sidebar.nav.leads",
     icon: Sparkles,
@@ -100,7 +145,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "مسار العملاء المحتملين",
         href: "/leads",
         icon: Sparkles,
-        subtitle: "Monitor inquiries, outreach stages, and conversion momentum.",
+        subtitle:
+          "Monitor inquiries, outreach stages, and conversion momentum.",
         subtitleAr: "متابعة الاستفسارات ومراحل التواصل وفرص التحويل.",
       },
       {
@@ -125,6 +171,7 @@ export const navigationItems: NavigationItem[] = [
       },
     ],
   },
+  */
   {
     id: "customers",
     labelKey: "sidebar.nav.customers",
@@ -137,7 +184,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "كل العملاء",
         href: "/customers",
         icon: UsersRound,
-        subtitle: "Access complete customer profiles, history, and touchpoints.",
+        subtitle:
+          "Access complete customer profiles, history, and touchpoints.",
         subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
       },
       {
@@ -157,49 +205,15 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "شرائح العملاء",
         href: "/customers/segments",
         icon: FileStack,
-        subtitle: "Segment customers by event type, spend, and acquisition source.",
+        subtitle:
+          "Segment customers by event type, spend, and acquisition source.",
         subtitleAr: "تصنيف العملاء حسب نوع الفعالية والإنفاق ومصدر الاكتساب.",
       },
     ],
   },
-  {
-    id: "quotations",
-    labelKey: "sidebar.nav.quotations",
-    icon: ClipboardList,
-    children: [
-      {
-        id: "quotations-drafts",
-        labelKey: "sidebar.nav.draftQuotations",
-        label: "Draft Quotations",
-        labelAr: "مسودات العروض",
-        href: "/quotations/drafts",
-        icon: FileClock,
-        subtitle: "Work on quotation drafts before sending them to clients.",
-        subtitleAr: "العمل على مسودات عروض الأسعار قبل إرسالها للعملاء.",
-      },
-      {
-        id: "quotations-sent",
-        labelKey: "sidebar.nav.sentQuotations",
-        label: "Sent Quotations",
-        labelAr: "العروض المرسلة",
-        href: "/quotations/sent",
-        icon: ReceiptText,
-        subtitle: "Track quotations awaiting feedback, revision, or approval.",
-        subtitleAr: "متابعة العروض بانتظار الرد أو التعديل أو الاعتماد.",
-      },
-      {
-        id: "quotations-approved",
-        labelKey: "sidebar.nav.approvedQuotations",
-        label: "Approved Quotations",
-        labelAr: "العروض المعتمدة",
-        href: "/quotations/approved",
-        icon: FileCheck2,
-        subtitle: "View approved quotations ready for booking conversion.",
-        subtitleAr: "عرض العروض المعتمدة الجاهزة للتحويل إلى حجوزات.",
-      },
-    ],
-  },
-  {
+
+  /**
+   * {
     id: "bookings",
     labelKey: "sidebar.nav.bookings",
     icon: BriefcaseBusiness,
@@ -211,7 +225,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "كل الحجوزات",
         href: "/bookings",
         icon: BriefcaseBusiness,
-        subtitle: "Review confirmed, tentative, and completed bookings in one place.",
+        subtitle:
+          "Review confirmed, tentative, and completed bookings in one place.",
         subtitleAr: "مراجعة الحجوزات المؤكدة والمبدئية والمكتملة في مكان واحد.",
       },
       {
@@ -221,7 +236,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "الفعاليات المؤكدة",
         href: "/bookings/confirmed",
         icon: CalendarCheck2,
-        subtitle: "Focus on secured events that are ready for execution planning.",
+        subtitle:
+          "Focus on secured events that are ready for execution planning.",
         subtitleAr: "التركيز على الفعاليات المؤكدة الجاهزة للتنفيذ.",
       },
       {
@@ -231,12 +247,15 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "العقود",
         href: "/bookings/contracts",
         icon: FileStack,
-        subtitle: "Manage signed agreements, pending signatures, and document status.",
+        subtitle:
+          "Manage signed agreements, pending signatures, and document status.",
         subtitleAr: "إدارة العقود الموقعة والمنتظرة وحالة المستندات.",
       },
     ],
   },
-  {
+   */
+  /**
+  *  {
     id: "operations",
     labelKey: "sidebar.nav.operations",
     icon: FolderKanban,
@@ -258,7 +277,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "مهام الفريق",
         href: "/operations/tasks",
         icon: ClipboardCheck,
-        subtitle: "Assign and track operational tasks across event departments.",
+        subtitle:
+          "Assign and track operational tasks across event departments.",
         subtitleAr: "توزيع ومتابعة المهام التشغيلية بين فرق العمل.",
       },
       {
@@ -273,6 +293,7 @@ export const navigationItems: NavigationItem[] = [
       },
     ],
   },
+  */
   {
     id: "inventory",
     labelKey: "sidebar.nav.inventory",
@@ -285,7 +306,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "أصناف المخزون",
         href: "/inventory",
         icon: PackageSearch,
-        subtitle: "Monitor inventory quantities, categories, and condition status.",
+        subtitle:
+          "Monitor inventory quantities, categories, and condition status.",
         subtitleAr: "متابعة كميات المخزون وتصنيفاته وحالته.",
       },
       {
@@ -295,7 +317,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "الحجوزات المخزنية",
         href: "/inventory/reservations",
         icon: PackageCheck,
-        subtitle: "Reserve decor, furniture, and technical items for upcoming events.",
+        subtitle:
+          "Reserve decor, furniture, and technical items for upcoming events.",
         subtitleAr: "حجز عناصر الديكور والأثاث والمعدات للفعاليات القادمة.",
       },
       {
@@ -310,6 +333,7 @@ export const navigationItems: NavigationItem[] = [
       },
     ],
   },
+  /*
   {
     id: "payments",
     labelKey: "sidebar.nav.payments",
@@ -322,9 +346,11 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "الحركات المالية",
         href: "/payments",
         icon: WalletCards,
-        subtitle: "View all incoming payments, adjustments, and payment records.",
+        subtitle:
+          "View all incoming payments, adjustments, and payment records.",
         subtitleAr: "عرض جميع الدفعات الواردة والتعديلات والسجلات المالية.",
       },
+    
       {
         id: "payments-pending",
         labelKey: "sidebar.nav.pendingDeposits",
@@ -335,6 +361,7 @@ export const navigationItems: NavigationItem[] = [
         subtitle: "Identify bookings still waiting for deposit confirmation.",
         subtitleAr: "تحديد الحجوزات التي لا تزال بانتظار تأكيد العربون.",
       },
+     
       {
         id: "payments-overdue",
         labelKey: "sidebar.nav.overdueBalances",
@@ -346,7 +373,7 @@ export const navigationItems: NavigationItem[] = [
         subtitleAr: "مراجعة الأرصدة المتأخرة ومتابعة التحصيل.",
       },
     ],
-  },
+  },*/
   {
     id: "reports",
     labelKey: "sidebar.nav.reports",
@@ -359,7 +386,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "نظرة عامة على الإيرادات",
         href: "/reports/revenue",
         icon: TrendingUp,
-        subtitle: "Track revenue trends, collection velocity, and monthly targets.",
+        subtitle:
+          "Track revenue trends, collection velocity, and monthly targets.",
         subtitleAr: "متابعة اتجاهات الإيرادات وسرعة التحصيل والأهداف الشهرية.",
       },
       {
@@ -379,7 +407,8 @@ export const navigationItems: NavigationItem[] = [
         labelAr: "استخدام الموارد",
         href: "/reports/utilization",
         icon: ClipboardCheck,
-        subtitle: "Measure hall, staff, and inventory utilization across events.",
+        subtitle:
+          "Measure hall, staff, and inventory utilization across events.",
         subtitleAr: "قياس استخدام القاعات والموظفين والمخزون عبر الفعاليات.",
       },
     ],
@@ -390,34 +419,15 @@ export const navigationItems: NavigationItem[] = [
     icon: Settings,
     children: [
       {
-        id: "settings-workspace",
-        labelKey: "sidebar.nav.workspaceProfile",
-        label: "Workspace Profile",
-        labelAr: "ملف مساحة العمل",
-        href: "/settings/workspace",
-        icon: Settings,
-        subtitle: "Manage business identity, halls, and operating preferences.",
-        subtitleAr: "إدارة هوية العمل والقاعات وتفضيلات التشغيل.",
-      },
-      {
         id: "settings-team",
         labelKey: "sidebar.nav.teamRoles",
         label: "Team Roles",
         labelAr: "أدوار الفريق",
         href: "/settings/team",
         icon: UsersRound,
-        subtitle: "Configure access levels, coordinators, and team responsibilities.",
+        subtitle:
+          "Configure access levels, coordinators, and team responsibilities.",
         subtitleAr: "إعداد مستويات الوصول والمنسقين ومسؤوليات الفريق.",
-      },
-      {
-        id: "settings-integrations",
-        labelKey: "sidebar.nav.integrations",
-        label: "Integrations",
-        labelAr: "التكاملات",
-        href: "/settings/integrations",
-        icon: FileStack,
-        subtitle: "Prepare integrations for payments, messaging, and automation.",
-        subtitleAr: "تهيئة التكاملات للمدفوعات والرسائل والأتمتة.",
       },
     ],
   },
@@ -433,21 +443,21 @@ if (settingsTeamItem) {
       id: "settings-team-users",
       labelKey: "sidebar.nav.users",
       label: "Users",
-      labelAr: "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†",
+      labelAr: "المستخدمون",
       href: "/settings/team/users",
       icon: UsersRound,
       subtitle: "Manage system users, status, and assigned roles.",
-      subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙˆØ§Ù„Ø­Ø§Ù„Ø© ÙˆØ§Ù„Ø£Ø¯ÙˆØ§Ø± Ø§Ù„Ù…Ø³Ù†Ø¯Ø©.",
+      subtitleAr: "إدارة المستخدمين والحالة والأدوار المسندة.",
     },
     {
       id: "settings-team-roles",
       labelKey: "sidebar.nav.roles",
       label: "Roles",
-      labelAr: "Ø§Ù„Ø£Ø¯ÙˆØ§Ø±",
+      labelAr: "الأدوار",
       href: "/settings/team/roles",
       icon: ShieldCheck,
       subtitle: "Configure role definitions and permission bundles.",
-      subtitleAr: "Ø¥Ø¹Ø¯Ø§Ø¯ ØªØ¹Ø±ÙŠÙØ§Øª Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙˆØ­Ø²Ù… Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª.",
+      subtitleAr: "إعداد تعريفات الأدوار وحزم الصلاحيات.",
     },
   ];
 }
@@ -458,9 +468,7 @@ export function flattenNavigationLeaves(
 ): NavigationLeaf[] {
   return items.flatMap((item) => {
     const nextParents = [...parents, item.id];
-    const ownLeaf = item.href
-      ? [{ ...item, parents }]
-      : [];
+    const ownLeaf = item.href ? [{ ...item, parents }] : [];
 
     const childLeaves = item.children
       ? flattenNavigationLeaves(item.children, nextParents)

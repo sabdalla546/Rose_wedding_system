@@ -15,6 +15,20 @@ import { cn } from "@/lib/utils";
 
 const SIDEBAR_EXPANDED_WIDTH = 272;
 const SIDEBAR_COLLAPSED_WIDTH = 84;
+const SIDEBAR_HEADER_HEIGHT = 72;
+const NAVIGATION_LABEL_FALLBACKS: Record<
+  string,
+  { en: string; ar: string }
+> = {
+  "sidebar.nav.users": {
+    en: "Users",
+    ar: "المستخدمون",
+  },
+  "sidebar.nav.roles": {
+    en: "Roles",
+    ar: "الأدوار",
+  },
+};
 
 type AppSidebarProps = {
   isOpen: boolean;
@@ -66,9 +80,14 @@ export function AppSidebar({
 
   const resolveLabel = (item: NavigationItem) => {
     const translated = t(item.labelKey);
+    const fallbackLabel = NAVIGATION_LABEL_FALLBACKS[item.labelKey];
 
     if (translated !== item.labelKey) {
       return translated;
+    }
+
+    if (fallbackLabel) {
+      return isRtl ? fallbackLabel.ar : fallbackLabel.en;
     }
 
     return isRtl
@@ -105,8 +124,8 @@ export function AppSidebar({
     const activeFillClass =
       "text-[var(--lux-sidebar-active-text)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.2),0_12px_28px_rgba(0,0,0,0.24)]";
     const parentChildActiveClass = isNested
-      ? "text-[var(--lux-soft-text)]"
-      : "text-[var(--lux-soft-text)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.1)]";
+      ? "text-[var(--lux-gold)]"
+      : "text-[var(--lux-gold)]";
 
     const rowClassName = cn(
       "group flex w-full items-center rounded-[16px] px-3 font-medium transition-all duration-200",
@@ -200,9 +219,7 @@ export function AppSidebar({
               style={({ isActive }) => ({
                 background: isActive
                   ? "var(--lux-sidebar-active-bg)"
-                  : childActive && !isNested
-                    ? "rgba(212, 175, 55, 0.06)"
-                    : "transparent",
+                  : "transparent",
               })}
               end
               title={!showFull ? label : ""}
@@ -217,9 +234,7 @@ export function AppSidebar({
               style={{
                 background: active
                   ? "var(--lux-sidebar-active-bg)"
-                  : childActive
-                    ? "rgba(212, 175, 55, 0.06)"
-                    : "transparent",
+                  : "transparent",
               }}
               title={!showFull ? label : ""}
               type="button"
@@ -282,22 +297,21 @@ export function AppSidebar({
       )}
       dir={isRtl ? "rtl" : "ltr"}
       style={{
-        background:
-          "color-mix(in srgb, var(--lux-shell-surface) 96%, transparent)",
+        background: "var(--lux-shell-chrome-surface)",
         width: `${showFull ? SIDEBAR_EXPANDED_WIDTH : SIDEBAR_COLLAPSED_WIDTH}px`,
       }}
       onMouseLeave={() => !isOpen && setHoverOpen(false)}
     >
       <div
-        className={cn("px-4 pb-4 pt-4", !showFull && "px-3")}
+        className={cn("px-4", !showFull && "px-3")}
         style={{
-          background:
-            "color-mix(in srgb, var(--lux-shell-surface) 96%, transparent)",
+          background: "var(--lux-shell-chrome-elevated)",
+          height: `${SIDEBAR_HEADER_HEIGHT}px`,
         }}
       >
         <div
           className={cn(
-            "flex items-center gap-3",
+            "flex h-full items-center gap-3",
             !showFull && "justify-center",
           )}
         >
@@ -333,7 +347,10 @@ export function AppSidebar({
       </div>
 
       <div
-        className="subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[rgba(212,175,55,0.08)] bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.08),transparent_26%),linear-gradient(180deg,#0b0b0d_0%,#0a0a0c_100%)]"
+        className="subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[rgba(212,175,55,0.08)]"
+        style={{
+          background: "var(--lux-shell-chrome-surface)",
+        }}
         onMouseEnter={() => !isOpen && setHoverOpen(true)}
       >
         <nav className={cn("px-3 py-3", compact && "pb-4")}>

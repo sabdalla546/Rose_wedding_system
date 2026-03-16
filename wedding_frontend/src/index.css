@@ -41,6 +41,13 @@
     --lux-gold-border: rgba(212, 175, 55, 0.22);
     --lux-gold-glow: rgba(212, 175, 55, 0.18);
     --lux-shell-surface: #0a0a0c;
+    --lux-shell-chrome-surface: linear-gradient(180deg, rgba(12, 12, 14, 0.96), rgba(8, 8, 10, 0.94));
+    --lux-shell-chrome-elevated: linear-gradient(180deg, rgba(14, 14, 16, 0.98), rgba(10, 10, 12, 0.96));
+    --lux-shell-chrome-control: rgba(255, 255, 255, 0.02);
+    --lux-shell-chrome-control-border: rgba(212, 175, 55, 0.16);
+    --lux-shell-chrome-control-hover: rgba(212, 175, 55, 0.08);
+    --lux-shell-chrome-text: #f4e5c5;
+    --lux-shell-chrome-muted: #b8b8c2;
     --lux-shell-border: rgba(212, 175, 55, 0.12);
     --lux-panel-surface: linear-gradient(180deg, rgba(18, 18, 20, 0.96), rgba(13, 13, 15, 0.98));
     --lux-panel-border: rgba(212, 175, 55, 0.12);
@@ -74,7 +81,7 @@
     --card-foreground: 238 22% 24%;
     --popover: 0 0% 100%;
     --popover-foreground: 238 22% 24%;
-    --primary: 344 43% 66%;
+    --primary: 341 63% 63%;
     --primary-foreground: 0 0% 100%;
     --secondary: 25 23% 96%;
     --secondary-foreground: 238 22% 24%;
@@ -84,7 +91,7 @@
     --accent-foreground: 238 22% 24%;
     --border: 236 15% 86%;
     --input: 0 0% 100%;
-    --ring: 344 43% 66%;
+    --ring: 341 63% 63%;
 
     --lux-background: #f6f2ef;
     --lux-sidebar: #f3edeb;
@@ -93,12 +100,23 @@
     --lux-text: #313246;
     --lux-text-secondary: #6e7084;
     --lux-text-muted: #9a9baa;
-    --lux-gold: #cf7f90;
-    --lux-gold-soft: #e09d66;
-    --lux-gold-border: rgba(207, 127, 144, 0.22);
-    --lux-gold-glow: rgba(207, 127, 144, 0.16);
+    --lux-gold: #e06a92;
+    --lux-gold-soft: #c94f7d;
+    --lux-gold-border: rgba(224, 106, 146, 0.28);
+    --lux-gold-glow: rgba(224, 106, 146, 0.2);
     --lux-shell-surface: #f6f2ef;
-    --lux-shell-border: rgba(49, 50, 70, 0.08);
+    --lux-shell-chrome-surface:
+      radial-gradient(circle at top right, rgba(224, 106, 146, 0.14), transparent 34%),
+      linear-gradient(180deg, rgba(16, 12, 17, 0.98), rgba(8, 8, 10, 0.96));
+    --lux-shell-chrome-elevated:
+      radial-gradient(circle at top left, rgba(224, 106, 146, 0.16), transparent 30%),
+      linear-gradient(180deg, rgba(19, 14, 20, 0.98), rgba(10, 10, 12, 0.97));
+    --lux-shell-chrome-control: rgba(255, 255, 255, 0.06);
+    --lux-shell-chrome-control-border: rgba(224, 106, 146, 0.16);
+    --lux-shell-chrome-control-hover: rgba(224, 106, 146, 0.14);
+    --lux-shell-chrome-text: #f6dce5;
+    --lux-shell-chrome-muted: #c6a8b6;
+    --lux-shell-border: rgba(224, 106, 146, 0.12);
     --lux-panel-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 246, 245, 0.98));
     --lux-panel-border: rgba(49, 50, 70, 0.08);
     --lux-panel-shadow: 0 18px 40px rgba(49, 50, 70, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
@@ -106,18 +124,18 @@
     --lux-row-border: rgba(49, 50, 70, 0.08);
     --lux-control-surface: rgba(255, 255, 255, 0.96);
     --lux-control-border: rgba(49, 50, 70, 0.08);
-    --lux-control-hover: rgba(207, 127, 144, 0.08);
+    --lux-control-hover: rgba(224, 106, 146, 0.12);
     --lux-heading: #313246;
     --lux-soft-text: #44475f;
     --lux-strong-text: #313246;
-    --lux-sidebar-active-bg: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-sidebar-active-bg: linear-gradient(180deg, #d9678f, #b84e74);
     --lux-sidebar-active-text: #fff8fa;
-    --lux-badge-surface: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-badge-surface: linear-gradient(180deg, #df6d95, #bf5378);
     --lux-badge-text: #ffffff;
-    --lux-primary-surface: linear-gradient(180deg, #cf8696, #c27586);
+    --lux-primary-surface: linear-gradient(180deg, #e16f97, #bf4f79);
     --lux-primary-text: #ffffff;
-    --lux-danger: #c46a75;
-    --lux-danger-soft: rgba(196, 106, 117, 0.14);
+    --lux-danger: #cb5f78;
+    --lux-danger-soft: rgba(203, 95, 120, 0.14);
     --lux-success: #4f9b73;
     --lux-success-soft: rgba(79, 155, 115, 0.14);
   }
@@ -128,10 +146,14 @@
 
   html {
     @apply scroll-smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
   }
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
     background-image:
       radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 26%),
       radial-gradient(circle at top right, rgba(212, 175, 55, 0.06), transparent 24%),
@@ -168,6 +190,30 @@
 
   #root {
     @apply min-h-screen;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 999px;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--lux-gold-soft), var(--lux-gold-border));
+    border-radius: 999px;
+    border: 1px solid var(--lux-gold-border);
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--lux-gold), var(--lux-gold-soft));
   }
 }
 
