@@ -4,7 +4,7 @@ import { sequelize } from "../config/database";
 
 interface PermissionAttributes {
   id: number;
-  code: string; // مثل "users.read" , "wallets.create"
+  code: string; // مثل "users.read" , "bookings.create"
   description?: string;
 }
 

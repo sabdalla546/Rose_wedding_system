@@ -96,14 +96,14 @@ export function filterCalendarEvents(events: CalendarEvent[], filters: CalendarF
     if (filters.dateRange === '7d') {
       return isWithinInterval(eventDate, {
         start: today,
-        end: endOfDay(addDays(today, 7)),
+        end: endOfDay(addDays(today, 6)),
       })
     }
 
     if (filters.dateRange === '30d') {
       return isWithinInterval(eventDate, {
         start: today,
-        end: endOfDay(addDays(today, 30)),
+        end: endOfDay(addDays(today, 29)),
       })
     }
 

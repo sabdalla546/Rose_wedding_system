@@ -4,6 +4,7 @@ import { env } from "../config/env";
 
 export interface JwtPayload {
   userId: number;
+  exp?: number;
 }
 
 // تأكيد أن الـ secrets متوافقة مع نوع Secret
@@ -36,7 +37,10 @@ export const verifyAccessToken = (token: string): JwtPayload => {
     throw new Error("Invalid access token payload");
   }
 
-  return { userId: (decoded as any).userId };
+  return {
+    userId: (decoded as any).userId,
+    exp: (decoded as any).exp,
+  };
 };
 
 export const verifyRefreshToken = (token: string): JwtPayload => {
@@ -46,5 +50,8 @@ export const verifyRefreshToken = (token: string): JwtPayload => {
     throw new Error("Invalid refresh token payload");
   }
 
-  return { userId: (decoded as any).userId };
+  return {
+    userId: (decoded as any).userId,
+    exp: (decoded as any).exp,
+  };
 };

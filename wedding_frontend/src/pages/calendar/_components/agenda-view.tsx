@@ -37,7 +37,7 @@ export function AgendaView({
       {groups.map((group) => (
         <SectionCard className="space-y-4" key={group.date.toISOString()}>
           <div>
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-lg font-semibold text-[var(--lux-text)]">
               {formatLocalized(group.date, 'EEEE, dd MMM')}
             </h3>
             <p className="text-sm text-[var(--lux-text-muted)]">
@@ -57,13 +57,13 @@ export function AgendaView({
                 onClick={() => onSelectEvent(event)}
               >
                 <div>
-                  <p className="text-sm font-semibold text-white">{formatTimeLabel(event.startAt)}</p>
+                  <p className="text-sm font-semibold text-[var(--lux-text)]">{formatTimeLabel(event.startAt)}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                     {event.bookingNumber}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">{event.title}</p>
+                  <p className="text-sm font-semibold text-[var(--lux-text)]">{event.title}</p>
                   <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">{event.clientName}</p>
                 </div>
                 <p className="text-sm text-[var(--lux-text-secondary)]">{event.venue}</p>

@@ -1,0 +1,170 @@
+import type { CalendarEvent } from "@/types/calendar";
+import type {
+  Appointment,
+  AppointmentMeetingType,
+  AppointmentStatus,
+  AppointmentsResponse,
+} from "@/pages/appointments/types";
+
+export type TableAppointment = Appointment & {
+  leadName: string;
+  venueDisplay: string;
+  assignedUserDisplay: string;
+  timeDisplay: string;
+};
+
+export type TableAppointmentsResponse = {
+  data: { appointments: TableAppointment[] };
+  total: number;
+  totalPages: number;
+};
+
+export function toTableAppointments(
+  res?: AppointmentsResponse,
+): TableAppointmentsResponse {
+  const appointments = (res?.data ?? []).map<TableAppointment>((appointment) => ({
+    ...appointment,
+    leadName: appointment.lead?.fullName || `Lead #${appointment.leadId}`,
+    venueDisplay:
+      appointment.lead?.venue?.name ||
+      appointment.lead?.venueNameSnapshot ||
+      "-",
+    assignedUserDisplay: appointment.assignedToUser?.fullName || "Unassigned",
+    timeDisplay: appointment.appointmentEndTime
+      ? `${appointment.appointmentStartTime} - ${appointment.appointmentEndTime}`
+      : appointment.appointmentStartTime,
+  }));
+
+  return {
+    data: { appointments },
+    total: res?.meta?.total ?? appointments.length,
+    totalPages: res?.meta?.pages ?? 1,
+  };
+}
+
+export const APPOINTMENT_STATUS_OPTIONS: Array<{
+  value: AppointmentStatus;
+  label: string;
+}> = [
+  { value: "scheduled", label: "Scheduled" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "completed", label: "Completed" },
+  { value: "rescheduled", label: "Rescheduled" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "no_show", label: "No Show" },
+];
+
+export const APPOINTMENT_MEETING_TYPE_OPTIONS: Array<{
+  value: AppointmentMeetingType;
+  label: string;
+}> = [
+  { value: "office_visit", label: "Office Visit" },
+  { value: "phone_call", label: "Phone Call" },
+  { value: "video_call", label: "Video Call" },
+  { value: "venue_visit", label: "Venue Visit" },
+];
+
+export const formatAppointmentStatus = (status: AppointmentStatus) =>
+  status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+export const formatMeetingType = (meetingType: AppointmentMeetingType) =>
+  meetingType
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> = {
+  scheduled: "Pending",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  rescheduled: "Tentative",
+  cancelled: "Cancelled",
+  no_show: "Overdue",
+};
+
+const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> = {
+  scheduled: "gold",
+  confirmed: "emerald",
+  completed: "blue",
+  rescheduled: "rose",
+  cancelled: "rose",
+  no_show: "blue",
+};
+
+function combineDateTime(date: string, time: string) {
+  return new Date(`${date}T${time}:00`);
+}
+
+export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
+  const baseEvents = appointments.map<CalendarEvent>((appointment) => {
+    const startAt = combineDateTime(
+      appointment.appointmentDate,
+      appointment.appointmentStartTime,
+    );
+    const endAt = combineDateTime(
+      appointment.appointmentDate,
+      appointment.appointmentEndTime || appointment.appointmentStartTime,
+    );
+    const computedEndAt =
+      endAt.getTime() > startAt.getTime()
+        ? endAt
+        : new Date(startAt.getTime() + 60 * 60 * 1000);
+    const leadName = appointment.lead?.fullName || `Lead #${appointment.leadId}`;
+
+    return {
+      id: String(appointment.id),
+      bookingNumber: `APPT-${String(appointment.id).padStart(4, "0")}`,
+      title: `${leadName} Appointment`,
+      clientName: leadName,
+      venue:
+        appointment.lead?.venue?.name ||
+        appointment.lead?.venueNameSnapshot ||
+        "-",
+      eventType: formatMeetingType(appointment.meetingType),
+      status: CALENDAR_STATUS_MAP[appointment.status],
+      packageName: formatMeetingType(appointment.meetingType),
+      coordinator: appointment.assignedToUser?.fullName || "Unassigned",
+      totalAmount: 0,
+      paidAmount: 0,
+      notes:
+        [appointment.notes, appointment.result, appointment.nextStep]
+          .filter(Boolean)
+          .join(" | ") || "No notes added.",
+      startAt,
+      endAt: computedEndAt,
+      accent: CALENDAR_ACCENT_MAP[appointment.status],
+      appointmentId: appointment.id,
+      leadId: appointment.leadId,
+      customerId: appointment.lead?.convertedCustomerId || null,
+      meetingType: appointment.meetingType,
+      guestCount: appointment.lead?.guestCount ?? null,
+    };
+  });
+
+  return baseEvents.map((event, _index, all) => {
+    const conflict = all.some((candidate) => {
+      if (candidate.id === event.id) {
+        return false;
+      }
+
+      if (
+        candidate.venue !== event.venue ||
+        candidate.startAt.toDateString() !== event.startAt.toDateString()
+      ) {
+        return false;
+      }
+
+      return (
+        event.startAt < candidate.endAt && candidate.startAt < event.endAt
+      );
+    });
+
+    return {
+      ...event,
+      conflict,
+    };
+  });
+}

@@ -42,14 +42,14 @@ export function DayView({ currentDate, events, onSelectEvent }: DayViewProps) {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h3 className="text-xl font-semibold text-white">{event.title}</h3>
+                <h3 className="text-xl font-semibold text-[var(--lux-text)]">{event.title}</h3>
                 <StatusBadge status={event.status} />
               </div>
               <p className="mt-2 text-sm text-[var(--lux-text-secondary)]">
                 {event.clientName} • {event.venue} • {event.eventType}
               </p>
             </div>
-            <div className="text-sm text-[var(--lux-text-secondary)]">
+            <div className="text-sm text-[var(--lux-text)]">
               {formatTimeLabel(event.startAt)} - {formatTimeLabel(event.endAt)}
             </div>
           </div>

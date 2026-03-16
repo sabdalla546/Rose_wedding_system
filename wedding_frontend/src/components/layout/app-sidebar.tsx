@@ -13,13 +13,10 @@ import {
 import { routePermissionByHref } from "@/lib/constants/route-permissions";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_EXPANDED_WIDTH = 272;
-const SIDEBAR_COLLAPSED_WIDTH = 84;
+const SIDEBAR_EXPANDED_WIDTH = 225;
+const SIDEBAR_COLLAPSED_WIDTH = 70;
 const SIDEBAR_HEADER_HEIGHT = 72;
-const NAVIGATION_LABEL_FALLBACKS: Record<
-  string,
-  { en: string; ar: string }
-> = {
+const NAVIGATION_LABEL_FALLBACKS: Record<string, { en: string; ar: string }> = {
   "sidebar.nav.users": {
     en: "Users",
     ar: "المستخدمون",
@@ -119,8 +116,8 @@ export function AppSidebar({
     const isNested = depth > 0;
     const iconSizeClass =
       depth > 0 ? "h-4 w-4" : showFull ? "h-[18px] w-[18px]" : "h-5 w-5";
-    const itemHeightClass = depth > 0 ? "h-[42px]" : "h-[46px]";
-    const textClass = depth > 0 ? "text-[14px]" : "text-[15px]";
+    const itemHeightClass = depth > 0 ? "h-[40px]" : "h-[46px]";
+    const textClass = depth > 0 ? "text-[12px]" : "text-[13px]";
     const activeFillClass =
       "text-[var(--lux-sidebar-active-text)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.2),0_12px_28px_rgba(0,0,0,0.24)]";
     const parentChildActiveClass = isNested
@@ -136,7 +133,7 @@ export function AppSidebar({
         ? activeFillClass
         : childActive
           ? parentChildActiveClass
-          : "text-[var(--lux-text-secondary)] hover:text-white",
+          : "text-[var(--lux-shell-chrome-muted)] hover:text-[var(--lux-shell-chrome-text)]",
     );
 
     const iconSlot = (
@@ -190,7 +187,7 @@ export function AppSidebar({
       hasChildren && showFull ? (
         <motion.div
           animate={{ opacity: 1, width: "auto", x: 0 }}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-text-muted)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-shell-chrome-muted)]"
           exit={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
           initial={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -210,7 +207,7 @@ export function AppSidebar({
         key={item.id}
         permission={item.href ? routePermissionByHref[item.href] : undefined}
       >
-        <div className="mb-1">
+        <div className="mb-0">
           {item.href && !hasChildren ? (
             <NavLink
               className={({ isActive }) =>
@@ -259,8 +256,8 @@ export function AppSidebar({
               <motion.div
                 animate={{ height: "auto", opacity: 1 }}
                 className={cn(
-                  "relative mt-1 space-y-1",
-                  isRtl ? "pr-4" : "pl-4",
+                  "relative mt-0 space-y-0",
+                  isRtl ? "pr-5" : "pl-5",
                 )}
                 exit={{ height: 0, opacity: 0 }}
                 initial={{ height: 0, opacity: 0 }}
@@ -270,7 +267,7 @@ export function AppSidebar({
                 <div
                   className={cn(
                     "absolute bottom-0 top-0 w-px bg-[var(--lux-row-border)]",
-                    isRtl ? "right-3" : "left-3",
+                    isRtl ? "right-4" : "left-4",
                   )}
                 />
                 {item.children?.map((child) => renderNavItem(child, depth + 1))}
@@ -334,10 +331,10 @@ export function AppSidebar({
                 initial={{ opacity: 0, width: 0, x: isRtl ? 8 : -8 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
               >
-                <p className="font-display text-[23px] leading-none text-[#f4e5c5]">
+                <p className="font-display text-[19px] leading-none text-[#f4e5c5]">
                   {t("sidebar.brand")}
                 </p>
-                <p className="mt-1 text-[12px] uppercase tracking-[0.24em] text-[var(--lux-text-muted)]">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--lux-shell-chrome-muted)]">
                   {t("sidebar.suite")}
                 </p>
               </motion.div>

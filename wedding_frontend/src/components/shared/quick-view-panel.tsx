@@ -1,18 +1,20 @@
-import { CalendarClock, FilePenLine, NotebookText, WalletCards } from 'lucide-react'
+import { CalendarClock, FilePenLine, NotebookText, UsersRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionCard } from '@/components/shared/section-card'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { formatCurrency, formatDateLabel, formatTimeLabel } from '@/lib/utils'
+import { formatDateLabel, formatTimeLabel } from '@/lib/utils'
 import type { CalendarEvent } from '@/types/calendar'
 
 type QuickViewPanelProps = {
   event: CalendarEvent | null
+  onView?: () => void
+  onEdit?: () => void
 }
 
-export function QuickViewPanel({ event }: QuickViewPanelProps) {
+export function QuickViewPanel({ event, onView, onEdit }: QuickViewPanelProps) {
   const { t } = useTranslation()
 
   if (!event) {
@@ -20,7 +22,7 @@ export function QuickViewPanel({ event }: QuickViewPanelProps) {
       <SectionCard className="h-full">
         <div className="flex h-full min-h-[340px] items-center justify-center rounded-[24px] border border-dashed border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-center">
           <div>
-            <p className="text-lg font-semibold text-white">{t('calendar.selectBooking')}</p>
+            <p className="text-lg font-semibold text-[var(--lux-text)]">{t('calendar.selectBooking')}</p>
             <p className="mt-2 text-sm text-[var(--lux-text-muted)]">
               {t('calendar.selectBookingDescription')}
             </p>
@@ -30,8 +32,6 @@ export function QuickViewPanel({ event }: QuickViewPanelProps) {
     )
   }
 
-  const remaining = event.totalAmount - event.paidAmount
-
   return (
     <SectionCard className="space-y-5">
       <div className="space-y-3">
@@ -40,7 +40,7 @@ export function QuickViewPanel({ event }: QuickViewPanelProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--lux-text-muted)]">
               {t('calendar.quickView')}
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">{event.title}</h3>
+            <h3 className="mt-2 text-2xl font-semibold text-[var(--lux-text)]">{event.title}</h3>
             <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
               {event.clientName} • {event.bookingNumber}
             </p>
@@ -66,11 +66,21 @@ export function QuickViewPanel({ event }: QuickViewPanelProps) {
           value={`${formatTimeLabel(event.startAt)} - ${formatTimeLabel(event.endAt)}`}
         />
         <InfoBlock icon={NotebookText} label={t('common.venue')} value={event.venue} />
-        <InfoBlock icon={NotebookText} label={t('common.package')} value={event.packageName} />
-        <InfoBlock icon={WalletCards} label={t('common.totalAmount')} value={formatCurrency(event.totalAmount)} />
-        <InfoBlock icon={WalletCards} label={t('common.paid')} value={formatCurrency(event.paidAmount)} />
-        <InfoBlock icon={WalletCards} label={t('common.remaining')} value={formatCurrency(remaining)} />
-        <InfoBlock icon={FilePenLine} label={t('common.coordinator')} value={event.coordinator} />
+        <InfoBlock
+          icon={NotebookText}
+          label={t('appointments.meetingType', { defaultValue: 'Meeting Type' })}
+          value={event.packageName}
+        />
+        <InfoBlock
+          icon={UsersRound}
+          label={t('appointments.assignedTo', { defaultValue: 'Assigned To' })}
+          value={event.coordinator}
+        />
+        <InfoBlock
+          icon={FilePenLine}
+          label={t('appointments.guestCount', { defaultValue: 'Guest Count' })}
+          value={event.guestCount ? String(event.guestCount) : '-'}
+        />
       </div>
 
       <Separator />
@@ -85,15 +95,11 @@ export function QuickViewPanel({ event }: QuickViewPanelProps) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button className="w-full">{t('common.viewBooking')}</Button>
-        <Button className="w-full" variant="secondary">
+        <Button className="w-full" onClick={onView}>
+          {t('appointments.viewAppointment', { defaultValue: 'View Appointment' })}
+        </Button>
+        <Button className="w-full" variant="secondary" onClick={onEdit}>
           {t('common.edit')}
-        </Button>
-        <Button className="w-full" variant="secondary">
-          {t('common.addPayment')}
-        </Button>
-        <Button className="w-full" variant="ghost">
-          {t('common.addNote')}
         </Button>
       </div>
     </SectionCard>
@@ -115,7 +121,7 @@ function InfoBlock({ icon: Icon, label, value }: InfoBlockProps) {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
         {label}
       </p>
-      <p className="mt-2 text-sm font-medium text-white">{value}</p>
+      <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">{value}</p>
     </div>
   )
 }

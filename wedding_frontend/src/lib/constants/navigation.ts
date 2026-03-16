@@ -1,29 +1,25 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  BriefcaseBusiness,
+  Building2,
   CalendarCheck2,
-  CalendarClock,
   CalendarDays,
+  CalendarRange,
+  ChartColumnBig,
   ClipboardCheck,
-  ClipboardList,
-  CreditCard,
   FileCheck2,
   FileClock,
-  FileStack,
-  FolderKanban,
+  FileBadge2,
   LayoutDashboard,
-  PackageCheck,
-  PackageSearch,
-  ReceiptText,
+  Package,
+  PackageOpen,
+  PackagePlus,
   Settings,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
-  UserRoundCheck,
-  UserRoundSearch,
+  UserCog,
+  Users,
   UsersRound,
-  WalletCards,
 } from "lucide-react";
 
 export type NavigationItem = {
@@ -52,24 +48,44 @@ export const navigationItems: NavigationItem[] = [
     subtitleAr: "نظرة عامة على الحجوزات وعروض الأسعار والمدفوعات والعمليات.",
   },
   {
-    id: "calendar",
-    labelKey: "sidebar.nav.calendar",
-    icon: CalendarDays,
+    id: "Secretarial",
+    labelKey: "sidebar.nav.Secretarial",
+    icon: CalendarCheck2,
     children: [
       {
-        id: "calendar-master",
-        labelKey: "sidebar.nav.calendar",
-        label: "Master Calendar",
-        labelAr: "التقويم الرئيسي",
-        href: "/calendar",
-        icon: CalendarDays,
-        subtitle: "Manage event dates, bookings, and venue availability.",
-        subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
+        id: "quotations",
+        labelKey: "sidebar.nav.calendars",
+        icon: CalendarRange,
+        children: [
+          {
+            id: "calendar-master",
+            labelKey: "sidebar.nav.calendar",
+            label: "Master Calendar",
+            labelAr: "التقويم الرئيسي",
+            href: "/calendar",
+            icon: CalendarDays,
+            subtitle: "Manage event dates, bookings, and venue availability.",
+            subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
+          },
+          {
+            id: "calendar-appointments",
+            labelKey: "sidebar.nav.appointments",
+            label: "Appointments",
+            labelAr: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+            href: "/appointments",
+            icon: CalendarCheck2,
+            subtitle:
+              "Manage lead appointments, meeting statuses, and team assignment.",
+            subtitleAr:
+              "\u0625\u062f\u0627\u0631\u0629 \u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0627\u0644\u0645\u062d\u062a\u0645\u0644\u064a\u0646 \u0648\u062d\u0627\u0644\u0627\u062a \u0627\u0644\u0627\u062c\u062a\u0645\u0627\u0639 \u0648\u062a\u0648\u0632\u064a\u0639 \u0627\u0644\u0641\u0631\u064a\u0642.",
+          },
+        ],
       },
+
       {
         id: "quotations",
         labelKey: "sidebar.nav.quotations",
-        icon: ClipboardList,
+        icon: FileBadge2,
         children: [
           {
             id: "quotations-drafts",
@@ -107,197 +123,44 @@ export const navigationItems: NavigationItem[] = [
           },
         ],
       },
-      /**
-       * {
-        id: "calendar-availability",
-        labelKey: "sidebar.nav.calendarAvailability",
-        label: "Venue Availability",
-        labelAr: "توفر المواقع",
-        href: "/calendar/availability",
-        icon: CalendarCheck2,
-        subtitle:
-          "Review hall availability, blackouts, and pending date holds.",
-        subtitleAr: "مراجعة توفر القاعات وفترات الإغلاق والحجوزات المعلقة.",
-      },
       {
-        id: "calendar-coordinators",
-        labelKey: "sidebar.nav.coordinatorView",
-        label: "Coordinator View",
-        labelAr: "عرض المنسقين",
-        href: "/calendar/coordinators",
-        icon: CalendarClock,
-        subtitle: "Track coordinator schedules and execution readiness by day.",
-        subtitleAr: "متابعة جداول المنسقين وجاهزية التنفيذ حسب اليوم.",
-      },
-       */
-    ],
-  },
-  /**
-  *  {
-    id: "leads",
-    labelKey: "sidebar.nav.leads",
-    icon: Sparkles,
-    children: [
-      {
-        id: "leads-pipeline",
-        labelKey: "sidebar.nav.leadsPipeline",
-        label: "Lead Pipeline",
-        labelAr: "مسار العملاء المحتملين",
-        href: "/leads",
-        icon: Sparkles,
-        subtitle:
-          "Monitor inquiries, outreach stages, and conversion momentum.",
-        subtitleAr: "متابعة الاستفسارات ومراحل التواصل وفرص التحويل.",
-      },
-      {
-        id: "leads-followups",
-        labelKey: "sidebar.nav.followUps",
-        label: "Follow-Ups",
-        labelAr: "المتابعات",
-        href: "/leads/follow-ups",
-        icon: ClipboardCheck,
-        subtitle: "Keep track of callbacks, reminders, and next lead actions.",
-        subtitleAr: "متابعة الاتصالات القادمة والتذكيرات والإجراءات التالية.",
-      },
-      {
-        id: "leads-campaigns",
-        labelKey: "sidebar.nav.campaignResponses",
-        label: "Campaign Responses",
-        labelAr: "ردود الحملات",
-        href: "/leads/campaign-responses",
-        icon: UserRoundSearch,
-        subtitle: "Measure campaign-driven inquiries and source performance.",
-        subtitleAr: "قياس استفسارات الحملات وأداء مصادر العملاء المحتملين.",
-      },
-    ],
-  },
-  */
-  {
-    id: "customers",
-    labelKey: "sidebar.nav.customers",
-    icon: UsersRound,
-    children: [
-      {
-        id: "customers-all",
-        labelKey: "sidebar.nav.allCustomers",
-        label: "All Customers",
-        labelAr: "كل العملاء",
-        href: "/customers",
+        id: "customers",
+        labelKey: "sidebar.nav.customers",
         icon: UsersRound,
-        subtitle:
-          "Access complete customer profiles, history, and touchpoints.",
-        subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
-      },
-      {
-        id: "customers-vip",
-        labelKey: "sidebar.nav.vipCustomers",
-        label: "VIP Customers",
-        labelAr: "العملاء المميزون",
-        href: "/customers/vip",
-        icon: UserRoundCheck,
-        subtitle: "Review premium customers, preferences, and concierge notes.",
-        subtitleAr: "مراجعة العملاء المميزين وتفضيلاتهم وملاحظاتهم الخاصة.",
-      },
-      {
-        id: "customers-segments",
-        labelKey: "sidebar.nav.customerSegments",
-        label: "Customer Segments",
-        labelAr: "شرائح العملاء",
-        href: "/customers/segments",
-        icon: FileStack,
-        subtitle:
-          "Segment customers by event type, spend, and acquisition source.",
-        subtitleAr: "تصنيف العملاء حسب نوع الفعالية والإنفاق ومصدر الاكتساب.",
+        children: [
+          {
+            id: "leads-pipeline-live",
+            labelKey: "sidebar.nav.leads",
+            label: "Leads",
+            labelAr:
+              "\u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0627\u0644\u0645\u062d\u062a\u0645\u0644\u0648\u0646",
+            href: "/leads",
+            icon: ClipboardCheck,
+            subtitle:
+              "Manage inquiries, outreach stages, and customer conversion readiness.",
+            subtitleAr:
+              "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0627\u0633\u062a\u0641\u0633\u0627\u0631\u0627\u062a \u0648\u0645\u0631\u0627\u062d\u0644 \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0625\u0644\u0649 \u0639\u0645\u064a\u0644.",
+          },
+          {
+            id: "customers-all",
+            labelKey: "sidebar.nav.allCustomers",
+            label: "All Customers",
+            labelAr: "كل العملاء",
+            href: "/customers",
+            icon: UsersRound,
+            subtitle:
+              "Access complete customer profiles, history, and touchpoints.",
+            subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
+          },
+        ],
       },
     ],
   },
 
-  /**
-   * {
-    id: "bookings",
-    labelKey: "sidebar.nav.bookings",
-    icon: BriefcaseBusiness,
-    children: [
-      {
-        id: "bookings-all",
-        labelKey: "sidebar.nav.allBookings",
-        label: "All Bookings",
-        labelAr: "كل الحجوزات",
-        href: "/bookings",
-        icon: BriefcaseBusiness,
-        subtitle:
-          "Review confirmed, tentative, and completed bookings in one place.",
-        subtitleAr: "مراجعة الحجوزات المؤكدة والمبدئية والمكتملة في مكان واحد.",
-      },
-      {
-        id: "bookings-confirmed",
-        labelKey: "sidebar.nav.confirmedEvents",
-        label: "Confirmed Events",
-        labelAr: "الفعاليات المؤكدة",
-        href: "/bookings/confirmed",
-        icon: CalendarCheck2,
-        subtitle:
-          "Focus on secured events that are ready for execution planning.",
-        subtitleAr: "التركيز على الفعاليات المؤكدة الجاهزة للتنفيذ.",
-      },
-      {
-        id: "bookings-contracts",
-        labelKey: "sidebar.nav.contracts",
-        label: "Contracts",
-        labelAr: "العقود",
-        href: "/bookings/contracts",
-        icon: FileStack,
-        subtitle:
-          "Manage signed agreements, pending signatures, and document status.",
-        subtitleAr: "إدارة العقود الموقعة والمنتظرة وحالة المستندات.",
-      },
-    ],
-  },
-   */
-  /**
-  *  {
-    id: "operations",
-    labelKey: "sidebar.nav.operations",
-    icon: FolderKanban,
-    children: [
-      {
-        id: "operations-timeline",
-        labelKey: "sidebar.nav.timelineBoard",
-        label: "Timeline Board",
-        labelAr: "لوحة الجدول الزمني",
-        href: "/operations/timeline",
-        icon: FolderKanban,
-        subtitle: "Coordinate setup, rehearsal, and event-day milestones.",
-        subtitleAr: "تنسيق التجهيز والبروفات ومراحل يوم الفعالية.",
-      },
-      {
-        id: "operations-tasks",
-        labelKey: "sidebar.nav.teamTasks",
-        label: "Team Tasks",
-        labelAr: "مهام الفريق",
-        href: "/operations/tasks",
-        icon: ClipboardCheck,
-        subtitle:
-          "Assign and track operational tasks across event departments.",
-        subtitleAr: "توزيع ومتابعة المهام التشغيلية بين فرق العمل.",
-      },
-      {
-        id: "operations-checklists",
-        labelKey: "sidebar.nav.eventChecklists",
-        label: "Event Checklists",
-        labelAr: "قوائم التحقق",
-        href: "/operations/checklists",
-        icon: ClipboardList,
-        subtitle: "Standardize execution checklists for every event package.",
-        subtitleAr: "توحيد قوائم التحقق لكل باقة فعالية.",
-      },
-    ],
-  },
-  */
   {
     id: "inventory",
     labelKey: "sidebar.nav.inventory",
-    icon: PackageSearch,
+    icon: Package,
     children: [
       {
         id: "inventory-stock",
@@ -305,7 +168,7 @@ export const navigationItems: NavigationItem[] = [
         label: "Stock Items",
         labelAr: "أصناف المخزون",
         href: "/inventory",
-        icon: PackageSearch,
+        icon: PackageOpen,
         subtitle:
           "Monitor inventory quantities, categories, and condition status.",
         subtitleAr: "متابعة كميات المخزون وتصنيفاته وحالته.",
@@ -316,7 +179,7 @@ export const navigationItems: NavigationItem[] = [
         label: "Reservations",
         labelAr: "الحجوزات المخزنية",
         href: "/inventory/reservations",
-        icon: PackageCheck,
+        icon: ClipboardCheck,
         subtitle:
           "Reserve decor, furniture, and technical items for upcoming events.",
         subtitleAr: "حجز عناصر الديكور والأثاث والمعدات للفعاليات القادمة.",
@@ -327,53 +190,13 @@ export const navigationItems: NavigationItem[] = [
         label: "Purchase Orders",
         labelAr: "أوامر الشراء",
         href: "/inventory/purchase-orders",
-        icon: FileStack,
+        icon: PackagePlus,
         subtitle: "Track replenishment orders and supplier delivery readiness.",
         subtitleAr: "متابعة أوامر التوريد وجاهزية التسليم من الموردين.",
       },
     ],
   },
-  /*
-  {
-    id: "payments",
-    labelKey: "sidebar.nav.payments",
-    icon: CreditCard,
-    children: [
-      {
-        id: "payments-transactions",
-        labelKey: "sidebar.nav.transactions",
-        label: "Transactions",
-        labelAr: "الحركات المالية",
-        href: "/payments",
-        icon: WalletCards,
-        subtitle:
-          "View all incoming payments, adjustments, and payment records.",
-        subtitleAr: "عرض جميع الدفعات الواردة والتعديلات والسجلات المالية.",
-      },
-    
-      {
-        id: "payments-pending",
-        labelKey: "sidebar.nav.pendingDeposits",
-        label: "Pending Deposits",
-        labelAr: "العربونات المعلقة",
-        href: "/payments/pending",
-        icon: FileClock,
-        subtitle: "Identify bookings still waiting for deposit confirmation.",
-        subtitleAr: "تحديد الحجوزات التي لا تزال بانتظار تأكيد العربون.",
-      },
-     
-      {
-        id: "payments-overdue",
-        labelKey: "sidebar.nav.overdueBalances",
-        label: "Overdue Balances",
-        labelAr: "الأرصدة المتأخرة",
-        href: "/payments/overdue",
-        icon: CreditCard,
-        subtitle: "Review overdue balances and follow-up collection activity.",
-        subtitleAr: "مراجعة الأرصدة المتأخرة ومتابعة التحصيل.",
-      },
-    ],
-  },*/
+
   {
     id: "reports",
     labelKey: "sidebar.nav.reports",
@@ -396,7 +219,7 @@ export const navigationItems: NavigationItem[] = [
         label: "Booking Analytics",
         labelAr: "تحليلات الحجوزات",
         href: "/reports/bookings",
-        icon: BarChart3,
+        icon: CalendarRange,
         subtitle: "Analyze conversion, booking volume, and seasonal demand.",
         subtitleAr: "تحليل التحويلات وحجم الحجوزات والطلب الموسمي.",
       },
@@ -406,7 +229,7 @@ export const navigationItems: NavigationItem[] = [
         label: "Resource Utilization",
         labelAr: "استخدام الموارد",
         href: "/reports/utilization",
-        icon: ClipboardCheck,
+        icon: ChartColumnBig,
         subtitle:
           "Measure hall, staff, and inventory utilization across events.",
         subtitleAr: "قياس استخدام القاعات والموظفين والمخزون عبر الفعاليات.",
@@ -424,7 +247,7 @@ export const navigationItems: NavigationItem[] = [
         label: "Team Roles",
         labelAr: "أدوار الفريق",
         href: "/settings/team",
-        icon: UsersRound,
+        icon: UserCog,
         subtitle:
           "Configure access levels, coordinators, and team responsibilities.",
         subtitleAr: "إعداد مستويات الوصول والمنسقين ومسؤوليات الفريق.",
@@ -445,7 +268,7 @@ if (settingsTeamItem) {
       label: "Users",
       labelAr: "المستخدمون",
       href: "/settings/team/users",
-      icon: UsersRound,
+      icon: Users,
       subtitle: "Manage system users, status, and assigned roles.",
       subtitleAr: "إدارة المستخدمين والحالة والأدوار المسندة.",
     },
@@ -458,6 +281,17 @@ if (settingsTeamItem) {
       icon: ShieldCheck,
       subtitle: "Configure role definitions and permission bundles.",
       subtitleAr: "إعداد تعريفات الأدوار وحزم الصلاحيات.",
+    },
+    {
+      id: "settings-team-venues",
+      labelKey: "sidebar.nav.venues",
+      label: "Venues",
+      labelAr: "\u0627\u0644\u0642\u0627\u0639\u0627\u062a",
+      href: "/settings/venues",
+      icon: Building2,
+      subtitle: "Manage wedding halls, venue contacts, and location readiness.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0648\u0627\u0642\u0639.",
     },
   ];
 }

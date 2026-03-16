@@ -19,6 +19,11 @@ export type CalendarEvent = {
   endAt: Date
   accent: 'gold' | 'rose' | 'emerald' | 'blue'
   conflict?: boolean
+  appointmentId?: number
+  leadId?: number
+  customerId?: number | null
+  meetingType?: string
+  guestCount?: number | null
 }
 
 export type CalendarSummary = {

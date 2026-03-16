@@ -6,14 +6,14 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { cn } from "@/lib/utils";
 
-const DESKTOP_SIDEBAR_EXPANDED = 272;
-const DESKTOP_SIDEBAR_COLLAPSED = 84;
+const DESKTOP_SIDEBAR_EXPANDED = 225;
+const DESKTOP_SIDEBAR_COLLAPSED = 70;
 const DESKTOP_BREAKPOINT = 1024;
 const HEADER_TOP_OFFSET = 0;
 const SIDEBAR_CONTENT_GAP = 20;
 const CONTENT_GUTTER = 0;
 const CONNECTED_EDGE_GUTTER = 0;
-const HEADER_FIXED_HEIGHT = 108;
+const HEADER_FIXED_HEIGHT = 96;
 const shellInset = "0px";
 
 function getIsMobile() {
@@ -90,10 +90,7 @@ export function AppShell() {
   };
   return (
     <div className="min-h-screen w-full bg-transparent text-white">
-      <div
-        className="relative w-full"
-        dir={isRtl ? "rtl" : "ltr"}
-      >
+      <div className="relative w-full" dir={isRtl ? "rtl" : "ltr"}>
         <div
           className={cn(
             "fixed top-0 z-[100] hidden h-screen overflow-visible transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:block",

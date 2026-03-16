@@ -81,20 +81,20 @@ export function AppHeader({
 
   return (
     <header
-      className="fixed z-[120] overflow-hidden backdrop-blur-xl"
+      className="fixed z-[120] overflow-hidden backdrop-blur-xl transition-[left,right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,right]"
       style={{
         ...fixedStyle,
         background: "var(--lux-shell-chrome-surface)",
       }}
     >
       <div
-        className="flex w-full items-center gap-3  px-3 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
+        className="flex w-full items-center gap-2.5 px-3 py-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
         style={{
           background: "var(--lux-shell-chrome-elevated)",
         }}
       >
         <Button
-          className="h-12 w-12 rounded-[18px]"
+          className="h-11 w-11 rounded-[17px]"
           size="icon"
           type="button"
           variant="secondary"
@@ -107,7 +107,7 @@ export function AppHeader({
         >
           <Menu
             className={cn(
-              "h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "h-3.5 w-3.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               !isMobile && !sidebarOpen && "rotate-180",
             )}
           />
@@ -116,8 +116,8 @@ export function AppHeader({
         <div className="flex-1">
           <SearchInput
             className="mx-auto max-w-[640px]"
-            iconClassName="text-[var(--lux-shell-chrome-muted)]"
-            inputClassName="border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]"
+            iconClassName="h-3.5 w-3.5 text-[var(--lux-shell-chrome-muted)]"
+            inputClassName="h-11 rounded-[20px] border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] pl-10 text-sm text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]"
           />
         </div>
 
@@ -126,7 +126,7 @@ export function AppHeader({
             aria-label={
               theme === "dark" ? t("common.lightMode") : t("common.darkMode")
             }
-            className="hidden h-12 w-12 items-center justify-center rounded-[18px] border text-[var(--lux-text)] sm:inline-flex"
+            className="hidden h-11 w-11 items-center justify-center rounded-[17px] border text-[var(--lux-text)] sm:inline-flex"
             style={{
               background: "var(--lux-shell-chrome-control)",
               borderColor: "var(--lux-shell-chrome-control-border)",
@@ -136,20 +136,20 @@ export function AppHeader({
             onClick={toggleTheme}
           >
             {theme === "dark" ? (
-              <SunMedium className="h-4 w-4" />
+              <SunMedium className="h-3.5 w-3.5" />
             ) : (
-              <MoonStar className="h-4 w-4" />
+              <MoonStar className="h-3.5 w-3.5" />
             )}
           </button>
           <div
-            className="hidden rounded-[18px] border p-1 sm:flex"
+            className="hidden rounded-[17px] border p-1 sm:flex"
             style={{
               background: "var(--lux-shell-chrome-control)",
               borderColor: "var(--lux-shell-chrome-control-border)",
             }}
           >
             <button
-              className={`rounded-[14px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] ${
+              className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "en"
                   ? "text-[var(--lux-shell-chrome-text)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
@@ -165,7 +165,7 @@ export function AppHeader({
               EN
             </button>
             <button
-              className={`rounded-[14px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] ${
+              className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "ar"
                   ? "text-[var(--lux-shell-chrome-text)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
@@ -188,7 +188,7 @@ export function AppHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="h-12 gap-3 rounded-[20px] px-3 md:px-4"
+                className="h-11 gap-3 rounded-[19px] px-3 md:px-3.5"
                 variant="secondary"
                 style={{
                   background: "var(--lux-shell-chrome-control)",
@@ -200,11 +200,11 @@ export function AppHeader({
                   <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left md:block">
-                  <p className="text-sm font-semibold text-[var(--lux-shell-chrome-text)]">
+                  <p className="text-sm font-semibold leading-none text-[var(--lux-shell-chrome-text)]">
                     {displayName}
                   </p>
                   {displaySubtitle ? (
-                    <p className="text-xs text-[var(--lux-shell-chrome-muted)]">
+                    <p className="mt-1 text-xs leading-none text-[var(--lux-shell-chrome-muted)]">
                       {displaySubtitle}
                     </p>
                   ) : null}
@@ -237,7 +237,7 @@ type IconActionProps = {
 function IconAction({ icon: Icon, badge }: IconActionProps) {
   return (
     <Button
-      className="relative h-12 w-12 rounded-[18px]"
+      className="relative h-11 w-11 rounded-[17px]"
       size="icon"
       variant="secondary"
       style={{
@@ -246,7 +246,7 @@ function IconAction({ icon: Icon, badge }: IconActionProps) {
         color: "var(--lux-shell-chrome-text)",
       }}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-3.5 w-3.5" />
       {badge ? (
         <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c88f54] px-1 text-[10px] font-bold text-white shadow-[0_6px_14px_rgba(200,143,84,0.3)]">
           {badge}

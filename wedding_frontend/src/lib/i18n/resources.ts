@@ -40,9 +40,11 @@ export const resources = {
           loginSuccessTitle: "Signed in",
           loginSuccessDescription: "You are now connected to your workspace.",
           loginErrorTitle: "Sign in failed",
-          loginErrorDescription: "Unable to sign in with the provided credentials.",
+          loginErrorDescription:
+            "Unable to sign in with the provided credentials.",
           logoutSuccessTitle: "Signed out",
-          logoutSuccessDescription: "Your session has been closed successfully.",
+          logoutSuccessDescription:
+            "Your session has been closed successfully.",
           logoutErrorTitle: "Sign out failed",
           logoutErrorDescription: "Unable to sign out right now.",
         },
@@ -77,7 +79,8 @@ export const resources = {
         workspace: "Premium Signature Workspace",
         nav: {
           dashboard: "Dashboard",
-          calendar: "Calendar",
+          Secretarial: "Secretarial",
+          calendars: "Calendars",
           leads: "Leads",
           customers: "Customers",
           quotations: "Quotations",
@@ -173,8 +176,10 @@ export const resources = {
         selectBooking: "Select a booking",
         selectBookingDescription:
           "Tap any event in the calendar to inspect details and next actions.",
-        conflictCount_one: "{{count}} event has overlap warnings in the current view.",
-        conflictCount_other: "{{count}} events have overlap warnings in the current view.",
+        conflictCount_one:
+          "{{count}} event has overlap warnings in the current view.",
+        conflictCount_other:
+          "{{count}} events have overlap warnings in the current view.",
         scheduleWindow: "Schedule Window",
         noBookingsForDay: "No bookings on {{date}}",
         noBookingsForDayDescription:
@@ -188,6 +193,19 @@ export const resources = {
           "Amber Hall has an overlap between stage rigging and lighting prep on the same evening.",
         noticeTwo:
           "Pearl Ballroom hits a dense load later this month with two premium receptions in one week.",
+      },
+      venues: {
+        title: "Venues",
+        totalVenues: "total venues",
+        searchPlaceholder: "Search venues by name, city, area, or contact...",
+        create: "Create Venue",
+        statusFilter: "Status Filter",
+        allStatuses: "All Venues",
+        activeOnly: "Active Only",
+        inactiveOnly: "Inactive Only",
+        listTitle: "Venues List",
+        deleteTitle: "Delete Venue",
+        deleteMessage: "Are you sure you want to delete this venue?",
       },
     },
   },
@@ -268,7 +286,9 @@ export const resources = {
         workspace: "مساحة العمل المميزة",
         nav: {
           dashboard: "لوحة التحكم",
-          calendar: "التقويم",
+          Secretarial: "سكرتارية",
+          calendars: "المواعيد",
+
           leads: "العملاء المحتملون",
           customers: "العملاء",
           quotations: "عروض الأسعار",
@@ -379,6 +399,20 @@ export const resources = {
           "توجد ملاحظة تعارض في قاعة أمبر بين تجهيز المسرح والتحضير للإضاءة في نفس المساء.",
         noticeTwo:
           "قاعة بيرل مزدحمة لاحقًا هذا الشهر مع حفلتي استقبال مميزتين في أسبوع واحد.",
+      },
+      venues: {
+        title: "المواقع",
+        totalVenues: "إجمالي المواقع",
+        searchPlaceholder:
+          "البحث عن المواقع بالاسم، المدينة، المنطقة، أو جهة الاتصال...",
+        create: "إضافة موقع",
+        statusFilter: "تصفية الحالة",
+        allStatuses: "جميع المواقع",
+        activeOnly: "النشطة فقط",
+        inactiveOnly: "غير النشطة فقط",
+        listTitle: "قائمة المواقع",
+        deleteTitle: "حذف الموقع",
+        deleteMessage: "هل أنت متأكد من حذف هذا الموقع؟",
       },
     },
   },

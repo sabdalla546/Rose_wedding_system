@@ -1,4 +1,4 @@
-import { isSameDay, startOfToday } from 'date-fns'
+import { isSameDay, startOfDay, startOfToday } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -7,13 +7,15 @@ import {
   isCalendarDayMuted,
 } from '@/features/calendar/calendar-helpers'
 import { cn, formatLocalized, formatTimeLabel } from '@/lib/utils'
-import type { CalendarEvent } from '@/types/calendar'
+import type { CalendarEvent, CalendarView } from '@/types/calendar'
 
 type MonthViewProps = {
   currentDate: Date
   events: CalendarEvent[]
   selectedEventId: string | null
   onSelectEvent: (event: CalendarEvent) => void
+  viewMode?: Extract<CalendarView, 'month' | 'week' | 'day'>
+  visibleDays?: Date[]
 }
 
 export function MonthView({
@@ -21,22 +23,34 @@ export function MonthView({
   events,
   selectedEventId,
   onSelectEvent,
+  viewMode = 'month',
+  visibleDays,
 }: MonthViewProps) {
   const { t } = useTranslation()
   const today = startOfToday()
-  const weeks = buildMonthGrid(currentDate)
-  const weekdayLabels = weeks[0] ?? []
+  const monthMatrix = buildMonthGrid(currentDate)
+  const weeks = getVisibleWeeks(monthMatrix, currentDate, viewMode, visibleDays)
+  const weekdayLabels =
+    viewMode === 'day' ? [startOfDay(currentDate)] : weeks[0] ?? []
+  const columnsClassName =
+    viewMode === 'day' || visibleDays?.length === 1 ? 'grid-cols-1' : 'grid-cols-7'
+  const rowClassName = cn('grid gap-3', columnsClassName)
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-7 gap-3 px-1 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
+      <div
+        className={cn(
+          'grid gap-3 px-1 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]',
+          columnsClassName,
+        )}
+      >
         {weekdayLabels.map((day) => (
           <span key={day.toISOString()}>{formatLocalized(day, 'EE')}</span>
         ))}
       </div>
       <div className="space-y-3">
         {weeks.map((week) => (
-          <div className="grid gap-3 md:grid-cols-7" key={week[0].toISOString()}>
+          <div className={rowClassName} key={week[0].toISOString()}>
             {week.map((day) => {
               const dayEvents = getEventsForDay(events, day)
               const remaining = dayEvents.length - 3
@@ -47,7 +61,7 @@ export function MonthView({
                   className={cn(
                     'min-h-[168px] rounded-[24px] border p-3 transition',
                     isToday && 'border-[var(--lux-gold-border)] bg-[rgba(212,175,55,0.07)]',
-                    isCalendarDayMuted(currentDate, day) && 'opacity-45',
+                    !visibleDays && isCalendarDayMuted(currentDate, day) && 'opacity-45',
                   )}
                   key={day.toISOString()}
                   style={
@@ -119,4 +133,40 @@ export function MonthView({
       </div>
     </div>
   )
+}
+
+function getVisibleWeeks(
+  monthMatrix: Date[][],
+  currentDate: Date,
+  viewMode: Extract<CalendarView, 'month' | 'week' | 'day'>,
+  visibleDays?: Date[],
+) {
+  if (visibleDays?.length) {
+    if (visibleDays.length === 1) {
+      return [visibleDays]
+    }
+
+    const rows: Date[][] = []
+
+    for (let index = 0; index < visibleDays.length; index += 7) {
+      rows.push(visibleDays.slice(index, index + 7))
+    }
+
+    return rows
+  }
+
+  if (viewMode === 'month') {
+    return monthMatrix
+  }
+
+  if (viewMode === 'day') {
+    return [[startOfDay(currentDate)]]
+  }
+
+  const activeWeek =
+    monthMatrix.find((week) => week.some((day) => isSameDay(day, currentDate))) ??
+    monthMatrix[0] ??
+    []
+
+  return activeWeek.length ? [activeWeek] : []
 }

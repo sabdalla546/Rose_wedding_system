@@ -1,41 +1,38 @@
-// src/controllers/auth.controller.ts
 import { Request, Response } from "express";
-import { User, RefreshToken, Role, Permission } from "../models";
-import {
-  hashPassword,
-  comparePassword,
-  hashToken,
-  compareToken,
-} from "../utils/password";
+import { Op } from "sequelize";
+import { ZodError } from "zod";
+import { env } from "../config/env";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { RefreshToken, Role, User } from "../models";
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
 } from "../utils/jwt";
+import {
+  comparePassword,
+  compareToken,
+  hashPassword,
+  hashToken,
+} from "../utils/password";
 import { loginSchema, registerSchema } from "../validation/auth.schemas";
-import { ZodError } from "zod";
-import { Op } from "sequelize";
-import { env } from "../config/env";
-import { AuthRequest } from "../middleware/auth.middleware";
 
 const isProd = env.nodeEnv === "production";
+const BCRYPT_HASH_PREFIX = /^\$2[aby]\$\d{2}\$/;
 
 const setAuthCookies = (
   res: Response,
   accessToken: string,
   refreshToken: string
 ) => {
-  // Access Token Cookie
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: isProd,
     sameSite: "lax",
     path: "/",
     maxAge: 20 * 60 * 1000,
-    // تقدر تضيف maxAge هنا لو حابب تحسبها
   });
 
-  // Refresh Token Cookie
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: isProd,
@@ -43,6 +40,66 @@ const setAuthCookies = (
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
+};
+
+const clearAuthCookies = (res: Response) => {
+  res.clearCookie("accessToken", { path: "/" });
+  res.clearCookie("refreshToken", { path: "/" });
+};
+
+const storeRefreshToken = async (userId: number, refreshTokenValue: string) => {
+  const payload = verifyRefreshToken(refreshTokenValue);
+
+  if (!payload.exp) {
+    throw new Error("Refresh token is missing exp");
+  }
+
+  const refreshTokenHash = await hashToken(refreshTokenValue);
+
+  return RefreshToken.create({
+    userId,
+    token: refreshTokenHash,
+    expiresAt: new Date(payload.exp * 1000),
+  });
+};
+
+const matchesStoredRefreshToken = async (
+  refreshTokenValue: string,
+  storedTokenValue: string
+) => {
+  if (storedTokenValue === refreshTokenValue) {
+    return true;
+  }
+
+  if (!BCRYPT_HASH_PREFIX.test(storedTokenValue)) {
+    return false;
+  }
+
+  return compareToken(refreshTokenValue, storedTokenValue);
+};
+
+const findRefreshTokenRecord = async (
+  userId: number,
+  refreshTokenValue: string
+) => {
+  const activeTokens = await RefreshToken.findAll({
+    where: {
+      userId,
+      revoked: false,
+      expiresAt: {
+        [Op.gt]: new Date(),
+      },
+    },
+    order: [["createdAt", "DESC"]],
+  });
+
+  for (const record of activeTokens) {
+    if (await matchesStoredRefreshToken(refreshTokenValue, record.token)) {
+      return record;
+    }
+  }
+
+  return null;
 };
 
 export const register = async (req: Request, res: Response) => {
@@ -62,7 +119,6 @@ export const register = async (req: Request, res: Response) => {
       fullName: data.fullName,
     });
 
-    // ممكن تعطيه role افتراضي "user"
     const defaultRole = await Role.findOne({ where: { name: "user" } });
     if (defaultRole) {
       await (user as any).$add("Roles", defaultRole.id);
@@ -101,17 +157,7 @@ export const login = async (req: Request, res: Response) => {
     const accessToken = signAccessToken({ userId: user.id });
     const refreshTokenValue = signRefreshToken({ userId: user.id });
 
-    const decoded: any = verifyRefreshToken(refreshTokenValue);
-
-    // نخزن refresh token بشكل مشفّر (hashed)
-    // const refreshTokenHash = await hashToken(refreshTokenValue);
-
-    await RefreshToken.create({
-      userId: user.id,
-      token: refreshTokenValue, // ✅ خزنها كما هي
-      expiresAt: new Date(decoded.exp * 1000),
-    });
-    // نضبط الكوكيز
+    await storeRefreshToken(user.id, refreshTokenValue);
     setAuthCookies(res, accessToken, refreshTokenValue);
 
     return res.json({
@@ -125,29 +171,45 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
-// src/controllers/auth.controller.ts
+
 export const refreshToken = async (req: Request, res: Response) => {
   const cookies = (req as any).cookies as Record<string, string> | undefined;
   const tokenFromBody = (req.body && req.body.refreshToken) || undefined;
   const tokenFromCookie = cookies?.refreshToken;
+  const refreshTokenValue = tokenFromBody || tokenFromCookie;
 
-  const refreshToken = tokenFromBody || tokenFromCookie;
-
-  if (!refreshToken) {
+  if (!refreshTokenValue) {
     return res
       .status(400)
       .json({ message: req.t("auth.missing_refresh_token") });
   }
 
   try {
-    // فقط تأكد إن الـ JWT بتاع refresh صالح
-    const payload = verifyRefreshToken(refreshToken);
+    const payload = verifyRefreshToken(refreshTokenValue);
+    const existingTokenRecord = await findRefreshTokenRecord(
+      payload.userId,
+      refreshTokenValue
+    );
 
-    // أصدر access + refresh جديدين
+    if (!existingTokenRecord) {
+      clearAuthCookies(res);
+      return res
+        .status(401)
+        .json({ message: req.t("auth.invalid_refresh_token") });
+    }
+
     const newAccessToken = signAccessToken({ userId: payload.userId });
     const newRefreshTokenValue = signRefreshToken({ userId: payload.userId });
+    const newRefreshTokenRecord = await storeRefreshToken(
+      payload.userId,
+      newRefreshTokenValue
+    );
 
-    // حدّث الكوكيز
+    await existingTokenRecord.update({
+      revoked: true,
+      replacedByToken: newRefreshTokenRecord.token,
+    });
+
     setAuthCookies(res, newAccessToken, newRefreshTokenValue);
 
     return res.json({
@@ -155,6 +217,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       refreshToken: newRefreshTokenValue,
     });
   } catch (err) {
+    clearAuthCookies(res);
     return res
       .status(401)
       .json({ message: req.t("auth.invalid_refresh_token") });
@@ -169,7 +232,6 @@ export const logout = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: req.t("auth.unauthorized") });
     }
 
-    // revoke كل الـ refresh tokens الخاصة باليوزر
     await RefreshToken.update(
       {
         revoked: true,
@@ -183,21 +245,19 @@ export const logout = async (req: AuthRequest, res: Response) => {
       }
     );
 
-    // مسح الكوكيز
-    res.clearCookie("accessToken", { path: "/" });
-    res.clearCookie("refreshToken", { path: "/" });
+    clearAuthCookies(res);
 
     return res.json({ message: req.t("auth.logged_out") });
   } catch (err) {
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
+
 export const me = async (req: AuthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: req.t("auth.unauthorized") });
   }
 
-  // ممكن ترجع بيانات إضافية من جدول users لو حابب
   const user = await User.findByPk(req.user.id, {
     attributes: ["id", "email", "fullName", "isActive", "createdAt"],
     include: [Role],

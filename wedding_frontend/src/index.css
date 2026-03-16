@@ -75,36 +75,36 @@
   :root[data-theme='light'] {
     color-scheme: light;
 
-    --background: 28 26% 96%;
-    --foreground: 238 22% 24%;
-    --card: 0 0% 100%;
-    --card-foreground: 238 22% 24%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 238 22% 24%;
+    --background: 220 12% 93%;
+    --foreground: 0 0% 8%;
+    --card: 220 14% 95%;
+    --card-foreground: 0 0% 8%;
+    --popover: 220 14% 95%;
+    --popover-foreground: 0 0% 8%;
     --primary: 341 63% 63%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 25 23% 96%;
-    --secondary-foreground: 238 22% 24%;
-    --muted: 25 23% 96%;
-    --muted-foreground: 234 12% 47%;
-    --accent: 25 23% 96%;
-    --accent-foreground: 238 22% 24%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 0 0% 20%;
+    --accent: 220 14% 95%;
+    --accent-foreground: 0 0% 8%;
     --border: 236 15% 86%;
-    --input: 0 0% 100%;
+    --input: 220 14% 95%;
     --ring: 341 63% 63%;
 
-    --lux-background: #f6f2ef;
-    --lux-sidebar: #f3edeb;
-    --lux-card: #ffffff;
-    --lux-elevated: #ffffff;
-    --lux-text: #313246;
-    --lux-text-secondary: #6e7084;
-    --lux-text-muted: #9a9baa;
+    --lux-background: #edf0f3;
+    --lux-sidebar: #e7ebef;
+    --lux-card: #f2f4f7;
+    --lux-elevated: #f0f2f5;
+    --lux-text: #111111;
+    --lux-text-secondary: #222222;
+    --lux-text-muted: #4a4a4a;
     --lux-gold: #e06a92;
     --lux-gold-soft: #c94f7d;
     --lux-gold-border: rgba(224, 106, 146, 0.28);
     --lux-gold-glow: rgba(224, 106, 146, 0.2);
-    --lux-shell-surface: #f6f2ef;
+    --lux-shell-surface: #eceff3;
     --lux-shell-chrome-surface:
       radial-gradient(circle at top right, rgba(224, 106, 146, 0.14), transparent 34%),
       linear-gradient(180deg, rgba(16, 12, 17, 0.98), rgba(8, 8, 10, 0.96));
@@ -117,17 +117,17 @@
     --lux-shell-chrome-text: #f6dce5;
     --lux-shell-chrome-muted: #c6a8b6;
     --lux-shell-border: rgba(224, 106, 146, 0.12);
-    --lux-panel-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 246, 245, 0.98));
-    --lux-panel-border: rgba(49, 50, 70, 0.08);
-    --lux-panel-shadow: 0 18px 40px rgba(49, 50, 70, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    --lux-row-surface: rgba(255, 255, 255, 0.96);
-    --lux-row-border: rgba(49, 50, 70, 0.08);
-    --lux-control-surface: rgba(255, 255, 255, 0.96);
-    --lux-control-border: rgba(49, 50, 70, 0.08);
+    --lux-panel-surface: linear-gradient(180deg, rgba(246, 248, 250, 0.98), rgba(237, 240, 244, 0.98));
+    --lux-panel-border: rgba(17, 17, 17, 0.08);
+    --lux-panel-shadow: 0 18px 40px rgba(17, 17, 17, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    --lux-row-surface: rgba(243, 245, 248, 0.96);
+    --lux-row-border: rgba(17, 17, 17, 0.08);
+    --lux-control-surface: rgba(241, 244, 247, 0.96);
+    --lux-control-border: rgba(17, 17, 17, 0.08);
     --lux-control-hover: rgba(224, 106, 146, 0.12);
-    --lux-heading: #313246;
-    --lux-soft-text: #44475f;
-    --lux-strong-text: #313246;
+    --lux-heading: #111111;
+    --lux-soft-text: #1f1f1f;
+    --lux-strong-text: #111111;
     --lux-sidebar-active-bg: linear-gradient(180deg, #d9678f, #b84e74);
     --lux-sidebar-active-text: #fff8fa;
     --lux-badge-surface: linear-gradient(180deg, #df6d95, #bf5378);
@@ -165,7 +165,7 @@
     background-image:
       radial-gradient(circle at top left, rgba(207, 127, 144, 0.12), transparent 26%),
       radial-gradient(circle at top right, rgba(224, 157, 102, 0.12), transparent 24%),
-      linear-gradient(180deg, #f7f3f1 0%, #f4f0ed 48%, #f8f5f3 100%);
+      linear-gradient(180deg, #eef1f4 0%, #e7ebef 48%, #f1f4f7 100%);
   }
 
   body::before {
