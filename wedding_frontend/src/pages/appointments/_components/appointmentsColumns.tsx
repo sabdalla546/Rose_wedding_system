@@ -102,7 +102,9 @@ export const useAppointmentsColumns = ({
       ),
       cell: ({ row }) => (
         <div className={alignClass}>
-          {formatMeetingType(row.original.meetingType)}
+          {t(`appointments.meetingTypeOptions.${row.original.meetingType}`, {
+            defaultValue: formatMeetingType(row.original.meetingType),
+          })}
         </div>
       ),
     },
@@ -114,7 +116,10 @@ export const useAppointmentsColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className={alignClass}>{row.original.assignedUserDisplay}</div>
+        <div className={alignClass}>
+          {row.original.assignedToUser?.fullName ||
+            t("appointments.unassigned", { defaultValue: "Unassigned" })}
+        </div>
       ),
     },
     {

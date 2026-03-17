@@ -22,7 +22,8 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   setCurrentPage,
   showMeta = true,
 }) => {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === "ar";
 
   return (
     <div
@@ -42,7 +43,14 @@ const TableHeader: React.FC<TableHeaderProps> = ({
             totalItems !== undefined &&
             currentCount !== undefined && (
               <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
-                {t("users.showing")} {currentCount} {t("users.of")} {totalItems}{" "}
+                {t("common.showing", {
+                  defaultValue: isArabic ? "عرض" : "Showing",
+                })}{" "}
+                {currentCount}{" "}
+                {t("common.of", {
+                  defaultValue: isArabic ? "من" : "of",
+                })}{" "}
+                {totalItems}{" "}
                 {entityName}
               </p>
             )}
@@ -54,7 +62,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
             htmlFor="itemsPerPageTop"
             className="text-sm text-[var(--lux-text-secondary)]"
           >
-            {t("users.items_per_page")}:
+            {t("common.itemsPerPage", {
+              defaultValue: isArabic ? "العناصر لكل صفحة" : "Items per page",
+            })}
+            :
           </label>
           <select
             id="itemsPerPageTop"

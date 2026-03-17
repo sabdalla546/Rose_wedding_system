@@ -69,7 +69,13 @@ export function QuickViewPanel({ event, onView, onEdit }: QuickViewPanelProps) {
         <InfoBlock
           icon={NotebookText}
           label={t('appointments.meetingType', { defaultValue: 'Meeting Type' })}
-          value={event.packageName}
+          value={
+            event.meetingType
+              ? t(`appointments.meetingTypeOptions.${event.meetingType}`, {
+                  defaultValue: event.packageName,
+                })
+              : event.packageName
+          }
         />
         <InfoBlock
           icon={UsersRound}
@@ -90,7 +96,7 @@ export function QuickViewPanel({ event, onView, onEdit }: QuickViewPanelProps) {
           {t('common.notes')}
         </p>
         <p className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm leading-6 text-[var(--lux-text-secondary)]">
-          {event.notes}
+          {event.notes || t('appointments.noNotes', { defaultValue: 'No notes added.' })}
         </p>
       </div>
 

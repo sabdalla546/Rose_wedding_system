@@ -28,6 +28,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+  SearchableSelect,
+  SearchableSelectEmpty,
+  SearchableSelectItem,
+} from "@/components/ui/searchable-select";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -342,6 +347,84 @@ function SelectField({
   );
 }
 
+function SearchableSelectField({
+  control,
+  name,
+  label,
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
+  options,
+  emptyLabel,
+  required,
+  disabled,
+}: {
+  control: Control<AppointmentFormValues>;
+  name: keyof AppointmentFormValues;
+  label: string;
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  options: Array<{ value: string; label: string }>;
+  emptyLabel?: string;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredOptions = useMemo(
+    () =>
+      options.filter((option) =>
+        option.label.toLowerCase().includes(searchTerm.trim().toLowerCase()),
+      ),
+    [options, searchTerm],
+  );
+
+  return (
+    <FormField
+      control={control}
+      name={name as any}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            {label}
+            {required ? <RequiredMark /> : null}
+          </FormLabel>
+          <SearchableSelect
+            value={field.value || EMPTY_VALUE}
+            onValueChange={(value) =>
+              field.onChange(value === EMPTY_VALUE ? "" : value)
+            }
+            onSearch={setSearchTerm}
+            placeholder={placeholder}
+            searchPlaceholder={searchPlaceholder}
+            emptyMessage={emptyMessage}
+            disabled={disabled}
+            allowClear={Boolean(field.value) && !required && !disabled}
+            onClear={() => field.onChange("")}
+            triggerClassName="h-10 rounded-2xl border px-3 text-sm"
+          >
+            {emptyLabel ? (
+              <SearchableSelectItem value={EMPTY_VALUE}>
+                {emptyLabel}
+              </SearchableSelectItem>
+            ) : null}
+            {filteredOptions.length === 0 ? (
+              <SearchableSelectEmpty message={emptyMessage} />
+            ) : (
+              filteredOptions.map((option) => (
+                <SearchableSelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SearchableSelectItem>
+              ))
+            )}
+          </SearchableSelect>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 function ModeButton({
   active,
   icon,
@@ -383,6 +466,7 @@ function ModeButton({
 const AppointmentFormPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const isArabic = i18n.language === "ar";
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isEditMode = Boolean(id);
@@ -709,7 +793,7 @@ const AppointmentFormPage = () => {
                             defaultValue: "Expected guests",
                           })}
                         />
-                        <SelectField
+                        <SearchableSelectField
                           control={form.control}
                           name="leadVenueId"
                           label={t("appointments.prospectVenue", {
@@ -717,6 +801,14 @@ const AppointmentFormPage = () => {
                           })}
                           placeholder={t("appointments.selectVenue", {
                             defaultValue: "Select venue",
+                          })}
+                          searchPlaceholder={t("appointments.searchVenue", {
+                            defaultValue: isArabic
+                              ? "ابحث عن قاعة..."
+                              : "Search venues...",
+                          })}
+                          emptyMessage={t("common.noResultsTitle", {
+                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
                           })}
                           emptyLabel={t("appointments.noVenueSelected", {
                             defaultValue: "No venue selected",
@@ -770,12 +862,20 @@ const AppointmentFormPage = () => {
                           defaultValue: "Choose the lead that this appointment belongs to.",
                         })}
                       />
-                      <SelectField
-                        control={form.control}
-                        name="leadId"
+                        <SearchableSelectField
+                          control={form.control}
+                          name="leadId"
                         label={t("appointments.lead", { defaultValue: "Lead" })}
                         placeholder={t("appointments.selectLead", {
                           defaultValue: "Select lead",
+                        })}
+                        searchPlaceholder={t("appointments.searchLead", {
+                          defaultValue: isArabic
+                            ? "ابحث عن عميل محتمل..."
+                            : "Search leads...",
+                        })}
+                        emptyMessage={t("common.noResultsTitle", {
+                          defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
                         })}
                         options={leads.map((lead) => ({
                           value: String(lead.id),
@@ -804,12 +904,20 @@ const AppointmentFormPage = () => {
                         label={t("appointments.date", { defaultValue: "Appointment Date" })}
                         required
                       />
-                      <SelectField
+                      <SearchableSelectField
                         control={form.control}
                         name="assignedToUserId"
                         label={t("appointments.assignedTo", { defaultValue: "Assigned To" })}
                         placeholder={t("appointments.selectUser", {
                           defaultValue: "Select team member",
+                        })}
+                        searchPlaceholder={t("appointments.searchUsers", {
+                          defaultValue: isArabic
+                            ? "ابحث عن مستخدم..."
+                            : "Search users...",
+                        })}
+                        emptyMessage={t("common.noResultsTitle", {
+                          defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
                         })}
                         emptyLabel={t("appointments.unassigned", {
                           defaultValue: "Unassigned",
@@ -839,11 +947,13 @@ const AppointmentFormPage = () => {
                         placeholder={t("appointments.selectMeetingType", {
                           defaultValue: "Select meeting type",
                         })}
-                        options={APPOINTMENT_MEETING_TYPE_OPTIONS.map((item) => ({
-                          value: item.value,
-                          label: item.label,
-                        }))}
-                      />
+                options={APPOINTMENT_MEETING_TYPE_OPTIONS.map((item) => ({
+                  value: item.value,
+                  label: t(`appointments.meetingTypeOptions.${item.value}`, {
+                    defaultValue: item.label,
+                  }),
+                }))}
+              />
                       {isEditMode ? (
                         <SelectField
                           control={form.control}
@@ -852,11 +962,13 @@ const AppointmentFormPage = () => {
                           placeholder={t("appointments.selectStatus", {
                             defaultValue: "Select status",
                           })}
-                          options={APPOINTMENT_STATUS_OPTIONS.map((item) => ({
-                            value: item.value,
-                            label: item.label,
-                          }))}
-                        />
+                options={APPOINTMENT_STATUS_OPTIONS.map((item) => ({
+                  value: item.value,
+                  label: t(`appointments.status.${item.value}`, {
+                    defaultValue: item.label,
+                  }),
+                }))}
+              />
                       ) : null}
                     </div>
                   </section>

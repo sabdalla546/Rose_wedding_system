@@ -16,8 +16,10 @@ import type {
 
 function useAppointmentActionMutation<TPayload>(
   endpointBuilder: (id: number) => string,
-  successMessage: string,
-  failureMessage: string,
+  successMessageKey: string,
+  successMessageDefault: string,
+  failureMessageKey: string,
+  failureMessageDefault: string,
 ) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -34,7 +36,9 @@ function useAppointmentActionMutation<TPayload>(
     onSuccess: (_res, variables) => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
-        description: successMessage,
+        description: t(successMessageKey, {
+          defaultValue: successMessageDefault,
+        }),
       });
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -48,7 +52,12 @@ function useAppointmentActionMutation<TPayload>(
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),
-        description: getApiErrorMessage(error, failureMessage),
+        description: getApiErrorMessage(
+          error,
+          t(failureMessageKey, {
+            defaultValue: failureMessageDefault,
+          }),
+        ),
       });
     },
   });
@@ -57,21 +66,27 @@ function useAppointmentActionMutation<TPayload>(
 export const useConfirmAppointment = () =>
   useAppointmentActionMutation<ConfirmAppointmentData>(
     (id) => `/appointments/${id}/confirm`,
+    "appointments.toast.confirmed",
     "Appointment confirmed successfully",
+    "appointments.toast.confirmFailed",
     "Failed to confirm appointment",
   );
 
 export const useCompleteAppointment = () =>
   useAppointmentActionMutation<CompleteAppointmentData>(
     (id) => `/appointments/${id}/complete`,
+    "appointments.toast.completed",
     "Appointment completed successfully",
+    "appointments.toast.completeFailed",
     "Failed to complete appointment",
   );
 
 export const useCancelAppointment = () =>
   useAppointmentActionMutation<CancelAppointmentData>(
     (id) => `/appointments/${id}/cancel`,
+    "appointments.toast.cancelled",
     "Appointment cancelled successfully",
+    "appointments.toast.cancelFailed",
     "Failed to cancel appointment",
   );
 
@@ -85,7 +100,9 @@ export const useRescheduleAppointment = () => {
     nextStep?: string;
   }>(
     (id) => `/appointments/${id}/reschedule`,
+    "appointments.toast.rescheduled",
     "Appointment rescheduled successfully",
+    "appointments.toast.rescheduleFailed",
     "Failed to reschedule appointment",
   );
 

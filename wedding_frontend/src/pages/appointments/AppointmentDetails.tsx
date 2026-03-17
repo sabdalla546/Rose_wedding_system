@@ -94,7 +94,9 @@ const AppointmentDetailsPage = () => {
                     <AppointmentStatusBadge status={appointment.status} />
                   </div>
                   <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {formatMeetingType(appointment.meetingType)}
+                    {t(`appointments.meetingTypeOptions.${appointment.meetingType}`, {
+                      defaultValue: formatMeetingType(appointment.meetingType),
+                    })}
                   </p>
                 </div>
               </div>
@@ -153,7 +155,16 @@ const AppointmentDetailsPage = () => {
                 <DetailItem label={t("appointments.lead", { defaultValue: "Lead" })} value={appointment.lead?.fullName} />
                 <DetailItem label={t("common.venue", { defaultValue: "Venue" })} value={appointment.lead?.venue?.name || appointment.lead?.venueNameSnapshot} />
                 <DetailItem label={t("appointments.leadMobile", { defaultValue: "Lead Mobile" })} value={appointment.lead?.mobile} />
-                <DetailItem label={t("appointments.leadStatus", { defaultValue: "Lead Status" })} value={appointment.lead?.status} />
+                <DetailItem
+                  label={t("appointments.leadStatus", { defaultValue: "Lead Status" })}
+                  value={
+                    appointment.lead?.status
+                      ? t(`leads.status.${appointment.lead.status}`, {
+                          defaultValue: appointment.lead.status,
+                        })
+                      : undefined
+                  }
+                />
               </CardContent>
             </Card>
 
@@ -163,7 +174,12 @@ const AppointmentDetailsPage = () => {
                 <CardDescription>{t("appointments.outcomeHint", { defaultValue: "Meeting result, notes, and follow-up." })}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <DetailItem label={t("appointments.meetingType", { defaultValue: "Meeting Type" })} value={formatMeetingType(appointment.meetingType)} />
+                <DetailItem
+                  label={t("appointments.meetingType", { defaultValue: "Meeting Type" })}
+                  value={t(`appointments.meetingTypeOptions.${appointment.meetingType}`, {
+                    defaultValue: formatMeetingType(appointment.meetingType),
+                  })}
+                />
                 <DetailItem label={t("appointments.result", { defaultValue: "Result" })} value={appointment.result} />
                 <DetailItem label={t("appointments.nextStep", { defaultValue: "Next Step" })} value={appointment.nextStep} />
                 <DetailItem label={t("common.notes", { defaultValue: "Notes" })} value={appointment.notes} />
