@@ -199,6 +199,7 @@ export const useUpdateAppointment = (id?: string) => {
       navigate("/appointments");
     },
     onError: (error) => {
+      console.log(error)
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),

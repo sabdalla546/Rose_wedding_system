@@ -31,6 +31,10 @@ const buildCreateCustomerPayload = (values: CustomerFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeOptionalString(values.mobile2),
   email: normalizeOptionalString(values.email),
+
+  groomName: normalizeOptionalString(values.groomName),
+  brideName: normalizeOptionalString(values.brideName),
+
   weddingDate: normalizeOptionalString(values.weddingDate),
   guestCount: normalizeGuestCountForCreate(values.guestCount),
   venueId: values.venueId ? Number(values.venueId) : null,
@@ -45,6 +49,10 @@ const buildUpdateCustomerPayload = (values: CustomerFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeNullableString(values.mobile2),
   email: normalizeNullableString(values.email),
+
+  groomName: normalizeNullableString(values.groomName),
+  brideName: normalizeNullableString(values.brideName),
+
   weddingDate: normalizeNullableString(values.weddingDate),
   guestCount: normalizeGuestCountForUpdate(values.guestCount),
   venueId: values.venueId ? Number(values.venueId) : null,

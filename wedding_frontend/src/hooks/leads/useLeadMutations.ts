@@ -31,6 +31,10 @@ const buildCreateLeadPayload = (values: LeadFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeOptionalString(values.mobile2),
   email: normalizeOptionalString(values.email),
+
+  groomName: normalizeOptionalString(values.groomName),
+  brideName: normalizeOptionalString(values.brideName),
+
   weddingDate: values.weddingDate,
   guestCount: normalizeGuestCountForCreate(values.guestCount),
   venueId: values.venueId ? Number(values.venueId) : null,
@@ -45,6 +49,10 @@ const buildUpdateLeadPayload = (values: LeadFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeNullableString(values.mobile2),
   email: normalizeNullableString(values.email),
+
+  groomName: normalizeNullableString(values.groomName),
+  brideName: normalizeNullableString(values.brideName),
+
   weddingDate: values.weddingDate,
   guestCount: normalizeGuestCountForUpdate(values.guestCount),
   venueId: values.venueId ? Number(values.venueId) : null,

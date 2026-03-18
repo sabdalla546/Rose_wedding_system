@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { UserRoundSearch } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -99,27 +99,52 @@ const LeadFormPage = () => {
       notes: "",
     },
   });
+const watchedVenueId = useWatch({
+  control: form.control,
+  name: "venueId",
+});
 
+const watchedStatus = useWatch({
+  control: form.control,
+  name: "status",
+});
   useEffect(() => {
-    if (!isEditMode || !lead) {
-      return;
-    }
+  if (!isEditMode || !lead) {
+    return;
+  }
 
-    form.reset({
-      fullName: lead.fullName,
-      mobile: lead.mobile,
-      mobile2: lead.mobile2 ?? "",
-      email: lead.email ?? "",
-      groomName: lead.groomName ?? "",
-      brideName: lead.brideName ?? "",
-      weddingDate: lead.weddingDate,
-      guestCount: lead.guestCount ? String(lead.guestCount) : "",
-      venueId: lead.venueId ? String(lead.venueId) : "",
-      source: lead.source ?? "",
-      status: lead.status,
-      notes: lead.notes ?? "",
-    });
-  }, [form, isEditMode, lead]);
+  const normalizedVenueId =
+    lead.venueId !== null && typeof lead.venueId !== "undefined"
+      ? String(lead.venueId)
+      : "";
+
+  const normalizedStatus =
+    typeof lead.status === "string" && lead.status.trim()
+      ? (lead.status.trim() as LeadStatus)
+      : "new";
+
+  form.reset({
+    fullName: lead.fullName ?? "",
+    mobile: lead.mobile ?? "",
+    mobile2: lead.mobile2 ?? "",
+    email: lead.email ?? "",
+    groomName: lead.groomName ?? "",
+    brideName: lead.brideName ?? "",
+    weddingDate: lead.weddingDate ?? "",
+    guestCount:
+      lead.guestCount !== null && typeof lead.guestCount !== "undefined"
+        ? String(lead.guestCount)
+        : "",
+    venueId: normalizedVenueId,
+    source: lead.source ?? "",
+    status: normalizedStatus,
+    notes: lead.notes ?? "",
+  });
+
+  // force-set for Radix/react-hook-form async sync edge cases
+  form.setValue("venueId", normalizedVenueId, { shouldDirty: false });
+  form.setValue("status", normalizedStatus, { shouldDirty: false });
+}, [form, isEditMode, lead]);
 
   const onSubmit: SubmitHandler<LeadFormValues> = (values) => {
     const selectedVenue = venues.find(
@@ -420,49 +445,52 @@ const LeadFormPage = () => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="venueId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("common.venue", { defaultValue: "Venue" })}
-                            </FormLabel>
-                            <Select
-                              value={field.value || "none"}
-                              onValueChange={(value) =>
-                                field.onChange(value === "none" ? "" : value)
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={t("leads.venuePlaceholder", {
-                                      defaultValue: "Select venue",
-                                    })}
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  {t("leads.noVenue", {
-                                    defaultValue: "No venue selected",
-                                  })}
-                                </SelectItem>
-                                {venues.map((venue) => (
-                                  <SelectItem
-                                    key={venue.id}
-                                    value={String(venue.id)}
-                                  >
-                                    {venue.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+<FormField
+  control={form.control}
+  name="venueId"
+  render={({ field }) => {
+    const normalizedValue =
+      watchedVenueId && watchedVenueId.trim() ? watchedVenueId : "none";
+
+    return (
+      <FormItem>
+        <FormLabel>{t("common.venue", { defaultValue: "Venue" })}</FormLabel>
+        <Select
+          key={`lead-venue-${normalizedValue}-${venues.length}`}
+          value={normalizedValue}
+          onValueChange={(value) => {
+            const nextValue = value === "none" ? "" : value;
+            field.onChange(nextValue);
+            form.setValue("venueId", nextValue, { shouldDirty: true });
+          }}
+        >
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={t("leads.noVenue", {
+                  defaultValue: "No venue selected",
+                })}
+              />
+            </SelectTrigger>
+          </FormControl>
+
+          <SelectContent>
+            <SelectItem value="none">
+              {t("leads.noVenue", { defaultValue: "No venue selected" })}
+            </SelectItem>
+
+            {venues.map((venue) => (
+              <SelectItem key={venue.id} value={String(venue.id)}>
+                {venue.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
 
                       <FormField
                         control={form.control}
@@ -498,38 +526,51 @@ const LeadFormPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("leads.statusLabel", { defaultValue: "Status" })}
-                            </FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {LEAD_STATUS_OPTIONS.map((status) => (
-                                  <SelectItem
-                                    key={status.value}
-                                    value={status.value}
-                                  >
-                                    {status.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+<FormField
+  control={form.control}
+  name="status"
+  render={({ field }) => {
+    const normalizedStatus =
+      watchedStatus && String(watchedStatus).trim()
+        ? String(watchedStatus).trim()
+        : "new";
+
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("leads.statusLabel", { defaultValue: "Status" })}
+        </FormLabel>
+        <Select
+          key={`lead-status-${normalizedStatus}`}
+          value={normalizedStatus}
+          onValueChange={(value) => {
+            field.onChange(value);
+            form.setValue("status", value as LeadStatus, { shouldDirty: true });
+          }}
+        >
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={t("leads.statusLabel", {
+                  defaultValue: "Status",
+                })}
+              />
+            </SelectTrigger>
+          </FormControl>
+
+          <SelectContent>
+            {LEAD_STATUS_OPTIONS.map((status) => (
+              <SelectItem key={status.value} value={status.value}>
+                {status.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
                     </div>
 
                     <FormField

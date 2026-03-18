@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { UsersRound } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -114,27 +114,63 @@ const CustomerFormPage = () => {
       notes: "",
     },
   });
+const watchedVenueId = useWatch({
+  control: form.control,
+  name: "venueId",
+});
 
-  useEffect(() => {
-    if (!isEditMode || !customer) {
-      return;
-    }
+const watchedSourceLeadId = useWatch({
+  control: form.control,
+  name: "sourceLeadId",
+});
 
-    form.reset({
-      fullName: customer.fullName,
-      mobile: customer.mobile,
-      mobile2: customer.mobile2 ?? "",
-      email: customer.email ?? "",
-      groomName: customer.groomName ?? "",
-      brideName: customer.brideName ?? "",
-      weddingDate: customer.weddingDate ?? "",
-      guestCount: customer.guestCount ? String(customer.guestCount) : "",
-      venueId: customer.venueId ? String(customer.venueId) : "",
-      sourceLeadId: customer.sourceLeadId ? String(customer.sourceLeadId) : "",
-      status: customer.status,
-      notes: customer.notes ?? "",
-    });
-  }, [customer, form, isEditMode]);
+const watchedStatus = useWatch({
+  control: form.control,
+  name: "status",
+});
+useEffect(() => {
+  if (!isEditMode || !customer) {
+    return;
+  }
+
+  const normalizedVenueId =
+    customer.venueId !== null && typeof customer.venueId !== "undefined"
+      ? String(customer.venueId)
+      : "";
+
+  const normalizedSourceLeadId =
+    customer.sourceLeadId !== null &&
+    typeof customer.sourceLeadId !== "undefined"
+      ? String(customer.sourceLeadId)
+      : "";
+
+  const normalizedStatus =
+    typeof customer.status === "string" && customer.status.trim()
+      ? (customer.status.trim() as CustomerStatus)
+      : "active";
+
+  form.reset({
+    fullName: customer.fullName ?? "",
+    mobile: customer.mobile ?? "",
+    mobile2: customer.mobile2 ?? "",
+    email: customer.email ?? "",
+    groomName: customer.groomName ?? "",
+    brideName: customer.brideName ?? "",
+    weddingDate: customer.weddingDate ?? "",
+    guestCount:
+      customer.guestCount !== null && typeof customer.guestCount !== "undefined"
+        ? String(customer.guestCount)
+        : "",
+    venueId: normalizedVenueId,
+    sourceLeadId: normalizedSourceLeadId,
+    status: normalizedStatus,
+    notes: customer.notes ?? "",
+  });
+
+  form.setValue("venueId", normalizedVenueId, { shouldDirty: false });
+  form.setValue("sourceLeadId", normalizedSourceLeadId, { shouldDirty: false });
+  form.setValue("status", normalizedStatus, { shouldDirty: false });
+}, [customer, form, isEditMode]);
 
   const onSubmit: SubmitHandler<CustomerFormValues> = (values) => {
     const selectedVenue = venues.find(
@@ -454,103 +490,109 @@ const CustomerFormPage = () => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="venueId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("common.venue", { defaultValue: "Venue" })}
-                            </FormLabel>
-                            <Select
-                              value={field.value || "none"}
-                              onValueChange={(value) =>
-                                field.onChange(value === "none" ? "" : value)
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={t(
-                                      "customers.venuePlaceholder",
-                                      {
-                                        defaultValue: "Select venue",
-                                      },
-                                    )}
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  {t("customers.noVenue", {
-                                    defaultValue: "No venue selected",
-                                  })}
-                                </SelectItem>
-                                {venues.map((venue) => (
-                                  <SelectItem
-                                    key={venue.id}
-                                    value={String(venue.id)}
-                                  >
-                                    {venue.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <FormField
+  control={form.control}
+  name="venueId"
+  render={({ field }) => {
+    const normalizedVenueValue =
+      watchedVenueId && watchedVenueId.trim() ? watchedVenueId : "none";
 
-                      {!isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="sourceLeadId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("customers.sourceLead", {
-                                  defaultValue: "Source Lead",
-                                })}
-                              </FormLabel>
-                              <Select
-                                value={field.value || "none"}
-                                onValueChange={(value) =>
-                                  field.onChange(value === "none" ? "" : value)
-                                }
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue
-                                      placeholder={t(
-                                        "customers.sourceLeadPlaceholder",
-                                        {
-                                          defaultValue: "Select source lead",
-                                        },
-                                      )}
-                                    />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="none">
-                                    {t("customers.noSourceLead", {
-                                      defaultValue: "No source lead",
-                                    })}
-                                  </SelectItem>
-                                  {leads.map((lead) => (
-                                    <SelectItem
-                                      key={lead.id}
-                                      value={String(lead.id)}
-                                    >
-                                      {lead.fullName}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : null}
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("common.venue", { defaultValue: "Venue" })}
+        </FormLabel>
+        <Select
+          key={`customer-venue-${normalizedVenueValue}-${venues.length}`}
+          value={normalizedVenueValue}
+          onValueChange={(value) => {
+            const nextValue = value === "none" ? "" : value;
+            field.onChange(nextValue);
+            form.setValue("venueId", nextValue, { shouldDirty: true });
+          }}
+        >
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={t("customers.venuePlaceholder", {
+                  defaultValue: "Select venue",
+                })}
+              />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="none">
+              {t("customers.noVenue", {
+                defaultValue: "No venue selected",
+              })}
+            </SelectItem>
+            {venues.map((venue) => (
+              <SelectItem key={venue.id} value={String(venue.id)}>
+                {venue.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
+                     {!isEditMode ? (
+  <FormField
+    control={form.control}
+    name="sourceLeadId"
+    render={({ field }) => {
+      const normalizedSourceLeadValue =
+        watchedSourceLeadId && watchedSourceLeadId.trim()
+          ? watchedSourceLeadId
+          : "none";
+
+      return (
+        <FormItem>
+          <FormLabel>
+            {t("customers.sourceLead", {
+              defaultValue: "Source Lead",
+            })}
+          </FormLabel>
+          <Select
+            key={`customer-source-lead-${normalizedSourceLeadValue}-${leads.length}`}
+            value={normalizedSourceLeadValue}
+            onValueChange={(value) => {
+              const nextValue = value === "none" ? "" : value;
+              field.onChange(nextValue);
+              form.setValue("sourceLeadId", nextValue, { shouldDirty: true });
+            }}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={t("customers.sourceLeadPlaceholder", {
+                    defaultValue: "Select source lead",
+                  })}
+                />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              <SelectItem value="none">
+                {t("customers.noSourceLead", {
+                  defaultValue: "No source lead",
+                })}
+              </SelectItem>
+              {leads.map((lead) => (
+                <SelectItem key={lead.id} value={String(lead.id)}>
+                  {lead.fullName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      );
+    }}
+  />
+) : null}
                     </div>
                   </section>
 
@@ -567,40 +609,54 @@ const CustomerFormPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("customers.statusLabel", {
-                                defaultValue: "Status",
-                              })}
-                            </FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {CUSTOMER_STATUS_OPTIONS.map((status) => (
-                                  <SelectItem
-                                    key={status.value}
-                                    value={status.value}
-                                  >
-                                    {status.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                   <FormField
+  control={form.control}
+  name="status"
+  render={({ field }) => {
+    const normalizedStatusValue =
+      watchedStatus && String(watchedStatus).trim()
+        ? String(watchedStatus).trim()
+        : "active";
+
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("customers.statusLabel", {
+            defaultValue: "Status",
+          })}
+        </FormLabel>
+        <Select
+          key={`customer-status-${normalizedStatusValue}`}
+          value={normalizedStatusValue}
+          onValueChange={(value) => {
+            field.onChange(value);
+            form.setValue("status", value as CustomerStatus, {
+              shouldDirty: true,
+            });
+          }}
+        >
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={t("customers.statusLabel", {
+                  defaultValue: "Status",
+                })}
+              />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            {CUSTOMER_STATUS_OPTIONS.map((status) => (
+              <SelectItem key={status.value} value={status.value}>
+                {status.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
                     </div>
 
                     <FormField
