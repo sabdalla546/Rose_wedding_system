@@ -41,6 +41,10 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       mobile: data.mobile.trim(),
       mobile2: data.mobile2 ?? null,
       email: data.email ?? null,
+
+      groomName: data.groomName?.trim() || null,
+      brideName: data.brideName?.trim() || null,
+
       weddingDate: data.weddingDate ?? null,
       guestCount: data.guestCount ?? null,
       venueId: data.venueId ?? null,
@@ -49,9 +53,7 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       notes: data.notes ?? null,
       status: data.status ?? "active",
       createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
     });
-
     const created = await Customer.findByPk(customer.id, {
       include: [
         { model: Venue, as: "venue" },
@@ -176,26 +178,66 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
     }
 
     await customer.update({
-      fullName: data.fullName ?? customer.fullName,
-      mobile: data.mobile ?? customer.mobile,
+      fullName:
+        typeof data.fullName !== "undefined"
+          ? data.fullName.trim()
+          : customer.fullName,
+
+      mobile:
+        typeof data.mobile !== "undefined"
+          ? data.mobile.trim()
+          : customer.mobile,
+
       mobile2:
-        typeof data.mobile2 !== "undefined" ? data.mobile2 : customer.mobile2,
-      email: typeof data.email !== "undefined" ? data.email : customer.email,
+        typeof data.mobile2 !== "undefined"
+          ? data.mobile2
+            ? data.mobile2.trim()
+            : data.mobile2
+          : customer.mobile2,
+
+      email:
+        typeof data.email !== "undefined"
+          ? data.email
+            ? data.email.trim()
+            : data.email
+          : customer.email,
+
+      groomName:
+        typeof data.groomName !== "undefined"
+          ? data.groomName
+            ? data.groomName.trim()
+            : data.groomName
+          : customer.groomName,
+
+      brideName:
+        typeof data.brideName !== "undefined"
+          ? data.brideName
+            ? data.brideName.trim()
+            : data.brideName
+          : customer.brideName,
+
       weddingDate:
         typeof data.weddingDate !== "undefined"
           ? data.weddingDate
           : customer.weddingDate,
+
       guestCount:
         typeof data.guestCount !== "undefined"
           ? data.guestCount
           : customer.guestCount,
+
       venueId:
         typeof data.venueId !== "undefined" ? data.venueId : customer.venueId,
+
       venueNameSnapshot:
         typeof data.venueNameSnapshot !== "undefined"
           ? data.venueNameSnapshot
+            ? data.venueNameSnapshot.trim()
+            : data.venueNameSnapshot
           : customer.venueNameSnapshot,
+
       notes: typeof data.notes !== "undefined" ? data.notes : customer.notes,
+
       status: data.status ?? customer.status,
       updatedBy: req.user?.id ?? null,
     });

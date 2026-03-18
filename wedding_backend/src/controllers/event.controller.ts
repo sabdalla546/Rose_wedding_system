@@ -102,6 +102,9 @@ export const createEventFromSource = async (
     const sourceVenueName =
       customer?.venueNameSnapshot ?? lead?.venueNameSnapshot ?? null;
 
+    const sourceGroomName = customer?.groomName ?? lead?.groomName ?? null;
+    const sourceBrideName = customer?.brideName ?? lead?.brideName ?? null;
+
     if (sourceVenueId) {
       const venue = await Venue.findByPk(sourceVenueId);
       if (!venue) {
@@ -109,21 +112,49 @@ export const createEventFromSource = async (
       }
     }
 
+    const resolvedEventDate =
+      data.eventDate ?? customer?.weddingDate ?? lead?.weddingDate ?? "";
+
+    const resolvedGroomName =
+      typeof data.groomName !== "undefined"
+        ? data.groomName
+          ? data.groomName.trim()
+          : data.groomName
+        : sourceGroomName;
+
+    const resolvedBrideName =
+      typeof data.brideName !== "undefined"
+        ? data.brideName
+          ? data.brideName.trim()
+          : data.brideName
+        : sourceBrideName;
+
+    const resolvedTitle =
+      typeof data.title !== "undefined" && data.title !== null
+        ? data.title.trim()
+        : `Wedding Event - ${customer?.fullName ?? lead?.fullName ?? "Client"}`;
+
+    const resolvedContractNumber =
+      typeof data.contractNumber !== "undefined"
+        ? data.contractNumber
+          ? data.contractNumber.trim()
+          : data.contractNumber
+        : null;
+
     const event = await Event.create({
       customerId: customer?.id ?? null,
       leadId: lead?.id ?? null,
-      eventDate:
-        data.eventDate ?? customer?.weddingDate ?? lead?.weddingDate ?? "",
+      eventDate: resolvedEventDate,
       venueId: sourceVenueId,
       venueNameSnapshot: sourceVenueName,
       guestCount: customer?.guestCount ?? lead?.guestCount ?? null,
-      groomName: data.groomName ?? null,
-      brideName: data.brideName ?? null,
-      contractNumber: data.contractNumber ?? null,
-      title:
-        data.title ??
-        `Wedding Event - ${customer?.fullName ?? lead?.fullName ?? "Client"}`,
-      notes: data.notes ?? null,
+
+      groomName: resolvedGroomName,
+      brideName: resolvedBrideName,
+
+      contractNumber: resolvedContractNumber,
+      title: resolvedTitle,
+      notes: typeof data.notes !== "undefined" ? data.notes : null,
       status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
@@ -134,10 +165,13 @@ export const createEventFromSource = async (
         data.sections.map((section) => ({
           eventId: event.id,
           sectionType: section.sectionType,
-          title: section.title ?? null,
+          title:
+            typeof section.title !== "undefined" && section.title !== null
+              ? section.title.trim()
+              : null,
           sortOrder: section.sortOrder ?? 0,
           data: section.data ?? {},
-          notes: section.notes ?? null,
+          notes: typeof section.notes !== "undefined" ? section.notes : null,
           isCompleted: section.isCompleted ?? false,
           createdBy: req.user?.id ?? null,
           updatedBy: req.user?.id ?? null,
@@ -170,6 +204,7 @@ export const createEventFromSource = async (
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
     }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };

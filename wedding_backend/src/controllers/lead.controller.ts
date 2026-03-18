@@ -23,6 +23,10 @@ export const createLead = async (req: AuthRequest, res: Response) => {
       mobile: data.mobile.trim(),
       mobile2: data.mobile2 ?? null,
       email: data.email ?? null,
+
+      groomName: data.groomName?.trim() || null,
+      brideName: data.brideName?.trim() || null,
+
       weddingDate: data.weddingDate,
       guestCount: data.guestCount ?? null,
       venueId: data.venueId ?? null,
@@ -31,7 +35,6 @@ export const createLead = async (req: AuthRequest, res: Response) => {
       status: data.status ?? "new",
       notes: data.notes ?? null,
       createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
     });
 
     const created = await Lead.findByPk(lead.id, {
@@ -169,33 +172,80 @@ export const updateLead = async (req: AuthRequest, res: Response) => {
     }
 
     await lead.update({
-      fullName: data.fullName ?? lead.fullName,
-      mobile: data.mobile ?? lead.mobile,
+      fullName:
+        typeof data.fullName !== "undefined"
+          ? data.fullName.trim()
+          : lead.fullName,
+
+      mobile:
+        typeof data.mobile !== "undefined" ? data.mobile.trim() : lead.mobile,
+
       mobile2:
-        typeof data.mobile2 !== "undefined" ? data.mobile2 : lead.mobile2,
-      email: typeof data.email !== "undefined" ? data.email : lead.email,
+        typeof data.mobile2 !== "undefined"
+          ? data.mobile2
+            ? data.mobile2.trim()
+            : data.mobile2
+          : lead.mobile2,
+
+      email:
+        typeof data.email !== "undefined"
+          ? data.email
+            ? data.email.trim()
+            : data.email
+          : lead.email,
+
+      groomName:
+        typeof data.groomName !== "undefined"
+          ? data.groomName
+            ? data.groomName.trim()
+            : data.groomName
+          : lead.groomName,
+
+      brideName:
+        typeof data.brideName !== "undefined"
+          ? data.brideName
+            ? data.brideName.trim()
+            : data.brideName
+          : lead.brideName,
+
       weddingDate: data.weddingDate ?? lead.weddingDate,
+
       guestCount:
         typeof data.guestCount !== "undefined"
           ? data.guestCount
           : lead.guestCount,
+
       venueId:
         typeof data.venueId !== "undefined" ? data.venueId : lead.venueId,
+
       venueNameSnapshot:
         typeof data.venueNameSnapshot !== "undefined"
           ? data.venueNameSnapshot
+            ? data.venueNameSnapshot.trim()
+            : data.venueNameSnapshot
           : lead.venueNameSnapshot,
-      source: typeof data.source !== "undefined" ? data.source : lead.source,
+
+      source:
+        typeof data.source !== "undefined"
+          ? data.source
+            ? data.source.trim()
+            : data.source
+          : lead.source,
+
       status: data.status ?? lead.status,
+
       notes: typeof data.notes !== "undefined" ? data.notes : lead.notes,
+
       convertedToCustomer:
         typeof data.convertedToCustomer === "boolean"
           ? data.convertedToCustomer
           : lead.convertedToCustomer,
+
       convertedCustomerId:
         typeof data.convertedCustomerId !== "undefined"
           ? data.convertedCustomerId
           : lead.convertedCustomerId,
+
       updatedBy: req.user?.id ?? null,
     });
 
@@ -371,34 +421,64 @@ export const convertLeadToCustomer = async (
       .join(" | ");
 
     const customer = await Customer.create({
-      fullName: data.customer?.fullName ?? lead.fullName,
-      mobile: data.customer?.mobile ?? lead.mobile,
+      fullName: data.customer?.fullName?.trim() || lead.fullName,
+
+      mobile: data.customer?.mobile?.trim() || lead.mobile,
+
       mobile2:
         typeof data.customer?.mobile2 !== "undefined"
           ? data.customer.mobile2
+            ? data.customer.mobile2.trim()
+            : data.customer.mobile2
           : lead.mobile2,
+
       email:
         typeof data.customer?.email !== "undefined"
           ? data.customer.email
+            ? data.customer.email.trim()
+            : data.customer.email
           : lead.email,
+
+      groomName:
+        typeof data.customer?.groomName !== "undefined"
+          ? data.customer.groomName
+            ? data.customer.groomName.trim()
+            : data.customer.groomName
+          : lead.groomName,
+
+      brideName:
+        typeof data.customer?.brideName !== "undefined"
+          ? data.customer.brideName
+            ? data.customer.brideName.trim()
+            : data.customer.brideName
+          : lead.brideName,
+
       weddingDate:
         typeof data.customer?.weddingDate !== "undefined"
           ? data.customer.weddingDate
           : lead.weddingDate,
+
       guestCount:
         typeof data.customer?.guestCount !== "undefined"
           ? data.customer.guestCount
           : lead.guestCount,
+
       venueId:
         typeof data.customer?.venueId !== "undefined"
           ? data.customer.venueId
           : lead.venueId,
+
       venueNameSnapshot:
         typeof data.customer?.venueNameSnapshot !== "undefined"
           ? data.customer.venueNameSnapshot
+            ? data.customer.venueNameSnapshot.trim()
+            : data.customer.venueNameSnapshot
           : lead.venueNameSnapshot,
+
       sourceLeadId: lead.id,
+
       notes: mergedCustomerNotes || null,
+
       status: data.customer?.status ?? "active",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,

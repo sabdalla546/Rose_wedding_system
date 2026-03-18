@@ -19,7 +19,8 @@ export interface LeadAttributes {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
-
+  groomName?: string | null;
+  brideName?: string | null;
   weddingDate: string;
   guestCount?: number | null;
 
@@ -64,6 +65,8 @@ export class Lead
   public mobile2?: string | null;
   public email?: string | null;
 
+  public groomName?: string | null;
+  public brideName?: string | null;
   public weddingDate!: string;
   public guestCount?: number | null;
 
@@ -111,7 +114,14 @@ Lead.init(
         isEmail: true,
       },
     },
-
+    groomName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    brideName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
     weddingDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,

@@ -10,7 +10,8 @@ export interface CustomerAttributes {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
-
+  groomName?: string | null;
+  brideName?: string | null;
   weddingDate?: string | null;
   guestCount?: number | null;
 
@@ -51,6 +52,8 @@ export class Customer
   public mobile2?: string | null;
   public email?: string | null;
 
+  public groomName?: string | null;
+  public brideName?: string | null;
   public weddingDate?: string | null;
   public guestCount?: number | null;
 
@@ -94,6 +97,15 @@ Customer.init(
       validate: {
         isEmail: true,
       },
+    },
+
+    groomName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    brideName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
     },
 
     weddingDate: {
