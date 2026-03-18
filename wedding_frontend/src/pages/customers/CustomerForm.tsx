@@ -128,6 +128,15 @@ const watchedStatus = useWatch({
   control: form.control,
   name: "status",
 });
+const watchedGroomName = useWatch({
+  control: form.control,
+  name: "groomName",
+});
+
+const watchedBrideName = useWatch({
+  control: form.control,
+  name: "brideName",
+});
 useEffect(() => {
   if (!isEditMode || !customer) {
     return;
@@ -149,16 +158,20 @@ useEffect(() => {
       ? (customer.status.trim() as CustomerStatus)
       : "active";
 
+  const normalizedGroomName = customer.groomName ?? "";
+  const normalizedBrideName = customer.brideName ?? "";
+
   form.reset({
     fullName: customer.fullName ?? "",
     mobile: customer.mobile ?? "",
     mobile2: customer.mobile2 ?? "",
     email: customer.email ?? "",
-    groomName: customer.groomName ?? "",
-    brideName: customer.brideName ?? "",
+    groomName: normalizedGroomName,
+    brideName: normalizedBrideName,
     weddingDate: customer.weddingDate ?? "",
     guestCount:
-      customer.guestCount !== null && typeof customer.guestCount !== "undefined"
+      customer.guestCount !== null &&
+      typeof customer.guestCount !== "undefined"
         ? String(customer.guestCount)
         : "",
     venueId: normalizedVenueId,
@@ -170,6 +183,8 @@ useEffect(() => {
   form.setValue("venueId", normalizedVenueId, { shouldDirty: false });
   form.setValue("sourceLeadId", normalizedSourceLeadId, { shouldDirty: false });
   form.setValue("status", normalizedStatus, { shouldDirty: false });
+  form.setValue("groomName", normalizedGroomName, { shouldDirty: false });
+  form.setValue("brideName", normalizedBrideName, { shouldDirty: false });
 }, [customer, form, isEditMode]);
 
   const onSubmit: SubmitHandler<CustomerFormValues> = (values) => {
@@ -416,51 +431,77 @@ useEffect(() => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="groomName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("customers.groomName", {
-                                defaultValue: "Groom Name",
-                              })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={t("customers.groomNamePlaceholder", {
-                                  defaultValue: "Enter groom name",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                   <FormField
+  control={form.control}
+  name="groomName"
+  render={({ field }) => {
+    const normalizedValue =
+      typeof watchedGroomName === "string" ? watchedGroomName : "";
 
-                      <FormField
-                        control={form.control}
-                        name="brideName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("customers.brideName", {
-                                defaultValue: "Bride Name",
-                              })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={t("customers.brideNamePlaceholder", {
-                                  defaultValue: "Enter bride name",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("customers.groomName", {
+            defaultValue: "Groom Name",
+          })}
+        </FormLabel>
+        <FormControl>
+          <Input
+            key={`customer-groomName-${normalizedValue}`}
+            {...field}
+            value={field.value ?? normalizedValue ?? ""}
+            onChange={(e) => {
+              field.onChange(e.target.value);
+              form.setValue("groomName", e.target.value, {
+                shouldDirty: true,
+              });
+            }}
+            placeholder={t("customers.groomNamePlaceholder", {
+              defaultValue: "Enter groom name",
+            })}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
+                     <FormField
+  control={form.control}
+  name="brideName"
+  render={({ field }) => {
+    const normalizedValue =
+      typeof watchedBrideName === "string" ? watchedBrideName : "";
+
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("customers.brideName", {
+            defaultValue: "Bride Name",
+          })}
+        </FormLabel>
+        <FormControl>
+          <Input
+            key={`customer-brideName-${normalizedValue}`}
+            {...field}
+            value={field.value ?? normalizedValue ?? ""}
+            onChange={(e) => {
+              field.onChange(e.target.value);
+              form.setValue("brideName", e.target.value, {
+                shouldDirty: true,
+              });
+            }}
+            placeholder={t("customers.brideNamePlaceholder", {
+              defaultValue: "Enter bride name",
+            })}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
 
                       <FormField
                         control={form.control}

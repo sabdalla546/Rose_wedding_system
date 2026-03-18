@@ -108,7 +108,16 @@ const watchedStatus = useWatch({
   control: form.control,
   name: "status",
 });
-  useEffect(() => {
+const watchedGroomName = useWatch({
+  control: form.control,
+  name: "groomName",
+});
+
+const watchedBrideName = useWatch({
+  control: form.control,
+  name: "brideName",
+});
+useEffect(() => {
   if (!isEditMode || !lead) {
     return;
   }
@@ -123,13 +132,16 @@ const watchedStatus = useWatch({
       ? (lead.status.trim() as LeadStatus)
       : "new";
 
+  const normalizedGroomName = lead.groomName ?? "";
+  const normalizedBrideName = lead.brideName ?? "";
+
   form.reset({
     fullName: lead.fullName ?? "",
     mobile: lead.mobile ?? "",
     mobile2: lead.mobile2 ?? "",
     email: lead.email ?? "",
-    groomName: lead.groomName ?? "",
-    brideName: lead.brideName ?? "",
+    groomName: normalizedGroomName,
+    brideName: normalizedBrideName,
     weddingDate: lead.weddingDate ?? "",
     guestCount:
       lead.guestCount !== null && typeof lead.guestCount !== "undefined"
@@ -141,9 +153,10 @@ const watchedStatus = useWatch({
     notes: lead.notes ?? "",
   });
 
-  // force-set for Radix/react-hook-form async sync edge cases
   form.setValue("venueId", normalizedVenueId, { shouldDirty: false });
   form.setValue("status", normalizedStatus, { shouldDirty: false });
+  form.setValue("groomName", normalizedGroomName, { shouldDirty: false });
+  form.setValue("brideName", normalizedBrideName, { shouldDirty: false });
 }, [form, isEditMode, lead]);
 
   const onSubmit: SubmitHandler<LeadFormValues> = (values) => {
@@ -378,47 +391,73 @@ const watchedStatus = useWatch({
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="groomName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("leads.groomName", { defaultValue: "Groom Name" })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={t("leads.groomNamePlaceholder", {
-                                  defaultValue: "Enter groom name",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <FormField
+  control={form.control}
+  name="groomName"
+  render={({ field }) => {
+    const normalizedValue =
+      typeof watchedGroomName === "string" ? watchedGroomName : "";
 
-                      <FormField
-                        control={form.control}
-                        name="brideName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("leads.brideName", { defaultValue: "Bride Name" })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={t("leads.brideNamePlaceholder", {
-                                  defaultValue: "Enter bride name",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("leads.groomName", { defaultValue: "Groom Name" })}
+        </FormLabel>
+        <FormControl>
+          <Input
+            key={`lead-groomName-${normalizedValue}`}
+            {...field}
+            value={field.value ?? normalizedValue ?? ""}
+            onChange={(e) => {
+              field.onChange(e.target.value);
+              form.setValue("groomName", e.target.value, {
+                shouldDirty: true,
+              });
+            }}
+            placeholder={t("leads.groomNamePlaceholder", {
+              defaultValue: "Enter groom name",
+            })}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
+                    <FormField
+  control={form.control}
+  name="brideName"
+  render={({ field }) => {
+    const normalizedValue =
+      typeof watchedBrideName === "string" ? watchedBrideName : "";
+
+    return (
+      <FormItem>
+        <FormLabel>
+          {t("leads.brideName", { defaultValue: "Bride Name" })}
+        </FormLabel>
+        <FormControl>
+          <Input
+            key={`lead-brideName-${normalizedValue}`}
+            {...field}
+            value={field.value ?? normalizedValue ?? ""}
+            onChange={(e) => {
+              field.onChange(e.target.value);
+              form.setValue("brideName", e.target.value, {
+                shouldDirty: true,
+              });
+            }}
+            placeholder={t("leads.brideNamePlaceholder", {
+              defaultValue: "Enter bride name",
+            })}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
 
                       <FormField
                         control={form.control}
