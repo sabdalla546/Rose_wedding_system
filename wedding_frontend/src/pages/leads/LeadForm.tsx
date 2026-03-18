@@ -38,6 +38,8 @@ const leadSchema = z.object({
   mobile: z.string().min(3, "Primary mobile is required").max(30),
   mobile2: z.string().max(30).optional(),
   email: z.union([z.literal(""), z.string().email("Invalid email address")]),
+  groomName: z.string().optional(),
+  brideName: z.string().optional(),
   weddingDate: z.string().min(1, "Wedding date is required"),
   guestCount: z
     .string()
@@ -87,6 +89,8 @@ const LeadFormPage = () => {
       mobile: "",
       mobile2: "",
       email: "",
+      groomName: "",
+      brideName: "",
       weddingDate: "",
       guestCount: "",
       venueId: "",
@@ -106,6 +110,8 @@ const LeadFormPage = () => {
       mobile: lead.mobile,
       mobile2: lead.mobile2 ?? "",
       email: lead.email ?? "",
+      groomName: lead.groomName ?? "",
+      brideName: lead.brideName ?? "",
       weddingDate: lead.weddingDate,
       guestCount: lead.guestCount ? String(lead.guestCount) : "",
       venueId: lead.venueId ? String(lead.venueId) : "",
@@ -341,6 +347,48 @@ const LeadFormPage = () => {
                             </FormLabel>
                             <FormControl>
                               <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="groomName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("leads.groomName", { defaultValue: "Groom Name" })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("leads.groomNamePlaceholder", {
+                                  defaultValue: "Enter groom name",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="brideName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("leads.brideName", { defaultValue: "Bride Name" })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("leads.brideNamePlaceholder", {
+                                  defaultValue: "Enter bride name",
+                                })}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

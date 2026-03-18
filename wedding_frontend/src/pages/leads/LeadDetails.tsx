@@ -181,6 +181,14 @@ const LeadDetailsPage = () => {
                   })}
                 />
                 <DetailItem
+                  label={t("leads.groomName", { defaultValue: "Groom Name" })}
+                  value={lead.groomName}
+                />
+                <DetailItem
+                  label={t("leads.brideName", { defaultValue: "Bride Name" })}
+                  value={lead.brideName}
+                />
+                <DetailItem
                   label={t("common.venue", { defaultValue: "Venue" })}
                   value={lead.venue?.name || lead.venueNameSnapshot}
                 />

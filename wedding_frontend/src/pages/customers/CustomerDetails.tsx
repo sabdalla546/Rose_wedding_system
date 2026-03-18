@@ -175,6 +175,14 @@ const CustomerDetailsPage = () => {
                   }
                 />
                 <DetailItem
+                  label={t("customers.groomName", { defaultValue: "Groom Name" })}
+                  value={customer.groomName}
+                />
+                <DetailItem
+                  label={t("customers.brideName", { defaultValue: "Bride Name" })}
+                  value={customer.brideName}
+                />
+                <DetailItem
                   label={t("customers.guestCount", {
                     defaultValue: "Guest Count",
                   })}

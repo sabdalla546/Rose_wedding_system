@@ -35,6 +35,8 @@ export interface Customer {
   guestCount?: number | null;
   venueId?: number | null;
   venueNameSnapshot?: string | null;
+  groomName?: string | null;
+  brideName?: string | null;
   sourceLeadId?: number | null;
   notes?: string | null;
   status: CustomerStatus;
@@ -70,6 +72,8 @@ export interface CustomerFormData {
   guestCount?: string;
   venueId?: string;
   venueNameSnapshot?: string;
+  groomName?: string;
+  brideName?: string;
   sourceLeadId?: string;
   notes?: string;
   status: CustomerStatus;

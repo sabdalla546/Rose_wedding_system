@@ -55,6 +55,8 @@ export interface Lead {
   guestCount?: number | null;
   venueId?: number | null;
   venueNameSnapshot?: string | null;
+  groomName?: string | null;
+  brideName?: string | null;
   source?: string | null;
   status: LeadStatus;
   notes?: string | null;
@@ -93,6 +95,8 @@ export interface LeadFormData {
   guestCount?: string;
   venueId?: string;
   venueNameSnapshot?: string;
+  groomName?: string;
+  brideName?: string;
   source?: string;
   status: LeadStatus;
   notes?: string;

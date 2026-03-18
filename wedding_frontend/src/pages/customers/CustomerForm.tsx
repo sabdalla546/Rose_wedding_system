@@ -42,6 +42,8 @@ const customerSchema = z.object({
   mobile: z.string().min(3, "Primary mobile is required").max(30),
   mobile2: z.string().max(30).optional(),
   email: z.union([z.literal(""), z.string().email("Invalid email address")]),
+  groomName: z.string().optional(),
+  brideName: z.string().optional(),
   weddingDate: z.string().optional(),
   guestCount: z
     .string()
@@ -102,6 +104,8 @@ const CustomerFormPage = () => {
       mobile: "",
       mobile2: "",
       email: "",
+      groomName: "",
+      brideName: "",
       weddingDate: "",
       guestCount: "",
       venueId: "",
@@ -121,6 +125,8 @@ const CustomerFormPage = () => {
       mobile: customer.mobile,
       mobile2: customer.mobile2 ?? "",
       email: customer.email ?? "",
+      groomName: customer.groomName ?? "",
+      brideName: customer.brideName ?? "",
       weddingDate: customer.weddingDate ?? "",
       guestCount: customer.guestCount ? String(customer.guestCount) : "",
       venueId: customer.venueId ? String(customer.venueId) : "",
@@ -368,6 +374,52 @@ const CustomerFormPage = () => {
                             </FormLabel>
                             <FormControl>
                               <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="groomName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("customers.groomName", {
+                                defaultValue: "Groom Name",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("customers.groomNamePlaceholder", {
+                                  defaultValue: "Enter groom name",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="brideName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("customers.brideName", {
+                                defaultValue: "Bride Name",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={t("customers.brideNamePlaceholder", {
+                                  defaultValue: "Enter bride name",
+                                })}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
