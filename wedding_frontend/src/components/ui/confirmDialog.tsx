@@ -40,19 +40,24 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card text-foreground border-border">
+      <DialogContent className="max-h-[calc(100vh-1rem)] overflow-y-auto border-border bg-card p-4 text-foreground sm:max-w-md sm:p-6">
         <DialogHeader>
           <DialogTitle>{t(title)}</DialogTitle>
           <DialogDescription>{t(message)}</DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="[&>button]:w-full sm:[&>button]:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
             {t(cancelLabel)}
           </Button>
           <Button
             variant={confirmVariant}
             onClick={onConfirm}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             {isPending ? (
               <ClipLoader

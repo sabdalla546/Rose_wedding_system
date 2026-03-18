@@ -21,12 +21,27 @@ import CustomerDetailsPage from "@/pages/customers/CustomerDetails";
 import CustomerFormPage from "@/pages/customers/CustomerForm";
 import CustomersPage from "@/pages/customers/Customers";
 import { DashboardPage } from "@/pages/dashboard/dashboard-page";
+import ContractDetailsPage from "@/pages/contracts/ContractDetails";
+import ContractFormPage from "@/pages/contracts/ContractForm";
+import ContractsPage from "@/pages/contracts/Contracts";
+import EventDetailsPage from "@/pages/events/EventDetails";
+import EventFormPage from "@/pages/events/EventForm";
+import EventsPage from "@/pages/events/Events";
+import QuotationDetailsPage from "@/pages/quotations/QuotationDetails";
+import QuotationFormPage from "@/pages/quotations/QuotationForm";
+import QuotationsPage from "@/pages/quotations/Quotations";
+import VendorDetailsPage from "@/pages/vendors/VendorDetails";
+import VendorFormPage from "@/pages/vendors/VendorForm";
+import VendorsPage from "@/pages/vendors/Vendors";
 import { LoginPage } from "@/pages/auth/login-page";
 import LeadDetailsPage from "@/pages/leads/LeadDetails";
 import LeadFormPage from "@/pages/leads/LeadForm";
 import LeadsPage from "@/pages/leads/Leads";
 import RoleFormPage from "@/pages/roles/RoleForm";
 import RolesPage from "@/pages/roles/Roles";
+import ServiceDetailsPage from "@/pages/services/ServiceDetails";
+import ServiceFormPage from "@/pages/services/ServiceForm";
+import ServicesPage from "@/pages/services/Services";
 import UserFormPage from "@/pages/users/UserForm";
 import UsersPage from "@/pages/users/Users";
 import VenueFormPage from "@/pages/venues/VenueForm";
@@ -44,6 +59,14 @@ const explicitModulePaths = new Set([
   "/settings/venues",
   "/settings/venues/create",
   "/settings/venues/edit/:id",
+  "/settings/vendors",
+  "/settings/vendors/create",
+  "/settings/vendors/edit/:id",
+  "/settings/vendors/:id",
+  "/settings/services",
+  "/settings/services/create",
+  "/settings/services/edit/:id",
+  "/settings/services/:id",
   "/leads",
   "/leads/create",
   "/leads/edit/:id",
@@ -52,6 +75,18 @@ const explicitModulePaths = new Set([
   "/customers/create",
   "/customers/edit/:id",
   "/customers/:id",
+  "/events",
+  "/events/create",
+  "/events/edit/:id",
+  "/events/:id",
+  "/quotations",
+  "/quotations/create",
+  "/quotations/edit/:id",
+  "/quotations/:id",
+  "/contracts",
+  "/contracts/create",
+  "/contracts/edit/:id",
+  "/contracts/:id",
   "/appointments",
   "/appointments/create",
   "/appointments/edit/:id",
@@ -213,6 +248,38 @@ export const router = createBrowserRouter([
             element: <VenueFormPage />,
           },
           {
+            path: "settings/vendors",
+            element: <VendorsPage />,
+          },
+          {
+            path: "settings/vendors/create",
+            element: <VendorFormPage />,
+          },
+          {
+            path: "settings/vendors/edit/:id",
+            element: <VendorFormPage />,
+          },
+          {
+            path: "settings/vendors/:id",
+            element: <VendorDetailsPage />,
+          },
+          {
+            path: "settings/services",
+            element: <ServicesPage />,
+          },
+          {
+            path: "settings/services/create",
+            element: <ServiceFormPage />,
+          },
+          {
+            path: "settings/services/edit/:id",
+            element: <ServiceFormPage />,
+          },
+          {
+            path: "settings/services/:id",
+            element: <ServiceDetailsPage />,
+          },
+          {
             path: "leads",
             element: <LeadsPage />,
           },
@@ -243,6 +310,54 @@ export const router = createBrowserRouter([
           {
             path: "customers/:id",
             element: <CustomerDetailsPage />,
+          },
+          {
+            path: "events",
+            element: <EventsPage />,
+          },
+          {
+            path: "events/create",
+            element: <EventFormPage />,
+          },
+          {
+            path: "events/edit/:id",
+            element: <EventFormPage />,
+          },
+          {
+            path: "events/:id",
+            element: <EventDetailsPage />,
+          },
+          {
+            path: "quotations",
+            element: <QuotationsPage />,
+          },
+          {
+            path: "quotations/create",
+            element: <QuotationFormPage />,
+          },
+          {
+            path: "quotations/edit/:id",
+            element: <QuotationFormPage />,
+          },
+          {
+            path: "quotations/:id",
+            element: <QuotationDetailsPage />,
+          },
+          {
+            path: "contracts",
+            element: <ContractsPage />,
+          },
+          {
+            path: "contracts/create",
+            element: <ContractFormPage />,
+          },
+          {
+            path: "contracts/edit/:id",
+            element: <ContractFormPage />,
+          },
+          {
+            path: "contracts/:id",
+            element: <ContractDetailsPage />,
           },
           {
             path: "appointments",

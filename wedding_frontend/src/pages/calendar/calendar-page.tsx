@@ -47,7 +47,9 @@ import {
   filterCalendarEvents,
 } from "@/features/calendar/calendar-helpers";
 import { useAppointmentsCalendar } from "@/hooks/appointments/useAppointments";
+import { useVenues } from "@/hooks/venues/useVenues";
 import {
+  APPOINTMENT_MEETING_TYPE_OPTIONS,
   toCalendarEvents,
 } from "@/pages/appointments/adapters";
 import { formatLocalized } from "@/lib/utils";
@@ -96,10 +98,20 @@ export function CalendarPage() {
     dateFrom,
     dateTo,
   });
+  const { data: venuesResponse } = useVenues({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    isActive: "all",
+  });
 
   const calendarEvents = useMemo(
     () => toCalendarEvents(appointments),
     [appointments],
+  );
+  const venueNames = useMemo(
+    () => venuesResponse?.data.map((venue) => venue.name) ?? [],
+    [venuesResponse?.data],
   );
 
   const filteredEvents = useMemo(
@@ -149,10 +161,11 @@ export function CalendarPage() {
   const venueOptions = useMemo(
     () =>
       buildFilterOptions(
-        calendarEvents.map((event) => event.venue),
+        [...venueNames, ...calendarEvents.map((event) => event.venue)],
         t("calendar.filters.allVenues", { defaultValue: "All venues" }),
+        false,
       ),
-    [calendarEvents, t],
+    [calendarEvents, t, venueNames],
   );
   const statusOptions = useMemo(
     () =>
@@ -169,17 +182,29 @@ export function CalendarPage() {
         t("calendar.filters.allCoordinators", {
           defaultValue: "All coordinators",
         }),
+        false,
       ),
     [calendarEvents, t],
   );
   const eventTypeOptions = useMemo(
-    () =>
-      buildFilterOptions(
+    () => {
+      const baseOptions = APPOINTMENT_MEETING_TYPE_OPTIONS.map((item) => ({
+        label: t(`appointments.meetingTypeOptions.${item.value}`, {
+          defaultValue: item.label,
+        }),
+        value: item.label,
+      }));
+      const knownValues = new Set(baseOptions.map((option) => option.value));
+      const extraOptions = buildFilterOptions(
         calendarEvents.map((event) => event.eventType),
         t("calendar.filters.allEventTypes", {
           defaultValue: "All event types",
         }),
-      ),
+        false,
+      ).filter((option) => !knownValues.has(option.value));
+
+      return [...baseOptions, ...extraOptions];
+    },
     [calendarEvents, t],
   );
   const filteredVenueOptions = useMemo(
@@ -349,7 +374,12 @@ export function CalendarPage() {
                   <FilterPill label={filters.coordinator} />
                 ) : null}
                 {filters.eventType !== "all" ? (
-                  <FilterPill label={filters.eventType} />
+                  <FilterPill
+                    label={
+                      eventTypeOptions.find((option) => option.value === filters.eventType)
+                        ?.label || filters.eventType
+                    }
+                  />
                 ) : null}
               </div>
             ) : null}
@@ -708,13 +738,21 @@ export function CalendarPage() {
   );
 }
 
-function buildFilterOptions(values: string[], allLabel: string) {
-  return [
-    { label: allLabel, value: "all" },
-    ...Array.from(new Set(values.filter(Boolean))).map((value) => ({
+function buildFilterOptions(
+  values: string[],
+  allLabel: string,
+  includeAllOption = true,
+) {
+  const options = Array.from(new Set(values.filter((value) => value && value !== "-")))
+    .map((value) => ({
       label: value,
       value,
-    })),
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label));
+
+  return [
+    ...(includeAllOption ? [{ label: allLabel, value: "all" }] : []),
+    ...options,
   ];
 }
 

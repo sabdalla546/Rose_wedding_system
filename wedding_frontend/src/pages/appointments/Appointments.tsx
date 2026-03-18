@@ -143,6 +143,35 @@ const AppointmentsPage = () => {
   const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
   const venues = useMemo(() => venuesResponse?.data ?? [], [venuesResponse?.data]);
   const users = useMemo(() => usersResponse?.data ?? [], [usersResponse?.data]);
+  const venueFilterOptions = useMemo(() => {
+    const options = new Map<string, { id: string; name: string }>();
+
+    venues.forEach((venue) => {
+      options.set(String(venue.id), {
+        id: String(venue.id),
+        name: venue.name,
+      });
+    });
+
+    leads.forEach((lead) => {
+      const venueId = lead.venue?.id ?? lead.venueId;
+      const venueName =
+        lead.venue?.name ?? lead.venueNameSnapshot?.trim() ?? "";
+
+      if (!venueId || !venueName || options.has(String(venueId))) {
+        return;
+      }
+
+      options.set(String(venueId), {
+        id: String(venueId),
+        name: venueName,
+      });
+    });
+
+    return Array.from(options.values()).sort((left, right) =>
+      left.name.localeCompare(right.name),
+    );
+  }, [leads, venues]);
   const filteredLeadOptions = useMemo(
     () =>
       leads.filter((lead) =>
@@ -152,10 +181,10 @@ const AppointmentsPage = () => {
   );
   const filteredVenueOptions = useMemo(
     () =>
-      venues.filter((venue) =>
+      venueFilterOptions.filter((venue) =>
         venue.name.toLowerCase().includes(venueSearch.trim().toLowerCase()),
       ),
-    [venueSearch, venues],
+    [venueFilterOptions, venueSearch],
   );
   const filteredUserOptions = useMemo(
     () =>
@@ -332,8 +361,8 @@ const AppointmentsPage = () => {
                 {venueFilter ? (
                   <FilterPill
                     label={
-                      venues.find((venue) => String(venue.id) === venueFilter)?.name ||
-                      venueFilter
+                      venueFilterOptions.find((venue) => venue.id === venueFilter)
+                        ?.name || venueFilter
                     }
                   />
                 ) : null}
@@ -482,6 +511,7 @@ const AppointmentsPage = () => {
                             setVenueFilter(value);
                             setCurrentPage(1);
                           }}
+                          nativeOptions={venueFilterOptions}
                           onSearch={setVenueSearch}
                           placeholder={t("appointments.allVenues", {
                             defaultValue: "All Venues",
@@ -509,7 +539,7 @@ const AppointmentsPage = () => {
                             filteredVenueOptions.map((venue) => (
                               <SearchableSelectItem
                                 key={venue.id}
-                                value={String(venue.id)}
+                                value={venue.id}
                               >
                                 {venue.name}
                               </SearchableSelectItem>
@@ -962,6 +992,7 @@ function SearchableFilterSelect({
   value,
   onValueChange,
   onSearch,
+  nativeOptions,
   placeholder,
   searchPlaceholder,
   emptyMessage,
@@ -970,11 +1001,30 @@ function SearchableFilterSelect({
   value: string;
   onValueChange: (value: string) => void;
   onSearch: (value: string) => void;
+  nativeOptions?: Array<{ id: string; name: string }>;
   placeholder: string;
   searchPlaceholder: string;
   emptyMessage: string;
   children: React.ReactNode;
 }) {
+  if (nativeOptions) {
+    return (
+      <select
+        className={filterFieldClassName}
+        style={fieldStyle}
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+      >
+        <option value="">{placeholder}</option>
+        {nativeOptions.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   return (
     <SearchableSelect
       value={value || FILTER_EMPTY_VALUE}

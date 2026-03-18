@@ -17,6 +17,10 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT) || 4000,
   corsOrigins: parseCorsOrigins(),
+  dbSync: {
+    alter: process.env.DB_SYNC_ALTER === "true",
+    force: process.env.DB_SYNC_FORCE === "true",
+  },
 
   db: {
     host: process.env.DB_HOST || "localhost",

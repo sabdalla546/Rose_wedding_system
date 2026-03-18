@@ -18,6 +18,11 @@ import venueRoutes from "./routes/venue.routes";
 import leadRoutes from "./routes/lead.routes";
 import appointmentRoutes from "./routes/appointment.routes";
 import customerRoutes from "./routes/customer.routes";
+import eventRoutes from "./routes/event.routes";
+import vendorRoutes from "./routes/vendor.routes";
+import serviceRoutes from "./routes/service.routes";
+import quotationRoutes from "./routes/quotation.routes";
+import contractRoutes from "./routes/contract.routes";
 
 export const createApp = async () => {
   const app = express();
@@ -56,6 +61,12 @@ export const createApp = async () => {
   app.use("/api/v1/leads", leadRoutes);
   app.use("/api/v1/appointments", appointmentRoutes);
   app.use("/api/v1/customers", customerRoutes);
+
+  app.use("/api/v1/events", eventRoutes);
+  app.use("/api/v1/vendors", vendorRoutes);
+  app.use("/api/v1/services", serviceRoutes);
+  app.use("/api/v1/quotations", quotationRoutes);
+  app.use("/api/v1/contracts", contractRoutes);
   app.use(errorHandler);
 
   return app;

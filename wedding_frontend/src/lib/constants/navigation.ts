@@ -7,9 +7,9 @@ import {
   CalendarRange,
   ChartColumnBig,
   ClipboardCheck,
-  FileCheck2,
-  FileClock,
-  FileBadge2,
+  FileSignature,
+  FileText,
+  Handshake,
   LayoutDashboard,
   Package,
   PackageOpen,
@@ -82,47 +82,6 @@ export const navigationItems: NavigationItem[] = [
         ],
       },
 
-      {
-        id: "quotations",
-        labelKey: "sidebar.nav.quotations",
-        icon: FileBadge2,
-        children: [
-          {
-            id: "quotations-drafts",
-            labelKey: "sidebar.nav.draftQuotations",
-            label: "Draft Quotations",
-            labelAr: "مسودات العروض",
-            href: "/quotations/drafts",
-            icon: FileClock,
-            subtitle:
-              "Work on quotation drafts before sending them to clients.",
-            subtitleAr: "العمل على مسودات عروض الأسعار قبل إرسالها للعملاء.",
-          },
-          /**
-          *  {
-            id: "quotations-sent",
-            labelKey: "sidebar.nav.sentQuotations",
-            label: "Sent Quotations",
-            labelAr: "العروض المرسلة",
-            href: "/quotations/sent",
-            icon: ReceiptText,
-            subtitle:
-              "Track quotations awaiting feedback, revision, or approval.",
-            subtitleAr: "متابعة العروض بانتظار الرد أو التعديل أو الاعتماد.",
-          },
-          */
-          {
-            id: "quotations-approved",
-            labelKey: "sidebar.nav.approvedQuotations",
-            label: "Approved Quotations",
-            labelAr: "العروض المعتمدة",
-            href: "/quotations/approved",
-            icon: FileCheck2,
-            subtitle: "View approved quotations ready for booking conversion.",
-            subtitleAr: "عرض العروض المعتمدة الجاهزة للتحويل إلى حجوزات.",
-          },
-        ],
-      },
       {
         id: "customers",
         labelKey: "sidebar.nav.customers",
@@ -292,6 +251,76 @@ if (settingsTeamItem) {
       subtitle: "Manage wedding halls, venue contacts, and location readiness.",
       subtitleAr:
         "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0648\u0627\u0642\u0639.",
+    },
+    {
+      id: "settings-team-vendors",
+      labelKey: "sidebar.nav.vendors",
+      label: "Vendors",
+      labelAr: "\u0627\u0644\u0634\u0631\u0643\u0627\u062a",
+      href: "/settings/vendors",
+      icon: Handshake,
+      subtitle:
+        "Manage external vendors, service types, and operational contacts.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629 \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644.",
+    },
+    {
+      id: "settings-team-services",
+      labelKey: "sidebar.nav.services",
+      label: "Services",
+      labelAr: "\u0627\u0644\u062e\u062f\u0645\u0627\u062a",
+      href: "/settings/services",
+      icon: PackageOpen,
+      subtitle:
+        "Manage catalog services, pricing types, and operational event items.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062a\u0633\u0639\u064a\u0631 \u0648\u0628\u0646\u0648\u062f \u0627\u0644\u062d\u0641\u0644 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a\u0629.",
+    },
+  ];
+}
+
+const secretarialCustomersItem = navigationItems
+  .find((item) => item.id === "Secretarial")
+  ?.children?.find((item) => item.id === "customers");
+
+if (secretarialCustomersItem) {
+  secretarialCustomersItem.children = [
+    ...(secretarialCustomersItem.children ?? []),
+    {
+      id: "events-all",
+      labelKey: "sidebar.nav.events",
+      label: "Events",
+      labelAr: "\u0627\u0644\u062d\u0641\u0644\u0627\u062a",
+      href: "/events",
+      icon: CalendarRange,
+      subtitle:
+        "Manage wedding events, planning sections, and linked records.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062d\u0641\u0644\u0627\u062a \u0648\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629.",
+    },
+    {
+      id: "quotations-all",
+      labelKey: "sidebar.nav.quotations",
+      label: "Quotations",
+      labelAr: "\u0639\u0631\u0648\u0636 \u0627\u0644\u0623\u0633\u0639\u0627\u0631",
+      href: "/quotations",
+      icon: FileText,
+      subtitle:
+        "Manage quotation documents, issue dates, totals, and linked event pricing.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0639\u0631\u0648\u0636 \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0648\u062a\u0648\u0627\u0631\u064a\u062e \u0625\u0635\u062f\u0627\u0631\u0647\u0627 \u0648\u0625\u062c\u0645\u0627\u0644\u064a\u0627\u062a\u0647\u0627 \u0648\u0627\u0631\u062a\u0628\u0627\u0637\u0647\u0627 \u0628\u0627\u0644\u062d\u0641\u0644.",
+    },
+    {
+      id: "contracts-all",
+      labelKey: "sidebar.nav.contracts",
+      label: "Contracts",
+      labelAr: "\u0627\u0644\u0639\u0642\u0648\u062f",
+      href: "/contracts",
+      icon: FileSignature,
+      subtitle:
+        "Manage contract documents, payment plans, and linked event commitments.",
+      subtitleAr:
+        "\u0625\u062f\u0627\u0631\u0629 \u0648\u062b\u0627\u0626\u0642 \u0627\u0644\u0639\u0642\u0648\u062f \u0648\u062e\u0637\u0637 \u0627\u0644\u062f\u0641\u0639\u0627\u062a \u0648\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0627\u0644\u062d\u0641\u0644.",
     },
   ];
 }

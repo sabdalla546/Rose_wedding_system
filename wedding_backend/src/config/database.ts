@@ -19,7 +19,10 @@ export const initDatabase = async () => {
   try {
     await sequelize.authenticate();
     logger.info("✅ Database connected successfully");
-    await sequelize.sync({ alter: true }); // أثناء التطوير ممكن تخليها true
+    await sequelize.sync({
+      alter: env.dbSync.alter,
+      force: env.dbSync.force,
+    });
     logger.info("✅ Models synced");
   } catch (err) {
     logger.error("❌ Unable to connect to DB", err);
