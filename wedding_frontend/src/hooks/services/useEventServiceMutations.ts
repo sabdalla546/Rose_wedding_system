@@ -20,18 +20,11 @@ const normalizeRequiredNumber = (value?: string, fallback = 0) => {
   return trimmed ? Number(trimmed) : fallback;
 };
 
-const normalizeNullableNumber = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : null;
-};
-
 const buildCreateEventServicePayload = (values: EventServiceItemFormData) => ({
   eventId: values.eventId,
   serviceId: values.serviceId ? Number(values.serviceId) : null,
   serviceNameSnapshot: normalizeOptionalString(values.serviceNameSnapshot),
   category: values.category,
-  quantity: normalizeRequiredNumber(values.quantity, 1),
-  unitPrice: normalizeNullableNumber(values.unitPrice),
   notes: normalizeOptionalString(values.notes),
   status: values.status,
   sortOrder: normalizeRequiredNumber(values.sortOrder, 0),
@@ -41,8 +34,6 @@ const buildUpdateEventServicePayload = (values: EventServiceItemFormData) => ({
   serviceId: values.serviceId ? Number(values.serviceId) : null,
   serviceNameSnapshot: normalizeNullableString(values.serviceNameSnapshot),
   category: values.category,
-  quantity: normalizeRequiredNumber(values.quantity, 1),
-  unitPrice: normalizeNullableNumber(values.unitPrice),
   notes: normalizeNullableString(values.notes),
   status: values.status,
   sortOrder: normalizeRequiredNumber(values.sortOrder, 0),

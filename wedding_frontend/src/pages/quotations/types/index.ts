@@ -25,9 +25,9 @@ export interface QuotationItem {
   serviceId?: number | null;
   itemName: string;
   category?: string | null;
-  quantity: DecimalValue;
-  unitPrice: DecimalValue;
-  totalPrice: DecimalValue;
+  quantity?: DecimalValue | null;
+  unitPrice?: DecimalValue | null;
+  totalPrice?: DecimalValue | null;
   notes?: string | null;
   sortOrder: number;
   eventService?: EventServiceItem | null;
@@ -83,9 +83,6 @@ export interface QuotationItemFormData {
   serviceId?: string;
   itemName: string;
   category?: string;
-  quantity: string;
-  unitPrice: string;
-  totalPrice?: string;
   notes?: string;
   sortOrder?: string;
 }
@@ -95,6 +92,7 @@ export interface QuotationFormData {
   quotationNumber?: string;
   issueDate: string;
   validUntil?: string;
+  subtotal: string;
   discountAmount?: string;
   notes?: string;
   status?: QuotationStatus;
@@ -106,9 +104,10 @@ export interface QuotationFromEventFormData {
   quotationNumber?: string;
   issueDate: string;
   validUntil?: string;
+  subtotal: string;
   discountAmount?: string;
   notes?: string;
-  eventServiceIds?: string[];
+  eventServiceIds: string[];
   status?: QuotationStatus;
 }
 
@@ -116,6 +115,7 @@ export interface QuotationUpdateFormData {
   quotationNumber?: string;
   issueDate?: string;
   validUntil?: string;
+  subtotal?: string;
   discountAmount?: string;
   notes?: string;
   status?: QuotationStatus;

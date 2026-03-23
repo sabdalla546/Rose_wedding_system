@@ -10,16 +10,35 @@ import {
   updateEventServiceSchema,
 } from "../validation/service.schemas";
 
-function calcTotalPrice(
-  quantity?: number,
-  unitPrice?: number | null,
-  totalPrice?: number | null,
-) {
-  if (typeof totalPrice === "number") return totalPrice;
-  if (typeof quantity === "number" && typeof unitPrice === "number") {
-    return Number((quantity * unitPrice).toFixed(3));
+function sanitizeServicePayload(service: any) {
+  if (!service) {
+    return service;
   }
-  return null;
+
+  const plain = typeof service.toJSON === "function" ? service.toJSON() : service;
+  delete plain.pricingType;
+  delete plain.basePrice;
+  delete plain.unitName;
+  return plain;
+}
+
+function sanitizeEventServicePayload(eventService: any) {
+  if (!eventService) {
+    return eventService;
+  }
+
+  const plain =
+    typeof eventService.toJSON === "function" ? eventService.toJSON() : eventService;
+
+  delete plain.quantity;
+  delete plain.unitPrice;
+  delete plain.totalPrice;
+
+  if (plain.service) {
+    plain.service = sanitizeServicePayload(plain.service);
+  }
+
+  return plain;
 }
 
 export const createService = async (req: AuthRequest, res: Response) => {
@@ -30,9 +49,6 @@ export const createService = async (req: AuthRequest, res: Response) => {
       name: data.name.trim(),
       code: data.code ?? null,
       category: data.category,
-      pricingType: data.pricingType,
-      basePrice: typeof data.basePrice === "number" ? data.basePrice : null,
-      unitName: data.unitName ?? null,
       description: data.description ?? null,
       isActive: data.isActive ?? true,
       createdBy: req.user?.id ?? null,
@@ -48,7 +64,7 @@ export const createService = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: "Service created successfully",
-      data: created,
+      data: sanitizeServicePayload(created),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -65,7 +81,6 @@ export const getServices = async (req: Request, res: Response) => {
 
   const search = String(req.query.search ?? "").trim();
   const category = String(req.query.category ?? "").trim();
-  const pricingType = String(req.query.pricingType ?? "").trim();
   const isActive =
     typeof req.query.isActive !== "undefined"
       ? String(req.query.isActive) === "true"
@@ -82,7 +97,6 @@ export const getServices = async (req: Request, res: Response) => {
   }
 
   if (category) where.category = category;
-  if (pricingType) where.pricingType = pricingType;
   if (typeof isActive === "boolean") where.isActive = isActive;
 
   const { count, rows } = await Service.findAndCountAll({
@@ -97,7 +111,7 @@ export const getServices = async (req: Request, res: Response) => {
   });
 
   return res.json({
-    data: rows,
+    data: rows.map((row) => sanitizeServicePayload(row)),
     meta: {
       total: count,
       page,
@@ -125,7 +139,7 @@ export const getServiceById = async (req: Request, res: Response) => {
     return res.status(404).json({ message: req.t("common.not_found") });
   }
 
-  return res.json({ data: service });
+  return res.json({ data: sanitizeServicePayload(service) });
 };
 
 export const updateService = async (req: AuthRequest, res: Response) => {
@@ -147,13 +161,6 @@ export const updateService = async (req: AuthRequest, res: Response) => {
       name: data.name ?? service.name,
       code: typeof data.code !== "undefined" ? data.code : service.code,
       category: data.category ?? service.category,
-      pricingType: data.pricingType ?? service.pricingType,
-      basePrice:
-        typeof data.basePrice !== "undefined"
-          ? data.basePrice
-          : service.basePrice,
-      unitName:
-        typeof data.unitName !== "undefined" ? data.unitName : service.unitName,
       description:
         typeof data.description !== "undefined"
           ? data.description
@@ -172,7 +179,7 @@ export const updateService = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: req.t("common.updated_successfully"),
-      data: updated,
+      data: sanitizeServicePayload(updated),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -216,23 +223,12 @@ export const createEventService = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const quantity = typeof data.quantity === "number" ? data.quantity : 1;
-    const unitPrice =
-      typeof data.unitPrice === "number"
-        ? data.unitPrice
-        : typeof service?.basePrice === "number"
-          ? Number(service.basePrice)
-          : null;
-
     const eventService = await EventService.create({
       eventId: data.eventId,
       serviceId: data.serviceId ?? null,
       serviceNameSnapshot:
         data.serviceNameSnapshot ?? service?.name ?? "Unnamed Service",
       category: data.category ?? service?.category ?? "other",
-      quantity,
-      unitPrice,
-      totalPrice: calcTotalPrice(quantity, unitPrice, data.totalPrice),
       notes: data.notes ?? null,
       status: data.status ?? "draft",
       sortOrder: data.sortOrder ?? 0,
@@ -251,7 +247,7 @@ export const createEventService = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: "Event service created successfully",
-      data: created,
+      data: sanitizeEventServicePayload(created),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -293,7 +289,7 @@ export const getEventServices = async (req: Request, res: Response) => {
   });
 
   return res.json({
-    data: rows,
+    data: rows.map((row) => sanitizeEventServicePayload(row)),
     meta: {
       total: count,
       page,
@@ -323,7 +319,7 @@ export const getEventServiceById = async (req: Request, res: Response) => {
     return res.status(404).json({ message: req.t("common.not_found") });
   }
 
-  return res.json({ data: eventService });
+  return res.json({ data: sanitizeEventServicePayload(eventService) });
 };
 
 export const updateEventService = async (req: AuthRequest, res: Response) => {
@@ -354,22 +350,6 @@ export const updateEventService = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const quantity =
-      typeof data.quantity === "number"
-        ? data.quantity
-        : Number(eventService.quantity);
-
-    const unitPrice =
-      typeof data.unitPrice === "number"
-        ? data.unitPrice
-        : data.unitPrice === null
-          ? null
-          : service
-            ? Number(service.basePrice ?? eventService.unitPrice)
-            : eventService.unitPrice !== null
-              ? Number(eventService.unitPrice)
-              : null;
-
     await eventService.update({
       serviceId:
         typeof data.serviceId !== "undefined"
@@ -377,18 +357,9 @@ export const updateEventService = async (req: AuthRequest, res: Response) => {
           : eventService.serviceId,
       serviceNameSnapshot:
         typeof data.serviceNameSnapshot !== "undefined"
-          ? (data.serviceNameSnapshot ??
-            service?.name ??
-            eventService.serviceNameSnapshot)
-          : (service?.name ?? eventService.serviceNameSnapshot),
+          ? data.serviceNameSnapshot ?? service?.name ?? eventService.serviceNameSnapshot
+          : service?.name ?? eventService.serviceNameSnapshot,
       category: data.category ?? service?.category ?? eventService.category,
-      quantity,
-      unitPrice,
-      totalPrice: calcTotalPrice(
-        quantity,
-        unitPrice,
-        typeof data.totalPrice === "undefined" ? undefined : data.totalPrice,
-      ),
       notes:
         typeof data.notes !== "undefined" ? data.notes : eventService.notes,
       status: data.status ?? eventService.status,
@@ -410,7 +381,7 @@ export const updateEventService = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: req.t("common.updated_successfully"),
-      data: updated,
+      data: sanitizeEventServicePayload(updated),
     });
   } catch (err) {
     if (err instanceof ZodError) {

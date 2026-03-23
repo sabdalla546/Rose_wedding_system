@@ -280,7 +280,7 @@ const QuotationDetailsPage = () => {
               <CardDescription>
                 {t("quotations.itemsHint", {
                   defaultValue:
-                    "Commercial lines included in this quotation document.",
+                    "Descriptive services included in this quotation document.",
                 })}
               </CardDescription>
             </CardHeader>
@@ -297,17 +297,7 @@ const QuotationDetailsPage = () => {
                         {t("quotations.category", { defaultValue: "Category" })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.quantity", { defaultValue: "Quantity" })}
-                      </th>
-                      <th className="px-3 py-3 text-start">
-                        {t("quotations.unitPrice", {
-                          defaultValue: "Unit Price",
-                        })}
-                      </th>
-                      <th className="px-3 py-3 text-start">
-                        {t("quotations.totalPrice", {
-                          defaultValue: "Total Price",
-                        })}
+                        {t("common.notes", { defaultValue: "Notes" })}
                       </th>
                     </tr>
                   </thead>
@@ -324,11 +314,6 @@ const QuotationDetailsPage = () => {
                           <div className="font-medium text-[var(--lux-text)]">
                             {getQuotationItemDisplayName(item)}
                           </div>
-                          {item.notes ? (
-                            <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-                              {item.notes}
-                            </div>
-                          ) : null}
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
                           {t(`services.category.${item.category}`, {
@@ -336,13 +321,7 @@ const QuotationDetailsPage = () => {
                           })}
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {item.quantity}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {formatMoney(item.unitPrice)}
-                        </td>
-                        <td className="px-3 py-3 font-semibold text-[var(--lux-text)]">
-                          {formatMoney(item.totalPrice)}
+                          {item.notes || "-"}
                         </td>
                       </tr>
                     ))}

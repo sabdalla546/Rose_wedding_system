@@ -14,9 +14,6 @@ export const quotationItemSchema = z.object({
   serviceId: z.number().int().positive().optional().nullable(),
   itemName: z.string().min(2).max(150),
   category: z.string().max(100).optional(),
-  quantity: z.number().positive(),
-  unitPrice: z.number().nonnegative(),
-  totalPrice: z.number().nonnegative().optional(),
   notes: z.string().optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
@@ -26,6 +23,7 @@ export const createQuotationSchema = z.object({
   quotationNumber: z.string().max(100).optional(),
   issueDate: z.string().min(1),
   validUntil: z.string().optional(),
+  subtotal: z.number().nonnegative(),
   discountAmount: z.number().nonnegative().optional(),
   notes: z.string().optional(),
   status: quotationStatusEnum.optional(),
@@ -36,6 +34,7 @@ export const updateQuotationSchema = z.object({
   quotationNumber: z.string().max(100).optional().nullable(),
   issueDate: z.string().optional(),
   validUntil: z.string().optional().nullable(),
+  subtotal: z.number().nonnegative().optional(),
   discountAmount: z.number().nonnegative().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: quotationStatusEnum.optional(),
@@ -46,18 +45,16 @@ export const createQuotationFromEventSchema = z.object({
   quotationNumber: z.string().max(100).optional(),
   issueDate: z.string().min(1),
   validUntil: z.string().optional(),
+  subtotal: z.number().nonnegative(),
   discountAmount: z.number().nonnegative().optional(),
   notes: z.string().optional(),
-  eventServiceIds: z.array(z.number().int().positive()).optional(),
+  eventServiceIds: z.array(z.number().int().positive()).min(1),
   status: quotationStatusEnum.optional(),
 });
 
 export const updateQuotationItemSchema = z.object({
   itemName: z.string().min(2).max(150).optional(),
   category: z.string().max(100).optional().nullable(),
-  quantity: z.number().positive().optional(),
-  unitPrice: z.number().nonnegative().optional(),
-  totalPrice: z.number().nonnegative().optional().nullable(),
   notes: z.string().optional().nullable(),
   sortOrder: z.number().int().min(0).optional(),
 });

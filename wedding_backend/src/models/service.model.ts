@@ -25,7 +25,7 @@ export interface ServiceAttributes {
   name: string;
   code?: string | null;
   category: ServiceCategory;
-  pricingType: ServicePricingType;
+  pricingType?: ServicePricingType | null;
   basePrice?: number | null;
   unitName?: string | null;
   description?: string | null;
@@ -39,6 +39,7 @@ type ServiceCreationAttributes = Optional<
   ServiceAttributes,
   | "id"
   | "code"
+  | "pricingType"
   | "basePrice"
   | "unitName"
   | "description"
@@ -55,7 +56,7 @@ export class Service
   public name!: string;
   public code?: string | null;
   public category!: ServiceCategory;
-  public pricingType!: ServicePricingType;
+  public pricingType?: ServicePricingType | null;
   public basePrice?: number | null;
   public unitName?: string | null;
   public description?: string | null;

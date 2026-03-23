@@ -16,23 +16,10 @@ const normalizeNullableString = (value?: string) => {
   return trimmed ? trimmed : null;
 };
 
-const normalizeOptionalNumber = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : undefined;
-};
-
-const normalizeNullableNumber = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : null;
-};
-
 const buildCreateServicePayload = (values: ServiceFormData) => ({
   name: values.name.trim(),
   code: normalizeOptionalString(values.code),
   category: values.category,
-  pricingType: values.pricingType,
-  basePrice: normalizeOptionalNumber(values.basePrice),
-  unitName: normalizeOptionalString(values.unitName),
   description: normalizeOptionalString(values.description),
   isActive: values.isActive,
 });
@@ -41,9 +28,6 @@ const buildUpdateServicePayload = (values: ServiceFormData) => ({
   name: values.name.trim(),
   code: normalizeNullableString(values.code),
   category: values.category,
-  pricingType: values.pricingType,
-  basePrice: normalizeNullableNumber(values.basePrice),
-  unitName: normalizeNullableString(values.unitName),
   description: normalizeNullableString(values.description),
   isActive: values.isActive,
 });

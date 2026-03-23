@@ -34,15 +34,8 @@ import {
 } from "@/hooks/services/useServiceMutations";
 import { useService } from "@/hooks/services/useServices";
 
-import {
-  SERVICE_CATEGORY_OPTIONS,
-  SERVICE_PRICING_TYPE_OPTIONS,
-} from "./adapters";
-import type {
-  ServiceCategory,
-  ServiceFormData,
-  ServicePricingType,
-} from "./types";
+import { SERVICE_CATEGORY_OPTIONS } from "./adapters";
+import type { ServiceCategory, ServiceFormData } from "./types";
 
 const serviceSchema = z.object({
   name: z.string().min(2, "Service name is required").max(150),
@@ -53,20 +46,6 @@ const serviceSchema = z.object({
       ...ServiceCategory[],
     ],
   ),
-  pricingType: z.enum(
-    SERVICE_PRICING_TYPE_OPTIONS.map((option) => option.value) as [
-      ServicePricingType,
-      ...ServicePricingType[],
-    ],
-  ),
-  basePrice: z
-    .string()
-    .optional()
-    .refine(
-      (value) => !value || Number(value) >= 0,
-      "Base price must be zero or greater",
-    ),
-  unitName: z.string().max(50).optional(),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
 });
@@ -92,9 +71,6 @@ const ServiceFormPage = () => {
       name: "",
       code: "",
       category: "other",
-      pricingType: "fixed",
-      basePrice: "",
-      unitName: "",
       description: "",
       isActive: true,
     },
@@ -109,12 +85,6 @@ const ServiceFormPage = () => {
       name: service.name,
       code: service.code ?? "",
       category: service.category,
-      pricingType: service.pricingType,
-      basePrice:
-        typeof service.basePrice !== "undefined" && service.basePrice !== null
-          ? String(service.basePrice)
-          : "",
-      unitName: service.unitName ?? "",
       description: service.description ?? "",
       isActive: service.isActive,
     });
@@ -192,11 +162,11 @@ const ServiceFormPage = () => {
                   {isEditMode
                     ? t("services.editDescription", {
                         defaultValue:
-                          "Update service details, pricing, and status.",
+                          "Update the catalog name, category, notes, and active status.",
                       })
                     : t("services.createDescription", {
                         defaultValue:
-                          "Create a catalog service or operational line item for events.",
+                          "Create a simple catalog service that can be linked to event services and quotations.",
                       })}
                 </p>
               </div>
@@ -223,7 +193,7 @@ const ServiceFormPage = () => {
                       <p className={sectionHintClass}>
                         {t("services.basicInformationHint", {
                           defaultValue:
-                            "Capture the main service identity, category, and pricing method.",
+                            "Capture the catalog name, optional code, and category used across the system.",
                         })}
                       </p>
                     </div>
@@ -311,117 +281,6 @@ const ServiceFormPage = () => {
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name="pricingType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("services.pricingTypeLabel", {
-                                defaultValue: "Pricing Type",
-                              })}
-                            </FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={t("services.selectPricingType", {
-                                      defaultValue: "Select pricing type",
-                                    })}
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {SERVICE_PRICING_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {t(`services.pricingType.${option.value}`, {
-                                      defaultValue: option.label,
-                                    })}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </section>
-
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("services.pricingSection", {
-                          defaultValue: "Pricing Details",
-                        })}
-                      </h2>
-                      <p className={sectionHintClass}>
-                        {t("services.pricingSectionHint", {
-                          defaultValue:
-                            "Save the base commercial values used when adding this service to an event.",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="basePrice"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("services.basePrice", {
-                                defaultValue: "Base Price",
-                              })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                {...field}
-                                placeholder={t("services.basePricePlaceholder", {
-                                  defaultValue: "Enter base price",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="unitName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("services.unitName", {
-                                defaultValue: "Unit Name",
-                              })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={t("services.unitNamePlaceholder", {
-                                  defaultValue: "guest, unit, table, item...",
-                                })}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </div>
 
                     <FormField
@@ -492,7 +351,7 @@ const ServiceFormPage = () => {
                         <p className="text-xs text-[var(--lux-text-secondary)]">
                           {t("services.activeHint", {
                             defaultValue:
-                              "Inactive services stay in the catalog but are marked as unavailable for new event items.",
+                              "Inactive services stay in the catalog but are unavailable for new event service links.",
                           })}
                         </p>
                       </div>

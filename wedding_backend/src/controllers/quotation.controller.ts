@@ -23,25 +23,82 @@ function round3(value: number) {
   return Number(value.toFixed(3));
 }
 
-function computeItemTotal(
-  quantity: number,
-  unitPrice: number,
-  totalPrice?: number | null,
-) {
-  if (typeof totalPrice === "number") return round3(totalPrice);
-  return round3(quantity * unitPrice);
+function computeQuotationTotals(subtotal: number, discountAmount?: number | null) {
+  const roundedSubtotal = round3(Number(subtotal || 0));
+  const discount = round3(Number(discountAmount || 0));
+  const totalAmount = round3(Math.max(0, roundedSubtotal - discount));
+
+  return {
+    subtotal: roundedSubtotal,
+    discountAmount: discount,
+    totalAmount,
+  };
 }
 
-function computeQuotationTotals(
-  items: Array<{ totalPrice: number }>,
-  discountAmount?: number | null,
-) {
-  const subtotal = round3(
-    items.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0),
-  );
-  const discount = round3(Number(discountAmount || 0));
-  const totalAmount = round3(Math.max(0, subtotal - discount));
-  return { subtotal, discountAmount: discount, totalAmount };
+function sanitizeServicePayload(service: any) {
+  if (!service) {
+    return service;
+  }
+
+  const plain = typeof service.toJSON === "function" ? service.toJSON() : service;
+  delete plain.pricingType;
+  delete plain.basePrice;
+  delete plain.unitName;
+  return plain;
+}
+
+function sanitizeEventServicePayload(eventService: any) {
+  if (!eventService) {
+    return eventService;
+  }
+
+  const plain =
+    typeof eventService.toJSON === "function" ? eventService.toJSON() : eventService;
+
+  delete plain.quantity;
+  delete plain.unitPrice;
+  delete plain.totalPrice;
+
+  if (plain.service) {
+    plain.service = sanitizeServicePayload(plain.service);
+  }
+
+  return plain;
+}
+
+function sanitizeQuotationItemPayload(item: any) {
+  if (!item) {
+    return item;
+  }
+
+  const plain = typeof item.toJSON === "function" ? item.toJSON() : item;
+  delete plain.quantity;
+  delete plain.unitPrice;
+  delete plain.totalPrice;
+
+  if (plain.eventService) {
+    plain.eventService = sanitizeEventServicePayload(plain.eventService);
+  }
+
+  if (plain.service) {
+    plain.service = sanitizeServicePayload(plain.service);
+  }
+
+  return plain;
+}
+
+function sanitizeQuotationPayload(quotation: any) {
+  if (!quotation) {
+    return quotation;
+  }
+
+  const plain = typeof quotation.toJSON === "function" ? quotation.toJSON() : quotation;
+
+  if (Array.isArray(plain.items)) {
+    plain.items = plain.items.map((item: any) => sanitizeQuotationItemPayload(item));
+  }
+
+  return plain;
 }
 
 const quotationInclude: any = [
@@ -73,23 +130,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    const preparedItems = data.items.map((item) => ({
-      eventServiceId: item.eventServiceId ?? null,
-      serviceId: item.serviceId ?? null,
-      itemName: item.itemName,
-      category: item.category ?? null,
-      quantity: round3(item.quantity),
-      unitPrice: round3(item.unitPrice),
-      totalPrice: computeItemTotal(
-        item.quantity,
-        item.unitPrice,
-        item.totalPrice,
-      ),
-      notes: item.notes ?? null,
-      sortOrder: item.sortOrder ?? 0,
-    }));
-
-    const totals = computeQuotationTotals(preparedItems, data.discountAmount);
+    const totals = computeQuotationTotals(data.subtotal, data.discountAmount);
 
     const quotation = await Quotation.create({
       eventId: data.eventId,
@@ -107,9 +148,14 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
     });
 
     await QuotationItem.bulkCreate(
-      preparedItems.map((item) => ({
+      data.items.map((item) => ({
         quotationId: quotation.id,
-        ...item,
+        eventServiceId: item.eventServiceId ?? null,
+        serviceId: item.serviceId ?? null,
+        itemName: item.itemName,
+        category: item.category ?? null,
+        notes: item.notes ?? null,
+        sortOrder: item.sortOrder ?? 0,
         createdBy: req.user?.id ?? null,
         updatedBy: req.user?.id ?? null,
       })),
@@ -121,7 +167,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: "Quotation created successfully",
-      data: created,
+      data: sanitizeQuotationPayload(created),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -143,21 +189,16 @@ export const createQuotationFromEvent = async (
       return res.status(404).json({ message: "Event not found" });
     }
 
-    const eventServiceWhere: any = {
-      eventId: event.id,
-      status: {
-        [Op.notIn]: ["cancelled"],
-      },
-    };
-
-    if (data.eventServiceIds?.length) {
-      eventServiceWhere.id = {
-        [Op.in]: data.eventServiceIds,
-      };
-    }
-
     const eventServices = await EventService.findAll({
-      where: eventServiceWhere,
+      where: {
+        eventId: event.id,
+        id: {
+          [Op.in]: data.eventServiceIds,
+        },
+        status: {
+          [Op.notIn]: ["cancelled"],
+        },
+      },
       include: [{ model: Service, as: "service" }],
       order: [
         ["sortOrder", "ASC"],
@@ -171,19 +212,13 @@ export const createQuotationFromEvent = async (
       });
     }
 
-    const preparedItems = eventServices.map((item) => ({
-      eventServiceId: item.id,
-      serviceId: item.serviceId ?? null,
-      itemName: item.serviceNameSnapshot,
-      category: item.category ?? null,
-      quantity: round3(Number(item.quantity)),
-      unitPrice: round3(Number(item.unitPrice ?? 0)),
-      totalPrice: round3(Number(item.totalPrice ?? 0)),
-      notes: item.notes ?? null,
-      sortOrder: item.sortOrder ?? 0,
-    }));
+    if (eventServices.length !== data.eventServiceIds.length) {
+      return res.status(400).json({
+        message: "Some selected event services are invalid for this event",
+      });
+    }
 
-    const totals = computeQuotationTotals(preparedItems, data.discountAmount);
+    const totals = computeQuotationTotals(data.subtotal, data.discountAmount);
 
     const quotation = await Quotation.create({
       eventId: event.id,
@@ -201,9 +236,14 @@ export const createQuotationFromEvent = async (
     });
 
     await QuotationItem.bulkCreate(
-      preparedItems.map((item) => ({
+      eventServices.map((item) => ({
         quotationId: quotation.id,
-        ...item,
+        eventServiceId: item.id,
+        serviceId: item.serviceId ?? null,
+        itemName: item.serviceNameSnapshot,
+        category: item.category ?? null,
+        notes: item.notes ?? null,
+        sortOrder: item.sortOrder ?? 0,
         createdBy: req.user?.id ?? null,
         updatedBy: req.user?.id ?? null,
       })),
@@ -215,7 +255,7 @@ export const createQuotationFromEvent = async (
 
     return res.status(201).json({
       message: "Quotation created from event services successfully",
-      data: created,
+      data: sanitizeQuotationPayload(created),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -277,7 +317,7 @@ export const getQuotations = async (req: Request, res: Response) => {
   });
 
   return res.json({
-    data: rows,
+    data: rows.map((row) => sanitizeQuotationPayload(row)),
     meta: {
       total: count,
       page,
@@ -326,7 +366,7 @@ export const getQuotationById = async (req: Request, res: Response) => {
     return res.status(404).json({ message: req.t("common.not_found") });
   }
 
-  return res.json({ data: quotation });
+  return res.json({ data: sanitizeQuotationPayload(quotation) });
 };
 
 export const updateQuotation = async (req: AuthRequest, res: Response) => {
@@ -344,6 +384,15 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
+    const totals = computeQuotationTotals(
+      typeof data.subtotal === "number"
+        ? data.subtotal
+        : Number(quotation.subtotal || 0),
+      typeof data.discountAmount !== "undefined"
+        ? data.discountAmount
+        : Number(quotation.discountAmount || 0),
+    );
+
     await quotation.update({
       quotationNumber:
         typeof data.quotationNumber !== "undefined"
@@ -354,30 +403,11 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
         typeof data.validUntil !== "undefined"
           ? data.validUntil
           : quotation.validUntil,
-      discountAmount:
-        typeof data.discountAmount !== "undefined"
-          ? data.discountAmount
-          : quotation.discountAmount,
-      notes: typeof data.notes !== "undefined" ? data.notes : quotation.notes,
-      status: data.status ?? quotation.status,
-      updatedBy: req.user?.id ?? null,
-    });
-
-    const items = await QuotationItem.findAll({
-      where: { quotationId: quotation.id },
-    });
-
-    const totals = computeQuotationTotals(
-      items.map((i) => ({ totalPrice: Number(i.totalPrice) })),
-      typeof data.discountAmount !== "undefined"
-        ? data.discountAmount
-        : Number(quotation.discountAmount || 0),
-    );
-
-    await quotation.update({
       subtotal: totals.subtotal,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
+      notes: typeof data.notes !== "undefined" ? data.notes : quotation.notes,
+      status: data.status ?? quotation.status,
       updatedBy: req.user?.id ?? null,
     });
 
@@ -387,7 +417,7 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: req.t("common.updated_successfully"),
-      data: updated,
+      data: sanitizeQuotationPayload(updated),
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -429,43 +459,15 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    const quantity =
-      typeof data.quantity === "number" ? data.quantity : Number(item.quantity);
-    const unitPrice =
-      typeof data.unitPrice === "number"
-        ? data.unitPrice
-        : Number(item.unitPrice);
-
     await item.update({
       itemName: data.itemName ?? item.itemName,
       category:
         typeof data.category !== "undefined" ? data.category : item.category,
-      quantity: round3(quantity),
-      unitPrice: round3(unitPrice),
-      totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
       notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
       sortOrder:
         typeof data.sortOrder !== "undefined" ? data.sortOrder : item.sortOrder,
       updatedBy: req.user?.id ?? null,
     });
-
-    const quotation = await Quotation.findByPk(item.quotationId);
-    if (quotation) {
-      const items = await QuotationItem.findAll({
-        where: { quotationId: quotation.id },
-      });
-
-      const totals = computeQuotationTotals(
-        items.map((i) => ({ totalPrice: Number(i.totalPrice) })),
-        Number(quotation.discountAmount || 0),
-      );
-
-      await quotation.update({
-        subtotal: totals.subtotal,
-        totalAmount: totals.totalAmount,
-        updatedBy: req.user?.id ?? null,
-      });
-    }
 
     const updated = await QuotationItem.findByPk(id, {
       include: [
@@ -476,7 +478,7 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: req.t("common.updated_successfully"),
-      data: updated,
+      data: sanitizeQuotationItemPayload(updated),
     });
   } catch (err) {
     if (err instanceof ZodError) {

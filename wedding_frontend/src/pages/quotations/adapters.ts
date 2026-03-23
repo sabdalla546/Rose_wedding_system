@@ -76,53 +76,19 @@ export const getQuotationPartyDisplay = (
 export const getQuotationItemDisplayName = (item: QuotationItem) =>
   item.itemName || item.service?.name || item.eventService?.serviceNameSnapshot || "-";
 
-export const computeQuotationItemTotal = (
-  quantity?: DecimalValue | null,
-  unitPrice?: DecimalValue | null,
-) => {
-  const quantityValue = toNumberValue(quantity);
-  const unitPriceValue = toNumberValue(unitPrice);
-
-  if (
-    quantityValue === null ||
-    quantityValue <= 0 ||
-    unitPriceValue === null ||
-    unitPriceValue < 0
-  ) {
-    return null;
-  }
-
-  return Number((quantityValue * unitPriceValue).toFixed(3));
-};
-
 export const computeQuotationTotals = ({
-  items,
+  subtotal,
   discountAmount,
 }: {
-  items: Array<{
-    quantity?: DecimalValue | null;
-    unitPrice?: DecimalValue | null;
-    totalPrice?: DecimalValue | null;
-  }>;
+  subtotal?: DecimalValue | null;
   discountAmount?: DecimalValue | null;
 }) => {
-  const subtotal = Number(
-    items
-      .reduce((sum, item) => {
-        const total =
-          toNumberValue(item.totalPrice) ??
-          computeQuotationItemTotal(item.quantity, item.unitPrice) ??
-          0;
-
-        return sum + total;
-      }, 0)
-      .toFixed(3),
-  );
+  const subtotalValue = Number((toNumberValue(subtotal) ?? 0).toFixed(3));
   const discount = Number((toNumberValue(discountAmount) ?? 0).toFixed(3));
-  const totalAmount = Number(Math.max(0, subtotal - discount).toFixed(3));
+  const totalAmount = Number(Math.max(0, subtotalValue - discount).toFixed(3));
 
   return {
-    subtotal,
+    subtotal: subtotalValue,
     discountAmount: discount,
     totalAmount,
   };

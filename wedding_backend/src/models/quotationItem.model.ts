@@ -10,10 +10,9 @@ export interface QuotationItemAttributes {
 
   itemName: string;
   category?: string | null;
-
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  quantity?: number | null;
+  unitPrice?: number | null;
+  totalPrice?: number | null;
 
   notes?: string | null;
   sortOrder: number;
@@ -28,6 +27,9 @@ type QuotationItemCreationAttributes = Optional<
   | "eventServiceId"
   | "serviceId"
   | "category"
+  | "quantity"
+  | "unitPrice"
+  | "totalPrice"
   | "notes"
   | "sortOrder"
   | "createdBy"
@@ -46,10 +48,9 @@ export class QuotationItem
 
   public itemName!: string;
   public category?: string | null;
-
-  public quantity!: number;
-  public unitPrice!: number;
-  public totalPrice!: number;
+  public quantity?: number | null;
+  public unitPrice?: number | null;
+  public totalPrice?: number | null;
 
   public notes?: string | null;
   public sortOrder!: number;
@@ -100,11 +101,13 @@ QuotationItem.init(
     unitPrice: {
       type: DataTypes.DECIMAL(12, 3),
       allowNull: false,
+      defaultValue: 0,
     },
 
     totalPrice: {
       type: DataTypes.DECIMAL(12, 3),
       allowNull: false,
+      defaultValue: 0,
     },
 
     notes: {

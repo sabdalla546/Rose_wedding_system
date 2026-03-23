@@ -83,25 +83,24 @@ const navigationTree: NavigationItem[] = [
             id: "events-all",
             labelKey: "sidebar.nav.allEvents",
             label: "All Events",
-            labelAr: " حجز حفلة",
+            labelAr: "حجز حفلة",
             href: "/events",
             icon: CalendarRange,
             subtitle:
               "Manage wedding events, planning sections, and linked records.",
-            subtitleAr:
-              "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062d\u0641\u0644\u0627\u062a \u0648\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629.",
+            subtitleAr: "إدارة الحفلات وأقسام التخطيط والروابط المرتبطة.",
           },
           {
             id: "calendar-appointments",
             labelKey: "sidebar.nav.appointments",
             label: "Appointments",
-            labelAr: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+            labelAr: "المواعيد",
             href: "/appointments",
             icon: CalendarCheck2,
             subtitle:
               "Manage lead appointments, meeting statuses, and team assignment.",
             subtitleAr:
-              "\u0625\u062f\u0627\u0631\u0629 \u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0627\u0644\u0645\u062d\u062a\u0645\u0644\u064a\u0646 \u0648\u062d\u0627\u0644\u0627\u062a \u0627\u0644\u0627\u062c\u062a\u0645\u0627\u0639 \u0648\u062a\u0648\u0632\u064a\u0639 \u0627\u0644\u0641\u0631\u064a\u0642.",
+              "إدارة مواعيد العملاء المحتملين وحالة الاجتماع وتوزيع الفريق.",
           },
         ],
       },
@@ -257,16 +256,6 @@ if (settingsTeamItem) {
   ];
 }
 
-const secretarialCustomersItem = navigationTree
-  .find((item) => item.id === "Secretarial")
-  ?.children?.find((item) => item.id === "customers");
-
-if (secretarialCustomersItem) {
-  secretarialCustomersItem.children = [
-    ...(secretarialCustomersItem.children ?? []),
-  ];
-}
-
 const secretarialRootItem = navigationTree.find(
   (item) => item.id === "Secretarial",
 );
@@ -278,69 +267,65 @@ if (secretarialRootItem?.children) {
       id: "events-app",
       labelKey: "sidebar.nav.events",
       label: "Events",
-      labelAr: "\u0627\u0644\u062d\u0641\u0644\u0627\u062a",
+      labelAr: "الحفلات",
       icon: CalendarRange,
       children: [
         {
           id: "quotations-all",
           labelKey: "sidebar.nav.quotations",
           label: "Quotations",
-          labelAr:
-            "\u0639\u0631\u0648\u0636 \u0627\u0644\u0623\u0633\u0639\u0627\u0631",
+          labelAr: "عروض الأسعار",
           href: "/quotations",
           icon: FileText,
           subtitle:
             "Manage quotation documents, issue dates, totals, and linked event pricing.",
           subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0639\u0631\u0648\u0636 \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0648\u062a\u0648\u0627\u0631\u064a\u062e \u0625\u0635\u062f\u0627\u0631\u0647\u0627 \u0648\u0625\u062c\u0645\u0627\u0644\u064a\u0627\u062a\u0647\u0627 \u0648\u0627\u0631\u062a\u0628\u0627\u0637\u0647\u0627 \u0628\u0627\u0644\u062d\u0641\u0644.",
+            "إدارة عروض الأسعار وتواريخ إصدارها وإجمالياتها وارتباطها بالحفل.",
         },
         {
           id: "contracts-all",
           labelKey: "sidebar.nav.contracts",
           label: "Contracts",
-          labelAr: "\u0627\u0644\u0639\u0642\u0648\u062f",
+          labelAr: "العقود",
           href: "/contracts",
           icon: FileSignature,
           subtitle:
             "Manage contract documents, payment plans, and linked event commitments.",
           subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0648\u062b\u0627\u0626\u0642 \u0627\u0644\u0639\u0642\u0648\u062f \u0648\u062e\u0637\u0637 \u0627\u0644\u062f\u0641\u0639\u0627\u062a \u0648\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0627\u0644\u062d\u0641\u0644.",
+            "إدارة وثائق العقود وخطط الدفعات والالتزامات المرتبطة بالحفل.",
         },
         {
           id: "settings-team-venues",
           labelKey: "sidebar.nav.venues",
           label: "Venues",
-          labelAr: "\u0627\u0644\u0642\u0627\u0639\u0627\u062a",
+          labelAr: "القاعات",
           href: "/settings/venues",
           icon: Building2,
           subtitle:
             "Manage wedding halls, venue contacts, and location readiness.",
-          subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0648\u0627\u0642\u0639.",
+          subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
         },
         {
           id: "settings-team-vendors",
           labelKey: "sidebar.nav.vendors",
           label: "Vendors",
-          labelAr: "\u0627\u0644\u0634\u0631\u0643\u0627\u062a",
+          labelAr: "الشركات",
           href: "/settings/vendors",
           icon: Handshake,
           subtitle:
             "Manage external vendors, service types, and operational contacts.",
-          subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629 \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644.",
+          subtitleAr: "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
         },
         {
           id: "settings-team-services",
           labelKey: "sidebar.nav.services",
           label: "Services",
-          labelAr: "\u0627\u0644\u062e\u062f\u0645\u0627\u062a",
+          labelAr: "الخدمات",
           href: "/settings/services",
           icon: PackageOpen,
           subtitle:
             "Manage catalog services, pricing types, and operational event items.",
-          subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062a\u0633\u0639\u064a\u0631 \u0648\u0628\u0646\u0648\u062f \u0627\u0644\u062d\u0641\u0644 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a\u0629.",
+          subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
         },
       ],
     },

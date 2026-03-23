@@ -18,8 +18,6 @@ import {
 import { useService } from "@/hooks/services/useServices";
 
 import {
-  formatMoney,
-  formatPricingType,
   formatServiceCategory,
 } from "./adapters";
 import { ServiceActiveBadge } from "./_components/serviceActiveBadge";
@@ -155,40 +153,24 @@ const ServiceDetailsPage = () => {
                     defaultValue: formatServiceCategory(service.category),
                   })}
                 />
-                <DetailItem
-                  label={t("services.pricingTypeLabel", {
-                    defaultValue: "Pricing Type",
-                  })}
-                  value={t(`services.pricingType.${service.pricingType}`, {
-                    defaultValue: formatPricingType(service.pricingType),
-                  })}
-                />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {t("services.pricingSection", {
-                    defaultValue: "Pricing Details",
+                  {t("services.statusSection", {
+                    defaultValue: "Status",
                   })}
                 </CardTitle>
                 <CardDescription>
-                  {t("services.pricingSectionHint", {
+                  {t("services.statusSectionHint", {
                     defaultValue:
-                      "Save the base commercial values used when adding this service to an event.",
+                      "Current availability and catalog visibility for this service.",
                   })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <DetailItem
-                  label={t("services.basePrice", { defaultValue: "Base Price" })}
-                  value={formatMoney(service.basePrice)}
-                />
-                <DetailItem
-                  label={t("services.unitName", { defaultValue: "Unit Name" })}
-                  value={service.unitName}
-                />
                 <DetailItem
                   label={t("services.statusLabel", { defaultValue: "Status" })}
                   value={

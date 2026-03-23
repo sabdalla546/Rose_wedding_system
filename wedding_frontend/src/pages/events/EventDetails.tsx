@@ -127,8 +127,6 @@ type EventServiceFormState = {
   serviceId: string;
   serviceNameSnapshot: string;
   category: ServiceCategory;
-  quantity: string;
-  unitPrice: string;
   notes: string;
   status: EventServiceStatus;
   sortOrder: string;
@@ -169,8 +167,6 @@ const createDefaultEventServiceState = (
   serviceId: "",
   serviceNameSnapshot: "",
   category: "other",
-  quantity: "1",
-  unitPrice: "",
   notes: "",
   status: "draft",
   sortOrder: String(sortOrder),
@@ -272,7 +268,6 @@ const EventDetailsPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     category: "all",
-    pricingType: "all",
     isActive: "all",
   });
   const {
@@ -363,23 +358,11 @@ const EventDetailsPage = () => {
   const eventServiceSummary = useMemo(
     () =>
       sortedEventServiceItems.reduce(
-        (summary, item) => ({
+        (summary) => ({
           itemsCount: summary.itemsCount + 1,
-          totalQuantity: Number(
-            (summary.totalQuantity + (toNumberValue(item.quantity) ?? 0)).toFixed(
-              3,
-            ),
-          ),
-          totalPrice: Number(
-            (summary.totalPrice + (toNumberValue(item.totalPrice) ?? 0)).toFixed(
-              3,
-            ),
-          ),
         }),
         {
           itemsCount: 0,
-          totalQuantity: 0,
-          totalPrice: 0,
         },
       ),
     [sortedEventServiceItems],
@@ -516,12 +499,6 @@ const EventDetailsPage = () => {
         : "",
       serviceNameSnapshot: editingServiceItem.serviceNameSnapshot ?? "",
       category: editingServiceItem.category,
-      quantity: String(editingServiceItem.quantity ?? 1),
-      unitPrice:
-        typeof editingServiceItem.unitPrice !== "undefined" &&
-        editingServiceItem.unitPrice !== null
-          ? String(editingServiceItem.unitPrice)
-          : "",
       notes: editingServiceItem.notes ?? "",
       status: editingServiceItem.status,
       sortOrder: String(editingServiceItem.sortOrder ?? 0),
@@ -649,23 +626,11 @@ const EventDetailsPage = () => {
     });
   };
 
-  const serviceQuantityValue = toNumberValue(serviceForm.quantity);
-  const serviceUnitPriceValue = toNumberValue(serviceForm.unitPrice);
-  const calculatedServiceTotal =
-    serviceQuantityValue !== null &&
-    serviceQuantityValue > 0 &&
-    serviceUnitPriceValue !== null &&
-    serviceUnitPriceValue >= 0
-      ? Number((serviceQuantityValue * serviceUnitPriceValue).toFixed(3))
-      : null;
-
   const handleServiceSave = () => {
     if (!id) {
       return;
     }
 
-    const quantityValue = toNumberValue(serviceForm.quantity);
-    const unitPriceValue = toNumberValue(serviceForm.unitPrice);
     const sortOrderValue = Number(serviceForm.sortOrder || 0);
     const selectedService = serviceCatalog.find(
       (service) => String(service.id) === serviceForm.serviceId,
@@ -677,24 +642,6 @@ const EventDetailsPage = () => {
       setServiceError(
         t("services.selectionRequired", {
           defaultValue: "Select a catalog service or enter a service name.",
-        }),
-      );
-      return;
-    }
-
-    if (quantityValue === null || quantityValue <= 0) {
-      setServiceError(
-        t("services.quantityInvalid", {
-          defaultValue: "Quantity must be greater than zero.",
-        }),
-      );
-      return;
-    }
-
-    if (serviceForm.unitPrice.trim() && (unitPriceValue === null || unitPriceValue < 0)) {
-      setServiceError(
-        t("services.unitPriceInvalid", {
-          defaultValue: "Unit price must be zero or greater.",
         }),
       );
       return;
@@ -716,9 +663,6 @@ const EventDetailsPage = () => {
       serviceId: serviceForm.serviceId,
       serviceNameSnapshot,
       category: serviceForm.category,
-      quantity: String(quantityValue),
-      unitPrice:
-        unitPriceValue !== null ? String(unitPriceValue) : serviceForm.unitPrice,
       notes: serviceForm.notes,
       status: serviceForm.status,
       sortOrder: String(sortOrderValue),
@@ -1224,43 +1168,6 @@ const EventDetailsPage = () => {
                       {eventServiceSummary.itemsCount}
                     </p>
                   </div>
-
-                  <div
-                    className="rounded-2xl border px-4 py-3"
-                    style={{
-                      background: "var(--lux-panel-surface)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                      {t("services.summaryQuantity", {
-                        defaultValue: "Total Quantity",
-                      })}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                      {eventServiceSummary.totalQuantity.toLocaleString(undefined, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 3,
-                      })}
-                    </p>
-                  </div>
-
-                  <div
-                    className="rounded-2xl border px-4 py-3"
-                    style={{
-                      background: "var(--lux-panel-surface)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                      {t("services.summaryEstimatedTotal", {
-                        defaultValue: "Estimated Total",
-                      })}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                      {formatMoney(eventServiceSummary.totalPrice)}
-                    </p>
-                  </div>
                 </div>
 
                 {eventServiceItemsLoading ? (
@@ -1297,16 +1204,14 @@ const EventDetailsPage = () => {
                             <h3 className="text-base font-semibold text-[var(--lux-heading)]">
                               {getEventServiceDisplayName(serviceItem)}
                             </h3>
-                            {serviceItem.service?.code || serviceItem.service?.unitName ? (
+                            {serviceItem.service?.code ? (
                               <p className="text-sm text-[var(--lux-text-secondary)]">
-                                {[serviceItem.service?.code, serviceItem.service?.unitName]
-                                  .filter(Boolean)
-                                  .join(" / ")}
+                                {serviceItem.service.code}
                               </p>
                             ) : null}
                           </div>
 
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <div
                               className="rounded-2xl border px-4 py-3"
                               style={{
@@ -1315,44 +1220,12 @@ const EventDetailsPage = () => {
                               }}
                             >
                               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                {t("services.quantity", {
-                                  defaultValue: "Quantity",
+                                {t("events.event", {
+                                  defaultValue: "Event",
                                 })}
                               </p>
                               <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                {serviceItem.quantity}
-                              </p>
-                            </div>
-                            <div
-                              className="rounded-2xl border px-4 py-3"
-                              style={{
-                                background: "var(--lux-panel-surface)",
-                                borderColor: "var(--lux-row-border)",
-                              }}
-                            >
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                {t("services.unitPrice", {
-                                  defaultValue: "Unit Price",
-                                })}
-                              </p>
-                              <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                {formatMoney(serviceItem.unitPrice)}
-                              </p>
-                            </div>
-                            <div
-                              className="rounded-2xl border px-4 py-3"
-                              style={{
-                                background: "var(--lux-panel-surface)",
-                                borderColor: "var(--lux-row-border)",
-                              }}
-                            >
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                {t("services.totalPrice", {
-                                  defaultValue: "Total Price",
-                                })}
-                              </p>
-                              <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                {formatMoney(serviceItem.totalPrice)}
+                                #{serviceItem.eventId}
                               </p>
                             </div>
                           </div>
@@ -2404,11 +2277,6 @@ const EventDetailsPage = () => {
                     serviceNameSnapshot:
                       selectedService?.name || current.serviceNameSnapshot,
                     category: selectedService?.category || current.category,
-                    unitPrice:
-                      typeof selectedService?.basePrice !== "undefined" &&
-                      selectedService.basePrice !== null
-                        ? String(selectedService.basePrice)
-                        : current.unitPrice,
                   };
                 })
               }
@@ -2466,67 +2334,6 @@ const EventDetailsPage = () => {
               })}
             />
           </label>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
-                {t("services.quantity", { defaultValue: "Quantity" })}
-              </span>
-              <Input
-                type="number"
-                min="0"
-                step="0.001"
-                value={serviceForm.quantity}
-                onChange={(event) =>
-                  setServiceForm((current) => ({
-                    ...current,
-                    quantity: event.target.value,
-                  }))
-                }
-                placeholder={t("services.quantityPlaceholder", {
-                  defaultValue: "Enter quantity",
-                })}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
-                {t("services.unitPrice", { defaultValue: "Unit Price" })}
-              </span>
-              <Input
-                type="number"
-                min="0"
-                step="0.001"
-                value={serviceForm.unitPrice}
-                onChange={(event) =>
-                  setServiceForm((current) => ({
-                    ...current,
-                    unitPrice: event.target.value,
-                  }))
-                }
-                placeholder={t("services.unitPricePlaceholder", {
-                  defaultValue: "Enter unit price",
-                })}
-              />
-            </label>
-          </div>
-
-          <div
-            className="rounded-[20px] border p-4"
-            style={{
-              background: "var(--lux-control-hover)",
-              borderColor: "var(--lux-row-border)",
-            }}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-              {t("services.totalPrice", { defaultValue: "Total Price" })}
-            </p>
-            <p className="mt-2 text-lg font-semibold text-[var(--lux-heading)]">
-              {calculatedServiceTotal !== null
-                ? formatMoney(calculatedServiceTotal)
-                : "-"}
-            </p>
-          </div>
 
           <label className="space-y-2">
             <span className="text-sm font-medium text-[var(--lux-text)]">

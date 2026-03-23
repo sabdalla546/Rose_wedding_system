@@ -4,14 +4,11 @@ import type {
   EventServiceStatus,
   Service,
   ServiceCategory,
-  ServicePricingType,
   ServicesResponse,
 } from "@/pages/services/types";
 
 export type TableService = Service & {
   categoryDisplay: string;
-  pricingTypeDisplay: string;
-  basePriceDisplay: string;
 };
 
 export type TableServicesResponse = {
@@ -30,12 +27,6 @@ export const toNumberValue = (value?: DecimalValue | null) => {
 };
 
 export const formatServiceCategory = (value: ServiceCategory) =>
-  value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
-export const formatPricingType = (value: ServicePricingType) =>
   value
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -64,8 +55,6 @@ export function toTableServices(res?: ServicesResponse): TableServicesResponse {
   const services = (res?.data ?? []).map<TableService>((service) => ({
     ...service,
     categoryDisplay: formatServiceCategory(service.category),
-    pricingTypeDisplay: formatPricingType(service.pricingType),
-    basePriceDisplay: formatMoney(service.basePrice),
   }));
 
   return {
@@ -94,16 +83,6 @@ export const SERVICE_CATEGORY_OPTIONS: Array<{
   { value: "female_supplies", label: "Female Supplies" },
   { value: "transport", label: "Transport" },
   { value: "other", label: "Other" },
-];
-
-export const SERVICE_PRICING_TYPE_OPTIONS: Array<{
-  value: ServicePricingType;
-  label: string;
-}> = [
-  { value: "fixed", label: "Fixed" },
-  { value: "per_guest", label: "Per Guest" },
-  { value: "per_unit", label: "Per Unit" },
-  { value: "custom", label: "Custom" },
 ];
 
 export const EVENT_SERVICE_STATUS_OPTIONS: Array<{

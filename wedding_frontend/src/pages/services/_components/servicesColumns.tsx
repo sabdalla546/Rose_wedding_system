@@ -41,7 +41,7 @@ export const useServicesColumns = ({
             {row.original.name}
           </div>
           <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.code || row.original.unitName || "-"}
+            {row.original.code || "-"}
           </div>
         </div>
       ),
@@ -60,32 +60,6 @@ export const useServicesColumns = ({
             defaultValue: row.original.categoryDisplay,
           })}
         </div>
-      ),
-    },
-    {
-      accessorKey: "pricingType",
-      header: () => (
-        <div className={alignClass}>
-          {t("services.pricingTypeLabel", { defaultValue: "Pricing Type" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>
-          {t(`services.pricingType.${row.original.pricingType}`, {
-            defaultValue: row.original.pricingTypeDisplay,
-          })}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "basePrice",
-      header: () => (
-        <div className={alignClass}>
-          {t("services.basePrice", { defaultValue: "Base Price" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>{row.original.basePriceDisplay}</div>
       ),
     },
     {

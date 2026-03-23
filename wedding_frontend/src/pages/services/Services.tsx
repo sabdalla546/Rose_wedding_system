@@ -16,12 +16,11 @@ import { useServices } from "@/hooks/services/useServices";
 
 import {
   SERVICE_CATEGORY_OPTIONS,
-  SERVICE_PRICING_TYPE_OPTIONS,
   toTableServices,
   type TableService,
 } from "./adapters";
 import { useServicesColumns } from "./_components/servicesColumns";
-import type { ServiceCategory, ServicePricingType } from "./types";
+import type { ServiceCategory } from "./types";
 
 const ServicesPage = () => {
   const { t } = useTranslation();
@@ -33,9 +32,6 @@ const ServicesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [categoryFilter, setCategoryFilter] = useState<
     "all" | ServiceCategory
-  >("all");
-  const [pricingTypeFilter, setPricingTypeFilter] = useState<
-    "all" | ServicePricingType
   >("all");
   const [isActiveFilter, setIsActiveFilter] = useState<
     "all" | "true" | "false"
@@ -54,7 +50,6 @@ const ServicesPage = () => {
     itemsPerPage,
     searchQuery,
     category: categoryFilter,
-    pricingType: pricingTypeFilter,
     isActive: isActiveFilter,
   });
 
@@ -150,41 +145,6 @@ const ServicesPage = () => {
                 {SERVICE_CATEGORY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {t(`services.category.${option.value}`, {
-                      defaultValue: option.label,
-                    })}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="min-w-[220px] space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
-                {t("services.pricingTypeLabel", {
-                  defaultValue: "Pricing Type",
-                })}
-              </span>
-              <select
-                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-                value={pricingTypeFilter}
-                onChange={(event) => {
-                  setPricingTypeFilter(
-                    event.target.value as "all" | ServicePricingType,
-                  );
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="all">
-                  {t("services.allPricingTypes", {
-                    defaultValue: "All Pricing Types",
-                  })}
-                </option>
-                {SERVICE_PRICING_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {t(`services.pricingType.${option.value}`, {
                       defaultValue: option.label,
                     })}
                   </option>

@@ -8,7 +8,6 @@ import type {
   EventServiceStatus,
   Service,
   ServiceCategory,
-  ServicePricingType,
   ServiceResponse,
   ServicesResponse,
 } from "@/pages/services/types";
@@ -18,7 +17,6 @@ interface UseServicesParams {
   itemsPerPage: number;
   searchQuery: string;
   category: "all" | ServiceCategory;
-  pricingType: "all" | ServicePricingType;
   isActive: "all" | "true" | "false";
 }
 
@@ -35,7 +33,6 @@ export const useServices = ({
   itemsPerPage,
   searchQuery,
   category,
-  pricingType,
   isActive,
 }: UseServicesParams) => {
   return useQuery<ServicesResponse>({
@@ -45,7 +42,6 @@ export const useServices = ({
       itemsPerPage,
       searchQuery,
       category,
-      pricingType,
       isActive,
     ],
     queryFn: async () => {
@@ -55,7 +51,6 @@ export const useServices = ({
           limit: itemsPerPage,
           search: searchQuery || undefined,
           category: category === "all" ? undefined : category,
-          pricingType: pricingType === "all" ? undefined : pricingType,
           isActive: isActive === "all" ? undefined : isActive,
         },
       });

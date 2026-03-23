@@ -15,8 +15,7 @@ export interface EventServiceAttributes {
   serviceId?: number | null;
   serviceNameSnapshot: string;
   category: string;
-
-  quantity: number;
+  quantity?: number | null;
   unitPrice?: number | null;
   totalPrice?: number | null;
 
@@ -32,6 +31,7 @@ type EventServiceCreationAttributes = Optional<
   EventServiceAttributes,
   | "id"
   | "serviceId"
+  | "quantity"
   | "unitPrice"
   | "totalPrice"
   | "notes"
@@ -51,8 +51,7 @@ export class EventService
   public serviceId?: number | null;
   public serviceNameSnapshot!: string;
   public category!: string;
-
-  public quantity!: number;
+  public quantity?: number | null;
   public unitPrice?: number | null;
   public totalPrice?: number | null;
 

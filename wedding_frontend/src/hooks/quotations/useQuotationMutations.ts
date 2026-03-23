@@ -36,6 +36,7 @@ const buildCreateQuotationPayload = (values: QuotationFormData) => ({
   quotationNumber: normalizeOptionalString(values.quotationNumber),
   issueDate: values.issueDate,
   validUntil: normalizeOptionalString(values.validUntil),
+  subtotal: Number(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
   notes: normalizeOptionalString(values.notes),
   status: values.status || undefined,
@@ -44,9 +45,6 @@ const buildCreateQuotationPayload = (values: QuotationFormData) => ({
     serviceId: item.serviceId ? Number(item.serviceId) : null,
     itemName: item.itemName.trim(),
     category: normalizeOptionalString(item.category),
-    quantity: Number(item.quantity),
-    unitPrice: Number(item.unitPrice),
-    totalPrice: item.totalPrice ? Number(item.totalPrice) : undefined,
     notes: normalizeOptionalString(item.notes),
     sortOrder: item.sortOrder?.trim() ? Number(item.sortOrder) : undefined,
   })),
@@ -57,11 +55,10 @@ const buildCreateFromEventPayload = (values: QuotationFromEventFormData) => ({
   quotationNumber: normalizeOptionalString(values.quotationNumber),
   issueDate: values.issueDate,
   validUntil: normalizeOptionalString(values.validUntil),
+  subtotal: Number(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
   notes: normalizeOptionalString(values.notes),
-  eventServiceIds: values.eventServiceIds?.length
-    ? values.eventServiceIds.map((value) => Number(value))
-    : undefined,
+  eventServiceIds: values.eventServiceIds.map((value) => Number(value)),
   status: values.status || undefined,
 });
 
@@ -69,6 +66,7 @@ const buildUpdateQuotationPayload = (values: QuotationUpdateFormData) => ({
   quotationNumber: normalizeNullableString(values.quotationNumber),
   issueDate: values.issueDate || undefined,
   validUntil: normalizeNullableString(values.validUntil),
+  subtotal: normalizeNullableNumber(values.subtotal),
   discountAmount: normalizeNullableNumber(values.discountAmount),
   notes: normalizeNullableString(values.notes),
   status: values.status || undefined,
@@ -79,9 +77,6 @@ const buildUpdateQuotationItemPayload = (
 ) => ({
   itemName: item.itemName.trim(),
   category: normalizeNullableString(item.category),
-  quantity: Number(item.quantity),
-  unitPrice: Number(item.unitPrice),
-  totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
   notes: normalizeNullableString(item.notes),
   sortOrder: item.sortOrder?.trim() ? Number(item.sortOrder) : 0,
 });

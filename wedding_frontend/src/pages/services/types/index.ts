@@ -14,8 +14,6 @@ export type ServiceCategory =
   | "female_supplies"
   | "transport"
   | "other";
-
-export type ServicePricingType = "fixed" | "per_guest" | "per_unit" | "custom";
 export type EventServiceStatus =
   | "draft"
   | "approved"
@@ -35,9 +33,6 @@ export interface Service {
   name: string;
   code?: string | null;
   category: ServiceCategory;
-  pricingType: ServicePricingType;
-  basePrice?: DecimalValue | null;
-  unitName?: string | null;
   description?: string | null;
   isActive: boolean;
   createdByUser?: ServiceUserSummary | null;
@@ -65,9 +60,6 @@ export interface ServiceFormData {
   name: string;
   code?: string;
   category: ServiceCategory;
-  pricingType: ServicePricingType;
-  basePrice?: string;
-  unitName?: string;
   description?: string;
   isActive: boolean;
 }
@@ -84,7 +76,7 @@ export interface EventServiceItem {
   serviceId?: number | null;
   serviceNameSnapshot: string;
   category: ServiceCategory;
-  quantity: DecimalValue;
+  quantity?: DecimalValue | null;
   unitPrice?: DecimalValue | null;
   totalPrice?: DecimalValue | null;
   notes?: string | null;
@@ -118,8 +110,6 @@ export interface EventServiceItemFormData {
   serviceId?: string;
   serviceNameSnapshot?: string;
   category: ServiceCategory;
-  quantity: string;
-  unitPrice?: string;
   notes?: string;
   status: EventServiceStatus;
   sortOrder: string;

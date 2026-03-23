@@ -268,7 +268,6 @@ const ContractFormPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     category: "all",
-    pricingType: "all",
     isActive: "all",
   });
 
@@ -549,10 +548,10 @@ const ContractFormPage = () => {
     form.setValue(`items.${index}.category`, selectedItem.category ?? "", {
       shouldDirty: true,
     });
-    form.setValue(`items.${index}.quantity`, String(selectedItem.quantity), {
+    form.setValue(`items.${index}.quantity`, String(selectedItem.quantity ?? 1), {
       shouldDirty: true,
     });
-    form.setValue(`items.${index}.unitPrice`, String(selectedItem.unitPrice), {
+    form.setValue(`items.${index}.unitPrice`, String(selectedItem.unitPrice ?? 0), {
       shouldDirty: true,
     });
   };
@@ -585,10 +584,10 @@ const ContractFormPage = () => {
     form.setValue(`items.${index}.category`, selectedEventService.category, {
       shouldDirty: true,
     });
-    form.setValue(`items.${index}.quantity`, String(selectedEventService.quantity), {
+    form.setValue(`items.${index}.quantity`, String(selectedEventService.quantity ?? 1), {
       shouldDirty: true,
     });
-    form.setValue(`items.${index}.unitPrice`, String(selectedEventService.unitPrice), {
+    form.setValue(`items.${index}.unitPrice`, String(selectedEventService.unitPrice ?? 0), {
       shouldDirty: true,
     });
   };
@@ -610,9 +609,6 @@ const ContractFormPage = () => {
       shouldDirty: true,
     });
     form.setValue(`items.${index}.category`, selectedService.category, {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.unitPrice`, String(selectedService.basePrice ?? 0), {
       shouldDirty: true,
     });
   };

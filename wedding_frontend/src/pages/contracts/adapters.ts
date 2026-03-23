@@ -1,7 +1,5 @@
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
-  computeQuotationItemTotal,
-  computeQuotationTotals,
   formatMoney,
   formatQuotationItemCategory,
   toNumberValue,
@@ -82,9 +80,57 @@ export const getPaymentScheduleDisplayName = (
   schedule: Pick<PaymentSchedule, "installmentName">,
 ) => schedule.installmentName?.trim() || "-";
 
-export const computeContractItemTotal = computeQuotationItemTotal;
+export const computeContractItemTotal = (
+  quantity?: number | string | null,
+  unitPrice?: number | string | null,
+) => {
+  const quantityValue = toNumberValue(quantity);
+  const unitPriceValue = toNumberValue(unitPrice);
 
-export const computeContractTotals = computeQuotationTotals;
+  if (
+    quantityValue === null ||
+    quantityValue <= 0 ||
+    unitPriceValue === null ||
+    unitPriceValue < 0
+  ) {
+    return null;
+  }
+
+  return Number((quantityValue * unitPriceValue).toFixed(3));
+};
+
+export const computeContractTotals = ({
+  items,
+  discountAmount,
+}: {
+  items: Array<{
+    quantity?: number | string | null;
+    unitPrice?: number | string | null;
+    totalPrice?: number | string | null;
+  }>;
+  discountAmount?: number | string | null;
+}) => {
+  const subtotal = Number(
+    items
+      .reduce((sum, item) => {
+        const total =
+          toNumberValue(item.totalPrice) ??
+          computeContractItemTotal(item.quantity, item.unitPrice) ??
+          0;
+
+        return sum + total;
+      }, 0)
+      .toFixed(3),
+  );
+  const discount = Number((toNumberValue(discountAmount) ?? 0).toFixed(3));
+  const totalAmount = Number(Math.max(0, subtotal - discount).toFixed(3));
+
+  return {
+    subtotal,
+    discountAmount: discount,
+    totalAmount,
+  };
+};
 
 export function toTableContracts(
   res?: ContractsResponse,
