@@ -28,7 +28,6 @@ const normalizeGuestCountForUpdate = (value?: string) => {
 
 const buildCreateEventPayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   eventDate: values.eventDate,
   venueId: values.venueId ? Number(values.venueId) : null,
   venueNameSnapshot: normalizeOptionalString(values.venueNameSnapshot),
@@ -43,7 +42,6 @@ const buildCreateEventPayload = (values: EventFormData) => ({
 
 const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   eventDate: normalizeOptionalString(values.eventDate),
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
@@ -54,7 +52,6 @@ const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
 
 const buildUpdateEventPayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   eventDate: normalizeOptionalString(values.eventDate),
   venueId: values.venueId ? Number(values.venueId) : null,
   venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),

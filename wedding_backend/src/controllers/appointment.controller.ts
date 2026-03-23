@@ -1,26 +1,44 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
-import { Appointment, Lead, Venue, User } from "../models";
+
+import { sequelize } from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { Appointment, Customer, Venue, User } from "../models";
 import {
   createAppointmentSchema,
+  createAppointmentWithCustomerSchema,
   updateAppointmentSchema,
-  createAppointmentWithLeadSchema,
 } from "../validation/appointment.schemas";
 import {
-  confirmAppointmentSchema,
-  completeAppointmentSchema,
   cancelAppointmentSchema,
+  completeAppointmentSchema,
+  confirmAppointmentSchema,
   rescheduleAppointmentSchema,
 } from "../validation/appointment-action.schemas";
+
+const appointmentInclude = [
+  {
+    model: Customer,
+    as: "customer",
+    include: [{ model: Venue, as: "venue" }],
+  },
+  {
+    model: User,
+    as: "assignedToUser",
+    attributes: ["id", "fullName", "email"],
+  },
+  { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
+  { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+];
+
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const data = createAppointmentSchema.parse(req.body);
 
-    const lead = await Lead.findByPk(data.leadId);
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found" });
+    const customer = await Customer.findByPk(data.customerId);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
     }
 
     if (data.assignedToUserId) {
@@ -31,7 +49,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
     }
 
     const appointment = await Appointment.create({
-      leadId: data.leadId,
+      customerId: data.customerId,
       appointmentDate: data.appointmentDate,
       appointmentStartTime: data.appointmentStartTime,
       appointmentEndTime: data.appointmentEndTime ?? null,
@@ -45,28 +63,8 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    if (lead.status === "new" || lead.status === "contacted") {
-      await lead.update({
-        status: "appointment_scheduled",
-        updatedBy: req.user?.id ?? null,
-      });
-    }
-
     const created = await Appointment.findByPk(appointment.id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.status(201).json({
@@ -82,81 +80,109 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createAppointmentWithLead = async (
+export const createAppointmentWithCustomer = async (
   req: AuthRequest,
   res: Response,
 ) => {
   try {
-    const data = createAppointmentWithLeadSchema.parse(req.body);
-
-    if (data.lead.venueId) {
-      const venue = await Venue.findByPk(data.lead.venueId);
-      if (!venue) {
-        return res.status(404).json({ message: "Venue not found" });
-      }
-    }
+    const data = createAppointmentWithCustomerSchema.parse(req.body);
 
     if (data.appointment.assignedToUserId) {
-      const assignedUser = await User.findByPk(
-        data.appointment.assignedToUserId,
-      );
+      const assignedUser = await User.findByPk(data.appointment.assignedToUserId);
       if (!assignedUser) {
         return res.status(404).json({ message: "Assigned user not found" });
       }
     }
 
-    const lead = await Lead.create({
-      fullName: data.lead.fullName.trim(),
-      mobile: data.lead.mobile.trim(),
-      mobile2: data.lead.mobile2 ?? null,
-      email: data.lead.email ?? null,
-      weddingDate: data.lead.weddingDate,
-      guestCount: data.lead.guestCount ?? null,
-      venueId: data.lead.venueId ?? null,
-      venueNameSnapshot: data.lead.venueNameSnapshot ?? null,
-      source: data.lead.source ?? null,
-      notes: data.lead.notes ?? null,
-      status: "appointment_scheduled",
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
+    const transaction = await sequelize.transaction();
 
-    const appointment = await Appointment.create({
-      leadId: lead.id,
-      appointmentDate: data.appointment.appointmentDate,
-      appointmentStartTime: data.appointment.appointmentStartTime,
-      appointmentEndTime: data.appointment.appointmentEndTime ?? null,
-      status: "scheduled",
-      meetingType: data.appointment.meetingType ?? "office_visit",
-      assignedToUserId: data.appointment.assignedToUserId ?? null,
-      notes: data.appointment.notes ?? null,
-      result: data.appointment.result ?? null,
-      nextStep: data.appointment.nextStep ?? null,
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
+    try {
+      let customer: Customer | null = null;
 
-    const created = await Appointment.findByPk(appointment.id, {
-      include: [
+      if (data.customerId) {
+        customer = await Customer.findByPk(data.customerId, { transaction });
+        if (!customer) {
+          await transaction.rollback();
+          return res.status(404).json({ message: "Customer not found" });
+        }
+      } else if (data.customer) {
+        const mobile = data.customer.mobile.trim();
+        customer = await Customer.findOne({
+          where: { mobile },
+          transaction,
+        });
+
+        if (!customer) {
+          if (data.customer.venueId) {
+            const venue = await Venue.findByPk(data.customer.venueId, {
+              transaction,
+            });
+            if (!venue) {
+              await transaction.rollback();
+              return res.status(404).json({ message: "Venue not found" });
+            }
+          }
+
+          customer = await Customer.create(
+            {
+              fullName: data.customer.fullName.trim(),
+              mobile,
+              mobile2: data.customer.mobile2?.trim() || null,
+              email: data.customer.email?.trim() || null,
+              groomName: data.customer.groomName?.trim() || null,
+              brideName: data.customer.brideName?.trim() || null,
+              weddingDate: data.customer.weddingDate ?? null,
+              guestCount: data.customer.guestCount ?? null,
+              venueId: data.customer.venueId ?? null,
+              notes: data.customer.notes ?? null,
+              status: "active",
+              createdBy: req.user?.id ?? null,
+              updatedBy: req.user?.id ?? null,
+            },
+            { transaction },
+          );
+        }
+      }
+
+      if (!customer) {
+        await transaction.rollback();
+        return res
+          .status(400)
+          .json({ message: "Either customerId or customer is required" });
+      }
+
+      const appointment = await Appointment.create(
         {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
+          customerId: customer.id,
+          appointmentDate: data.appointment.appointmentDate,
+          appointmentStartTime: data.appointment.appointmentStartTime,
+          appointmentEndTime: data.appointment.appointmentEndTime ?? null,
+          status: "scheduled",
+          meetingType: data.appointment.meetingType ?? "office_visit",
+          assignedToUserId: data.appointment.assignedToUserId ?? null,
+          notes: data.appointment.notes ?? null,
+          result: data.appointment.result ?? null,
+          nextStep: data.appointment.nextStep ?? null,
+          createdBy: req.user?.id ?? null,
+          updatedBy: req.user?.id ?? null,
         },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
-    });
+        { transaction },
+      );
 
-    return res.status(201).json({
-      message: "Appointment and lead created successfully",
-      data: created,
-    });
+      await transaction.commit();
+
+      const created = await Appointment.findByPk(appointment.id, {
+        include: appointmentInclude,
+      });
+
+      return res.status(201).json({
+        message: "Appointment created successfully",
+        data: created,
+      });
+    } catch (transactionError) {
+      await transaction.rollback();
+      throw transactionError;
+    }
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
@@ -172,17 +198,17 @@ export const getAppointments = async (req: Request, res: Response) => {
   const offset = (page - 1) * limit;
 
   const status = String(req.query.status ?? "").trim();
-  const leadId = Number(req.query.leadId) || undefined;
+  const customerId = Number(req.query.customerId) || undefined;
   const venueId = Number(req.query.venueId) || undefined;
   const assignedToUserId = Number(req.query.assignedToUserId) || undefined;
   const dateFrom = String(req.query.dateFrom ?? "").trim();
   const dateTo = String(req.query.dateTo ?? "").trim();
 
   const where: any = {};
-  const leadWhere: any = {};
+  const customerWhere: any = {};
 
   if (status) where.status = status;
-  if (leadId) where.leadId = leadId;
+  if (customerId) where.customerId = customerId;
   if (assignedToUserId) where.assignedToUserId = assignedToUserId;
 
   if (dateFrom || dateTo) {
@@ -192,16 +218,16 @@ export const getAppointments = async (req: Request, res: Response) => {
   }
 
   if (venueId) {
-    leadWhere.venueId = venueId;
+    customerWhere.venueId = venueId;
   }
 
   const { count, rows } = await Appointment.findAndCountAll({
     where,
     include: [
       {
-        model: Lead,
-        as: "lead",
-        where: Object.keys(leadWhere).length ? leadWhere : undefined,
+        model: Customer,
+        as: "customer",
+        where: Object.keys(customerWhere).length ? customerWhere : undefined,
         include: [{ model: Venue, as: "venue" }],
       },
       {
@@ -240,20 +266,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 
   const appointment = await Appointment.findByPk(id, {
-    include: [
-      {
-        model: Lead,
-        as: "lead",
-        include: [{ model: Venue, as: "venue" }],
-      },
-      {
-        model: User,
-        as: "assignedToUser",
-        attributes: ["id", "fullName", "email"],
-      },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
+    include: appointmentInclude,
   });
 
   if (!appointment) {
@@ -262,6 +275,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 
   return res.json({ data: appointment });
 };
+
 export const confirmAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -289,29 +303,8 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    const lead = await Lead.findByPk(appointment.leadId);
-    if (lead && ["new", "contacted"].includes(lead.status)) {
-      await lead.update({
-        status: "appointment_scheduled",
-        updatedBy: req.user?.id ?? null,
-      });
-    }
-
     const updated = await Appointment.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.json({
@@ -360,29 +353,8 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    const lead = await Lead.findByPk(appointment.leadId);
-    if (lead) {
-      await lead.update({
-        status: "appointment_completed",
-        updatedBy: req.user?.id ?? null,
-      });
-    }
-
     const updated = await Appointment.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.json({
@@ -428,20 +400,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
     });
 
     const updated = await Appointment.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.json({
@@ -511,29 +470,8 @@ export const rescheduleAppointment = async (
       updatedBy: req.user?.id ?? null,
     });
 
-    const lead = await Lead.findByPk(appointment.leadId);
-    if (lead && ["new", "contacted"].includes(lead.status)) {
-      await lead.update({
-        status: "appointment_scheduled",
-        updatedBy: req.user?.id ?? null,
-      });
-    }
-
     const updated = await Appointment.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.json({
@@ -548,6 +486,7 @@ export const rescheduleAppointment = async (
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
+
 export const updateAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -598,45 +537,8 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    if (data.status === "completed") {
-      const lead = await Lead.findByPk(appointment.leadId);
-      if (lead) {
-        await lead.update({
-          status: "appointment_completed",
-          updatedBy: req.user?.id ?? null,
-        });
-      }
-    }
-
-    if (
-      data.status === "scheduled" ||
-      data.status === "confirmed" ||
-      data.status === "rescheduled"
-    ) {
-      const lead = await Lead.findByPk(appointment.leadId);
-      if (lead && ["new", "contacted"].includes(lead.status)) {
-        await lead.update({
-          status: "appointment_scheduled",
-          updatedBy: req.user?.id ?? null,
-        });
-      }
-    }
-
     const updated = await Appointment.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          as: "lead",
-          include: [{ model: Venue, as: "venue" }],
-        },
-        {
-          model: User,
-          as: "assignedToUser",
-          attributes: ["id", "fullName", "email"],
-        },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: appointmentInclude,
     });
 
     return res.json({
@@ -691,8 +593,8 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
     where,
     include: [
       {
-        model: Lead,
-        as: "lead",
+        model: Customer,
+        as: "customer",
         include: [{ model: Venue, as: "venue" }],
       },
       {

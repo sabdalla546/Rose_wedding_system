@@ -12,7 +12,7 @@ import {
   type NavigationLeaf,
   navigationItems,
 } from "@/lib/constants/navigation";
-import { routePermissionByHref } from "@/lib/constants/route-permissions";
+import { routeAccessByHref } from "@/lib/constants/route-permissions";
 import AppointmentDetailsPage from "@/pages/appointments/AppointmentDetails";
 import AppointmentFormPage from "@/pages/appointments/AppointmentForm";
 import AppointmentsPage from "@/pages/appointments/Appointments";
@@ -34,9 +34,6 @@ import VendorDetailsPage from "@/pages/vendors/VendorDetails";
 import VendorFormPage from "@/pages/vendors/VendorForm";
 import VendorsPage from "@/pages/vendors/Vendors";
 import { LoginPage } from "@/pages/auth/login-page";
-import LeadDetailsPage from "@/pages/leads/LeadDetails";
-import LeadFormPage from "@/pages/leads/LeadForm";
-import LeadsPage from "@/pages/leads/Leads";
 import RoleFormPage from "@/pages/roles/RoleForm";
 import RolesPage from "@/pages/roles/Roles";
 import ServiceDetailsPage from "@/pages/services/ServiceDetails";
@@ -67,10 +64,6 @@ const explicitModulePaths = new Set([
   "/settings/services/create",
   "/settings/services/edit/:id",
   "/settings/services/:id",
-  "/leads",
-  "/leads/create",
-  "/leads/edit/:id",
-  "/leads/:id",
   "/customers",
   "/customers/create",
   "/customers/edit/:id",
@@ -97,6 +90,7 @@ function createModuleRoute(item: NavigationLeaf) {
   if (!item.href) {
     return null;
   }
+  const access = routeAccessByHref[item.href];
 
   if (item.href === "/dashboard") {
     return {
@@ -135,7 +129,10 @@ function createModuleRoute(item: NavigationLeaf) {
       titleAr: item.labelAr,
       subtitle: item.subtitle,
       subtitleAr: item.subtitleAr,
-      requiredPermission: routePermissionByHref[item.href],
+      requiredPermission: item.permission ?? access?.permission,
+      requiredAnyOf: item.anyOf ?? access?.anyOf,
+      requiredAllOf: item.allOf ?? access?.allOf,
+      requiredRoles: item.roles ?? access?.roles,
     },
   };
 }
@@ -278,22 +275,6 @@ export const router = createBrowserRouter([
           {
             path: "settings/services/:id",
             element: <ServiceDetailsPage />,
-          },
-          {
-            path: "leads",
-            element: <LeadsPage />,
-          },
-          {
-            path: "leads/create",
-            element: <LeadFormPage />,
-          },
-          {
-            path: "leads/edit/:id",
-            element: <LeadFormPage />,
-          },
-          {
-            path: "leads/:id",
-            element: <LeadDetailsPage />,
           },
           {
             path: "customers",

@@ -41,11 +41,11 @@ import {
 } from "@/components/ui/select";
 import {
   useCreateAppointment,
-  useCreateAppointmentWithLead,
+  useCreateAppointmentWithCustomer,
   useUpdateAppointment,
 } from "@/hooks/appointments/useAppointmentMutations";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
-import { useLeads } from "@/hooks/leads/useLeads";
+import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useUsers } from "@/hooks/users/useUsers";
 import { useVenues } from "@/hooks/venues/useVenues";
 import {
@@ -61,17 +61,17 @@ import type {
 type AppointmentMode = "new" | "existing";
 
 type AppointmentFormValues = {
-  leadId: string;
-  leadFullName: string;
-  leadMobile: string;
-  leadMobile2: string;
-  leadEmail: string;
-  leadVenueId: string;
-  leadVenueNameSnapshot: string;
-  leadWeddingDate: string;
-  leadGuestCount: string;
-  leadSource: string;
-  leadNotes: string;
+  customerId: string;
+  customerFullName: string;
+  customerMobile: string;
+  customerMobile2: string;
+  customerEmail: string;
+  customerVenueId: string;
+  customerVenueNameSnapshot: string;
+  customerWeddingDate: string;
+  customerGuestCount: string;
+  customerSource: string;
+  customerNotes: string;
   appointmentDate: string;
   appointmentStartTime: string;
   appointmentEndTime: string;
@@ -100,23 +100,23 @@ const meetingTypeValues = APPOINTMENT_MEETING_TYPE_OPTIONS.map(
 const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
   z
     .object({
-      leadId: z.string().optional(),
-      leadFullName: z.string().max(150).optional(),
-      leadMobile: z.string().max(30).optional(),
-      leadMobile2: z.string().max(30).optional(),
-      leadEmail: z.union([z.literal(""), z.string().email("Invalid email address")]),
-      leadVenueId: z.string().optional(),
-      leadVenueNameSnapshot: z.string().max(150).optional(),
-      leadWeddingDate: z.string().optional(),
-      leadGuestCount: z
+      customerId: z.string().optional(),
+      customerFullName: z.string().max(150).optional(),
+      customerMobile: z.string().max(30).optional(),
+      customerMobile2: z.string().max(30).optional(),
+      customerEmail: z.union([z.literal(""), z.string().email("Invalid email address")]),
+      customerVenueId: z.string().optional(),
+      customerVenueNameSnapshot: z.string().max(150).optional(),
+      customerWeddingDate: z.string().optional(),
+      customerGuestCount: z
         .string()
         .optional()
         .refine(
           (value) => !value || (Number.isInteger(Number(value)) && Number(value) > 0),
           "Guest count must be a positive number",
         ),
-      leadSource: z.string().max(100).optional(),
-      leadNotes: z.string().optional(),
+      customerSource: z.string().max(100).optional(),
+      customerNotes: z.string().optional(),
       appointmentDate: z.string().min(1, "Appointment date is required"),
       appointmentStartTime: z
         .string()
@@ -132,53 +132,53 @@ const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
     })
     .superRefine((values, ctx) => {
       if (isEditMode || mode === "existing") {
-        if (!values.leadId?.trim()) {
+        if (!values.customerId?.trim()) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            path: ["leadId"],
-            message: "Lead is required",
+            path: ["customerId"],
+            message: "Customer is required",
           });
         }
         return;
       }
 
-      if (!values.leadFullName?.trim() || values.leadFullName.trim().length < 2) {
+      if (!values.customerFullName?.trim() || values.customerFullName.trim().length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["leadFullName"],
+          path: ["customerFullName"],
           message: "Full name is required",
         });
       }
 
-      if (!values.leadMobile?.trim() || values.leadMobile.trim().length < 3) {
+      if (!values.customerMobile?.trim() || values.customerMobile.trim().length < 3) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["leadMobile"],
+          path: ["customerMobile"],
           message: "Mobile is required",
         });
       }
 
-      if (!values.leadWeddingDate?.trim()) {
+      if (!values.customerWeddingDate?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["leadWeddingDate"],
+          path: ["customerWeddingDate"],
           message: "Wedding date is required",
         });
       }
     });
 
 const defaultValues: AppointmentFormValues = {
-  leadId: "",
-  leadFullName: "",
-  leadMobile: "",
-  leadMobile2: "",
-  leadEmail: "",
-  leadVenueId: "",
-  leadVenueNameSnapshot: "",
-  leadWeddingDate: "",
-  leadGuestCount: "",
-  leadSource: "",
-  leadNotes: "",
+  customerId: "",
+  customerFullName: "",
+  customerMobile: "",
+  customerMobile2: "",
+  customerEmail: "",
+  customerVenueId: "",
+  customerVenueNameSnapshot: "",
+  customerWeddingDate: "",
+  customerGuestCount: "",
+  customerSource: "",
+  customerNotes: "",
   appointmentDate: "",
   appointmentStartTime: "",
   appointmentEndTime: "",
@@ -470,7 +470,8 @@ const AppointmentFormPage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isEditMode = Boolean(id);
-  const leadIdFromQuery = searchParams.get("leadId") || "";
+  const customerIdFromQuery =
+    searchParams.get("customerId") || searchParams.get("leadId") || "";
   const [mode, setMode] = useState<AppointmentMode>("new");
 
   const schema = useMemo(
@@ -479,13 +480,12 @@ const AppointmentFormPage = () => {
   );
 
   const { data: appointment, isLoading: appointmentLoading } = useAppointment(id);
-  const { data: leadsResponse, isLoading: leadsLoading } = useLeads({
+  const { data: customersResponse, isLoading: customersLoading } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
     status: "all",
     venueId: "",
-    source: "",
     weddingDateFrom: "",
     weddingDateTo: "",
   });
@@ -501,11 +501,11 @@ const AppointmentFormPage = () => {
     isActive: "all",
   });
 
-  const leads = leadsResponse?.data ?? [];
+  const customers = customersResponse?.data ?? [];
   const users = usersResponse?.data ?? [];
   const venues = venuesResponse?.data ?? [];
   const createMutation = useCreateAppointment();
-  const createWithLeadMutation = useCreateAppointmentWithLead();
+  const createWithCustomerMutation = useCreateAppointmentWithCustomer();
   const updateMutation = useUpdateAppointment(id);
 
   const form = useForm<AppointmentFormValues>({
@@ -514,10 +514,10 @@ const AppointmentFormPage = () => {
   });
 
   useEffect(() => {
-    if (!isEditMode && leadIdFromQuery) {
-      form.setValue("leadId", leadIdFromQuery, { shouldDirty: false });
+    if (!isEditMode && customerIdFromQuery) {
+      form.setValue("customerId", customerIdFromQuery, { shouldDirty: false });
     }
-  }, [form, isEditMode, leadIdFromQuery]);
+  }, [form, isEditMode, customerIdFromQuery]);
 
   useEffect(() => {
     form.clearErrors();
@@ -530,17 +530,17 @@ const AppointmentFormPage = () => {
 
     setMode("existing");
     form.reset({
-      leadId: String(appointment.leadId),
-      leadFullName: appointment.lead?.fullName ?? "",
-      leadMobile: appointment.lead?.mobile ?? "",
-      leadMobile2: appointment.lead?.mobile2 ?? "",
-      leadEmail: appointment.lead?.email ?? "",
-      leadVenueId: appointment.lead?.venueId ? String(appointment.lead.venueId) : "",
-      leadVenueNameSnapshot: appointment.lead?.venueNameSnapshot ?? "",
-      leadWeddingDate: appointment.lead?.weddingDate ?? "",
-      leadGuestCount: appointment.lead?.guestCount ? String(appointment.lead.guestCount) : "",
-      leadSource: appointment.lead?.source ?? "",
-      leadNotes: appointment.lead?.notes ?? "",
+      customerId: String(appointment.customerId),
+      customerFullName: appointment.customer?.fullName ?? "",
+      customerMobile: appointment.customer?.mobile ?? "",
+      customerMobile2: appointment.customer?.mobile2 ?? "",
+      customerEmail: appointment.customer?.email ?? "",
+      customerVenueId: appointment.customer?.venueId ? String(appointment.customer.venueId) : "",
+      customerVenueNameSnapshot: appointment.customer?.venueNameSnapshot ?? "",
+      customerWeddingDate: appointment.customer?.weddingDate ?? "",
+      customerGuestCount: appointment.customer?.guestCount ? String(appointment.customer.guestCount) : "",
+      customerSource: "",
+      customerNotes: appointment.customer?.notes ?? "",
       appointmentDate: appointment.appointmentDate,
       appointmentStartTime: appointment.appointmentStartTime,
       appointmentEndTime: appointment.appointmentEndTime ?? "",
@@ -555,17 +555,17 @@ const AppointmentFormPage = () => {
 
   const isBusy =
     appointmentLoading ||
-    leadsLoading ||
+    customersLoading ||
     usersLoading ||
     venuesLoading ||
     createMutation.isPending ||
-    createWithLeadMutation.isPending ||
+    createWithCustomerMutation.isPending ||
     updateMutation.isPending;
 
   const onSubmit: SubmitHandler<AppointmentFormValues> = (values) => {
     if (isEditMode) {
       updateMutation.mutate({
-        leadId: values.leadId,
+        customerId: values.customerId,
         appointmentDate: values.appointmentDate,
         appointmentStartTime: values.appointmentStartTime,
         appointmentEndTime: values.appointmentEndTime,
@@ -581,7 +581,7 @@ const AppointmentFormPage = () => {
 
     if (mode === "existing") {
       createMutation.mutate({
-        leadId: values.leadId,
+        customerId: values.customerId,
         appointmentDate: values.appointmentDate,
         appointmentStartTime: values.appointmentStartTime,
         appointmentEndTime: values.appointmentEndTime,
@@ -595,20 +595,18 @@ const AppointmentFormPage = () => {
       return;
     }
 
-    const selectedVenue = venues.find((venue) => String(venue.id) === values.leadVenueId);
-
-    createWithLeadMutation.mutate({
-      lead: {
-        fullName: values.leadFullName,
-        mobile: values.leadMobile,
-        mobile2: values.leadMobile2,
-        email: values.leadEmail,
-        weddingDate: values.leadWeddingDate,
-        guestCount: values.leadGuestCount,
-        venueId: values.leadVenueId,
-        venueNameSnapshot: values.leadVenueNameSnapshot || selectedVenue?.name || undefined,
-        source: values.leadSource,
-        notes: values.leadNotes,
+    createWithCustomerMutation.mutate({
+      customer: {
+        fullName: values.customerFullName,
+        mobile: values.customerMobile,
+        mobile2: values.customerMobile2,
+        email: values.customerEmail,
+        groomName: "",
+        brideName: "",
+        weddingDate: values.customerWeddingDate,
+        guestCount: values.customerGuestCount,
+        venueId: values.customerVenueId,
+        notes: values.customerNotes,
       },
       appointment: {
         appointmentDate: values.appointmentDate,
@@ -622,7 +620,7 @@ const AppointmentFormPage = () => {
     });
   };
 
-  if (appointmentLoading || leadsLoading || usersLoading || venuesLoading) {
+  if (appointmentLoading || customersLoading || usersLoading || venuesLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-sm text-[var(--lux-text-secondary)]">
@@ -675,7 +673,7 @@ const AppointmentFormPage = () => {
                       })
                     : t("appointments.scheduleDescription", {
                         defaultValue:
-                          "Create an appointment for a new prospect or assign one to an existing lead.",
+                          "Create an appointment for a new customer or assign one to an existing customer.",
                       })}
                 </p>
               </div>
@@ -688,26 +686,26 @@ const AppointmentFormPage = () => {
                   <SectionIntro
                     title={t("appointments.flowMode", { defaultValue: "Scheduling Flow" })}
                     hint={t("appointments.flowModeHint", {
-                      defaultValue:
-                        "Start with a new prospect by default, or switch to an existing lead when needed.",
+                        defaultValue:
+                          "Start with a new customer by default, or switch to an existing customer when needed.",
                     })}
                   />
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <ModeButton
                       active={mode === "new"}
                       icon={<Sparkles className="h-4 w-4" />}
-                      title={t("appointments.newLeadMode", { defaultValue: "New Lead" })}
-                      hint={t("appointments.newLeadModeHint", {
-                        defaultValue: "Create the prospect and schedule the appointment in one step.",
+                      title={t("appointments.newCustomerMode", { defaultValue: "New Customer" })}
+                      hint={t("appointments.newCustomerModeHint", {
+                        defaultValue: "Create the customer and schedule the appointment in one step.",
                       })}
                       onClick={() => setMode("new")}
                     />
                     <ModeButton
                       active={mode === "existing"}
                       icon={<UserRoundSearch className="h-4 w-4" />}
-                      title={t("appointments.existingLeadMode", { defaultValue: "Existing Lead" })}
-                      hint={t("appointments.existingLeadModeHint", {
-                        defaultValue: "Attach the appointment to a lead already in the CRM.",
+                      title={t("appointments.existingCustomerMode", { defaultValue: "Existing Customer" })}
+                      hint={t("appointments.existingCustomerModeHint", {
+                        defaultValue: "Attach the appointment to a customer already in the CRM.",
                       })}
                       onClick={() => setMode("existing")}
                     />
@@ -735,7 +733,7 @@ const AppointmentFormPage = () => {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <TextField
                           control={form.control}
-                          name="leadFullName"
+                          name="customerFullName"
                           label={t("appointments.prospectName", {
                             defaultValue: "Prospect Full Name",
                           })}
@@ -746,14 +744,14 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadEmail"
+                          name="customerEmail"
                           type="email"
                           label={t("appointments.prospectEmail", { defaultValue: "Email" })}
                           placeholder="prospect@example.com"
                         />
                         <TextField
                           control={form.control}
-                          name="leadMobile"
+                          name="customerMobile"
                           label={t("appointments.prospectMobile", {
                             defaultValue: "Primary Mobile",
                           })}
@@ -764,7 +762,7 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadMobile2"
+                          name="customerMobile2"
                           label={t("appointments.prospectMobile2", {
                             defaultValue: "Secondary Mobile",
                           })}
@@ -774,7 +772,7 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadWeddingDate"
+                          name="customerWeddingDate"
                           type="date"
                           label={t("appointments.prospectWeddingDate", {
                             defaultValue: "Wedding Date",
@@ -783,7 +781,7 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadGuestCount"
+                          name="customerGuestCount"
                           type="number"
                           min="1"
                           label={t("appointments.prospectGuestCount", {
@@ -795,7 +793,7 @@ const AppointmentFormPage = () => {
                         />
                         <SearchableSelectField
                           control={form.control}
-                          name="leadVenueId"
+                          name="customerVenueId"
                           label={t("appointments.prospectVenue", {
                             defaultValue: "Preferred Venue",
                           })}
@@ -820,7 +818,7 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadVenueNameSnapshot"
+                          name="customerVenueNameSnapshot"
                           label={t("appointments.prospectVenueName", {
                             defaultValue: "Venue Name Snapshot",
                           })}
@@ -830,7 +828,7 @@ const AppointmentFormPage = () => {
                         />
                         <TextField
                           control={form.control}
-                          name="leadSource"
+                          name="customerSource"
                           label={t("appointments.prospectSource", {
                             defaultValue: "Inquiry Source",
                           })}
@@ -841,9 +839,9 @@ const AppointmentFormPage = () => {
                       </div>
                       <TextAreaField
                         control={form.control}
-                        name="leadNotes"
+                        name="customerNotes"
                         label={t("appointments.prospectNotes", {
-                          defaultValue: "Lead Notes",
+                          defaultValue: "Customer Notes",
                         })}
                         placeholder={t("appointments.prospectNotesPlaceholder", {
                           defaultValue: "Add inquiry details, preferences, or internal notes...",
@@ -855,31 +853,31 @@ const AppointmentFormPage = () => {
                   {(mode === "existing" || isEditMode) ? (
                     <section className="space-y-4">
                       <SectionIntro
-                        title={t("appointments.existingLeadSection", {
-                          defaultValue: "Existing Lead",
+                        title={t("appointments.existingCustomerSection", {
+                          defaultValue: "Existing Customer",
                         })}
-                        hint={t("appointments.existingLeadSectionHint", {
-                          defaultValue: "Choose the lead that this appointment belongs to.",
+                        hint={t("appointments.existingCustomerSectionHint", {
+                          defaultValue: "Choose the customer that this appointment belongs to.",
                         })}
                       />
                         <SearchableSelectField
                           control={form.control}
-                          name="leadId"
-                        label={t("appointments.lead", { defaultValue: "Lead" })}
-                        placeholder={t("appointments.selectLead", {
-                          defaultValue: "Select lead",
+                          name="customerId"
+                        label={t("appointments.customer", { defaultValue: "Customer" })}
+                        placeholder={t("appointments.selectCustomer", {
+                          defaultValue: "Select customer",
                         })}
-                        searchPlaceholder={t("appointments.searchLead", {
+                        searchPlaceholder={t("appointments.searchCustomer", {
                           defaultValue: isArabic
                             ? "ابحث عن عميل محتمل..."
-                            : "Search leads...",
+                            : "Search customers...",
                         })}
                         emptyMessage={t("common.noResultsTitle", {
                           defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
                         })}
-                        options={leads.map((lead) => ({
-                          value: String(lead.id),
-                          label: lead.fullName,
+                        options={customers.map((customer) => ({
+                          value: String(customer.id),
+                          label: customer.fullName,
                         }))}
                         required
                         disabled={isEditMode}

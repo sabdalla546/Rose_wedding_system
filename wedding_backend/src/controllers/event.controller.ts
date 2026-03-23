@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { Event, EventSection, Customer, Lead, Venue, User } from "../models";
+import { Event, EventSection, Customer, Venue, User } from "../models";
 import {
   createEventSchema,
   updateEventSchema,
@@ -22,13 +22,6 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    if (data.leadId) {
-      const lead = await Lead.findByPk(data.leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
-    }
-
     if (data.venueId) {
       const venue = await Venue.findByPk(data.venueId);
       if (!venue) {
@@ -38,7 +31,6 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
 
     const event = await Event.create({
       customerId: data.customerId ?? null,
-      leadId: data.leadId ?? null,
       eventDate: data.eventDate,
       venueId: data.venueId ?? null,
       venueNameSnapshot: data.venueNameSnapshot ?? null,
@@ -56,7 +48,6 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
     const created = await Event.findByPk(event.id, {
       include: [
         { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
         { model: Venue, as: "venue" },
         { model: EventSection, as: "sections" },
       ],
@@ -82,28 +73,16 @@ export const createEventFromSource = async (
     const data = createEventFromSourceSchema.parse(req.body);
 
     let customer: Customer | null = null;
-    let lead: Lead | null = null;
-
     if (data.customerId) {
       customer = await Customer.findByPk(data.customerId);
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
     }
-
-    if (data.leadId) {
-      lead = await Lead.findByPk(data.leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
-    }
-
-    const sourceVenueId = customer?.venueId ?? lead?.venueId ?? null;
-    const sourceVenueName =
-      customer?.venueNameSnapshot ?? lead?.venueNameSnapshot ?? null;
-
-    const sourceGroomName = customer?.groomName ?? lead?.groomName ?? null;
-    const sourceBrideName = customer?.brideName ?? lead?.brideName ?? null;
+    const sourceVenueId = customer?.venueId ?? null;
+    const sourceVenueName = customer?.venueNameSnapshot ?? null;
+    const sourceGroomName = customer?.groomName ?? null;
+    const sourceBrideName = customer?.brideName ?? null;
 
     if (sourceVenueId) {
       const venue = await Venue.findByPk(sourceVenueId);
@@ -112,8 +91,7 @@ export const createEventFromSource = async (
       }
     }
 
-    const resolvedEventDate =
-      data.eventDate ?? customer?.weddingDate ?? lead?.weddingDate ?? "";
+    const resolvedEventDate = data.eventDate ?? customer?.weddingDate ?? "";
 
     const resolvedGroomName =
       typeof data.groomName !== "undefined"
@@ -132,7 +110,7 @@ export const createEventFromSource = async (
     const resolvedTitle =
       typeof data.title !== "undefined" && data.title !== null
         ? data.title.trim()
-        : `Wedding Event - ${customer?.fullName ?? lead?.fullName ?? "Client"}`;
+        : `Wedding Event - ${customer?.fullName ?? "Client"}`;
 
     const resolvedContractNumber =
       typeof data.contractNumber !== "undefined"
@@ -143,11 +121,10 @@ export const createEventFromSource = async (
 
     const event = await Event.create({
       customerId: customer?.id ?? null,
-      leadId: lead?.id ?? null,
       eventDate: resolvedEventDate,
       venueId: sourceVenueId,
       venueNameSnapshot: sourceVenueName,
-      guestCount: customer?.guestCount ?? lead?.guestCount ?? null,
+      guestCount: customer?.guestCount ?? null,
 
       groomName: resolvedGroomName,
       brideName: resolvedBrideName,
@@ -182,7 +159,6 @@ export const createEventFromSource = async (
     const created = await Event.findByPk(event.id, {
       include: [
         { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
         { model: Venue, as: "venue" },
         {
           model: EventSection,
@@ -216,7 +192,6 @@ export const getEvents = async (req: Request, res: Response) => {
 
   const status = String(req.query.status ?? "").trim();
   const customerId = Number(req.query.customerId) || undefined;
-  const leadId = Number(req.query.leadId) || undefined;
   const venueId = Number(req.query.venueId) || undefined;
   const dateFrom = String(req.query.dateFrom ?? "").trim();
   const dateTo = String(req.query.dateTo ?? "").trim();
@@ -226,7 +201,6 @@ export const getEvents = async (req: Request, res: Response) => {
 
   if (status) where.status = status;
   if (customerId) where.customerId = customerId;
-  if (leadId) where.leadId = leadId;
   if (venueId) where.venueId = venueId;
 
   if (dateFrom || dateTo) {
@@ -249,7 +223,6 @@ export const getEvents = async (req: Request, res: Response) => {
     where,
     include: [
       { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
       { model: Venue, as: "venue" },
       { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
       { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
@@ -283,7 +256,6 @@ export const getEventById = async (req: Request, res: Response) => {
   const event = await Event.findByPk(id, {
     include: [
       { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
       { model: Venue, as: "venue" },
       {
         model: EventSection,
@@ -328,13 +300,6 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    if (typeof data.leadId !== "undefined" && data.leadId !== null) {
-      const lead = await Lead.findByPk(data.leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
-    }
-
     if (typeof data.venueId !== "undefined" && data.venueId !== null) {
       const venue = await Venue.findByPk(data.venueId);
       if (!venue) {
@@ -347,7 +312,6 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
         typeof data.customerId !== "undefined"
           ? data.customerId
           : event.customerId,
-      leadId: typeof data.leadId !== "undefined" ? data.leadId : event.leadId,
       eventDate: data.eventDate ?? event.eventDate,
       venueId:
         typeof data.venueId !== "undefined" ? data.venueId : event.venueId,
@@ -380,7 +344,6 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
     const updated = await Event.findByPk(id, {
       include: [
         { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
         { model: Venue, as: "venue" },
         {
           model: EventSection,

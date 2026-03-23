@@ -10,7 +10,7 @@ import {
   navigationItems,
   type NavigationItem,
 } from "@/lib/constants/navigation";
-import { routePermissionByHref } from "@/lib/constants/route-permissions";
+import { routeAccessByHref } from "@/lib/constants/route-permissions";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_EXPANDED_WIDTH = 225;
@@ -102,6 +102,7 @@ export function AppSidebar({
     }) ?? false;
 
   const renderNavItem = (item: NavigationItem, depth = 0) => {
+    const routeAccess = item.href ? routeAccessByHref[item.href] : undefined;
     const hasChildren = Boolean(item.children?.length);
     const active = item.href ? location.pathname === item.href : false;
     const childActive = hasActiveChild(item);
@@ -124,7 +125,7 @@ export function AppSidebar({
       ? "text-[var(--lux-gold)]"
       : "text-[var(--lux-gold)]";
 
-    const rowClassName = cn(
+    const baseRowClassName = cn(
       "group flex w-full items-center rounded-[16px] px-3 font-medium transition-all duration-200",
       itemHeightClass,
       textClass,
@@ -134,6 +135,14 @@ export function AppSidebar({
         : childActive
           ? parentChildActiveClass
           : "text-[var(--lux-shell-chrome-muted)] hover:text-[var(--lux-shell-chrome-text)]",
+    );
+
+    const disabledRowClassName = cn(
+      "group flex w-full cursor-not-allowed items-center rounded-[16px] px-3 font-medium opacity-45",
+      itemHeightClass,
+      textClass,
+      showFull ? "justify-between" : "justify-center gap-0",
+      "text-[var(--lux-shell-chrome-muted)]",
     );
 
     const iconSlot = (
@@ -202,79 +211,91 @@ export function AppSidebar({
         </motion.div>
       ) : null;
 
+    const renderItemContent = (disabled = false) => (
+      <div className="mb-0">
+        {item.href && !hasChildren && !disabled ? (
+          <NavLink
+            className={({ isActive }) =>
+              cn(baseRowClassName, isActive ? activeFillClass : undefined)
+            }
+            style={({ isActive }) => ({
+              background: isActive ? "var(--lux-sidebar-active-bg)" : "transparent",
+            })}
+            end
+            title={!showFull ? label : ""}
+            to={item.href}
+            onClick={() => onNavigate?.()}
+          >
+            {contentSlot}
+          </NavLink>
+        ) : (
+          <button
+            aria-disabled={disabled}
+            className={disabled ? disabledRowClassName : baseRowClassName}
+            disabled={disabled}
+            style={{
+              background: active && !disabled
+                ? "var(--lux-sidebar-active-bg)"
+                : "transparent",
+            }}
+            title={!showFull ? label : ""}
+            type="button"
+            onClick={() => {
+              if (disabled) {
+                return;
+              }
+
+              if (hasChildren && showFull) {
+                toggleItem(item.id);
+                return;
+              }
+
+              if (item.href) {
+                onNavigate?.();
+              }
+            }}
+          >
+            {contentSlot}
+            {chevronSlot}
+          </button>
+        )}
+
+        <AnimatePresence initial={false}>
+          {hasChildren && isExpanded && showFull && !disabled ? (
+            <motion.div
+              animate={{ height: "auto", opacity: 1 }}
+              className={cn(
+                "relative mt-0 space-y-0",
+                isRtl ? "pr-5" : "pl-5",
+              )}
+              exit={{ height: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0 }}
+              style={{ overflow: "hidden" }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <div
+                className={cn(
+                  "absolute bottom-0 top-0 w-px bg-[var(--lux-row-border)]",
+                  isRtl ? "right-4" : "left-4",
+                )}
+              />
+              {item.children?.map((child) => renderNavItem(child, depth + 1))}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+    );
+
     return (
       <ProtectedComponent
         key={item.id}
-        permission={item.href ? routePermissionByHref[item.href] : undefined}
+        allOf={item.allOf ?? routeAccess?.allOf}
+        anyOf={item.anyOf ?? routeAccess?.anyOf}
+        fallback={renderItemContent(true)}
+        permission={item.permission ?? routeAccess?.permission}
+        roles={item.roles ?? routeAccess?.roles}
       >
-        <div className="mb-0">
-          {item.href && !hasChildren ? (
-            <NavLink
-              className={({ isActive }) =>
-                cn(rowClassName, isActive ? activeFillClass : undefined)
-              }
-              style={({ isActive }) => ({
-                background: isActive
-                  ? "var(--lux-sidebar-active-bg)"
-                  : "transparent",
-              })}
-              end
-              title={!showFull ? label : ""}
-              to={item.href}
-              onClick={() => onNavigate?.()}
-            >
-              {contentSlot}
-            </NavLink>
-          ) : (
-            <button
-              className={rowClassName}
-              style={{
-                background: active
-                  ? "var(--lux-sidebar-active-bg)"
-                  : "transparent",
-              }}
-              title={!showFull ? label : ""}
-              type="button"
-              onClick={() => {
-                if (hasChildren && showFull) {
-                  toggleItem(item.id);
-                  return;
-                }
-
-                if (item.href) {
-                  onNavigate?.();
-                }
-              }}
-            >
-              {contentSlot}
-              {chevronSlot}
-            </button>
-          )}
-
-          <AnimatePresence initial={false}>
-            {hasChildren && isExpanded && showFull ? (
-              <motion.div
-                animate={{ height: "auto", opacity: 1 }}
-                className={cn(
-                  "relative mt-0 space-y-0",
-                  isRtl ? "pr-5" : "pl-5",
-                )}
-                exit={{ height: 0, opacity: 0 }}
-                initial={{ height: 0, opacity: 0 }}
-                style={{ overflow: "hidden" }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-              >
-                <div
-                  className={cn(
-                    "absolute bottom-0 top-0 w-px bg-[var(--lux-row-border)]",
-                    isRtl ? "right-4" : "left-4",
-                  )}
-                />
-                {item.children?.map((child) => renderNavItem(child, depth + 1))}
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </div>
+        {renderItemContent(false)}
       </ProtectedComponent>
     );
   };

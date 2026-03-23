@@ -7,7 +7,7 @@ import type {
 } from "@/pages/appointments/types";
 
 export type TableAppointment = Appointment & {
-  leadName: string;
+  customerName: string;
   venueDisplay: string;
   assignedUserDisplay: string;
   timeDisplay: string;
@@ -24,10 +24,11 @@ export function toTableAppointments(
 ): TableAppointmentsResponse {
   const appointments = (res?.data ?? []).map<TableAppointment>((appointment) => ({
     ...appointment,
-    leadName: appointment.lead?.fullName || `Lead #${appointment.leadId}`,
+    customerName:
+      appointment.customer?.fullName || `Customer #${appointment.customerId}`,
     venueDisplay:
-      appointment.lead?.venue?.name ||
-      appointment.lead?.venueNameSnapshot ||
+      appointment.customer?.venue?.name ||
+      appointment.customer?.venueNameSnapshot ||
       "-",
     assignedUserDisplay: appointment.assignedToUser?.fullName || "Unassigned",
     timeDisplay: appointment.appointmentEndTime
@@ -112,16 +113,17 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       endAt.getTime() > startAt.getTime()
         ? endAt
         : new Date(startAt.getTime() + 60 * 60 * 1000);
-    const leadName = appointment.lead?.fullName || `Lead #${appointment.leadId}`;
+    const customerName =
+      appointment.customer?.fullName || `Customer #${appointment.customerId}`;
 
     return {
       id: String(appointment.id),
       bookingNumber: `APPT-${String(appointment.id).padStart(4, "0")}`,
-      title: `${leadName} Appointment`,
-      clientName: leadName,
+      title: `${customerName} Appointment`,
+      clientName: customerName,
       venue:
-        appointment.lead?.venue?.name ||
-        appointment.lead?.venueNameSnapshot ||
+        appointment.customer?.venue?.name ||
+        appointment.customer?.venueNameSnapshot ||
         "-",
       eventType: formatMeetingType(appointment.meetingType),
       status: CALENDAR_STATUS_MAP[appointment.status],
@@ -137,10 +139,9 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       endAt: computedEndAt,
       accent: CALENDAR_ACCENT_MAP[appointment.status],
       appointmentId: appointment.id,
-      leadId: appointment.leadId,
-      customerId: appointment.lead?.convertedCustomerId || null,
+      customerId: appointment.customerId,
       meetingType: appointment.meetingType,
-      guestCount: appointment.lead?.guestCount ?? null,
+      guestCount: appointment.customer?.guestCount ?? null,
     };
   });
 

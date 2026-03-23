@@ -17,7 +17,7 @@ const normalizeNullableString = (value?: string) => {
 };
 
 const buildCreateAppointmentPayload = (values: AppointmentFormData) => ({
-  leadId: Number(values.leadId),
+  customerId: Number(values.customerId),
   appointmentDate: values.appointmentDate,
   appointmentStartTime: values.appointmentStartTime,
   appointmentEndTime: normalizeOptionalString(values.appointmentEndTime),
@@ -62,7 +62,7 @@ export const useCreateAppointment = () => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
       navigate("/appointments");
     },
     onError: (error) => {
@@ -80,19 +80,20 @@ export const useCreateAppointment = () => {
   });
 };
 
-type CreateAppointmentWithLeadValues = {
-  lead: {
+type CreateAppointmentWithCustomerValues = {
+  customer?: {
     fullName: string;
     mobile: string;
     mobile2?: string;
     email?: string;
-    weddingDate: string;
+    groomName?: string;
+    brideName?: string;
+    weddingDate?: string;
     guestCount?: string;
     venueId?: string;
-    venueNameSnapshot?: string;
-    source?: string;
     notes?: string;
   };
+  customerId?: string;
   appointment: {
     appointmentDate: string;
     appointmentStartTime: string;
@@ -104,23 +105,26 @@ type CreateAppointmentWithLeadValues = {
   };
 };
 
-const buildCreateAppointmentWithLeadPayload = (
-  values: CreateAppointmentWithLeadValues,
+const buildCreateAppointmentWithCustomerPayload = (
+  values: CreateAppointmentWithCustomerValues,
 ) => ({
-  lead: {
-    fullName: values.lead.fullName.trim(),
-    mobile: values.lead.mobile.trim(),
-    mobile2: normalizeOptionalString(values.lead.mobile2),
-    email: normalizeOptionalString(values.lead.email),
-    weddingDate: values.lead.weddingDate,
-    guestCount: values.lead.guestCount?.trim()
-      ? Number(values.lead.guestCount)
-      : undefined,
-    venueId: values.lead.venueId ? Number(values.lead.venueId) : null,
-    venueNameSnapshot: normalizeOptionalString(values.lead.venueNameSnapshot),
-    source: normalizeOptionalString(values.lead.source),
-    notes: normalizeOptionalString(values.lead.notes),
-  },
+  customerId: values.customerId?.trim() ? Number(values.customerId) : undefined,
+  customer: values.customer
+    ? {
+        fullName: values.customer.fullName.trim(),
+        mobile: values.customer.mobile.trim(),
+        mobile2: normalizeOptionalString(values.customer.mobile2),
+        email: normalizeOptionalString(values.customer.email),
+        groomName: normalizeOptionalString(values.customer.groomName),
+        brideName: normalizeOptionalString(values.customer.brideName),
+        weddingDate: normalizeOptionalString(values.customer.weddingDate),
+        guestCount: values.customer.guestCount?.trim()
+          ? Number(values.customer.guestCount)
+          : undefined,
+        venueId: values.customer.venueId ? Number(values.customer.venueId) : null,
+        notes: normalizeOptionalString(values.customer.notes),
+      }
+    : undefined,
   appointment: {
     appointmentDate: values.appointment.appointmentDate,
     appointmentStartTime: values.appointment.appointmentStartTime,
@@ -136,17 +140,17 @@ const buildCreateAppointmentWithLeadPayload = (
   },
 });
 
-export const useCreateAppointmentWithLead = () => {
+export const useCreateAppointmentWithCustomer = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (values: CreateAppointmentWithLeadValues) =>
+    mutationFn: async (values: CreateAppointmentWithCustomerValues) =>
       api.post(
-        "/appointments/create-with-lead",
-        buildCreateAppointmentWithLeadPayload(values),
+        "/appointments/create-with-customer",
+        buildCreateAppointmentWithCustomerPayload(values),
       ),
     onSuccess: () => {
       toast({
@@ -158,7 +162,7 @@ export const useCreateAppointmentWithLead = () => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
       navigate("/appointments");
     },
     onError: (error) => {
@@ -175,6 +179,7 @@ export const useCreateAppointmentWithLead = () => {
     },
   });
 };
+
 
 export const useUpdateAppointment = (id?: string) => {
   const queryClient = useQueryClient();

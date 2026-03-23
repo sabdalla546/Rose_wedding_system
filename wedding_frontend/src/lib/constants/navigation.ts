@@ -20,7 +20,16 @@ import {
   UserCog,
   Users,
   UsersRound,
+  LandmarkIcon,
+  HandshakeIcon,
 } from "lucide-react";
+
+import {
+  routeAccessByHref,
+  type RouteAccess,
+} from "@/lib/constants/route-permissions";
+
+type NavigationAccess = Pick<RouteAccess, "permission" | "anyOf" | "allOf" | "roles">;
 
 export type NavigationItem = {
   id: string;
@@ -32,13 +41,13 @@ export type NavigationItem = {
   children?: NavigationItem[];
   subtitle?: string;
   subtitleAr?: string;
-};
+} & NavigationAccess;
 
 export type NavigationLeaf = NavigationItem & {
   parents: string[];
 };
 
-export const navigationItems: NavigationItem[] = [
+const navigationTree: NavigationItem[] = [
   {
     id: "dashboard",
     labelKey: "sidebar.nav.dashboard",
@@ -88,19 +97,6 @@ export const navigationItems: NavigationItem[] = [
         icon: UsersRound,
         children: [
           {
-            id: "leads-pipeline-live",
-            labelKey: "sidebar.nav.leads",
-            label: "Leads",
-            labelAr:
-              "\u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0627\u0644\u0645\u062d\u062a\u0645\u0644\u0648\u0646",
-            href: "/leads",
-            icon: ClipboardCheck,
-            subtitle:
-              "Manage inquiries, outreach stages, and customer conversion readiness.",
-            subtitleAr:
-              "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0627\u0633\u062a\u0641\u0633\u0627\u0631\u0627\u062a \u0648\u0645\u0631\u0627\u062d\u0644 \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0625\u0644\u0649 \u0639\u0645\u064a\u0644.",
-          },
-          {
             id: "customers-all",
             labelKey: "sidebar.nav.allCustomers",
             label: "All Customers",
@@ -115,7 +111,16 @@ export const navigationItems: NavigationItem[] = [
       },
     ],
   },
-
+  {
+    id: "accounting",
+    labelKey: "sidebar.nav.accounting",
+    icon: LandmarkIcon,
+  },
+  {
+    id: "oprational",
+    labelKey: "sidebar.nav.oprational",
+    icon: HandshakeIcon,
+  },
   {
     id: "inventory",
     labelKey: "sidebar.nav.inventory",
@@ -215,7 +220,7 @@ export const navigationItems: NavigationItem[] = [
   },
 ];
 
-const settingsTeamItem = navigationItems
+const settingsTeamItem = navigationTree
   .find((item) => item.id === "settings")
   ?.children?.find((item) => item.id === "settings-team");
 
@@ -241,19 +246,20 @@ if (settingsTeamItem) {
       subtitle: "Configure role definitions and permission bundles.",
       subtitleAr: "إعداد تعريفات الأدوار وحزم الصلاحيات.",
     },
-    
   ];
 }
 
-const secretarialCustomersItem = navigationItems
+const secretarialCustomersItem = navigationTree
   .find((item) => item.id === "Secretarial")
   ?.children?.find((item) => item.id === "customers");
 
 if (secretarialCustomersItem) {
-  secretarialCustomersItem.children = [...(secretarialCustomersItem.children ?? [])];
+  secretarialCustomersItem.children = [
+    ...(secretarialCustomersItem.children ?? []),
+  ];
 }
 
-const secretarialRootItem = navigationItems.find(
+const secretarialRootItem = navigationTree.find(
   (item) => item.id === "Secretarial",
 );
 
@@ -305,44 +311,93 @@ if (secretarialRootItem?.children) {
             "\u0625\u062f\u0627\u0631\u0629 \u0648\u062b\u0627\u0626\u0642 \u0627\u0644\u0639\u0642\u0648\u062f \u0648\u062e\u0637\u0637 \u0627\u0644\u062f\u0641\u0639\u0627\u062a \u0648\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0627\u0644\u062d\u0641\u0644.",
         },
         {
-      id: "settings-team-venues",
-      labelKey: "sidebar.nav.venues",
-      label: "Venues",
-      labelAr: "\u0627\u0644\u0642\u0627\u0639\u0627\u062a",
-      href: "/settings/venues",
-      icon: Building2,
-      subtitle: "Manage wedding halls, venue contacts, and location readiness.",
-      subtitleAr:
-        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0648\u0627\u0642\u0639.",
-    },
-    {
-      id: "settings-team-vendors",
-      labelKey: "sidebar.nav.vendors",
-      label: "Vendors",
-      labelAr: "\u0627\u0644\u0634\u0631\u0643\u0627\u062a",
-      href: "/settings/vendors",
-      icon: Handshake,
-      subtitle:
-        "Manage external vendors, service types, and operational contacts.",
-      subtitleAr:
-        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629 \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644.",
-    },
-    {
-      id: "settings-team-services",
-      labelKey: "sidebar.nav.services",
-      label: "Services",
-      labelAr: "\u0627\u0644\u062e\u062f\u0645\u0627\u062a",
-      href: "/settings/services",
-      icon: PackageOpen,
-      subtitle:
-        "Manage catalog services, pricing types, and operational event items.",
-      subtitleAr:
-        "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062a\u0633\u0639\u064a\u0631 \u0648\u0628\u0646\u0648\u062f \u0627\u0644\u062d\u0641\u0644 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a\u0629.",
-    },
+          id: "settings-team-venues",
+          labelKey: "sidebar.nav.venues",
+          label: "Venues",
+          labelAr: "\u0627\u0644\u0642\u0627\u0639\u0627\u062a",
+          href: "/settings/venues",
+          icon: Building2,
+          subtitle:
+            "Manage wedding halls, venue contacts, and location readiness.",
+          subtitleAr:
+            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0648\u0627\u0642\u0639.",
+        },
+        {
+          id: "settings-team-vendors",
+          labelKey: "sidebar.nav.vendors",
+          label: "Vendors",
+          labelAr: "\u0627\u0644\u0634\u0631\u0643\u0627\u062a",
+          href: "/settings/vendors",
+          icon: Handshake,
+          subtitle:
+            "Manage external vendors, service types, and operational contacts.",
+          subtitleAr:
+            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0627\u0644\u062e\u0627\u0631\u062c\u064a\u0629 \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644.",
+        },
+        {
+          id: "settings-team-services",
+          labelKey: "sidebar.nav.services",
+          label: "Services",
+          labelAr: "\u0627\u0644\u062e\u062f\u0645\u0627\u062a",
+          href: "/settings/services",
+          icon: PackageOpen,
+          subtitle:
+            "Manage catalog services, pricing types, and operational event items.",
+          subtitleAr:
+            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0648\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u062a\u0633\u0639\u064a\u0631 \u0648\u0628\u0646\u0648\u062f \u0627\u0644\u062d\u0641\u0644 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a\u0629.",
+        },
       ],
     },
   ];
 }
+
+function hasAccessRule(item: NavigationItem) {
+  return Boolean(
+    item.permission ||
+      item.anyOf?.length ||
+      item.allOf?.length ||
+      item.roles?.length,
+  );
+}
+
+function attachAccessRules(items: NavigationItem[]): NavigationItem[] {
+  return items.map((item) => {
+    const children = item.children ? attachAccessRules(item.children) : undefined;
+    const routeAccess = item.href ? routeAccessByHref[item.href] : undefined;
+    const nextItem: NavigationItem = {
+      ...item,
+      ...(routeAccess ?? {}),
+      ...((item.permission || item.anyOf || item.allOf || item.roles) && {
+        permission: item.permission,
+        anyOf: item.anyOf,
+        allOf: item.allOf,
+        roles: item.roles,
+      }),
+      children,
+    };
+
+    if (!children?.length || hasAccessRule(nextItem)) {
+      return nextItem;
+    }
+
+    const inferredAnyOf = Array.from(
+      new Set(
+        children.flatMap((child) => [
+          ...(child.permission ? [child.permission] : []),
+          ...(child.anyOf ?? []),
+        ]),
+      ),
+    );
+
+    if (inferredAnyOf.length > 0) {
+      nextItem.anyOf = inferredAnyOf;
+    }
+
+    return nextItem;
+  });
+}
+
+export const navigationItems: NavigationItem[] = attachAccessRules(navigationTree);
 
 export function flattenNavigationLeaves(
   items: NavigationItem[],

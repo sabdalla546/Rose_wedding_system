@@ -1,45 +1,58 @@
-export const routePermissionByHref: Record<string, string> = {
-  "/calendar": "appointments.calendar.read",
-  "/settings/team": "roles.read",
-  "/settings/team/users": "users.read",
-  "/settings/team/users/create": "users.create",
-  "/settings/team/users/edit/:id": "users.update",
-  "/settings/team/roles": "roles.read",
-  "/settings/team/roles/create": "roles.create",
-  "/settings/team/roles/edit/:id": "roles.update",
-  "/settings/venues": "venues.read",
-  "/settings/venues/create": "venues.create",
-  "/settings/venues/edit/:id": "venues.update",
-  "/settings/vendors": "vendors.read",
-  "/settings/vendors/create": "vendors.create",
-  "/settings/vendors/edit/:id": "vendors.update",
-  "/settings/vendors/:id": "vendors.read",
-  "/settings/services": "services.read",
-  "/settings/services/create": "services.create",
-  "/settings/services/edit/:id": "services.update",
-  "/settings/services/:id": "services.read",
-  "/leads": "leads.read",
-  "/leads/create": "leads.create",
-  "/leads/edit/:id": "leads.update",
-  "/leads/:id": "leads.read",
-  "/customers": "customers.read",
-  "/customers/create": "customers.create",
-  "/customers/edit/:id": "customers.update",
-  "/customers/:id": "customers.read",
-  "/events": "events.read",
-  "/events/create": "events.create",
-  "/events/edit/:id": "events.update",
-  "/events/:id": "events.read",
-  "/quotations": "quotations.read",
-  "/quotations/create": "quotations.create",
-  "/quotations/edit/:id": "quotations.update",
-  "/quotations/:id": "quotations.read",
-  "/contracts": "contracts.read",
-  "/contracts/create": "contracts.create",
-  "/contracts/edit/:id": "contracts.update",
-  "/contracts/:id": "contracts.read",
-  "/appointments": "appointments.read",
-  "/appointments/create": "appointments.create",
-  "/appointments/edit/:id": "appointments.update",
-  "/appointments/:id": "appointments.read",
+export type RouteAccess = {
+  permission?: string;
+  anyOf?: string[];
+  allOf?: string[];
+  roles?: string[];
 };
+
+export const routeAccessByHref: Record<string, RouteAccess> = {
+  "/calendar": { permission: "appointments.calendar.read" },
+  "/settings/team": { anyOf: ["users.read", "roles.read"] },
+  "/settings/team/users": { permission: "users.read" },
+  "/settings/team/users/create": { permission: "users.create" },
+  "/settings/team/users/edit/:id": { permission: "users.update" },
+  "/settings/team/roles": { permission: "roles.read" },
+  "/settings/team/roles/create": { permission: "roles.create" },
+  "/settings/team/roles/edit/:id": { permission: "roles.update" },
+  "/settings/venues": { permission: "venues.read" },
+  "/settings/venues/create": { permission: "venues.create" },
+  "/settings/venues/edit/:id": { permission: "venues.update" },
+  "/settings/vendors": { permission: "vendors.read" },
+  "/settings/vendors/create": { permission: "vendors.create" },
+  "/settings/vendors/edit/:id": { permission: "vendors.update" },
+  "/settings/vendors/:id": { permission: "vendors.read" },
+  "/settings/services": { permission: "services.read" },
+  "/settings/services/create": { permission: "services.create" },
+  "/settings/services/edit/:id": { permission: "services.update" },
+  "/settings/services/:id": { permission: "services.read" },
+  "/customers": { permission: "customers.read" },
+  "/customers/create": { permission: "customers.create" },
+  "/customers/edit/:id": { permission: "customers.update" },
+  "/customers/:id": { permission: "customers.read" },
+  "/events": { permission: "events.read" },
+  "/events/create": { permission: "events.create" },
+  "/events/edit/:id": { permission: "events.update" },
+  "/events/:id": { permission: "events.read" },
+  "/quotations": { permission: "quotations.read" },
+  "/quotations/create": { permission: "quotations.create" },
+  "/quotations/edit/:id": { permission: "quotations.update" },
+  "/quotations/:id": { permission: "quotations.read" },
+  "/contracts": { permission: "contracts.read" },
+  "/contracts/create": { permission: "contracts.create" },
+  "/contracts/edit/:id": { permission: "contracts.update" },
+  "/contracts/:id": { permission: "contracts.read" },
+  "/appointments": { permission: "appointments.read" },
+  "/appointments/create": { permission: "appointments.create" },
+  "/appointments/edit/:id": { permission: "appointments.update" },
+  "/appointments/:id": { permission: "appointments.read" },
+};
+
+export const routePermissionByHref: Record<string, string> = Object.entries(
+  routeAccessByHref,
+).reduce<Record<string, string>>((acc, [href, access]) => {
+  if (access.permission) {
+    acc[href] = access.permission;
+  }
+
+  return acc;
+}, {});

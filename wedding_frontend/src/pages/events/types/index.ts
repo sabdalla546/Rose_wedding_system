@@ -1,5 +1,4 @@
 import type { Customer } from "@/pages/customers/types";
-import type { Lead } from "@/pages/leads/types";
 import type { Venue } from "@/pages/venues/types";
 
 export type EventStatus =
@@ -61,7 +60,6 @@ export interface Event {
   notes?: string | null;
   status: EventStatus;
   customer?: Customer | null;
-  lead?: Lead | null;
   venue?: Venue | null;
   sections?: EventSection[];
   createdByUser?: EventUserSummary | null;
@@ -87,7 +85,6 @@ export interface EventResponse {
 
 export interface EventFormData {
   customerId?: string;
-  leadId?: string;
   eventDate?: string;
   venueId?: string;
   venueNameSnapshot?: string;

@@ -8,7 +8,6 @@ import type {
 export type TableEvent = Event & {
   titleDisplay: string;
   customerDisplay: string;
-  leadDisplay: string;
   venueDisplay: string;
   partyDisplay: string;
 };
@@ -44,7 +43,6 @@ export function toTableEvents(res?: EventsResponse): TableEventsResponse {
     ...event,
     titleDisplay: getEventDisplayTitle(event),
     customerDisplay: event.customer?.fullName || "-",
-    leadDisplay: event.lead?.fullName || "-",
     venueDisplay:
       event.venue?.name ||
       event.venueNameSnapshot ||

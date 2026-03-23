@@ -75,17 +75,6 @@ export const useEventsColumns = ({
       ),
     },
     {
-      id: "lead",
-      header: () => (
-        <div className={alignClass}>
-          {t("events.lead", { defaultValue: "Lead" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>{row.original.leadDisplay}</div>
-      ),
-    },
-    {
       id: "venue",
       header: () => (
         <div className={alignClass}>

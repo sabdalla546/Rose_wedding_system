@@ -12,7 +12,7 @@ interface UseAppointmentsParams {
   currentPage: number;
   itemsPerPage: number;
   status: "all" | Appointment["status"];
-  leadId: string;
+  customerId: string;
   venueId: string;
   assignedToUserId: string;
   dateFrom: string;
@@ -23,7 +23,7 @@ export const useAppointments = ({
   currentPage,
   itemsPerPage,
   status,
-  leadId,
+  customerId,
   venueId,
   assignedToUserId,
   dateFrom,
@@ -35,7 +35,7 @@ export const useAppointments = ({
       currentPage,
       itemsPerPage,
       status,
-      leadId,
+      customerId,
       venueId,
       assignedToUserId,
       dateFrom,
@@ -47,7 +47,7 @@ export const useAppointments = ({
           page: currentPage,
           limit: itemsPerPage,
           status: status === "all" ? undefined : status,
-          leadId: leadId ? Number(leadId) : undefined,
+          customerId: customerId ? Number(customerId) : undefined,
           venueId: venueId ? Number(venueId) : undefined,
           assignedToUserId: assignedToUserId
             ? Number(assignedToUserId)

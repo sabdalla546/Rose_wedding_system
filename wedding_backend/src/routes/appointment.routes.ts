@@ -3,7 +3,7 @@ import { authMiddleware } from "../middleware/auth.middleware";
 import { requirePermissions } from "../middleware/rbac.middleware";
 import {
   createAppointment,
-  createAppointmentWithLead,
+  createAppointmentWithCustomer,
   getAppointments,
   getAppointmentById,
   updateAppointment,
@@ -46,10 +46,10 @@ router.post(
 );
 
 router.post(
-  "/create-with-lead",
+  "/create-with-customer",
   authMiddleware,
-  requirePermissions("appointments.create", "leads.create"),
-  createAppointmentWithLead,
+  requirePermissions("appointments.create"),
+  createAppointmentWithCustomer,
 );
 router.patch(
   "/:id/confirm",

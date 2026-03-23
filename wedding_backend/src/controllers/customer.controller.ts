@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { Customer, Venue, Lead, User } from "../models";
+import { Customer, Venue, User } from "../models";
 import {
   createCustomerSchema,
   updateCustomerSchema,
@@ -19,23 +19,6 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    if (data.sourceLeadId) {
-      const lead = await Lead.findByPk(data.sourceLeadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
-
-      const existing = await Customer.findOne({
-        where: { sourceLeadId: data.sourceLeadId },
-      });
-
-      if (existing) {
-        return res.status(409).json({
-          message: "Customer already exists for this lead",
-        });
-      }
-    }
-
     const customer = await Customer.create({
       fullName: data.fullName.trim(),
       mobile: data.mobile.trim(),
@@ -49,7 +32,6 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       guestCount: data.guestCount ?? null,
       venueId: data.venueId ?? null,
       venueNameSnapshot: data.venueNameSnapshot ?? null,
-      sourceLeadId: data.sourceLeadId ?? null,
       notes: data.notes ?? null,
       status: data.status ?? "active",
       createdBy: req.user?.id ?? null,
@@ -57,7 +39,6 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
     const created = await Customer.findByPk(customer.id, {
       include: [
         { model: Venue, as: "venue" },
-        { model: Lead, as: "sourceLead" },
         { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
         { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
       ],
@@ -111,7 +92,6 @@ export const getCustomers = async (req: Request, res: Response) => {
     where,
     include: [
       { model: Venue, as: "venue" },
-      { model: Lead, as: "sourceLead" },
       { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
       { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
     ],
@@ -141,7 +121,6 @@ export const getCustomerById = async (req: Request, res: Response) => {
   const customer = await Customer.findByPk(id, {
     include: [
       { model: Venue, as: "venue" },
-      { model: Lead, as: "sourceLead" },
       { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
       { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
     ],
@@ -245,7 +224,6 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
     const updated = await Customer.findByPk(id, {
       include: [
         { model: Venue, as: "venue" },
-        { model: Lead, as: "sourceLead" },
         { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
         { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
       ],

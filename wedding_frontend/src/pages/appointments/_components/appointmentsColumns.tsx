@@ -51,16 +51,16 @@ export const useAppointmentsColumns = ({
 
   return [
     {
-      accessorKey: "leadName",
+      accessorKey: "customerName",
       header: () => (
         <div className={alignClass}>
-          {t("appointments.lead", { defaultValue: "Lead" })}
+          {t("appointments.customer", { defaultValue: "Customer" })}
         </div>
       ),
       cell: ({ row }) => (
         <div className={alignClass}>
           <div className="font-medium text-[var(--lux-text)]">
-            {row.original.leadName}
+            {row.original.customerName}
           </div>
           <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
             {row.original.venueDisplay}

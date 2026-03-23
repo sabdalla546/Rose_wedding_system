@@ -14,7 +14,7 @@ interface UseQuotationsParams {
   searchQuery: string;
   eventId: string;
   customerId: string;
-  leadId: string;
+  leadId?: string;
   status: "all" | QuotationStatus;
   issueDateFrom: string;
   issueDateTo: string;
@@ -26,7 +26,7 @@ export const useQuotations = ({
   searchQuery,
   eventId,
   customerId,
-  leadId,
+  leadId = "",
   status,
   issueDateFrom,
   issueDateTo,

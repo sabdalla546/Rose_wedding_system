@@ -292,7 +292,6 @@ const EventDetailsPage = () => {
       searchQuery: "",
       eventId: String(id || ""),
       customerId: "",
-      leadId: "",
       status: "all",
       issueDateFrom: "",
       issueDateTo: "",
@@ -305,7 +304,6 @@ const EventDetailsPage = () => {
       quotationId: "",
       eventId: String(id || ""),
       customerId: "",
-      leadId: "",
       status: "all",
       signedDateFrom: "",
       signedDateTo: "",
@@ -803,17 +801,6 @@ const EventDetailsPage = () => {
                       </Button>
                     </ProtectedComponent>
                   ) : null}
-                  {event.leadId ? (
-                    <ProtectedComponent permission="leads.read">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(`/leads/${event.leadId}`)}
-                      >
-                        <Link2 className="h-4 w-4" />
-                        {t("events.viewLead", { defaultValue: "View Lead" })}
-                      </Button>
-                    </ProtectedComponent>
-                  ) : null}
                 </div>
               </div>
             </SectionCard>
@@ -871,7 +858,7 @@ const EventDetailsPage = () => {
                   <CardDescription>
                     {t("events.linkedRecordsCardHint", {
                       defaultValue:
-                        "Customer, lead, venue, and current event status.",
+                        "Customer, venue, and current event status.",
                     })}
                   </CardDescription>
                 </CardHeader>
@@ -879,10 +866,6 @@ const EventDetailsPage = () => {
                   <DetailItem
                     label={t("events.customer", { defaultValue: "Customer" })}
                     value={event.customer?.fullName}
-                  />
-                  <DetailItem
-                    label={t("events.lead", { defaultValue: "Lead" })}
-                    value={event.lead?.fullName}
                   />
                   <DetailItem
                     label={t("common.venue", { defaultValue: "Venue" })}
@@ -1538,9 +1521,8 @@ const EventDetailsPage = () => {
                                 </div>
                                 <p className="text-sm text-[var(--lux-text-secondary)]">
                                   {quotation.customer?.fullName ||
-                                    quotation.lead?.fullName ||
                                     t("events.noQuotationParty", {
-                                      defaultValue: "No customer or lead linked",
+                                      defaultValue: "No customer linked",
                                     })}
                                 </p>
                               </div>
@@ -1755,9 +1737,8 @@ const EventDetailsPage = () => {
                                 </div>
                                 <p className="text-sm text-[var(--lux-text-secondary)]">
                                   {contract.customer?.fullName ||
-                                    contract.lead?.fullName ||
                                     t("events.noContractParty", {
-                                      defaultValue: "No customer or lead linked",
+                                      defaultValue: "No customer linked",
                                     })}
                                 </p>
                               </div>

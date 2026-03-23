@@ -41,7 +41,7 @@ import {
 } from "@/hooks/appointments/useAppointmentActions";
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useDeleteAppointment } from "@/hooks/appointments/useDeleteAppointment";
-import { useLeads } from "@/hooks/leads/useLeads";
+import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useUsers } from "@/hooks/users/useUsers";
 import { useVenues } from "@/hooks/venues/useVenues";
 
@@ -77,10 +77,10 @@ const AppointmentsPage = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | TableAppointment["status"]>(
     "all",
   );
-  const [leadSearch, setLeadSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [venueSearch, setVenueSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
-  const [leadFilter, setLeadFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
   const [venueFilter, setVenueFilter] = useState("");
   const [assignedUserFilter, setAssignedUserFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -107,19 +107,18 @@ const AppointmentsPage = () => {
     currentPage,
     itemsPerPage,
     status: statusFilter,
-    leadId: leadFilter,
+    customerId: customerFilter,
     venueId: venueFilter,
     assignedToUserId: assignedUserFilter,
     dateFrom,
     dateTo,
   });
-  const { data: leadsResponse } = useLeads({
+  const { data: customersResponse } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
     status: "all",
     venueId: "",
-    source: "",
     weddingDateFrom: "",
     weddingDateTo: "",
   });
@@ -140,7 +139,10 @@ const AppointmentsPage = () => {
   const totalItems = adapted.total;
   const totalPages = adapted.totalPages;
   const rowNumberStart = (currentPage - 1) * itemsPerPage + 1;
-  const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
+  const customers = useMemo(
+    () => customersResponse?.data ?? [],
+    [customersResponse?.data],
+  );
   const venues = useMemo(() => venuesResponse?.data ?? [], [venuesResponse?.data]);
   const users = useMemo(() => usersResponse?.data ?? [], [usersResponse?.data]);
   const venueFilterOptions = useMemo(() => {
@@ -153,10 +155,10 @@ const AppointmentsPage = () => {
       });
     });
 
-    leads.forEach((lead) => {
-      const venueId = lead.venue?.id ?? lead.venueId;
+    customers.forEach((customer) => {
+      const venueId = customer.venue?.id ?? customer.venueId;
       const venueName =
-        lead.venue?.name ?? lead.venueNameSnapshot?.trim() ?? "";
+        customer.venue?.name ?? customer.venueNameSnapshot?.trim() ?? "";
 
       if (!venueId || !venueName || options.has(String(venueId))) {
         return;
@@ -171,13 +173,15 @@ const AppointmentsPage = () => {
     return Array.from(options.values()).sort((left, right) =>
       left.name.localeCompare(right.name),
     );
-  }, [leads, venues]);
-  const filteredLeadOptions = useMemo(
+  }, [customers, venues]);
+  const filteredCustomerOptions = useMemo(
     () =>
-      leads.filter((lead) =>
-        lead.fullName.toLowerCase().includes(leadSearch.trim().toLowerCase()),
+      customers.filter((customer) =>
+        customer.fullName
+          .toLowerCase()
+          .includes(customerSearch.trim().toLowerCase()),
       ),
-    [leadSearch, leads],
+    [customerSearch, customers],
   );
   const filteredVenueOptions = useMemo(
     () =>
@@ -201,7 +205,7 @@ const AppointmentsPage = () => {
   const rescheduleMutation = useRescheduleAppointment();
   const activeFiltersCount = [
     statusFilter !== "all",
-    Boolean(leadFilter),
+    Boolean(customerFilter),
     Boolean(venueFilter),
     Boolean(assignedUserFilter),
     Boolean(dateFrom),
@@ -210,7 +214,7 @@ const AppointmentsPage = () => {
 
   const resetFilters = () => {
     setStatusFilter("all");
-    setLeadFilter("");
+    setCustomerFilter("");
     setVenueFilter("");
     setAssignedUserFilter("");
     setDateFrom("");
@@ -292,7 +296,7 @@ const AppointmentsPage = () => {
                   <p className="max-w-2xl text-xs leading-5 text-[var(--lux-text-secondary)]">
                     {t("appointments.filtersHint", {
                       defaultValue:
-                        "Refine the appointment list by status, lead, venue, owner, and date.",
+                        "Refine the appointment list by status, customer, venue, owner, and date.",
                     })}
                   </p>
                 </div>
@@ -350,11 +354,11 @@ const AppointmentsPage = () => {
                     })}
                   />
                 ) : null}
-                {leadFilter ? (
+                {customerFilter ? (
                   <FilterPill
                     label={
-                      leads.find((lead) => String(lead.id) === leadFilter)?.fullName ||
-                      leadFilter
+                      customers.find((customer) => String(customer.id) === customerFilter)
+                        ?.fullName || customerFilter
                     }
                   />
                 ) : null}
@@ -454,24 +458,24 @@ const AppointmentsPage = () => {
                       </FilterField>
 
                       <FilterField
-                        label={t("appointments.lead", {
-                          defaultValue: "Lead",
+                        label={t("appointments.customer", {
+                          defaultValue: "Customer",
                         })}
                       >
                         <SearchableFilterSelect
-                          value={leadFilter}
+                          value={customerFilter}
                           onValueChange={(value) => {
-                            setLeadFilter(value);
+                            setCustomerFilter(value);
                             setCurrentPage(1);
                           }}
-                          onSearch={setLeadSearch}
-                          placeholder={t("appointments.allLeads", {
-                            defaultValue: "All Leads",
+                          onSearch={setCustomerSearch}
+                          placeholder={t("appointments.allCustomers", {
+                            defaultValue: "All Customers",
                           })}
-                          searchPlaceholder={t("appointments.searchLead", {
+                          searchPlaceholder={t("appointments.searchCustomer", {
                             defaultValue: isArabic
                               ? "ابحث عن عميل محتمل..."
-                              : "Search leads...",
+                              : "Search customers...",
                           })}
                           emptyMessage={t("common.noResultsTitle", {
                             defaultValue: isArabic
@@ -479,7 +483,7 @@ const AppointmentsPage = () => {
                               : "No results found",
                           })}
                         >
-                          {filteredLeadOptions.length === 0 ? (
+                          {filteredCustomerOptions.length === 0 ? (
                             <SearchableSelectEmpty
                               message={t("common.noResultsTitle", {
                                 defaultValue: isArabic
@@ -488,12 +492,12 @@ const AppointmentsPage = () => {
                               })}
                             />
                           ) : (
-                            filteredLeadOptions.map((lead) => (
+                            filteredCustomerOptions.map((customer) => (
                               <SearchableSelectItem
-                                key={lead.id}
-                                value={String(lead.id)}
+                                key={customer.id}
+                                value={String(customer.id)}
                               >
-                                {lead.fullName}
+                                {customer.fullName}
                               </SearchableSelectItem>
                             ))
                           )}

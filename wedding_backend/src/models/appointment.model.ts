@@ -18,7 +18,7 @@ export type AppointmentMeetingType =
 
 export interface AppointmentAttributes {
   id: number;
-  leadId: number;
+  customerId: number;
 
   appointmentDate: string;
   appointmentStartTime: string;
@@ -56,7 +56,7 @@ export class Appointment
   implements AppointmentAttributes
 {
   public id!: number;
-  public leadId!: number;
+  public customerId!: number;
 
   public appointmentDate!: string;
   public appointmentStartTime!: string;
@@ -83,7 +83,7 @@ Appointment.init(
       primaryKey: true,
     },
 
-    leadId: {
+    customerId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
@@ -163,7 +163,7 @@ Appointment.init(
     timestamps: true,
     paranoid: true,
     indexes: [
-      { fields: ["leadId"] },
+      { fields: ["customerId"] },
       { fields: ["appointmentDate"] },
       { fields: ["status"] },
       { fields: ["assignedToUserId"] },

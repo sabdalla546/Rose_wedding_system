@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { CalendarClock, ExternalLink, UserRoundSearch } from "lucide-react";
+import { CalendarClock, ExternalLink } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -89,7 +89,7 @@ const AppointmentDetailsPage = () => {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-                      {appointment.lead?.fullName || `Appointment #${appointment.id}`}
+                      {appointment.customer?.fullName || `Appointment #${appointment.id}`}
                     </h1>
                     <AppointmentStatusBadge status={appointment.status} />
                   </div>
@@ -107,27 +107,17 @@ const AppointmentDetailsPage = () => {
                     {t("common.edit", { defaultValue: "Edit" })}
                   </Button>
                 </ProtectedComponent>
-                <ProtectedComponent permission="leads.read">
-                  <Button variant="outline" onClick={() => navigate(`/leads/${appointment.leadId}`)}>
-                    <UserRoundSearch className="h-4 w-4" />
-                    {t("appointments.viewLead", { defaultValue: "View Lead" })}
+                <ProtectedComponent permission="customers.read">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(`/customers/${appointment.customerId}`)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {t("appointments.viewCustomer", {
+                      defaultValue: "View Customer",
+                    })}
                   </Button>
                 </ProtectedComponent>
-                {appointment.lead?.convertedCustomerId ? (
-                  <ProtectedComponent permission="customers.read">
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        navigate(`/customers/${appointment.lead?.convertedCustomerId}`)
-                      }
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {t("appointments.viewCustomer", {
-                        defaultValue: "View Customer",
-                      })}
-                    </Button>
-                  </ProtectedComponent>
-                ) : null}
               </div>
             </div>
           </SectionCard>
@@ -148,23 +138,14 @@ const AppointmentDetailsPage = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t("appointments.leadInformation", { defaultValue: "Lead Information" })}</CardTitle>
-                <CardDescription>{t("appointments.leadInformationHint", { defaultValue: "Main lead details linked to this appointment." })}</CardDescription>
+                <CardTitle>{t("appointments.customerInformation", { defaultValue: "Customer Information" })}</CardTitle>
+                <CardDescription>{t("appointments.customerInformationHint", { defaultValue: "Main customer details linked to this appointment." })}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <DetailItem label={t("appointments.lead", { defaultValue: "Lead" })} value={appointment.lead?.fullName} />
-                <DetailItem label={t("common.venue", { defaultValue: "Venue" })} value={appointment.lead?.venue?.name || appointment.lead?.venueNameSnapshot} />
-                <DetailItem label={t("appointments.leadMobile", { defaultValue: "Lead Mobile" })} value={appointment.lead?.mobile} />
-                <DetailItem
-                  label={t("appointments.leadStatus", { defaultValue: "Lead Status" })}
-                  value={
-                    appointment.lead?.status
-                      ? t(`leads.status.${appointment.lead.status}`, {
-                          defaultValue: appointment.lead.status,
-                        })
-                      : undefined
-                  }
-                />
+                <DetailItem label={t("appointments.customer", { defaultValue: "Customer" })} value={appointment.customer?.fullName} />
+                <DetailItem label={t("common.venue", { defaultValue: "Venue" })} value={appointment.customer?.venue?.name || appointment.customer?.venueNameSnapshot} />
+                <DetailItem label={t("appointments.customerMobile", { defaultValue: "Customer Mobile" })} value={appointment.customer?.mobile} />
+                <DetailItem label={t("appointments.customerStatus", { defaultValue: "Customer Status" })} value={appointment.customer?.status} />
               </CardContent>
             </Card>
 

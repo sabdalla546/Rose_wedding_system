@@ -88,7 +88,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
     const quotation = await Quotation.create({
       eventId: data.eventId,
       customerId: data.customerId ?? event.customerId ?? null,
-      leadId: data.leadId ?? event.leadId ?? null,
+      // leadId: data.leadId ?? event.leadId ?? null,
       quotationNumber: data.quotationNumber ?? null,
       issueDate: data.issueDate,
       validUntil: data.validUntil ?? null,
@@ -196,7 +196,7 @@ export const createQuotationFromEvent = async (
     const quotation = await Quotation.create({
       eventId: event.id,
       customerId: event.customerId ?? null,
-      leadId: event.leadId ?? null,
+      // leadId: event.leadId ?? null,
       quotationNumber: data.quotationNumber ?? null,
       issueDate: data.issueDate,
       validUntil: data.validUntil ?? null,

@@ -15,7 +15,7 @@ interface UseContractsParams {
   quotationId: string;
   eventId: string;
   customerId: string;
-  leadId: string;
+  leadId?: string;
   status: "all" | ContractStatus;
   signedDateFrom: string;
   signedDateTo: string;
@@ -28,7 +28,7 @@ export const useContracts = ({
   quotationId,
   eventId,
   customerId,
-  leadId,
+  leadId = "",
   status,
   signedDateFrom,
   signedDateTo,

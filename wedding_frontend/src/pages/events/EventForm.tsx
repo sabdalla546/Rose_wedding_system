@@ -39,7 +39,6 @@ import {
   useUpdateEvent,
 } from "@/hooks/events/useEventMutations";
 import { useEvent } from "@/hooks/events/useEvents";
-import { useLeads } from "@/hooks/leads/useLeads";
 import { useVenues } from "@/hooks/venues/useVenues";
 
 import { EVENT_STATUS_OPTIONS, getEventDisplayTitle } from "./adapters";
@@ -49,7 +48,6 @@ type EventFormMode = "manual" | "source";
 
 type EventFormValues = {
   customerId: string;
-  leadId: string;
   eventDate: string;
   venueId: string;
   venueNameSnapshot: string;
@@ -75,7 +73,6 @@ const statusValues = EVENT_STATUS_OPTIONS.map((item) => item.value) as [
 
 const defaultValues: EventFormValues = {
   customerId: "",
-  leadId: "",
   eventDate: "",
   venueId: "",
   venueNameSnapshot: "",
@@ -92,7 +89,6 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
   z
     .object({
       customerId: z.string().optional(),
-      leadId: z.string().optional(),
       eventDate: z.string().optional(),
       venueId: z.string().optional(),
       venueNameSnapshot: z.string().max(150).optional(),
@@ -112,11 +108,11 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
       status: z.union([z.literal(""), z.enum(statusValues)]),
     })
     .superRefine((values, ctx) => {
-      if (!isEditMode && !values.customerId?.trim() && !values.leadId?.trim()) {
+      if (!isEditMode && !values.customerId?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["customerId"],
-          message: "Either customer or lead is required",
+          message: "Customer is required",
         });
       }
 
@@ -422,16 +418,6 @@ const EventFormPage = () => {
       weddingDateTo: "",
     },
   );
-  const { data: leadsResponse, isLoading: leadsLoading } = useLeads({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    source: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
   const { data: venuesResponse, isLoading: venuesLoading } = useVenues({
     currentPage: 1,
     itemsPerPage: 200,
@@ -440,7 +426,6 @@ const EventFormPage = () => {
   });
 
   const customers = customersResponse?.data ?? [];
-  const leads = leadsResponse?.data ?? [];
   const venues = venuesResponse?.data ?? [];
   const createMutation = useCreateEvent();
   const createFromSourceMutation = useCreateEventFromSource();
@@ -464,7 +449,6 @@ const EventFormPage = () => {
     setMode("manual");
     form.reset({
       customerId: event.customerId ? String(event.customerId) : "",
-      leadId: event.leadId ? String(event.leadId) : "",
       eventDate: event.eventDate ?? "",
       venueId: event.venueId ? String(event.venueId) : "",
       venueNameSnapshot: event.venueNameSnapshot ?? "",
@@ -481,7 +465,6 @@ const EventFormPage = () => {
   const isBusy =
     eventLoading ||
     customersLoading ||
-    leadsLoading ||
     venuesLoading ||
     createMutation.isPending ||
     createFromSourceMutation.isPending ||
@@ -490,10 +473,6 @@ const EventFormPage = () => {
   const customerOptions = customers.map((customer) => ({
     value: String(customer.id),
     label: customer.fullName,
-  }));
-  const leadOptions = leads.map((lead) => ({
-    value: String(lead.id),
-    label: lead.fullName,
   }));
   const venueOptions = venues.map((venue) => ({
     value: String(venue.id),
@@ -524,7 +503,7 @@ const EventFormPage = () => {
     createMutation.mutate(payload);
   };
 
-  if (eventLoading || customersLoading || leadsLoading || venuesLoading) {
+  if (eventLoading || customersLoading || venuesLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-sm text-[var(--lux-text-secondary)]">
@@ -599,7 +578,7 @@ const EventFormPage = () => {
                     })}
                     hint={t("events.createModeHint", {
                       defaultValue:
-                        "Choose whether this event starts as a manual record or from an existing customer or lead.",
+                        "Choose whether this event starts as a manual record or from an existing customer.",
                     })}
                   />
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -623,7 +602,7 @@ const EventFormPage = () => {
                       })}
                       hint={t("events.createFromSourceHint", {
                         defaultValue:
-                          "Start from an existing customer or lead and inherit the source context.",
+                          "Start from an existing customer and inherit the source context.",
                       })}
                       onClick={() => setMode("source")}
                     />
@@ -647,7 +626,7 @@ const EventFormPage = () => {
                       })}
                       hint={t("events.linkedRecordsHint", {
                         defaultValue:
-                          "Link the event to a customer, a lead, or both when available.",
+                          "Link the event to a customer when available.",
                       })}
                     />
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -662,12 +641,12 @@ const EventFormPage = () => {
                         })}
                         searchPlaceholder={t("events.searchCustomers", {
                           defaultValue: isArabic
-                            ? "ابحث عن عميل..."
+                            ? "Ø§Ø¨Ø­Ø« Ø¹Ù† Ø¹Ù…ÙŠÙ„..."
                             : "Search customers...",
                         })}
                         emptyMessage={t("common.noResultsTitle", {
                           defaultValue: isArabic
-                            ? "لا توجد نتائج"
+                            ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬"
                             : "No results found",
                         })}
                         emptyLabel={t("events.noCustomerSelected", {
@@ -677,29 +656,6 @@ const EventFormPage = () => {
                         required={!isEditMode}
                       />
 
-                      <SearchableSelectField
-                        control={form.control}
-                        name="leadId"
-                        label={t("events.lead", { defaultValue: "Lead" })}
-                        placeholder={t("events.selectLead", {
-                          defaultValue: "Select lead",
-                        })}
-                        searchPlaceholder={t("events.searchLeads", {
-                          defaultValue: isArabic
-                            ? "ابحث عن عميل محتمل..."
-                            : "Search leads...",
-                        })}
-                        emptyMessage={t("common.noResultsTitle", {
-                          defaultValue: isArabic
-                            ? "لا توجد نتائج"
-                            : "No results found",
-                        })}
-                        emptyLabel={t("events.noLeadSelected", {
-                          defaultValue: "No lead selected",
-                        })}
-                        options={leadOptions}
-                        required={!isEditMode}
-                      />
                     </div>
                   </section>
 
@@ -735,12 +691,12 @@ const EventFormPage = () => {
                           })}
                           searchPlaceholder={t("events.searchVenues", {
                             defaultValue: isArabic
-                              ? "ابحث عن قاعة..."
+                              ? "Ø§Ø¨Ø­Ø« Ø¹Ù† Ù‚Ø§Ø¹Ø©..."
                               : "Search venues...",
                           })}
                           emptyMessage={t("common.noResultsTitle", {
                             defaultValue: isArabic
-                              ? "لا توجد نتائج"
+                              ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬"
                               : "No results found",
                           })}
                           emptyLabel={t("events.noVenueSelected", {

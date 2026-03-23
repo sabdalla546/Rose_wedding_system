@@ -92,6 +92,8 @@ export const resources = {
           dashboard: "Dashboard",
           Secretarial: "Secretarial",
           calendars: "Calendars",
+          accounting: "Accounting ",
+          oprational: "Oprational",
           leads: "Leads",
           customers: "Customers",
           events: "Events",
@@ -215,7 +217,8 @@ export const resources = {
         create: "Create Venue",
         createTitle: "Create Venue",
         editTitle: "Edit Venue",
-        createDescription: "Create a venue record for halls and wedding locations.",
+        createDescription:
+          "Create a venue record for halls and wedding locations.",
         editDescription: "Update venue details and availability.",
         backToVenues: "Back to Venues",
         statusFilter: "Status Filter",
@@ -239,7 +242,8 @@ export const resources = {
         phone: "Phone",
         phonePlaceholder: "Enter phone number",
         additionalDetails: "Additional Details",
-        notesPlaceholder: "Add operational notes, hall rules, or contact details...",
+        notesPlaceholder:
+          "Add operational notes, hall rules, or contact details...",
         statusSection: "Status",
         status: "Status",
         active: "Active",
@@ -422,8 +426,7 @@ export const resources = {
         editTitle: "Edit Service",
         createDescription:
           "Create a catalog service or operational line item for events.",
-        editDescription:
-          "Update service details, pricing, and status.",
+        editDescription: "Update service details, pricing, and status.",
         backToServices: "Back to Services",
         listTitle: "Services List",
         basicInformation: "Basic Information",
@@ -489,16 +492,14 @@ export const resources = {
         eventStatusLabel: "Item Status",
         eventNotesPlaceholder:
           "Add service notes, scope details, or internal coordination remarks...",
-        noEventServices:
-          "No service items have been added to this event yet.",
+        noEventServices: "No service items have been added to this event yet.",
         summaryItems: "Items",
         summaryQuantity: "Total Quantity",
         summaryEstimatedTotal: "Estimated Total",
         deleteEventItemTitle: "Delete Event Service",
         deleteEventItemMessage:
           "Are you sure you want to delete this event service item?",
-        selectionRequired:
-          "Select a catalog service or enter a service name.",
+        selectionRequired: "Select a catalog service or enter a service name.",
         quantityInvalid: "Quantity must be greater than zero.",
         unitPriceInvalid: "Unit price must be zero or greater.",
         sortOrderInvalid: "Sort order must be zero or greater.",
@@ -557,15 +558,13 @@ export const resources = {
         title: "الخدمات",
         service: "الخدمة",
         totalServices: "إجمالي الخدمات",
-        searchPlaceholder:
-          "ابحث باسم الخدمة أو الكود أو التصنيف أو الوصف...",
+        searchPlaceholder: "ابحث باسم الخدمة أو الكود أو التصنيف أو الوصف...",
         create: "إنشاء خدمة",
         createTitle: "إنشاء خدمة",
         editTitle: "تعديل الخدمة",
         createDescription:
           "أنشئ خدمة في الدليل أو بندًا تشغيليًا يمكن استخدامه في الحفلات.",
-        editDescription:
-          "حدّث بيانات الخدمة والتسعير والحالة.",
+        editDescription: "حدّث بيانات الخدمة والتسعير والحالة.",
         backToServices: "العودة إلى الخدمات",
         listTitle: "قائمة الخدمات",
         basicInformation: "البيانات الأساسية",
@@ -631,16 +630,15 @@ export const resources = {
         eventStatusLabel: "حالة البند",
         eventNotesPlaceholder:
           "أضف ملاحظات الخدمة أو تفاصيل النطاق أو ملاحظات التنسيق الداخلية...",
-        noEventServices:
-          "لم تتم إضافة أي بنود خدمة لهذا الحفل بعد.",
+        noEventServices: "لم تتم إضافة أي بنود خدمة لهذا الحفل بعد.",
         summaryItems: "\u0639\u062f\u062f \u0627\u0644\u0628\u0646\u0648\u062f",
-        summaryQuantity: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0643\u0645\u064a\u0629",
-        summaryEstimatedTotal: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a",
+        summaryQuantity:
+          "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0643\u0645\u064a\u0629",
+        summaryEstimatedTotal:
+          "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a",
         deleteEventItemTitle: "حذف بند الحفل",
-        deleteEventItemMessage:
-          "هل أنت متأكد من حذف بند الخدمة هذا؟",
-        selectionRequired:
-          "اختر خدمة من الدليل أو أدخل اسم الخدمة.",
+        deleteEventItemMessage: "هل أنت متأكد من حذف بند الخدمة هذا؟",
+        selectionRequired: "اختر خدمة من الدليل أو أدخل اسم الخدمة.",
         quantityInvalid: "يجب أن تكون الكمية أكبر من صفر.",
         unitPriceInvalid: "يجب أن يكون سعر الوحدة صفرًا أو أكبر.",
         sortOrderInvalid: "يجب أن يكون الترتيب صفرًا أو أكبر.",
@@ -699,15 +697,13 @@ export const resources = {
         title: "الخدمات",
         service: "الخدمة",
         totalServices: "إجمالي الخدمات",
-        searchPlaceholder:
-          "ابحث باسم الخدمة أو الكود أو التصنيف أو الوصف...",
+        searchPlaceholder: "ابحث باسم الخدمة أو الكود أو التصنيف أو الوصف...",
         create: "إنشاء خدمة",
         createTitle: "إنشاء خدمة",
         editTitle: "تعديل الخدمة",
         createDescription:
           "أنشئ خدمة في الدليل أو بندًا تشغيليًا يمكن استخدامه في الحفلات.",
-        editDescription:
-          "حدّث بيانات الخدمة والتسعير والحالة.",
+        editDescription: "حدّث بيانات الخدمة والتسعير والحالة.",
         backToServices: "العودة إلى الخدمات",
         listTitle: "قائمة الخدمات",
         basicInformation: "البيانات الأساسية",
@@ -773,13 +769,10 @@ export const resources = {
         eventStatusLabel: "حالة البند",
         eventNotesPlaceholder:
           "أضف ملاحظات الخدمة أو تفاصيل النطاق أو ملاحظات التنسيق الداخلية...",
-        noEventServices:
-          "لم تتم إضافة أي بنود خدمة لهذا الحفل بعد.",
+        noEventServices: "لم تتم إضافة أي بنود خدمة لهذا الحفل بعد.",
         deleteEventItemTitle: "حذف بند الحفل",
-        deleteEventItemMessage:
-          "هل أنت متأكد من حذف بند الخدمة هذا؟",
-        selectionRequired:
-          "اختر خدمة من الدليل أو أدخل اسم الخدمة.",
+        deleteEventItemMessage: "هل أنت متأكد من حذف بند الخدمة هذا؟",
+        selectionRequired: "اختر خدمة من الدليل أو أدخل اسم الخدمة.",
         quantityInvalid: "يجب أن تكون الكمية أكبر من صفر.",
         unitPriceInvalid: "يجب أن يكون سعر الوحدة صفرًا أو أكبر.",
         sortOrderInvalid: "يجب أن يكون الترتيب صفرًا أو أكبر.",
@@ -845,8 +838,7 @@ export const resources = {
         editTitle: "Edit Vendor",
         createDescription:
           "Create a vendor catalog record for event partners and external providers.",
-        editDescription:
-          "Update vendor details, contact data, and status.",
+        editDescription: "Update vendor details, contact data, and status.",
         backToVendors: "Back to Vendors",
         listTitle: "Vendors List",
         basicInformation: "Basic Information",
@@ -858,8 +850,7 @@ export const resources = {
         selectType: "Select vendor type",
         allTypes: "All Types",
         contactSection: "Contact Details",
-        contactSectionHint:
-          "Save the main contact points for the vendor team.",
+        contactSectionHint: "Save the main contact points for the vendor team.",
         contactDetails: "Contact",
         contactPerson: "Contact Person",
         contactPersonPlaceholder: "Enter contact person name",
@@ -914,8 +905,7 @@ export const resources = {
         deleteLinkTitle: "Delete Vendor Assignment",
         deleteLinkMessage:
           "Are you sure you want to delete this vendor assignment?",
-        selectionRequired:
-          "Select a catalog vendor or enter a company name.",
+        selectionRequired: "Select a catalog vendor or enter a company name.",
         type: {
           dj: "DJ",
           lighting: "Lighting",
@@ -976,8 +966,7 @@ export const resources = {
         editTitle: "Edit Event",
         createDescription:
           "Create a new event manually or start from an existing source record.",
-        editDescription:
-          "Update event details, venue, and linked records.",
+        editDescription: "Update event details, venue, and linked records.",
         backToEvents: "Back to Events",
         listTitle: "Events List",
         createMode: "Creation Flow",
@@ -1023,13 +1012,15 @@ export const resources = {
         contractNumber: "Contract Number",
         contractNumberPlaceholder: "Enter contract number",
         venueNameSnapshot: "Venue Name Snapshot",
-        venueNameSnapshotPlaceholder: "Type the venue name if it is not in the list",
+        venueNameSnapshotPlaceholder:
+          "Type the venue name if it is not in the list",
         selectVenue: "Select venue",
         noVenueSelected: "No venue selected",
         statusLabel: "Status",
         selectStatus: "Select status",
         useDefaultStatus: "Use default status",
-        notesPlaceholder: "Add planning notes, reminders, or internal remarks...",
+        notesPlaceholder:
+          "Add planning notes, reminders, or internal remarks...",
         deleteTitle: "Delete Event",
         deleteMessage: "Are you sure you want to delete this event?",
         filtersHint:
@@ -1075,7 +1066,8 @@ export const resources = {
         sectionSortOrderInvalid: "Sort order must be zero or greater.",
         sectionDataInvalid: "Section data must be valid JSON object.",
         vendors: "Vendors",
-        vendorsPlaceholder: "Vendor planning will be connected in a later phase.",
+        vendorsPlaceholder:
+          "Vendor planning will be connected in a later phase.",
         services: "Services",
         servicesPlaceholder:
           "Service planning will be connected in a later phase.",
@@ -1413,7 +1405,8 @@ export const resources = {
         addPaymentSchedule: "Add Payment Schedule",
         editPaymentSchedule: "Edit Payment Schedule",
         removePaymentSchedule: "Remove",
-        noPaymentSchedules: "No payment schedule has been added to this contract yet.",
+        noPaymentSchedules:
+          "No payment schedule has been added to this contract yet.",
         noPaymentSchedulesDraft:
           "No payment schedule lines have been added yet.",
         paymentScheduleDialogHint:
@@ -1422,8 +1415,7 @@ export const resources = {
           "Add installment notes, conditions, or office remarks...",
         paymentScheduleNameInvalid: "Installment name is required.",
         paymentScheduleAmountInvalid: "Amount must be zero or greater.",
-        paymentScheduleSortOrderInvalid:
-          "Sort order must be zero or greater.",
+        paymentScheduleSortOrderInvalid: "Sort order must be zero or greater.",
         paymentScheduleCount: "Installments",
         scheduledAmount: "Scheduled Amount",
         remainingToSchedule: "Remaining To Schedule",
@@ -1454,10 +1446,8 @@ export const resources = {
         toast: {
           created: "Contract created successfully",
           createFailed: "Failed to create contract",
-          createdFromQuotation:
-            "Contract created from quotation successfully",
-          createFromQuotationFailed:
-            "Failed to create contract from quotation",
+          createdFromQuotation: "Contract created from quotation successfully",
+          createFromQuotationFailed: "Failed to create contract from quotation",
           updated: "Contract updated successfully",
           updateFailed: "Failed to update contract",
           deleted: "Contract deleted successfully",
@@ -1509,7 +1499,8 @@ export const resources = {
         selectVenue: "Select venue",
         noVenueSelected: "No venue selected",
         prospectVenueName: "Venue Name Snapshot",
-        prospectVenueNamePlaceholder: "Enter venue name if it is not in the list",
+        prospectVenueNamePlaceholder:
+          "Enter venue name if it is not in the list",
         prospectSource: "Source",
         prospectSourcePlaceholder: "Instagram, referral, walk-in...",
         prospectNotes: "Lead Notes",
@@ -1689,7 +1680,7 @@ export const resources = {
         },
       },
       sidebar: {
-        brand: "WeddingPro",
+        brand: "Rose",
         suite: "الجناح المميز",
         createQuote: "إنشاء عرض سعر",
         generatePdf: "إنشاء PDF",
@@ -1698,7 +1689,8 @@ export const resources = {
           dashboard: "لوحة التحكم",
           Secretarial: "سكرتارية",
           calendars: "المواعيد",
-
+          accounting: "محاسبه ",
+          oprational: "التنفيذ",
           leads: "العملاء المحتملون",
           customers: "العملاء",
           events: "الحفلات",
@@ -1845,7 +1837,8 @@ export const resources = {
         phone: "رقم الهاتف",
         phonePlaceholder: "أدخل رقم الهاتف",
         additionalDetails: "تفاصيل إضافية",
-        notesPlaceholder: "أضف ملاحظات تشغيلية أو شروط القاعة أو بيانات التواصل...",
+        notesPlaceholder:
+          "أضف ملاحظات تشغيلية أو شروط القاعة أو بيانات التواصل...",
         statusSection: "الحالة",
         status: "الحالة",
         active: "نشط",
@@ -2027,21 +2020,18 @@ export const resources = {
         editTitle: "تعديل الشركة",
         createDescription:
           "أنشئ سجلًا في دليل الشركات للجهات الخارجية ومزودي الخدمات.",
-        editDescription:
-          "حدّث بيانات الشركة ووسائل التواصل والحالة.",
+        editDescription: "حدّث بيانات الشركة ووسائل التواصل والحالة.",
         backToVendors: "العودة إلى الشركات",
         listTitle: "قائمة الشركات",
         basicInformation: "البيانات الأساسية",
-        basicInformationHint:
-          "سجّل البيانات الرئيسية للشركة ونوع الخدمة.",
+        basicInformationHint: "سجّل البيانات الرئيسية للشركة ونوع الخدمة.",
         name: "اسم الشركة",
         namePlaceholder: "أدخل اسم الشركة أو مزود الخدمة",
         typeLabel: "نوع الخدمة",
         selectType: "اختر نوع الخدمة",
         allTypes: "كل الأنواع",
         contactSection: "بيانات التواصل",
-        contactSectionHint:
-          "احفظ وسائل التواصل الرئيسية لفريق الشركة.",
+        contactSectionHint: "احفظ وسائل التواصل الرئيسية لفريق الشركة.",
         contactDetails: "التواصل",
         contactPerson: "مسؤول التواصل",
         contactPersonPlaceholder: "أدخل اسم مسؤول التواصل",
@@ -2058,8 +2048,7 @@ export const resources = {
         activeOnly: "النشطة فقط",
         inactiveOnly: "غير النشطة فقط",
         activeLabel: "الشركة نشطة",
-        activeHint:
-          "تبقى الشركات غير النشطة في الدليل مع تمييزها كغير متاحة.",
+        activeHint: "تبقى الشركات غير النشطة في الدليل مع تمييزها كغير متاحة.",
         statusSection: "الحالة والملاحظات",
         notesPlaceholder:
           "أضف ملاحظات الخدمة أو تفاصيل التشغيل أو الملاحظات الداخلية...",
@@ -2091,13 +2080,10 @@ export const resources = {
         assignmentStatusLabel: "حالة الربط",
         assignmentNotesPlaceholder:
           "أضف ملاحظات الربط أو المسؤوليات أو ملاحظات التنسيق...",
-        noEventVendors:
-          "لم تتم إضافة أي شركات لهذا الحفل بعد.",
+        noEventVendors: "لم تتم إضافة أي شركات لهذا الحفل بعد.",
         deleteLinkTitle: "حذف ربط الشركة",
-        deleteLinkMessage:
-          "هل أنت متأكد من حذف ربط هذه الشركة؟",
-        selectionRequired:
-          "اختر شركة من الدليل أو أدخل اسم الشركة.",
+        deleteLinkMessage: "هل أنت متأكد من حذف ربط هذه الشركة؟",
+        selectionRequired: "اختر شركة من الدليل أو أدخل اسم الشركة.",
         type: {
           dj: "دي جي",
           lighting: "الإضاءة",
@@ -2158,8 +2144,7 @@ export const resources = {
         editTitle: "تعديل الحفل",
         createDescription:
           "أنشئ حفلاً جديدًا يدويًا أو ابدأ من سجل مصدر موجود.",
-        editDescription:
-          "حدّث بيانات الحفل والقاعة والروابط المرتبطة.",
+        editDescription: "حدّث بيانات الحفل والقاعة والروابط المرتبطة.",
         backToEvents: "العودة إلى الحفلات",
         listTitle: "قائمة الحفلات",
         createMode: "مسار الإنشاء",
@@ -2174,13 +2159,11 @@ export const resources = {
         linkedRecords: "الروابط المرتبطة",
         linkedRecordsHint:
           "اربط الحفل بعميل أو عميل محتمل أو بكليهما عند الحاجة.",
-        linkedRecordsCardHint:
-          "العميل والعميل المحتمل والقاعة وحالة الحفل.",
+        linkedRecordsCardHint: "العميل والعميل المحتمل والقاعة وحالة الحفل.",
         generalInfo: "البيانات الأساسية",
         generalInfoHint:
           "سجّل بيانات الحفل الرئيسية والأسماء والقاعة وحالة التخطيط.",
-        generalInfoCardHint:
-          "بيانات الحفل والأسماء ورقم العقد.",
+        generalInfoCardHint: "بيانات الحفل والأسماء ورقم العقد.",
         customer: "العميل",
         lead: "العميل المحتمل",
         selectCustomer: "اختر العميل",
@@ -2212,7 +2195,8 @@ export const resources = {
         statusLabel: "الحالة",
         selectStatus: "اختر الحالة",
         useDefaultStatus: "استخدم الحالة الافتراضية",
-        notesPlaceholder: "أضف ملاحظات التخطيط أو التذكيرات أو الملاحظات الداخلية...",
+        notesPlaceholder:
+          "أضف ملاحظات التخطيط أو التذكيرات أو الملاحظات الداخلية...",
         deleteTitle: "حذف الحفل",
         deleteMessage: "هل أنت متأكد من حذف هذا الحفل؟",
         filtersHint:
@@ -2222,27 +2206,23 @@ export const resources = {
         showFilters: "عرض الفلاتر",
         hideFilters: "إخفاء الفلاتر",
         primaryFilters: "الفلاتر الأساسية",
-        primaryFiltersHint:
-          "استخدم الفلاتر الرئيسية لتضييق القائمة بسرعة.",
+        primaryFiltersHint: "استخدم الفلاتر الرئيسية لتضييق القائمة بسرعة.",
         dateFilters: "نطاق التاريخ",
-        dateFiltersHint:
-          "حدّد نطاق تاريخ الحفل لعرض الحفلات المطابقة.",
+        dateFiltersHint: "حدّد نطاق تاريخ الحفل لعرض الحفلات المطابقة.",
         dateFrom: "التاريخ من",
         dateTo: "التاريخ إلى",
         allStatuses: "كل الحالات",
         viewCustomer: "عرض العميل",
         viewLead: "عرض العميل المحتمل",
         auditTrail: "سجل التعديلات",
-        auditTrailHint:
-          "من قام بإنشاء الحفل وآخر من عدّله.",
+        auditTrailHint: "من قام بإنشاء الحفل وآخر من عدّله.",
         createdBy: "أُنشئ بواسطة",
         updatedBy: "عُدّل بواسطة",
         createdAt: "تاريخ الإنشاء",
         updatedAt: "تاريخ التحديث",
         noNotes: "لا توجد ملاحظات حتى الآن.",
         sectionsTitle: "أقسام الحفل",
-        sectionsHint:
-          "أدر أقسام التخطيط المرتبة لهذا الحفل.",
+        sectionsHint: "أدر أقسام التخطيط المرتبة لهذا الحفل.",
         addSection: "إضافة قسم",
         editSection: "تعديل قسم",
         sectionDialogHint:
@@ -2251,32 +2231,23 @@ export const resources = {
         sectionTitle: "العنوان",
         sectionTitlePlaceholder: "أدخل عنوان القسم",
         sectionData: "البيانات المهيكلة",
-        sectionNotesPlaceholder:
-          "أضف ملاحظات القسم أو ملاحظات المصمم...",
+        sectionNotesPlaceholder: "أضف ملاحظات القسم أو ملاحظات المصمم...",
         sortOrder: "الترتيب",
         completed: "مكتمل",
-        emptySectionData:
-          "لا توجد بيانات مهيكلة في هذا القسم بعد.",
-        noSections:
-          "لم يتم إضافة أي أقسام لهذا الحفل بعد.",
+        emptySectionData: "لا توجد بيانات مهيكلة في هذا القسم بعد.",
+        noSections: "لم يتم إضافة أي أقسام لهذا الحفل بعد.",
         deleteSectionTitle: "حذف القسم",
-        deleteSectionMessage:
-          "هل أنت متأكد من حذف هذا القسم؟",
-        sectionSortOrderInvalid:
-          "يجب أن يكون الترتيب صفرًا أو أكبر.",
-        sectionDataInvalid:
-          "يجب أن تكون بيانات القسم JSON صالحًا من نوع كائن.",
+        deleteSectionMessage: "هل أنت متأكد من حذف هذا القسم؟",
+        sectionSortOrderInvalid: "يجب أن يكون الترتيب صفرًا أو أكبر.",
+        sectionDataInvalid: "يجب أن تكون بيانات القسم JSON صالحًا من نوع كائن.",
         vendors: "الموردون",
-        vendorsPlaceholder:
-          "سيتم ربط تخطيط الموردين في مرحلة لاحقة.",
+        vendorsPlaceholder: "سيتم ربط تخطيط الموردين في مرحلة لاحقة.",
         services: "الخدمات",
-        servicesPlaceholder:
-          "سيتم ربط تخطيط الخدمات في مرحلة لاحقة.",
+        servicesPlaceholder: "سيتم ربط تخطيط الخدمات في مرحلة لاحقة.",
         quotations: "عروض الأسعار",
         quotationsHint:
           "راجع عروض الأسعار المرتبطة وانتقل سريعًا إلى إجراءات التسعير الخاصة بهذا الحفل.",
-        quotationsPlaceholder:
-          "سيتم ربط إدارة عروض الأسعار في مرحلة لاحقة.",
+        quotationsPlaceholder: "سيتم ربط إدارة عروض الأسعار في مرحلة لاحقة.",
         quotationCount: "عدد العروض",
         quotationTotalAmount: "إجمالي العروض",
         viewQuotation: "عرض عرض السعر",
@@ -2345,8 +2316,7 @@ export const resources = {
         editTitle: "تعديل عرض السعر",
         createDescription:
           "أنشئ عرض سعر يدويًا أو كوّنه مباشرة من خدمات الحفل.",
-        editDescription:
-          "حدّث بيانات رأس عرض السعر وراجع البنود الحالية.",
+        editDescription: "حدّث بيانات رأس عرض السعر وراجع البنود الحالية.",
         createFromEvent: "إنشاء من الحفل",
         backToQuotations: "العودة إلى عروض الأسعار",
         backToQuotation: "العودة إلى عرض السعر",
@@ -2362,8 +2332,7 @@ export const resources = {
         primaryFiltersHint:
           "استخدم الفلاتر الأساسية للوصول السريع إلى عروض الأسعار المطلوبة.",
         dateFilters: "نطاق التاريخ",
-        dateFiltersHint:
-          "حدّد نطاق تاريخ الإصدار لعرض عروض الأسعار المطابقة.",
+        dateFiltersHint: "حدّد نطاق تاريخ الإصدار لعرض عروض الأسعار المطابقة.",
         allEvents: "كل الحفلات",
         allCustomers: "كل العملاء",
         allLeads: "كل العملاء المحتملين",
@@ -2414,11 +2383,9 @@ export const resources = {
         createModeHint:
           "اختر ما إذا كنت تريد إعداد عرض السعر يدويًا أو إنشاؤه من خدمات الحفل.",
         manualMode: "عرض سعر يدوي",
-        manualModeHint:
-          "أنشئ البنود يدويًا وتحكم في كل بند بشكل مباشر.",
+        manualModeHint: "أنشئ البنود يدويًا وتحكم في كل بند بشكل مباشر.",
         fromEventMode: "إنشاء من خدمات الحفل",
-        fromEventModeHint:
-          "اختر الحفل وحوّل بنود خدماته إلى عرض سعر.",
+        fromEventModeHint: "اختر الحفل وحوّل بنود خدماته إلى عرض سعر.",
         selectEvent: "اختر الحفل",
         noEventSelected: "لا يوجد حفل محدد",
         selectCustomer: "اختر العميل",
@@ -2426,8 +2393,7 @@ export const resources = {
         selectLead: "اختر العميل المحتمل",
         noLeadSelected: "لا يوجد عميل محتمل محدد",
         discountPlaceholder: "أدخل قيمة الخصم",
-        notesPlaceholder:
-          "أضف ملاحظات تجارية أو افتراضات أو ملاحظات داخلية...",
+        notesPlaceholder: "أضف ملاحظات تجارية أو افتراضات أو ملاحظات داخلية...",
         editItemsHint:
           "يمكن في هذه المرحلة تعديل البنود الحالية فقط. إضافة البنود أو حذفها ستُربط لاحقًا عند توفر واجهات backend اللازمة.",
         addItem: "إضافة بند",
@@ -2451,13 +2417,10 @@ export const resources = {
         selectionModeSelected: "اختيار خدمات محددة",
         selectionModeSelectedHint:
           "اختر فقط البنود التي يجب أن تظهر في عرض السعر.",
-        selectEventBeforeServices:
-          "اختر الحفل أولًا لمعاينة بنود خدماته.",
-        noEventServicesForEvent:
-          "لا توجد خدمات حفل نشطة متاحة للحفل المحدد.",
+        selectEventBeforeServices: "اختر الحفل أولًا لمعاينة بنود خدماته.",
+        noEventServicesForEvent: "لا توجد خدمات حفل نشطة متاحة للحفل المحدد.",
         itemStatus: "الحالة",
-        fromEventSelectionRequired:
-          "اختر خدمة حفل واحدة على الأقل للمتابعة.",
+        fromEventSelectionRequired: "اختر خدمة حفل واحدة على الأقل للمتابعة.",
         status: {
           draft: "مسودة",
           sent: "مرسل",
@@ -2470,8 +2433,7 @@ export const resources = {
           created: "تم إنشاء عرض السعر بنجاح",
           createFailed: "تعذر إنشاء عرض السعر",
           createdFromEvent: "تم إنشاء عرض السعر من خدمات الحفل بنجاح",
-          createFromEventFailed:
-            "تعذر إنشاء عرض السعر من خدمات الحفل",
+          createFromEventFailed: "تعذر إنشاء عرض السعر من خدمات الحفل",
           updated: "تم تحديث عرض السعر بنجاح",
           updateFailed: "تعذر تحديث عرض السعر",
           deleted: "تم حذف عرض السعر بنجاح",
@@ -2486,10 +2448,8 @@ export const resources = {
         create: "إنشاء عقد",
         createTitle: "إنشاء عقد",
         editTitle: "تعديل عقد",
-        createDescription:
-          "أنشئ عقدًا يدويًا أو كوّنه مباشرة من عرض سعر.",
-        editDescription:
-          "حدّث بيانات رأس العقد وراجع بنود العقد الحالية.",
+        createDescription: "أنشئ عقدًا يدويًا أو كوّنه مباشرة من عرض سعر.",
+        editDescription: "حدّث بيانات رأس العقد وراجع بنود العقد الحالية.",
         createFromQuotation: "إنشاء من عرض السعر",
         backToContracts: "العودة إلى العقود",
         backToContract: "العودة إلى العقد",
@@ -2505,8 +2465,7 @@ export const resources = {
         primaryFiltersHint:
           "استخدم الفلاتر الأساسية للوصول السريع إلى العقود المطلوبة.",
         dateFilters: "نطاق التاريخ",
-        dateFiltersHint:
-          "حدّد نطاق تاريخ التوقيع لعرض العقود المطابقة.",
+        dateFiltersHint: "حدّد نطاق تاريخ التوقيع لعرض العقود المطابقة.",
         allQuotations: "كل عروض الأسعار",
         allEvents: "كل الحفلات",
         allCustomers: "كل العملاء",
@@ -2551,8 +2510,7 @@ export const resources = {
         deleteTitle: "حذف العقد",
         deleteMessage: "هل أنت متأكد من حذف هذا العقد؟",
         deletePaymentScheduleTitle: "حذف خطة دفعة",
-        deletePaymentScheduleMessage:
-          "هل أنت متأكد من حذف خطة الدفعة هذه؟",
+        deletePaymentScheduleMessage: "هل أنت متأكد من حذف خطة الدفعة هذه؟",
         event: "الحفل",
         quotation: "عرض السعر",
         customer: "العميل",
@@ -2561,11 +2519,9 @@ export const resources = {
         createModeHint:
           "اختر ما إذا كنت تريد إعداد العقد يدويًا أو إنشاؤه من عرض سعر.",
         manualMode: "عقد يدوي",
-        manualModeHint:
-          "أنشئ بنود العقد يدويًا وتحكّم في كل سطر بشكل مباشر.",
+        manualModeHint: "أنشئ بنود العقد يدويًا وتحكّم في كل سطر بشكل مباشر.",
         fromQuotationMode: "إنشاء من عرض السعر",
-        fromQuotationModeHint:
-          "اختر عرض سعر ثم حوّله إلى عقد.",
+        fromQuotationModeHint: "اختر عرض سعر ثم حوّله إلى عقد.",
         selectQuotation: "اختر عرض السعر",
         noQuotationSelected: "لا يوجد عرض سعر محدد",
         selectEvent: "اختر الحفل",
@@ -2597,8 +2553,7 @@ export const resources = {
         fromQuotationPreviewTitle: "معاينة عرض السعر",
         fromQuotationPreviewHint:
           "راجع ملخص عرض السعر والبنود التي سيتم نسخها إلى العقد.",
-        selectQuotationToPreview:
-          "اختر عرض سعر لمعاينة بنود العقد.",
+        selectQuotationToPreview: "اختر عرض سعر لمعاينة بنود العقد.",
         paymentScheduleTitle: "خطة الدفعات",
         paymentScheduleHint:
           "خطط دفعات العقد هنا. هذه خطة دفعات فقط وليست تحصيلًا فعليًا للمدفوعات.",
@@ -2606,17 +2561,14 @@ export const resources = {
         editPaymentSchedule: "تعديل خطة دفعة",
         removePaymentSchedule: "حذف",
         noPaymentSchedules: "لم تتم إضافة خطة دفعات لهذا العقد بعد.",
-        noPaymentSchedulesDraft:
-          "لم تتم إضافة سطور خطة دفعات بعد.",
+        noPaymentSchedulesDraft: "لم تتم إضافة سطور خطة دفعات بعد.",
         paymentScheduleDialogHint:
           "خطط الدفعات وتواريخ الاستحقاق هنا. هذا القسم يسجل الدفعات المجدولة فقط.",
         paymentScheduleNotesPlaceholder:
           "أضف ملاحظات الدفعة أو الشروط أو ملاحظات المكتب...",
         paymentScheduleNameInvalid: "اسم الدفعة مطلوب.",
-        paymentScheduleAmountInvalid:
-          "يجب أن تكون القيمة صفرًا أو أكبر.",
-        paymentScheduleSortOrderInvalid:
-          "يجب أن يكون الترتيب صفرًا أو أكبر.",
+        paymentScheduleAmountInvalid: "يجب أن تكون القيمة صفرًا أو أكبر.",
+        paymentScheduleSortOrderInvalid: "يجب أن يكون الترتيب صفرًا أو أكبر.",
         paymentScheduleCount: "عدد الدفعات",
         scheduledAmount: "المبلغ المجدول",
         remainingToSchedule: "المتبقي للجدولة",
@@ -2648,8 +2600,7 @@ export const resources = {
           created: "تم إنشاء العقد بنجاح",
           createFailed: "تعذر إنشاء العقد",
           createdFromQuotation: "تم إنشاء العقد من عرض السعر بنجاح",
-          createFromQuotationFailed:
-            "تعذر إنشاء العقد من عرض السعر",
+          createFromQuotationFailed: "تعذر إنشاء العقد من عرض السعر",
           updated: "تم تحديث العقد بنجاح",
           updateFailed: "تعذر تحديث العقد",
           deleted: "تم حذف العقد بنجاح",
@@ -2673,8 +2624,7 @@ export const resources = {
         scheduleDescription:
           "أنشئ موعدًا لعميل محتمل جديد أو اربطه بعميل محتمل موجود.",
         editTitle: "تعديل الموعد",
-        editDescription:
-          "حدّث توقيت الموعد والتكليف وتفاصيل المتابعة.",
+        editDescription: "حدّث توقيت الموعد والتكليف وتفاصيل المتابعة.",
         flowMode: "مسار الجدولة",
         flowModeHint:
           "اختر ما إذا كان الموعد يبدأ بعميل محتمل جديد أو بعميل محتمل موجود.",
@@ -2682,8 +2632,7 @@ export const resources = {
         newLeadModeHint:
           "سجّل بيانات عميل محتمل جديد وحدد الموعد في نفس الخطوة.",
         existingLeadMode: "عميل محتمل موجود",
-        existingLeadModeHint:
-          "اربط الموعد بعميل محتمل موجود بالفعل في النظام.",
+        existingLeadModeHint: "اربط الموعد بعميل محتمل موجود بالفعل في النظام.",
         newProspectSection: "بيانات العميل المحتمل الجديد",
         newProspectSectionHint:
           "سجّل تفاصيل الاستفسار الأساسية قبل جدولة الموعد.",
@@ -2701,7 +2650,8 @@ export const resources = {
         selectVenue: "اختر القاعة",
         noVenueSelected: "لا توجد قاعة محددة",
         prospectVenueName: "اسم القاعة المدخل",
-        prospectVenueNamePlaceholder: "أدخل اسم القاعة إذا لم تكن موجودة بالقائمة",
+        prospectVenueNamePlaceholder:
+          "أدخل اسم القاعة إذا لم تكن موجودة بالقائمة",
         prospectSource: "المصدر",
         prospectSourcePlaceholder: "إنستغرام، توصية، زيارة مباشرة...",
         prospectNotes: "ملاحظات العميل المحتمل",
@@ -2713,8 +2663,7 @@ export const resources = {
         lead: "العميل المحتمل",
         selectLead: "اختر العميل المحتمل",
         scheduleSection: "تفاصيل الموعد",
-        scheduleSectionHint:
-          "حدّد التاريخ والوقت والتكليف ونوع الاجتماع.",
+        scheduleSectionHint: "حدّد التاريخ والوقت والتكليف ونوع الاجتماع.",
         date: "تاريخ الموعد",
         time: "الوقت",
         assignedTo: "مُسند إلى",
@@ -2746,16 +2695,14 @@ export const resources = {
         deleteTitle: "حذف الموعد",
         deleteMessage: "هل أنت متأكد من حذف هذا الموعد؟",
         confirmTitle: "تأكيد الموعد",
-        confirmDescription:
-          "أضف ملاحظة اختيارية قبل تأكيد هذا الموعد.",
+        confirmDescription: "أضف ملاحظة اختيارية قبل تأكيد هذا الموعد.",
         confirm: "تأكيد",
         completeTitle: "إكمال الموعد",
         completeDescription:
           "سجّل النتيجة والملاحظات والخطوة التالية لهذا الموعد.",
         complete: "إكمال",
         cancelTitle: "إلغاء الموعد",
-        cancelDescription:
-          "أضف سبب الإلغاء وملاحظة اختيارية.",
+        cancelDescription: "أضف سبب الإلغاء وملاحظة اختيارية.",
         cancelAction: "إلغاء الموعد",
         cancelReasonPlaceholder: "أدخل سبب الإلغاء",
         rescheduleTitle: "إعادة جدولة الموعد",
@@ -2768,7 +2715,8 @@ export const resources = {
         scheduleInformation: "معلومات الموعد",
         scheduleInformationHint: "التوقيت الأساسي وتفاصيل التكليف.",
         leadInformation: "معلومات العميل المحتمل",
-        leadInformationHint: "البيانات الرئيسية للعميل المحتمل المرتبط بهذا الموعد.",
+        leadInformationHint:
+          "البيانات الرئيسية للعميل المحتمل المرتبط بهذا الموعد.",
         leadMobile: "جوال العميل المحتمل",
         leadStatus: "حالة العميل المحتمل",
         outcome: "النتيجة",

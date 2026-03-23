@@ -30,7 +30,6 @@ export const eventSectionTypeEnum = z.enum([
 export const createEventSchema = z
   .object({
     customerId: z.number().int().positive().optional().nullable(),
-    leadId: z.number().int().positive().optional().nullable(),
     eventDate: z.string().min(1),
     venueId: z.number().int().positive().optional().nullable(),
     venueNameSnapshot: z.string().max(150).optional(),
@@ -42,14 +41,13 @@ export const createEventSchema = z
     notes: z.string().optional(),
     status: eventStatusEnum.optional(),
   })
-  .refine((data) => !!data.customerId || !!data.leadId, {
-    message: "Either customerId or leadId is required",
+  .refine((data) => !!data.customerId, {
+    message: "customerId is required",
     path: ["customerId"],
   });
 
 export const updateEventSchema = z.object({
   customerId: z.number().int().positive().optional().nullable(),
-  leadId: z.number().int().positive().optional().nullable(),
   eventDate: z.string().optional(),
   venueId: z.number().int().positive().optional().nullable(),
   venueNameSnapshot: z.string().max(150).optional().nullable(),
@@ -84,7 +82,6 @@ export const updateEventSectionSchema = z.object({
 export const createEventFromSourceSchema = z
   .object({
     customerId: z.number().int().positive().optional().nullable(),
-    leadId: z.number().int().positive().optional().nullable(),
     eventDate: z.string().optional(),
     groomName: z.string().max(150).optional().nullable(),
     brideName: z.string().max(150).optional().nullable(),
@@ -104,7 +101,7 @@ export const createEventFromSourceSchema = z
       )
       .optional(),
   })
-  .refine((data) => !!data.customerId || !!data.leadId, {
-    message: "Either customerId or leadId is required",
+  .refine((data) => !!data.customerId, {
+    message: "customerId is required",
     path: ["customerId"],
   });

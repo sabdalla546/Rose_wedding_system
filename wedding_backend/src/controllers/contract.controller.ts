@@ -102,7 +102,7 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       quotationId: data.quotationId ?? null,
       eventId: data.eventId,
       customerId: data.customerId ?? event.customerId ?? null,
-      leadId: data.leadId ?? event.leadId ?? null,
+      //  leadId: data.leadId ?? event.leadId ?? null,
       contractNumber: data.contractNumber ?? null,
       signedDate: data.signedDate,
       eventDate: data.eventDate ?? event.eventDate ?? null,

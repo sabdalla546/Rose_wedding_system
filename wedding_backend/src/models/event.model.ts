@@ -13,7 +13,6 @@ export interface EventAttributes {
   id: number;
 
   customerId?: number | null;
-  leadId?: number | null;
 
   eventDate: string;
 
@@ -39,7 +38,6 @@ type EventCreationAttributes = Optional<
   EventAttributes,
   | "id"
   | "customerId"
-  | "leadId"
   | "venueId"
   | "venueNameSnapshot"
   | "groomName"
@@ -60,7 +58,6 @@ export class Event
   public id!: number;
 
   public customerId?: number | null;
-  public leadId?: number | null;
 
   public eventDate!: string;
 
@@ -91,11 +88,6 @@ Event.init(
     },
 
     customerId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    leadId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -175,7 +167,6 @@ Event.init(
     paranoid: true,
     indexes: [
       { fields: ["customerId"] },
-      { fields: ["leadId"] },
       { fields: ["eventDate"] },
       { fields: ["venueId"] },
       { fields: ["status"] },

@@ -46,7 +46,7 @@ function useAppointmentActionMutation<TPayload>(
       queryClient.invalidateQueries({
         queryKey: ["appointment", String(variables.id)],
       });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
     onError: (error) => {
       toast({

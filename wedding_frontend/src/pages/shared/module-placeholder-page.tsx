@@ -14,6 +14,9 @@ type ModulePageHandle = {
   subtitle?: string;
   subtitleAr?: string;
   requiredPermission?: string;
+  requiredAnyOf?: string[];
+  requiredAllOf?: string[];
+  requiredRoles?: string[];
 };
 
 export function ModulePlaceholderPage() {
@@ -43,6 +46,8 @@ export function ModulePlaceholderPage() {
       </section>
 
       <ProtectedComponent
+        allOf={currentHandle.requiredAllOf}
+        anyOf={currentHandle.requiredAnyOf}
         fallback={
           <SectionCard className="space-y-5">
             <EmptyState
@@ -53,6 +58,7 @@ export function ModulePlaceholderPage() {
           </SectionCard>
         }
         permission={currentHandle.requiredPermission}
+        roles={currentHandle.requiredRoles}
       >
         <SectionCard className="space-y-5">
           <EmptyState

@@ -51,14 +51,14 @@ Lead.belongsTo(Venue, {
   as: "venue",
 });
 
-// Lead -> Appointment
-Lead.hasMany(Appointment, {
-  foreignKey: "leadId",
+// Customer -> Appointment
+Customer.hasMany(Appointment, {
+  foreignKey: "customerId",
   as: "appointments",
 });
-Appointment.belongsTo(Lead, {
-  foreignKey: "leadId",
-  as: "lead",
+Appointment.belongsTo(Customer, {
+  foreignKey: "customerId",
+  as: "customer",
 });
 
 // User -> Appointment (assigned employee)
@@ -146,16 +146,6 @@ User.hasMany(Customer, {
 Customer.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
-});
-
-// Lead -> Event
-Lead.hasMany(Event, {
-  foreignKey: "leadId",
-  as: "events",
-});
-Event.belongsTo(Lead, {
-  foreignKey: "leadId",
-  as: "lead",
 });
 
 // Customer -> Event
