@@ -15,6 +15,28 @@ const normalizeNullableString = (value?: string) => {
   return trimmed ? trimmed : null;
 };
 
+const normalizeOptionalNumber = (value?: string) => {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const normalizeNullableNumber = (value?: string) => {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const buildCreateEventVendorPayload = (values: EventVendorLinkFormData) => ({
   eventId: values.eventId,
   vendorType: values.vendorType,
@@ -22,6 +44,7 @@ const buildCreateEventVendorPayload = (values: EventVendorLinkFormData) => ({
   vendorId: values.vendorId ? Number(values.vendorId) : null,
   companyNameSnapshot: normalizeOptionalString(values.companyNameSnapshot),
   selectedSubServiceIds: values.selectedSubServiceIds ?? [],
+  agreedPrice: normalizeOptionalNumber(values.agreedPrice),
   notes: normalizeOptionalString(values.notes),
   status: values.status,
 });
@@ -32,6 +55,7 @@ const buildUpdateEventVendorPayload = (values: EventVendorLinkFormData) => ({
   vendorId: values.vendorId ? Number(values.vendorId) : null,
   companyNameSnapshot: normalizeNullableString(values.companyNameSnapshot),
   selectedSubServiceIds: values.selectedSubServiceIds ?? [],
+  agreedPrice: normalizeNullableNumber(values.agreedPrice),
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });

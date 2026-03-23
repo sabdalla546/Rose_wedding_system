@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { SectionCard } from "@/components/shared/section-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -127,6 +128,8 @@ type EventVendorFormState = {
   vendorId: string;
   companyNameSnapshot: string;
   selectedSubServiceIds: number[];
+  agreedPrice: string;
+  isPriceOverride: boolean;
   notes: string;
   status: EventVendorStatus;
 };
@@ -166,9 +169,21 @@ const createDefaultEventVendorState = (): EventVendorFormState => ({
   vendorId: "",
   companyNameSnapshot: "",
   selectedSubServiceIds: [],
+  agreedPrice: "",
+  isPriceOverride: false,
   notes: "",
   status: "pending",
 });
+
+const formatDecimalInput = (value?: number | string | null) => {
+  const parsed = toNumberValue(value);
+
+  if (parsed === null) {
+    return "";
+  }
+
+  return parsed.toFixed(3);
+};
 
 const findMatchingVendorPricingPlan = (
   pricingPlans: VendorPricingPlan[],
@@ -279,6 +294,7 @@ const EventDetailsPage = () => {
     useState<EventVendorLink | null>(null);
   const [deleteVendorCandidate, setDeleteVendorCandidate] =
     useState<EventVendorLink | null>(null);
+  const [expandedVendorIds, setExpandedVendorIds] = useState<number[]>([]);
   const [vendorError, setVendorError] = useState("");
   const [vendorForm, setVendorForm] = useState<EventVendorFormState>(
     createDefaultEventVendorState(),
@@ -423,6 +439,38 @@ const EventDetailsPage = () => {
         }),
     [vendorCatalog, vendorForm.vendorId, vendorForm.vendorType],
   );
+  const selectedCatalogVendor = useMemo(
+    () =>
+      filteredVendorCatalog.find(
+        (vendor) => String(vendor.id) === vendorForm.vendorId,
+      ) ?? null,
+    [filteredVendorCatalog, vendorForm.vendorId],
+  );
+  const resolvedVendorDraftName = useMemo(() => {
+    const companyNameSnapshot = vendorForm.companyNameSnapshot.trim();
+
+    if (vendorForm.providedBy === "client") {
+      return (
+        companyNameSnapshot ||
+        t("vendors.clientProvidedVendor", {
+          defaultValue: "Client-provided vendor",
+        })
+      );
+    }
+
+    return (
+      selectedCatalogVendor?.name ||
+      companyNameSnapshot ||
+      t("vendors.noVendorSelected", {
+        defaultValue: "No catalog vendor selected",
+      })
+    );
+  }, [
+    selectedCatalogVendor?.name,
+    t,
+    vendorForm.companyNameSnapshot,
+    vendorForm.providedBy,
+  ]);
   const availableVendorSubServices = useMemo(
     () =>
       [...vendorSubServices].sort((left, right) => {
@@ -445,6 +493,10 @@ const EventDetailsPage = () => {
         vendorForm.selectedSubServiceIds.length,
       ),
     [vendorPricingPlans, vendorForm.selectedSubServiceIds.length],
+  );
+  const calculatedVendorPriceInput = useMemo(
+    () => formatDecimalInput(calculatedVendorPricingPlan?.price),
+    [calculatedVendorPricingPlan?.price],
   );
   const sortedEventServiceItems = useMemo(
     () =>
@@ -603,10 +655,42 @@ const EventDetailsPage = () => {
       selectedSubServiceIds: (editingVendorLink.selectedSubServices ?? [])
         .map((selectedSubService) => selectedSubService.vendorSubServiceId)
         .filter((value): value is number => typeof value === "number"),
+      agreedPrice: formatDecimalInput(editingVendorLink.agreedPrice),
+      isPriceOverride:
+        typeof editingVendorLink.hasManualPriceOverride === "boolean"
+          ? editingVendorLink.hasManualPriceOverride
+          : editingVendorLink.agreedPrice !== null &&
+            typeof editingVendorLink.agreedPrice !== "undefined" &&
+            toNumberValue(editingVendorLink.agreedPrice) !==
+              toNumberValue(editingVendorLink.pricingPlan?.price),
       notes: editingVendorLink.notes ?? "",
       status: editingVendorLink.status,
     });
   }, [editingVendorLink, vendorDialogOpen]);
+
+  useEffect(() => {
+    if (!vendorDialogOpen || vendorForm.isPriceOverride) {
+      return;
+    }
+
+    if (vendorForm.agreedPrice === calculatedVendorPriceInput) {
+      return;
+    }
+
+    setVendorForm((current) =>
+      current.isPriceOverride
+        ? current
+        : {
+            ...current,
+            agreedPrice: calculatedVendorPriceInput,
+          },
+    );
+  }, [
+    calculatedVendorPriceInput,
+    vendorDialogOpen,
+    vendorForm.agreedPrice,
+    vendorForm.isPriceOverride,
+  ]);
 
   useEffect(() => {
     if (!serviceEditorOpen) {
@@ -745,6 +829,19 @@ const EventDetailsPage = () => {
       return;
     }
 
+    if (
+      vendorForm.agreedPrice.trim() &&
+      (toNumberValue(vendorForm.agreedPrice) === null ||
+        Number(vendorForm.agreedPrice) < 0)
+    ) {
+      setVendorError(
+        t("vendors.agreedPriceInvalid", {
+          defaultValue: "Agreed price must be zero or greater.",
+        }),
+      );
+      return;
+    }
+
     setVendorError("");
 
     const payload = {
@@ -754,6 +851,7 @@ const EventDetailsPage = () => {
       vendorId: vendorForm.providedBy === "company" ? vendorForm.vendorId : "",
       companyNameSnapshot,
       selectedSubServiceIds: vendorForm.selectedSubServiceIds,
+      agreedPrice: vendorForm.agreedPrice,
       notes: vendorForm.notes,
       status: vendorForm.status,
     };
@@ -1228,101 +1326,115 @@ const EventDetailsPage = () => {
                     </Button>
                   </ProtectedComponent>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   {eventVendorLinksLoading ? (
                     <p className="text-sm text-[var(--lux-text-secondary)]">
                       {t("common.loading", { defaultValue: "Loading..." })}
                     </p>
                   ) : sortedEventVendorLinks.length ? (
                     sortedEventVendorLinks.map((vendorLink) => (
-                      <div
+                      <article
                         key={vendorLink.id}
-                        className="rounded-[22px] border p-4"
+                        className="rounded-[24px] border p-4 shadow-sm"
                         style={{
-                          background: "var(--lux-row-surface)",
+                          background:
+                            "linear-gradient(180deg, color-mix(in srgb, var(--lux-row-surface) 85%, var(--lux-panel-surface)), var(--lux-panel-surface))",
                           borderColor: "var(--lux-row-border)",
                         }}
                       >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="space-y-3">
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1 space-y-4">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]">
+                              <Badge variant="outline">
                                 {t(`vendors.type.${vendorLink.vendorType}`, {
                                   defaultValue: formatVendorType(
                                     vendorLink.vendorType,
                                   ),
                                 })}
-                              </span>
-                              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]">
+                              </Badge>
+                              <Badge variant="secondary">
                                 {t(
                                   `vendors.providedBy.${vendorLink.providedBy}`,
                                   {
                                     defaultValue: vendorLink.providedBy,
                                   },
                                 )}
-                              </span>
+                              </Badge>
+                              {vendorLink.hasManualPriceOverride ? (
+                                <Badge variant="outline">
+                                  {t("vendors.manualPriceOverride", {
+                                    defaultValue: "Manual Price",
+                                  })}
+                                </Badge>
+                              ) : null}
                               <EventVendorStatusBadge
                                 status={vendorLink.status}
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <h3 className="text-base font-semibold text-[var(--lux-heading)]">
-                                {getEventVendorDisplayName(vendorLink)}
-                              </h3>
-                              {vendorLink.vendor ? (
-                                <p className="text-sm text-[var(--lux-text-secondary)]">
-                                  {[
-                                    vendorLink.vendor.contactPerson,
-                                    vendorLink.vendor.phone,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" / ") ||
-                                    vendorLink.vendor.email ||
-                                    "-"}
-                                </p>
-                              ) : null}
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                  {t("vendors.selectedSubServices", {
-                                    defaultValue: "Selected Sub Services",
-                                  })}
-                                </p>
-                                {vendorLink.selectedSubServices?.length ? (
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {vendorLink.selectedSubServices.map(
-                                      (selectedSubService) => (
-                                        <span
-                                          key={selectedSubService.id}
-                                          className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]"
-                                        >
-                                          {selectedSubService.nameSnapshot}
-                                        </span>
-                                      ),
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
-                                    {t("vendors.noSelectedSubServices", {
-                                      defaultValue:
-                                        "No sub-services selected for this vendor.",
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.9fr)]">
+                              <div className="space-y-2">
+                                <div className="space-y-1">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                                    {t("vendors.resolvedCompanyName", {
+                                      defaultValue: "Resolved Company / Vendor",
                                     })}
                                   </p>
-                                )}
+                                  <h3 className="break-words text-lg font-semibold text-[var(--lux-heading)]">
+                                    {vendorLink.resolvedCompanyName ||
+                                      getEventVendorDisplayName(vendorLink)}
+                                  </h3>
+                                </div>
+
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--lux-text-secondary)]">
+                                  <span>
+                                    {t("vendors.providedByLabel", {
+                                      defaultValue: "Provided By",
+                                    })}
+                                    {": "}
+                                    {t(
+                                      `vendors.providedBy.${vendorLink.providedBy}`,
+                                      {
+                                        defaultValue: vendorLink.providedBy,
+                                      },
+                                    )}
+                                  </span>
+                                  {vendorLink.vendor ? (
+                                    <span>
+                                      {[ 
+                                        vendorLink.vendor.contactPerson,
+                                        vendorLink.vendor.phone,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" / ") ||
+                                        vendorLink.vendor.email ||
+                                        "-"}
+                                    </span>
+                                  ) : vendorLink.providedBy === "client" ? (
+                                    <span>
+                                      {t("vendors.clientProvidedVendor", {
+                                        defaultValue: "Client-provided vendor",
+                                      })}
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
 
-                              <div className="space-y-2">
-                                <div>
+                              <div
+                                className="grid grid-cols-1 gap-3 rounded-[20px] border p-4 sm:grid-cols-3 lg:grid-cols-1"
+                                style={{
+                                  background: "var(--lux-panel-surface)",
+                                  borderColor: "var(--lux-row-border)",
+                                }}
+                              >
+                                <div className="space-y-1">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                                     {t("vendors.pricingPlans.name", {
                                       defaultValue: "Pricing Plan",
                                     })}
                                   </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
-                                    {vendorLink.pricingPlan?.name ||
+                                  <p className="text-sm font-medium text-[var(--lux-text)]">
+                                    {vendorLink.resolvedPricingLabel ||
                                       (vendorLink.selectedSubServicesCount > 0
                                         ? t("vendors.noMatchingPricingPlan", {
                                             defaultValue:
@@ -1334,13 +1446,25 @@ const EventDetailsPage = () => {
                                           }))}
                                   </p>
                                 </div>
-                                <div>
+
+                                <div className="space-y-1">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                                    {t("vendors.selectedSubServicesCount", {
+                                      defaultValue: "Selected Count",
+                                    })}
+                                  </p>
+                                  <p className="text-sm font-medium text-[var(--lux-text)]">
+                                    {vendorLink.selectedSubServicesCount}
+                                  </p>
+                                </div>
+
+                                <div className="space-y-1">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                                     {t("vendors.agreedPrice", {
                                       defaultValue: "Agreed Price",
                                     })}
                                   </p>
-                                  <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
+                                  <p className="text-base font-semibold text-[var(--lux-heading)]">
                                     {vendorLink.agreedPrice !== null &&
                                     typeof vendorLink.agreedPrice !== "undefined"
                                       ? formatMoney(vendorLink.agreedPrice)
@@ -1350,8 +1474,79 @@ const EventDetailsPage = () => {
                               </div>
                             </div>
 
-                            {vendorLink.notes ? (
+                            <div className="space-y-2">
                               <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                                  {t("vendors.selectedSubServices", {
+                                    defaultValue: "Selected Sub Services",
+                                  })}
+                                </p>
+                                {vendorLink.selectedSubServices?.length ? (
+                                  <>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {(expandedVendorIds.includes(vendorLink.id)
+                                        ? vendorLink.selectedSubServices
+                                        : vendorLink.selectedSubServices.slice(
+                                            0,
+                                            6,
+                                          )
+                                      ).map((selectedSubService) => (
+                                        <span
+                                          key={selectedSubService.id}
+                                          className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]"
+                                        >
+                                          {selectedSubService.nameSnapshot}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    {vendorLink.selectedSubServices.length > 6 ? (
+                                      <div className="mt-2">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-auto px-0 py-0 text-xs text-[var(--lux-text-secondary)]"
+                                          onClick={() =>
+                                            setExpandedVendorIds((current) =>
+                                              current.includes(vendorLink.id)
+                                                ? current.filter(
+                                                    (value) =>
+                                                      value !== vendorLink.id,
+                                                  )
+                                                : [...current, vendorLink.id],
+                                            )
+                                          }
+                                        >
+                                          {expandedVendorIds.includes(
+                                            vendorLink.id,
+                                          )
+                                            ? t("common.showLess", {
+                                                defaultValue: "Show less",
+                                              })
+                                            : t("common.showMore", {
+                                                defaultValue:
+                                                  "Show all sub-services",
+                                              })}
+                                        </Button>
+                                      </div>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
+                                    {t("vendors.noSelectedSubServices", {
+                                      defaultValue:
+                                        "No sub-services selected for this vendor.",
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {vendorLink.notes ? (
+                              <div className="rounded-[18px] border p-3" style={{
+                                background: "var(--lux-panel-surface)",
+                                borderColor: "var(--lux-row-border)",
+                              }}>
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                                   {t("common.notes", { defaultValue: "Notes" })}
                                 </p>
@@ -1386,15 +1581,28 @@ const EventDetailsPage = () => {
                             </div>
                           </ProtectedComponent>
                         </div>
-                      </div>
+                      </article>
                     ))
                   ) : (
-                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                      {t("vendors.noEventVendors", {
-                        defaultValue:
-                          "No vendor assignments have been added to this event yet.",
-                      })}
-                    </p>
+                    <div
+                      className="rounded-[22px] border px-5 py-8 text-center"
+                      style={{
+                        background: "var(--lux-panel-surface)",
+                        borderColor: "var(--lux-row-border)",
+                      }}
+                    >
+                      <p className="text-base font-semibold text-[var(--lux-heading)]">
+                        {t("vendors.noEventVendorsTitle", {
+                          defaultValue: "No vendor assignments yet",
+                        })}
+                      </p>
+                      <p className="mt-2 text-sm text-[var(--lux-text-secondary)]">
+                        {t("vendors.noEventVendors", {
+                          defaultValue:
+                            "Add the first vendor assignment to capture company ownership, selected sub-services, and pricing for this event.",
+                        })}
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -2214,221 +2422,339 @@ const EventDetailsPage = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
-                </span>
-                <Select
-                  value={vendorForm.vendorType}
-                  onValueChange={(value) =>
-                    setVendorForm((current) => ({
-                      ...current,
-                      vendorId: "",
-                      companyNameSnapshot: "",
-                      selectedSubServiceIds: [],
-                      providedBy: current.providedBy,
-                      vendorType: value as VendorType,
-                      status: current.status,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VENDOR_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`vendors.type.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("vendors.providedByLabel", {
-                    defaultValue: "Provided By",
-                  })}
-                </span>
-                <Select
-                  value={vendorForm.providedBy}
-                  onValueChange={(value) =>
-                    setVendorForm((current) => ({
-                      ...current,
-                      providedBy: value as EventVendorProvidedBy,
-                      vendorId: value === "client" ? "" : current.vendorId,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_VENDOR_PROVIDED_BY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`vendors.providedBy.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("vendors.assignmentStatusLabel", {
-                    defaultValue: "Assignment Status",
-                  })}
-                </span>
-                <Select
-                  value={vendorForm.status}
-                  onValueChange={(value) =>
-                    setVendorForm((current) => ({
-                      ...current,
-                      status: value as EventVendorStatus,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_VENDOR_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`vendors.assignmentStatus.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
-            </div>
-
-            {vendorForm.providedBy === "company" ? (
-              <>
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-[var(--lux-text)]">
-                    {t("vendors.vendorSelection", {
-                      defaultValue: "Catalog Vendor",
-                    })}
-                  </span>
-                  <Select
-                    value={vendorForm.vendorId || "none"}
-                    onValueChange={(value) =>
-                      setVendorForm((current) => {
-                        const nextValue = value === "none" ? "" : value;
-                        const selectedVendor = filteredVendorCatalog.find(
-                          (vendor) => String(vendor.id) === nextValue,
-                        );
-
-                        return {
-                          ...current,
-                          vendorId: nextValue,
-                          companyNameSnapshot:
-                            selectedVendor?.name || current.companyNameSnapshot,
-                        };
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={t("vendors.selectVendor", {
-                          defaultValue: "Select vendor",
-                        })}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        {t("vendors.noVendorSelected", {
-                          defaultValue: "No catalog vendor selected",
-                        })}
-                      </SelectItem>
-                      {filteredVendorCatalog.map((vendor) => (
-                        <SelectItem key={vendor.id} value={String(vendor.id)}>
-                          {vendor.name}
-                          {!vendor.isActive
-                            ? ` (${t("vendors.status.inactive", {
-                                defaultValue: "Inactive",
-                              })})`
-                            : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-[var(--lux-text-secondary)]">
-                    {t("vendors.vendorSelectionHint", {
-                      defaultValue:
-                        "Choose a vendor from the catalog for the selected vendor type. You can still store a company snapshot if needed.",
+            <div className="space-y-4">
+              <div
+                className="space-y-4 rounded-[24px] border p-5"
+                style={{
+                  background: "var(--lux-row-surface)",
+                  borderColor: "var(--lux-row-border)",
+                }}
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+                    {t("vendors.vendorSetup", {
+                      defaultValue: "Vendor Setup",
                     })}
                   </p>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-[var(--lux-text)]">
-                    {t("vendors.companyNameSnapshot", {
-                      defaultValue: "Company Name Snapshot",
-                    })}
-                  </span>
-                  <Input
-                    value={vendorForm.companyNameSnapshot}
-                    onChange={(event) =>
-                      setVendorForm((current) => ({
-                        ...current,
-                        companyNameSnapshot: event.target.value,
-                      }))
-                    }
-                    placeholder={t("vendors.companyNameSnapshotPlaceholder", {
+                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                    {t("vendors.vendorSetupHint", {
                       defaultValue:
-                        "Optional override or fallback company name",
+                        "Choose the vendor type, source, and assignment status before selecting sub-services.",
                     })}
-                  />
-                </label>
-              </>
-            ) : (
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("vendors.companyNameSnapshot", {
-                    defaultValue: "Client Vendor Name",
-                  })}
-                </span>
-                <Input
-                  value={vendorForm.companyNameSnapshot}
-                  onChange={(event) =>
-                    setVendorForm((current) => ({
-                      ...current,
-                      companyNameSnapshot: event.target.value,
-                    }))
-                  }
-                  placeholder={t("vendors.companyNameSnapshotPlaceholder", {
-                    defaultValue: "Enter the vendor name provided by the client",
-                  })}
-                />
-              </label>
-            )}
+                  </p>
+                </div>
 
-            <div className="space-y-3 rounded-[22px] border p-4" style={{
-              background: "var(--lux-row-surface)",
-              borderColor: "var(--lux-row-border)",
-            }}>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("vendors.selectedSubServices", {
-                    defaultValue: "Selected Sub Services",
-                  })}
-                </p>
-                <p className="text-xs text-[var(--lux-text-secondary)]">
-                  {t("vendors.selectedSubServicesHint", {
-                    defaultValue:
-                      "Choose the reusable checklist items needed for this event vendor. Price is calculated from the active pricing plan for the selected count.",
-                  })}
-                </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <label className="space-y-2">
+                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                      {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
+                    </span>
+                    <Select
+                      value={vendorForm.vendorType}
+                      onValueChange={(value) =>
+                        setVendorForm((current) => ({
+                          ...current,
+                          vendorId: "",
+                          companyNameSnapshot: "",
+                          selectedSubServiceIds: [],
+                          agreedPrice: "",
+                          isPriceOverride: false,
+                          vendorType: value as VendorType,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VENDOR_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(`vendors.type.${option.value}`, {
+                              defaultValue: option.label,
+                            })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+
+                  <label className="space-y-2">
+                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                      {t("vendors.providedByLabel", {
+                        defaultValue: "Provided By",
+                      })}
+                    </span>
+                    <Select
+                      value={vendorForm.providedBy}
+                      onValueChange={(value) =>
+                        setVendorForm((current) => ({
+                          ...current,
+                          providedBy: value as EventVendorProvidedBy,
+                          vendorId: value === "client" ? "" : current.vendorId,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EVENT_VENDOR_PROVIDED_BY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(`vendors.providedBy.${option.value}`, {
+                              defaultValue: option.label,
+                            })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+
+                  <label className="space-y-2">
+                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                      {t("vendors.assignmentStatusLabel", {
+                        defaultValue: "Assignment Status",
+                      })}
+                    </span>
+                    <Select
+                      value={vendorForm.status}
+                      onValueChange={(value) =>
+                        setVendorForm((current) => ({
+                          ...current,
+                          status: value as EventVendorStatus,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EVENT_VENDOR_STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(`vendors.assignmentStatus.${option.value}`, {
+                              defaultValue: option.label,
+                            })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+
+                <div
+                  className="rounded-[20px] border p-4"
+                  style={{
+                    background: "var(--lux-panel-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                      {t(`vendors.providedBy.${vendorForm.providedBy}`, {
+                        defaultValue:
+                          vendorForm.providedBy === "company"
+                            ? "Company"
+                            : "Client",
+                      })}
+                    </Badge>
+                    <Badge variant="outline">
+                      {t(`vendors.type.${vendorForm.vendorType}`, {
+                        defaultValue: formatVendorType(vendorForm.vendorType),
+                      })}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-4">
+                    {vendorForm.providedBy === "company" ? (
+                      <>
+                        <label className="space-y-2">
+                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                            {t("vendors.vendorSelection", {
+                              defaultValue: "Catalog Vendor",
+                            })}
+                          </span>
+                          <Select
+                            value={vendorForm.vendorId || "none"}
+                            onValueChange={(value) =>
+                              setVendorForm((current) => {
+                                const nextValue = value === "none" ? "" : value;
+                                const selectedVendor =
+                                  filteredVendorCatalog.find(
+                                    (vendor) => String(vendor.id) === nextValue,
+                                  );
+
+                                return {
+                                  ...current,
+                                  vendorId: nextValue,
+                                  companyNameSnapshot:
+                                    selectedVendor?.name ||
+                                    current.companyNameSnapshot,
+                                };
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={t("vendors.selectVendor", {
+                                  defaultValue: "Select vendor",
+                                })}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                {t("vendors.noVendorSelected", {
+                                  defaultValue: "No catalog vendor selected",
+                                })}
+                              </SelectItem>
+                              {filteredVendorCatalog.map((vendor) => (
+                                <SelectItem
+                                  key={vendor.id}
+                                  value={String(vendor.id)}
+                                >
+                                  {vendor.name}
+                                  {!vendor.isActive
+                                    ? ` (${t("vendors.status.inactive", {
+                                        defaultValue: "Inactive",
+                                      })})`
+                                    : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </label>
+
+                        {!filteredVendorCatalog.length ? (
+                          <div
+                            className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
+                            style={{
+                              background: "var(--lux-control-hover)",
+                              borderColor: "var(--lux-row-border)",
+                            }}
+                          >
+                            {t("vendors.noVendorsForType", {
+                              defaultValue:
+                                "No catalog vendors are available for this vendor type yet. You can still save a company snapshot.",
+                            })}
+                          </div>
+                        ) : null}
+
+                        <label className="space-y-2">
+                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                            {t("vendors.companyNameSnapshot", {
+                              defaultValue: "Company Name Snapshot",
+                            })}
+                          </span>
+                          <Input
+                            value={vendorForm.companyNameSnapshot}
+                            onChange={(event) =>
+                              setVendorForm((current) => ({
+                                ...current,
+                                companyNameSnapshot: event.target.value,
+                              }))
+                            }
+                            placeholder={t(
+                              "vendors.companyNameSnapshotPlaceholder",
+                              {
+                                defaultValue:
+                                  "Optional override or fallback company name",
+                              },
+                            )}
+                          />
+                          <p className="text-xs text-[var(--lux-text-secondary)]">
+                            {t("vendors.vendorSelectionHint", {
+                              defaultValue:
+                                "Choose a catalog vendor for this type, or keep a snapshot-only name when the booking needs a manual fallback.",
+                            })}
+                          </p>
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
+                          style={{
+                            background: "var(--lux-control-hover)",
+                            borderColor: "var(--lux-row-border)",
+                          }}
+                        >
+                          {t("vendors.clientVendorModeHint", {
+                            defaultValue:
+                              "Client mode keeps the vendor outside the company catalog. Enter the name exactly as shared by the client.",
+                          })}
+                        </div>
+                        <label className="space-y-2">
+                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                            {t("vendors.companyNameSnapshot", {
+                              defaultValue: "Client Vendor Name",
+                            })}
+                          </span>
+                          <Input
+                            value={vendorForm.companyNameSnapshot}
+                            onChange={(event) =>
+                              setVendorForm((current) => ({
+                                ...current,
+                                companyNameSnapshot: event.target.value,
+                              }))
+                            }
+                            placeholder={t(
+                              "vendors.companyNameSnapshotPlaceholder",
+                              {
+                                defaultValue:
+                                  "Enter the vendor name provided by the client",
+                              },
+                            )}
+                          />
+                        </label>
+                      </>
+                    )}
+
+                    <div
+                      className="rounded-[18px] border px-4 py-3"
+                      style={{
+                        background: "var(--lux-control-hover)",
+                        borderColor: "var(--lux-row-border)",
+                      }}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                        {t("vendors.vendorPreview", {
+                          defaultValue: "Current Display Name",
+                        })}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[var(--lux-text)]">
+                        {resolvedVendorDraftName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <div
+                className="space-y-3 rounded-[24px] border p-5"
+                style={{
+                  background: "var(--lux-row-surface)",
+                  borderColor: "var(--lux-row-border)",
+                }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-[var(--lux-text)]">
+                      {t("vendors.selectedSubServices", {
+                        defaultValue: "Selected Sub Services",
+                      })}
+                    </p>
+                    <p className="text-xs text-[var(--lux-text-secondary)]">
+                      {t("vendors.selectedSubServicesHint", {
+                        defaultValue:
+                          "Choose the reusable checklist items needed for this event vendor. Active pricing is matched from the selected count.",
+                      })}
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {t("vendors.selectedSubServicesCount", {
+                      defaultValue: "Selected Count",
+                    })}
+                    : {vendorForm.selectedSubServiceIds.length}
+                  </Badge>
+                </div>
 
               {vendorSubServicesLoading ? (
                 <p className="text-sm text-[var(--lux-text-secondary)]">
@@ -2449,7 +2775,9 @@ const EventDetailsPage = () => {
                           background: checked
                             ? "var(--lux-control-hover)"
                             : "var(--lux-panel-surface)",
-                          borderColor: "var(--lux-row-border)",
+                          borderColor: checked
+                            ? "var(--lux-accent)"
+                            : "var(--lux-row-border)",
                         }}
                       >
                         <Checkbox
@@ -2481,7 +2809,7 @@ const EventDetailsPage = () => {
                                 defaultValue: "No description",
                               })}
                             {!subService.isActive
-                              ? ` • ${t("vendors.status.inactive", {
+                              ? ` - ${t("vendors.status.inactive", {
                                   defaultValue: "Inactive",
                                 })}`
                               : ""}
@@ -2492,90 +2820,242 @@ const EventDetailsPage = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-[var(--lux-text-secondary)]">
+                <div
+                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
+                  style={{
+                    background: "var(--lux-panel-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
                   {t("vendors.noVendorSubServicesForType", {
                     defaultValue:
                       "No vendor sub-services are configured for this vendor type yet.",
                   })}
-                </p>
+                </div>
               )}
             </div>
 
-            <div
-              className="grid grid-cols-1 gap-4 rounded-[22px] border p-4 md:grid-cols-3"
-              style={{
-                background: "var(--lux-row-surface)",
-                borderColor: "var(--lux-row-border)",
-              }}
-            >
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                  {t("vendors.pricingPlans.name", {
-                    defaultValue: "Pricing Plan",
-                  })}
-                </p>
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {vendorPricingPlansLoading
-                    ? t("common.loading", { defaultValue: "Loading..." })
-                    : calculatedVendorPricingPlan?.name ||
-                      (vendorForm.selectedSubServiceIds.length
-                        ? t("vendors.noMatchingPricingPlan", {
-                            defaultValue: "No matching pricing plan",
-                          })
-                        : t("vendors.noPricingPlan", {
-                            defaultValue: "No pricing plan selected",
-                          }))}
-                </p>
+              <div
+                className="space-y-4 rounded-[24px] border p-5"
+                style={{
+                  background: "var(--lux-row-surface)",
+                  borderColor: "var(--lux-row-border)",
+                }}
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+                    {t("vendors.pricingSummary", {
+                      defaultValue: "Pricing Summary",
+                    })}
+                  </p>
+                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                    {t("vendors.pricingSummaryHint", {
+                      defaultValue:
+                        "Pricing plan stays visible for reference even if you override the agreed price manually.",
+                    })}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div
+                    className="rounded-[18px] border px-4 py-3"
+                    style={{
+                      background: "var(--lux-panel-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                      {t("vendors.pricingPlans.name", {
+                        defaultValue: "Pricing Plan",
+                      })}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-[var(--lux-text)]">
+                      {vendorPricingPlansLoading
+                        ? t("common.loading", { defaultValue: "Loading..." })
+                        : calculatedVendorPricingPlan?.name ||
+                          (vendorForm.selectedSubServiceIds.length
+                            ? t("vendors.noMatchingPricingPlan", {
+                                defaultValue: "No matching pricing plan",
+                              })
+                            : t("vendors.noPricingPlan", {
+                                defaultValue: "No pricing plan selected",
+                              }))}
+                    </p>
+                  </div>
+
+                  <div
+                    className="rounded-[18px] border px-4 py-3"
+                    style={{
+                      background: "var(--lux-panel-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                      {t("vendors.selectedSubServicesCount", {
+                        defaultValue: "Selected Count",
+                      })}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-[var(--lux-text)]">
+                      {vendorForm.selectedSubServiceIds.length}
+                    </p>
+                  </div>
+
+                  <div
+                    className="rounded-[18px] border px-4 py-3"
+                    style={{
+                      background: "var(--lux-panel-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                      {t("vendors.calculatedPrice", {
+                        defaultValue: "Calculated Price",
+                      })}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
+                      {calculatedVendorPricingPlan
+                        ? formatMoney(calculatedVendorPricingPlan.price)
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+
+                {vendorForm.selectedSubServiceIds.length > 0 &&
+                !calculatedVendorPricingPlan &&
+                !vendorPricingPlansLoading ? (
+                  <div
+                    className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
+                    style={{
+                      background: "var(--lux-control-hover)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    {t("vendors.noMatchingPricingPlan", {
+                      defaultValue: "No matching pricing plan",
+                    })}
+                  </div>
+                ) : null}
+
+                <label
+                  className="flex items-center gap-3 rounded-[18px] border p-4"
+                  style={{
+                    background: "var(--lux-panel-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  <Checkbox
+                    checked={vendorForm.isPriceOverride}
+                    onCheckedChange={(checked: CheckedState) =>
+                      setVendorForm((current) => {
+                        const nextChecked = Boolean(checked);
+
+                        return {
+                          ...current,
+                          isPriceOverride: nextChecked,
+                          agreedPrice: nextChecked
+                            ? current.agreedPrice || calculatedVendorPriceInput
+                            : calculatedVendorPriceInput,
+                        };
+                      })
+                    }
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[var(--lux-text)]">
+                      {t("vendors.manualPriceOverride", {
+                        defaultValue: "Manual Price Override",
+                      })}
+                    </p>
+                    <p className="text-xs text-[var(--lux-text-secondary)]">
+                      {t("vendors.manualPriceOverrideHint", {
+                        defaultValue:
+                          "Enable this only when the final agreed amount differs from the matched pricing plan.",
+                      })}
+                    </p>
+                  </div>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("vendors.agreedPrice", {
+                      defaultValue: "Agreed Price",
+                    })}
+                  </span>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={vendorForm.agreedPrice}
+                    disabled={!vendorForm.isPriceOverride}
+                    onChange={(event) =>
+                      setVendorForm((current) => ({
+                        ...current,
+                        agreedPrice: event.target.value,
+                      }))
+                    }
+                    placeholder={t("vendors.agreedPricePlaceholder", {
+                      defaultValue: "Calculated automatically when available",
+                    })}
+                  />
+                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                    {vendorForm.isPriceOverride
+                      ? t("vendors.manualPriceOverrideActiveHint", {
+                          defaultValue:
+                            "Manual override is active. The matched pricing plan remains linked for reference.",
+                        })
+                      : t("vendors.agreedPriceAutoHint", {
+                          defaultValue:
+                            "Agreed price follows the matched pricing plan until manual override is enabled.",
+                        })}
+                  </p>
+                </label>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                  {t("vendors.selectedSubServicesCount", {
-                    defaultValue: "Selected Count",
-                  })}
-                </p>
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {vendorForm.selectedSubServiceIds.length}
-                </p>
-              </div>
+              <div
+                className="space-y-3 rounded-[24px] border p-5"
+                style={{
+                  background: "var(--lux-row-surface)",
+                  borderColor: "var(--lux-row-border)",
+                }}
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+                    {t("vendors.notesAndStatus", {
+                      defaultValue: "Notes",
+                    })}
+                  </p>
+                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                    {t("vendors.notesAndStatusHint", {
+                      defaultValue:
+                        "Capture any assignment-specific details that the operations team should see later in Event Details.",
+                    })}
+                  </p>
+                </div>
 
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                  {t("vendors.agreedPrice", {
-                    defaultValue: "Calculated Price",
-                  })}
-                </p>
-                <p className="text-sm font-semibold text-[var(--lux-heading)]">
-                  {calculatedVendorPricingPlan
-                    ? formatMoney(calculatedVendorPricingPlan.price)
-                    : "-"}
-                </p>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("common.notes", { defaultValue: "Notes" })}
+                  </span>
+                  <textarea
+                    className={textareaClassName}
+                    value={vendorForm.notes}
+                    onChange={(event) =>
+                      setVendorForm((current) => ({
+                        ...current,
+                        notes: event.target.value,
+                      }))
+                    }
+                    placeholder={t("vendors.assignmentNotesPlaceholder", {
+                      defaultValue:
+                        "Add assignment notes, responsibilities, or coordination remarks...",
+                    })}
+                    style={{
+                      background: "var(--lux-control-surface)",
+                      borderColor: "var(--lux-control-border)",
+                    }}
+                  />
+                </label>
               </div>
             </div>
-
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
-                {t("common.notes", { defaultValue: "Notes" })}
-              </span>
-              <textarea
-                className={textareaClassName}
-                value={vendorForm.notes}
-                onChange={(event) =>
-                  setVendorForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder={t("vendors.assignmentNotesPlaceholder", {
-                  defaultValue:
-                    "Add assignment notes, responsibilities, or coordination remarks...",
-                })}
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </label>
 
             {vendorError ? (
               <p className="text-sm text-[var(--lux-danger)]">{vendorError}</p>
@@ -2928,3 +3408,4 @@ const EventDetailsPage = () => {
     );
   };
 export default EventDetailsPage;
+

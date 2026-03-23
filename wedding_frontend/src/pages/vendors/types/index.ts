@@ -88,6 +88,9 @@ export interface EventVendorLink {
   pricingPlanId?: number | null;
   selectedSubServicesCount: number;
   agreedPrice?: DecimalValue | null;
+  resolvedCompanyName?: string | null;
+  resolvedPricingLabel?: string | null;
+  hasManualPriceOverride?: boolean;
   notes?: string | null;
   status: EventVendorStatus;
   vendor?: Vendor | null;
@@ -134,6 +137,7 @@ export interface EventVendorLinkFormData {
   vendorId?: string;
   companyNameSnapshot?: string;
   selectedSubServiceIds?: number[];
+  agreedPrice?: string;
   notes?: string;
   status?: EventVendorStatus;
 }

@@ -54,6 +54,15 @@ const parseBooleanQuery = (value: unknown) => {
 const normalizeIdList = (ids?: number[]) =>
   [...new Set((ids ?? []).filter((value) => Number.isInteger(value) && value > 0))];
 
+const toNumberValue = (value?: number | string | null) => {
+  if (value === null || typeof value === "undefined" || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const sanitizeEventVendorPayload = (eventVendor: any) => {
   if (!eventVendor) {
     return eventVendor;
@@ -75,6 +84,20 @@ const sanitizeEventVendorPayload = (eventVendor: any) => {
         ...selectedSubService,
       }));
   }
+
+  plain.resolvedCompanyName =
+    plain.vendor?.name ?? plain.companyNameSnapshot ?? null;
+
+  plain.resolvedPricingLabel = plain.pricingPlan
+    ? plain.pricingPlan.name
+    : null;
+
+  const agreedPriceValue = toNumberValue(plain.agreedPrice);
+  const pricingPlanPriceValue = toNumberValue(plain.pricingPlan?.price);
+
+  plain.hasManualPriceOverride =
+    agreedPriceValue !== null &&
+    (pricingPlanPriceValue === null || agreedPriceValue !== pricingPlanPriceValue);
 
   return plain;
 };
@@ -109,6 +132,35 @@ const findMatchingPricingPlan = async ({
     ],
     transaction,
   });
+};
+
+const parseEventVendorOrder = (
+  sortByRaw: unknown,
+  sortDirectionRaw: unknown,
+): Array<[string, "ASC" | "DESC"]> => {
+  const sortDirection =
+    String(sortDirectionRaw ?? "").toLowerCase() === "asc" ? "ASC" : "DESC";
+
+  const sortByMap: Record<string, string> = {
+    createdAt: "createdAt",
+    updatedAt: "updatedAt",
+    vendorType: "vendorType",
+    providedBy: "providedBy",
+    status: "status",
+    agreedPrice: "agreedPrice",
+    selectedSubServicesCount: "selectedSubServicesCount",
+  };
+
+  const sortBy = sortByMap[String(sortByRaw ?? "")];
+
+  if (!sortBy) {
+    return [["id", "DESC"]];
+  }
+
+  return [
+    [sortBy, sortDirection],
+    ["id", "DESC"],
+  ];
 };
 
 const resolveSelectedVendorSubServices = async ({
@@ -705,6 +757,10 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
         selectedSubServicesCount,
         transaction,
       });
+      const agreedPrice =
+        typeof data.agreedPrice !== "undefined"
+          ? data.agreedPrice
+          : pricingPlan?.price ?? null;
 
       const createdEventVendor = await EventVendor.create(
         {
@@ -715,7 +771,7 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
           companyNameSnapshot: data.companyNameSnapshot ?? null,
           pricingPlanId: pricingPlan?.id ?? null,
           selectedSubServicesCount,
-          agreedPrice: pricingPlan?.price ?? null,
+          agreedPrice,
           notes: data.notes ?? null,
           status: data.status ?? "pending",
           createdBy: req.user?.id ?? null,
@@ -765,6 +821,10 @@ export const getEventVendors = async (req: Request, res: Response) => {
   const vendorType = String(req.query.vendorType ?? "").trim();
   const providedBy = String(req.query.providedBy ?? "").trim();
   const status = String(req.query.status ?? "").trim();
+  const order = parseEventVendorOrder(
+    req.query.sortBy,
+    req.query.sortDirection,
+  );
 
   const where: any = {};
 
@@ -777,7 +837,7 @@ export const getEventVendors = async (req: Request, res: Response) => {
     where,
     include: eventVendorInclude,
     distinct: true,
-    order: [["id", "DESC"]],
+    order,
     limit,
     offset,
   });
@@ -862,7 +922,10 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
         });
 
         pricingPlanId = pricingPlan?.id ?? null;
-        agreedPrice = pricingPlan?.price ?? null;
+        agreedPrice =
+          typeof data.agreedPrice !== "undefined"
+            ? data.agreedPrice
+            : pricingPlan?.price ?? null;
 
         await syncEventVendorSubServices({
           eventVendorId: eventVendor.id,
@@ -870,6 +933,10 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
           userId: req.user?.id ?? null,
           transaction,
         });
+      }
+
+      if (!shouldReplaceSelectedSubServices && typeof data.agreedPrice !== "undefined") {
+        agreedPrice = data.agreedPrice;
       }
 
       await eventVendor.update(

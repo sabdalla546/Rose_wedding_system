@@ -46,6 +46,7 @@ export const createEventVendorSchema = z.object({
   vendorId: z.number().int().positive().optional().nullable(),
   companyNameSnapshot: z.string().max(150).optional(),
   selectedSubServiceIds: z.array(z.number().int().positive()).optional(),
+  agreedPrice: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().optional(),
   status: eventVendorStatusEnum.optional(),
 });
@@ -56,6 +57,7 @@ export const updateEventVendorSchema = z.object({
   vendorId: z.number().int().positive().optional().nullable(),
   companyNameSnapshot: z.string().max(150).optional().nullable(),
   selectedSubServiceIds: z.array(z.number().int().positive()).optional(),
+  agreedPrice: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
   status: eventVendorStatusEnum.optional(),
 });

@@ -88,7 +88,7 @@ export const formatEventVendorStatus = (value: EventVendorStatus) =>
   value.charAt(0).toUpperCase() + value.slice(1);
 
 export const getEventVendorDisplayName = (link: EventVendorLink) =>
-  link.vendor?.name || link.companyNameSnapshot || "-";
+  link.resolvedCompanyName || link.vendor?.name || link.companyNameSnapshot || "-";
 
 export function toTableVendors(res?: VendorsResponse): TableVendorsResponse {
   const vendors = (res?.data ?? []).map<TableVendor>((vendor) => ({
