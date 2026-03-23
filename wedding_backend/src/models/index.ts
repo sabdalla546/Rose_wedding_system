@@ -61,16 +61,6 @@ Appointment.belongsTo(Customer, {
   as: "customer",
 });
 
-// User -> Appointment (assigned employee)
-User.hasMany(Appointment, {
-  foreignKey: "assignedToUserId",
-  as: "assignedAppointments",
-});
-Appointment.belongsTo(User, {
-  foreignKey: "assignedToUserId",
-  as: "assignedToUser",
-});
-
 // User -> Lead (audit)
 User.hasMany(Lead, {
   foreignKey: "createdBy",
@@ -107,26 +97,6 @@ User.hasMany(Appointment, {
 Appointment.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
-});
-
-// Venue -> Customer
-Venue.hasMany(Customer, {
-  foreignKey: "venueId",
-  as: "customers",
-});
-Customer.belongsTo(Venue, {
-  foreignKey: "venueId",
-  as: "venue",
-});
-
-// Lead -> Customer (source lead)
-Lead.hasOne(Customer, {
-  foreignKey: "sourceLeadId",
-  as: "customer",
-});
-Customer.belongsTo(Lead, {
-  foreignKey: "sourceLeadId",
-  as: "sourceLead",
 });
 
 // User -> Customer (audit)

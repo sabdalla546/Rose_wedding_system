@@ -29,7 +29,10 @@ import {
   type RouteAccess,
 } from "@/lib/constants/route-permissions";
 
-type NavigationAccess = Pick<RouteAccess, "permission" | "anyOf" | "allOf" | "roles">;
+type NavigationAccess = Pick<
+  RouteAccess,
+  "permission" | "anyOf" | "allOf" | "roles"
+>;
 
 export type NavigationItem = {
   id: string;
@@ -70,11 +73,23 @@ const navigationTree: NavigationItem[] = [
             id: "calendar-master",
             labelKey: "sidebar.nav.calendar",
             label: "Master Calendar",
-            labelAr: "التقويم الرئيسي",
+            labelAr: "الموعيد اليوميه",
             href: "/calendar",
             icon: CalendarDays,
             subtitle: "Manage event dates, bookings, and venue availability.",
             subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
+          },
+          {
+            id: "events-all",
+            labelKey: "sidebar.nav.allEvents",
+            label: "All Events",
+            labelAr: " حجز حفلة",
+            href: "/events",
+            icon: CalendarRange,
+            subtitle:
+              "Manage wedding events, planning sections, and linked records.",
+            subtitleAr:
+              "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062d\u0641\u0644\u0627\u062a \u0648\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629.",
           },
           {
             id: "calendar-appointments",
@@ -92,22 +107,15 @@ const navigationTree: NavigationItem[] = [
       },
 
       {
-        id: "customers",
-        labelKey: "sidebar.nav.customers",
+        id: "customers-all",
+        labelKey: "sidebar.nav.allCustomers",
+        label: "All Customers",
+        labelAr: "كل العملاء",
+        href: "/customers",
         icon: UsersRound,
-        children: [
-          {
-            id: "customers-all",
-            labelKey: "sidebar.nav.allCustomers",
-            label: "All Customers",
-            labelAr: "كل العملاء",
-            href: "/customers",
-            icon: UsersRound,
-            subtitle:
-              "Access complete customer profiles, history, and touchpoints.",
-            subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
-          },
-        ],
+        subtitle:
+          "Access complete customer profiles, history, and touchpoints.",
+        subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
       },
     ],
   },
@@ -274,18 +282,6 @@ if (secretarialRootItem?.children) {
       icon: CalendarRange,
       children: [
         {
-          id: "events-all",
-          labelKey: "sidebar.nav.allEvents",
-          label: "All Events",
-          labelAr: "\u0643\u0644 \u0627\u0644\u062d\u0641\u0644\u0627\u062a",
-          href: "/events",
-          icon: CalendarRange,
-          subtitle:
-            "Manage wedding events, planning sections, and linked records.",
-          subtitleAr:
-            "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062d\u0641\u0644\u0627\u062a \u0648\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629.",
-        },
-        {
           id: "quotations-all",
           labelKey: "sidebar.nav.quotations",
           label: "Quotations",
@@ -354,15 +350,17 @@ if (secretarialRootItem?.children) {
 function hasAccessRule(item: NavigationItem) {
   return Boolean(
     item.permission ||
-      item.anyOf?.length ||
-      item.allOf?.length ||
-      item.roles?.length,
+    item.anyOf?.length ||
+    item.allOf?.length ||
+    item.roles?.length,
   );
 }
 
 function attachAccessRules(items: NavigationItem[]): NavigationItem[] {
   return items.map((item) => {
-    const children = item.children ? attachAccessRules(item.children) : undefined;
+    const children = item.children
+      ? attachAccessRules(item.children)
+      : undefined;
     const routeAccess = item.href ? routeAccessByHref[item.href] : undefined;
     const nextItem: NavigationItem = {
       ...item,
@@ -397,7 +395,8 @@ function attachAccessRules(items: NavigationItem[]): NavigationItem[] {
   });
 }
 
-export const navigationItems: NavigationItem[] = attachAccessRules(navigationTree);
+export const navigationItems: NavigationItem[] =
+  attachAccessRules(navigationTree);
 
 export function flattenNavigationLeaves(
   items: NavigationItem[],

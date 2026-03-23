@@ -14,8 +14,6 @@ interface UseContractsParams {
   searchQuery: string;
   quotationId: string;
   eventId: string;
-  customerId: string;
-  leadId?: string;
   status: "all" | ContractStatus;
   signedDateFrom: string;
   signedDateTo: string;
@@ -27,8 +25,6 @@ export const useContracts = ({
   searchQuery,
   quotationId,
   eventId,
-  customerId,
-  leadId = "",
   status,
   signedDateFrom,
   signedDateTo,
@@ -41,8 +37,6 @@ export const useContracts = ({
       searchQuery,
       quotationId,
       eventId,
-      customerId,
-      leadId,
       status,
       signedDateFrom,
       signedDateTo,
@@ -55,8 +49,6 @@ export const useContracts = ({
           search: searchQuery || undefined,
           quotationId: quotationId ? Number(quotationId) : undefined,
           eventId: eventId ? Number(eventId) : undefined,
-          customerId: customerId ? Number(customerId) : undefined,
-          leadId: leadId ? Number(leadId) : undefined,
           status: status === "all" ? undefined : status,
           signedDateFrom: signedDateFrom || undefined,
           signedDateTo: signedDateTo || undefined,

@@ -1,23 +1,14 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { CalendarClock, ExternalLink } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
+import { CalendarClock, Edit } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
-import { formatMeetingType } from "@/pages/appointments/adapters";
-
+import { formatAppointmentType } from "./adapters";
 import { AppointmentStatusBadge } from "./_components/appointmentStatusBadge";
 
 function DetailItem({
@@ -25,14 +16,14 @@ function DetailItem({
   value,
 }: {
   label: string;
-  value?: string | number | null;
+  value?: string | null;
 }) {
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+    <div className="rounded-2xl border px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
         {label}
       </p>
-      <p className="text-sm text-[var(--lux-text)]">{value || "-"}</p>
+      <p className="mt-1 text-sm text-[var(--lux-text)]">{value || "-"}</p>
     </div>
   );
 }
@@ -55,13 +46,19 @@ const AppointmentDetailsPage = () => {
   }
 
   if (!appointment) {
-    return null;
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="text-sm text-[var(--lux-text-secondary)]">
+          {t("common.not_found", { defaultValue: "Not found" })}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ProtectedComponent permission="appointments.read">
+    <ProtectedComponent permission="appointments.view">
       <PageContainer className="pb-4 pt-4 text-foreground">
-        <div dir={i18n.dir()} className="mx-auto w-full max-w-6xl space-y-6">
+        <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
           <button
             type="button"
             onClick={() => navigate("/appointments")}
@@ -73,8 +70,14 @@ const AppointmentDetailsPage = () => {
             })}
           </button>
 
-          <SectionCard className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div
+            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
+            style={{
+              background: "var(--lux-panel-surface)",
+              borderColor: "var(--lux-panel-border)",
+            }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-4">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
@@ -94,79 +97,60 @@ const AppointmentDetailsPage = () => {
                     <AppointmentStatusBadge status={appointment.status} />
                   </div>
                   <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {t(`appointments.meetingTypeOptions.${appointment.meetingType}`, {
-                      defaultValue: formatMeetingType(appointment.meetingType),
+                    {format(new Date(appointment.appointmentDate), "MMM d, yyyy", {
+                      locale: dateLocale,
                     })}
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <ProtectedComponent permission="appointments.update">
-                  <Button onClick={() => navigate(`/appointments/edit/${appointment.id}`)}>
-                    {t("common.edit", { defaultValue: "Edit" })}
-                  </Button>
-                </ProtectedComponent>
-                <ProtectedComponent permission="customers.read">
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate(`/customers/${appointment.customerId}`)}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {t("appointments.viewCustomer", {
-                      defaultValue: "View Customer",
-                    })}
-                  </Button>
-                </ProtectedComponent>
+              <ProtectedComponent permission="appointments.update">
+                <Button onClick={() => navigate(`/appointments/edit/${appointment.id}`)}>
+                  <Edit className="h-4 w-4" />
+                  {t("common.edit", { defaultValue: "Edit" })}
+                </Button>
+              </ProtectedComponent>
+            </div>
+          </div>
+
+          <Card className="rounded-[24px] p-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <DetailItem
+                label={t("appointments.customer", { defaultValue: "Customer" })}
+                value={appointment.customer?.fullName}
+              />
+              <DetailItem
+                label={t("customers.mobile", { defaultValue: "Primary Mobile" })}
+                value={appointment.customer?.mobile}
+              />
+              <DetailItem
+                label={t("appointments.startTime", { defaultValue: "Start Time" })}
+                value={appointment.startTime}
+              />
+              <DetailItem
+                label={t("appointments.endTime", { defaultValue: "End Time" })}
+                value={appointment.endTime}
+              />
+              <DetailItem
+                label={t("appointments.type", { defaultValue: "Type" })}
+                value={t(`appointments.typeOptions.${appointment.type}`, {
+                  defaultValue: formatAppointmentType(appointment.type),
+                })}
+              />
+              <DetailItem
+                label={t("appointments.statusLabel", { defaultValue: "Status" })}
+                value={t(`appointments.status.${appointment.status}`, {
+                  defaultValue: appointment.status,
+                })}
+              />
+              <div className="md:col-span-2">
+                <DetailItem
+                  label={t("common.notes", { defaultValue: "Notes" })}
+                  value={appointment.notes}
+                />
               </div>
             </div>
-          </SectionCard>
-
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("appointments.scheduleInformation", { defaultValue: "Schedule Information" })}</CardTitle>
-                <CardDescription>{t("appointments.scheduleInformationHint", { defaultValue: "Core schedule details and assignment." })}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem label={t("appointments.date", { defaultValue: "Date" })} value={format(new Date(appointment.appointmentDate), "MMM d, yyyy", { locale: dateLocale })} />
-                <DetailItem label={t("appointments.startTime", { defaultValue: "Start Time" })} value={appointment.appointmentStartTime} />
-                <DetailItem label={t("appointments.endTime", { defaultValue: "End Time" })} value={appointment.appointmentEndTime} />
-                <DetailItem label={t("appointments.assignedTo", { defaultValue: "Assigned To" })} value={appointment.assignedToUser?.fullName} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("appointments.customerInformation", { defaultValue: "Customer Information" })}</CardTitle>
-                <CardDescription>{t("appointments.customerInformationHint", { defaultValue: "Main customer details linked to this appointment." })}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem label={t("appointments.customer", { defaultValue: "Customer" })} value={appointment.customer?.fullName} />
-                <DetailItem label={t("common.venue", { defaultValue: "Venue" })} value={appointment.customer?.venue?.name || appointment.customer?.venueNameSnapshot} />
-                <DetailItem label={t("appointments.customerMobile", { defaultValue: "Customer Mobile" })} value={appointment.customer?.mobile} />
-                <DetailItem label={t("appointments.customerStatus", { defaultValue: "Customer Status" })} value={appointment.customer?.status} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("appointments.outcome", { defaultValue: "Outcome" })}</CardTitle>
-                <CardDescription>{t("appointments.outcomeHint", { defaultValue: "Meeting result, notes, and follow-up." })}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem
-                  label={t("appointments.meetingType", { defaultValue: "Meeting Type" })}
-                  value={t(`appointments.meetingTypeOptions.${appointment.meetingType}`, {
-                    defaultValue: formatMeetingType(appointment.meetingType),
-                  })}
-                />
-                <DetailItem label={t("appointments.result", { defaultValue: "Result" })} value={appointment.result} />
-                <DetailItem label={t("appointments.nextStep", { defaultValue: "Next Step" })} value={appointment.nextStep} />
-                <DetailItem label={t("common.notes", { defaultValue: "Notes" })} value={appointment.notes} />
-              </CardContent>
-            </Card>
-          </div>
+          </Card>
         </div>
       </PageContainer>
     </ProtectedComponent>

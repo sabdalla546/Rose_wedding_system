@@ -54,7 +54,6 @@ type EventFormValues = {
   groomName: string;
   brideName: string;
   guestCount: string;
-  contractNumber: string;
   title: string;
   notes: string;
   status: EventStatus | "";
@@ -79,7 +78,6 @@ const defaultValues: EventFormValues = {
   groomName: "",
   brideName: "",
   guestCount: "",
-  contractNumber: "",
   title: "",
   notes: "",
   status: "",
@@ -102,7 +100,6 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
             !value || (Number.isInteger(Number(value)) && Number(value) > 0),
           "Guest count must be a positive number",
         ),
-      contractNumber: z.string().max(100).optional(),
       title: z.string().max(200).optional(),
       notes: z.string().optional(),
       status: z.union([z.literal(""), z.enum(statusValues)]),
@@ -455,7 +452,6 @@ const EventFormPage = () => {
       groomName: event.groomName ?? "",
       brideName: event.brideName ?? "",
       guestCount: event.guestCount ? String(event.guestCount) : "",
-      contractNumber: event.contractNumber ?? "",
       title: event.title ?? "",
       notes: event.notes ?? "",
       status: event.status,
@@ -765,16 +761,6 @@ const EventFormPage = () => {
                           })}
                         />
                       ) : null}
-                      <TextField
-                        control={form.control}
-                        name="contractNumber"
-                        label={t("events.contractNumber", {
-                          defaultValue: "Contract Number",
-                        })}
-                        placeholder={t("events.contractNumberPlaceholder", {
-                          defaultValue: "Enter contract number",
-                        })}
-                      />
                       {mode !== "source" || isEditMode ? (
                         <SelectField
                           control={form.control}

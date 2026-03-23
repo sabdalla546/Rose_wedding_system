@@ -49,7 +49,7 @@ import {
 import { useAppointmentsCalendar } from "@/hooks/appointments/useAppointments";
 import { useVenues } from "@/hooks/venues/useVenues";
 import {
-  APPOINTMENT_MEETING_TYPE_OPTIONS,
+  APPOINTMENT_TYPE_OPTIONS,
   toCalendarEvents,
 } from "@/pages/appointments/adapters";
 import { formatLocalized } from "@/lib/utils";
@@ -188,8 +188,8 @@ export function CalendarPage() {
   );
   const eventTypeOptions = useMemo(
     () => {
-      const baseOptions = APPOINTMENT_MEETING_TYPE_OPTIONS.map((item) => ({
-        label: t(`appointments.meetingTypeOptions.${item.value}`, {
+      const baseOptions = APPOINTMENT_TYPE_OPTIONS.map((item) => ({
+        label: t(`appointments.typeOptions.${item.value}`, {
           defaultValue: item.label,
         }),
         value: item.label,

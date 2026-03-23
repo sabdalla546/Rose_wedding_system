@@ -1,4 +1,3 @@
-// src/models/customer.model.ts
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 
@@ -10,18 +9,8 @@ export interface CustomerAttributes {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
-  groomName?: string | null;
-  brideName?: string | null;
-  weddingDate?: string | null;
-  guestCount?: number | null;
-
-  venueId?: number | null;
-  venueNameSnapshot?: string | null;
-
-  sourceLeadId?: number | null;
   notes?: string | null;
   status: CustomerStatus;
-
   createdBy?: number | null;
   updatedBy?: number | null;
 }
@@ -31,11 +20,6 @@ type CustomerCreationAttributes = Optional<
   | "id"
   | "mobile2"
   | "email"
-  | "weddingDate"
-  | "guestCount"
-  | "venueId"
-  | "venueNameSnapshot"
-  | "sourceLeadId"
   | "notes"
   | "status"
   | "createdBy"
@@ -51,19 +35,8 @@ export class Customer
   public mobile!: string;
   public mobile2?: string | null;
   public email?: string | null;
-
-  public groomName?: string | null;
-  public brideName?: string | null;
-  public weddingDate?: string | null;
-  public guestCount?: number | null;
-
-  public venueId?: number | null;
-  public venueNameSnapshot?: string | null;
-
-  public sourceLeadId?: number | null;
   public notes?: string | null;
   public status!: CustomerStatus;
-
   public createdBy?: number | null;
   public updatedBy?: number | null;
 }
@@ -75,22 +48,18 @@ Customer.init(
       autoIncrement: true,
       primaryKey: true,
     },
-
     fullName: {
       type: DataTypes.STRING(150),
       allowNull: false,
     },
-
     mobile: {
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-
     mobile2: {
       type: DataTypes.STRING(30),
       allowNull: true,
     },
-
     email: {
       type: DataTypes.STRING(150),
       allowNull: true,
@@ -98,58 +67,19 @@ Customer.init(
         isEmail: true,
       },
     },
-
-    groomName: {
-      type: DataTypes.STRING(150),
-      allowNull: true,
-    },
-    brideName: {
-      type: DataTypes.STRING(150),
-      allowNull: true,
-    },
-
-    weddingDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: true,
-    },
-
-    guestCount: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    venueId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    venueNameSnapshot: {
-      type: DataTypes.STRING(150),
-      allowNull: true,
-    },
-
-    sourceLeadId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-      unique: true,
-    },
-
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-
     status: {
       type: DataTypes.ENUM("active", "inactive"),
       allowNull: false,
       defaultValue: "active",
     },
-
     createdBy: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
-
     updatedBy: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
@@ -160,12 +90,6 @@ Customer.init(
     tableName: "customers",
     timestamps: true,
     paranoid: true,
-    indexes: [
-      { fields: ["mobile"] },
-      { fields: ["weddingDate"] },
-      { fields: ["venueId"] },
-      { fields: ["sourceLeadId"] },
-      { fields: ["status"] },
-    ],
+    indexes: [{ fields: ["mobile"] }, { fields: ["status"] }],
   },
 );

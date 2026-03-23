@@ -12,9 +12,9 @@ interface UseCustomersParams {
   itemsPerPage: number;
   searchQuery: string;
   status: "all" | Customer["status"];
-  venueId: string;
-  weddingDateFrom: string;
-  weddingDateTo: string;
+  venueId?: string;
+  weddingDateFrom?: string;
+  weddingDateTo?: string;
 }
 
 export const useCustomers = ({
@@ -22,9 +22,6 @@ export const useCustomers = ({
   itemsPerPage,
   searchQuery,
   status,
-  venueId,
-  weddingDateFrom,
-  weddingDateTo,
 }: UseCustomersParams) => {
   return useQuery<CustomersResponse>({
     queryKey: [
@@ -33,9 +30,6 @@ export const useCustomers = ({
       itemsPerPage,
       searchQuery,
       status,
-      venueId,
-      weddingDateFrom,
-      weddingDateTo,
     ],
     queryFn: async () => {
       const res = await api.get("/customers", {
@@ -44,9 +38,6 @@ export const useCustomers = ({
           limit: itemsPerPage,
           search: searchQuery || undefined,
           status: status === "all" ? undefined : status,
-          venueId: venueId ? Number(venueId) : undefined,
-          weddingDateFrom: weddingDateFrom || undefined,
-          weddingDateTo: weddingDateTo || undefined,
         },
       });
 

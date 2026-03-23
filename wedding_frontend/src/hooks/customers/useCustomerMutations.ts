@@ -16,30 +16,11 @@ const normalizeNullableString = (value?: string) => {
   return trimmed ? trimmed : null;
 };
 
-const normalizeGuestCountForCreate = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : undefined;
-};
-
-const normalizeGuestCountForUpdate = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : null;
-};
-
 const buildCreateCustomerPayload = (values: CustomerFormData) => ({
   fullName: values.fullName.trim(),
   mobile: values.mobile.trim(),
   mobile2: normalizeOptionalString(values.mobile2),
   email: normalizeOptionalString(values.email),
-
-  groomName: normalizeOptionalString(values.groomName),
-  brideName: normalizeOptionalString(values.brideName),
-
-  weddingDate: normalizeOptionalString(values.weddingDate),
-  guestCount: normalizeGuestCountForCreate(values.guestCount),
-  venueId: values.venueId ? Number(values.venueId) : null,
-  venueNameSnapshot: normalizeOptionalString(values.venueNameSnapshot),
-  sourceLeadId: values.sourceLeadId ? Number(values.sourceLeadId) : null,
   notes: normalizeOptionalString(values.notes),
   status: values.status,
 });
@@ -49,14 +30,6 @@ const buildUpdateCustomerPayload = (values: CustomerFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeNullableString(values.mobile2),
   email: normalizeNullableString(values.email),
-
-  groomName: normalizeNullableString(values.groomName),
-  brideName: normalizeNullableString(values.brideName),
-
-  weddingDate: normalizeNullableString(values.weddingDate),
-  guestCount: normalizeGuestCountForUpdate(values.guestCount),
-  venueId: values.venueId ? Number(values.venueId) : null,
-  venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });
@@ -79,7 +52,6 @@ export const useCreateCustomer = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
       navigate("/customers");
     },
     onError: (error) => {

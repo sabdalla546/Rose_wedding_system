@@ -92,8 +92,6 @@ export interface QuotationItemFormData {
 
 export interface QuotationFormData {
   eventId: string;
-  customerId?: string;
-  leadId?: string;
   quotationNumber?: string;
   issueDate: string;
   validUntil?: string;
@@ -115,8 +113,6 @@ export interface QuotationFromEventFormData {
 }
 
 export interface QuotationUpdateFormData {
-  customerId?: string;
-  leadId?: string;
   quotationNumber?: string;
   issueDate?: string;
   validUntil?: string;

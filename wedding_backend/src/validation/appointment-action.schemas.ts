@@ -5,9 +5,7 @@ export const confirmAppointmentSchema = z.object({
 });
 
 export const completeAppointmentSchema = z.object({
-  result: z.string().optional(),
   notes: z.string().optional(),
-  nextStep: z.string().max(255).optional(),
 });
 
 export const cancelAppointmentSchema = z.object({
@@ -17,11 +15,9 @@ export const cancelAppointmentSchema = z.object({
 
 export const rescheduleAppointmentSchema = z.object({
   appointmentDate: z.string().min(1),
-  appointmentStartTime: z.string().min(1).max(10),
-  appointmentEndTime: z.string().max(10).optional().nullable(),
-  assignedToUserId: z.number().int().positive().optional().nullable(),
+  startTime: z.string().min(1).max(10),
+  endTime: z.string().max(10).optional().nullable(),
   notes: z.string().optional(),
-  nextStep: z.string().max(255).optional(),
 });
 
 export type ConfirmAppointmentInput = z.infer<typeof confirmAppointmentSchema>;

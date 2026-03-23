@@ -48,14 +48,12 @@ export interface EventSection {
 export interface Event {
   id: number;
   customerId?: number | null;
-  leadId?: number | null;
   eventDate: string;
   venueId?: number | null;
   venueNameSnapshot?: string | null;
   groomName?: string | null;
   brideName?: string | null;
   guestCount?: number | null;
-  contractNumber?: string | null;
   title?: string | null;
   notes?: string | null;
   status: EventStatus;
@@ -91,7 +89,6 @@ export interface EventFormData {
   groomName?: string;
   brideName?: string;
   guestCount?: string;
-  contractNumber?: string;
   title?: string;
   notes?: string;
   status?: EventStatus | "";

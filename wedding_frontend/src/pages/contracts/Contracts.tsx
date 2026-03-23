@@ -27,9 +27,7 @@ import {
 } from "@/components/ui/searchable-select";
 import { useContracts } from "@/hooks/contracts/useContracts";
 import { useDeleteContract } from "@/hooks/contracts/useDeleteContract";
-import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useEvents } from "@/hooks/events/useEvents";
-import { useLeads } from "@/hooks/leads/useLeads";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
@@ -63,12 +61,8 @@ const ContractsPage = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [quotationSearch, setQuotationSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [leadSearch, setLeadSearch] = useState("");
   const [quotationFilter, setQuotationFilter] = useState("");
   const [eventFilter, setEventFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [leadFilter, setLeadFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ContractStatus>(
     "all",
   );
@@ -89,8 +83,6 @@ const ContractsPage = () => {
     searchQuery,
     quotationId: quotationFilter,
     eventId: eventFilter,
-    customerId: customerFilter,
-    leadId: leadFilter,
     status: statusFilter,
     signedDateFrom,
     signedDateTo,
@@ -100,8 +92,6 @@ const ContractsPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     eventId: "",
-    customerId: "",
-    leadId: "",
     status: "all",
     issueDateFrom: "",
     issueDateTo: "",
@@ -112,29 +102,9 @@ const ContractsPage = () => {
     searchQuery: "",
     status: "all",
     customerId: "",
-    leadId: "",
     venueId: "",
     dateFrom: "",
     dateTo: "",
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
-  const { data: leadsResponse } = useLeads({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    source: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
   });
 
   const adapted = toTableContracts(raw);
@@ -147,11 +117,6 @@ const ContractsPage = () => {
     [quotationsResponse?.data],
   );
   const events = useMemo(() => eventsResponse?.data ?? [], [eventsResponse?.data]);
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
 
   const filteredQuotations = useMemo(
     () =>
@@ -172,22 +137,6 @@ const ContractsPage = () => {
       ),
     [eventSearch, events],
   );
-  const filteredCustomers = useMemo(
-    () =>
-      customers.filter((customer) =>
-        customer.fullName
-          .toLowerCase()
-          .includes(customerSearch.trim().toLowerCase()),
-      ),
-    [customerSearch, customers],
-  );
-  const filteredLeads = useMemo(
-    () =>
-      leads.filter((lead) =>
-        lead.fullName.toLowerCase().includes(leadSearch.trim().toLowerCase()),
-      ),
-    [leadSearch, leads],
-  );
 
   const deleteMutation = useDeleteContract();
   const columns = useContractsColumns({
@@ -198,8 +147,6 @@ const ContractsPage = () => {
   const activeFiltersCount = [
     Boolean(quotationFilter),
     Boolean(eventFilter),
-    Boolean(customerFilter),
-    Boolean(leadFilter),
     statusFilter !== "all",
     Boolean(signedDateFrom),
     Boolean(signedDateTo),
@@ -213,8 +160,6 @@ const ContractsPage = () => {
   const resetFilters = () => {
     setQuotationFilter("");
     setEventFilter("");
-    setCustomerFilter("");
-    setLeadFilter("");
     setStatusFilter("all");
     setSignedDateFrom("");
     setSignedDateTo("");
@@ -251,7 +196,7 @@ const ContractsPage = () => {
           search={{
             placeholder: t("contracts.searchPlaceholder", {
               defaultValue:
-                "Search by contract number, notes, quotation, event, customer, or lead...",
+                "Search by contract number, notes, quotation, event, or customer...",
             }),
             value: searchTerm,
             onChange: setSearchTerm,
@@ -288,7 +233,7 @@ const ContractsPage = () => {
                     {t("contracts.filtersHint", {
                       defaultValue: isArabic
                         ? "صفِّ قائمة العقود حسب عرض السعر والحفل والعميل والعميل المحتمل والحالة وتاريخ التوقيع."
-                        : "Refine the contracts list by quotation, event, customer, lead, status, and signed date.",
+                        : "Refine the contracts list by quotation, event, status, and signed date.",
                     })}
                   </p>
                 </div>
@@ -371,23 +316,6 @@ const ContractsPage = () => {
                             events.find((event) => String(event.id) === eventFilter)!,
                           )
                         : eventFilter
-                    }
-                  />
-                ) : null}
-                {customerFilter ? (
-                  <FilterPill
-                    label={
-                      customers.find(
-                        (customer) => String(customer.id) === customerFilter,
-                      )?.fullName || customerFilter
-                    }
-                  />
-                ) : null}
-                {leadFilter ? (
-                  <FilterPill
-                    label={
-                      leads.find((lead) => String(lead.id) === leadFilter)
-                        ?.fullName || leadFilter
                     }
                   />
                 ) : null}
@@ -525,92 +453,6 @@ const ContractsPage = () => {
                                 value={String(event.id)}
                               >
                                 {getEventDisplayTitle(event)}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("contracts.customer", {
-                          defaultValue: "Customer",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={customerFilter}
-                          onValueChange={(value) => {
-                            setCustomerFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setCustomerSearch}
-                          placeholder={t("contracts.allCustomers", {
-                            defaultValue: "All Customers",
-                          })}
-                          searchPlaceholder={t("contracts.searchCustomers", {
-                            defaultValue: isArabic
-                              ? "ابحث عن عميل..."
-                              : "Search customers...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredCustomers.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredCustomers.map((customer) => (
-                              <SearchableSelectItem
-                                key={customer.id}
-                                value={String(customer.id)}
-                              >
-                                {customer.fullName}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("contracts.lead", {
-                          defaultValue: "Lead",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={leadFilter}
-                          onValueChange={(value) => {
-                            setLeadFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setLeadSearch}
-                          placeholder={t("contracts.allLeads", {
-                            defaultValue: "All Leads",
-                          })}
-                          searchPlaceholder={t("contracts.searchLeads", {
-                            defaultValue: isArabic
-                              ? "ابحث عن عميل محتمل..."
-                              : "Search leads...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredLeads.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredLeads.map((lead) => (
-                              <SearchableSelectItem
-                                key={lead.id}
-                                value={String(lead.id)}
-                              >
-                                {lead.fullName}
                               </SearchableSelectItem>
                             ))
                           )}

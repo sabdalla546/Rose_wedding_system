@@ -64,8 +64,12 @@ export const getContractQuotationDisplay = (
       : "-";
 
 export const getContractPartyDisplay = (
-  contract: Pick<Contract, "customer" | "lead">,
-) => contract.customer?.fullName || contract.lead?.fullName || "-";
+  contract: Pick<Contract, "customer" | "lead" | "event">,
+) =>
+  contract.event?.customer?.fullName ||
+  contract.customer?.fullName ||
+  contract.lead?.fullName ||
+  "-";
 
 export const getContractItemDisplayName = (item: ContractItem) =>
   item.itemName ||

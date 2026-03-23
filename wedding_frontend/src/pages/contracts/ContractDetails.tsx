@@ -395,7 +395,7 @@ const ContractDetailsPage = () => {
                 <CardDescription>
                   {t("contracts.relatedRecordsHint", {
                     defaultValue:
-                      "Linked quotation, event, customer, and lead information for this contract.",
+                      "Linked quotation, event, and customer information for this contract.",
                   })}
                 </CardDescription>
               </CardHeader>
@@ -420,11 +420,10 @@ const ContractDetailsPage = () => {
                 />
                 <DetailItem
                   label={t("contracts.customer", { defaultValue: "Customer" })}
-                  value={contract.customer?.fullName}
-                />
-                <DetailItem
-                  label={t("contracts.lead", { defaultValue: "Lead" })}
-                  value={contract.lead?.fullName}
+                  value={
+                    contract.event?.customer?.fullName ||
+                    contract.customer?.fullName
+                  }
                 />
               </CardContent>
             </Card>

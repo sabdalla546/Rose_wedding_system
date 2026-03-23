@@ -11,25 +11,16 @@ export type EventStatus =
 
 export interface EventAttributes {
   id: number;
-
   customerId?: number | null;
-
+  title?: string | null;
   eventDate: string;
-
   venueId?: number | null;
   venueNameSnapshot?: string | null;
-
   groomName?: string | null;
   brideName?: string | null;
-
   guestCount?: number | null;
-
-  contractNumber?: string | null;
-  title?: string | null;
   notes?: string | null;
-
   status: EventStatus;
-
   createdBy?: number | null;
   updatedBy?: number | null;
 }
@@ -38,13 +29,12 @@ type EventCreationAttributes = Optional<
   EventAttributes,
   | "id"
   | "customerId"
+  | "title"
   | "venueId"
   | "venueNameSnapshot"
   | "groomName"
   | "brideName"
   | "guestCount"
-  | "contractNumber"
-  | "title"
   | "notes"
   | "status"
   | "createdBy"
@@ -56,25 +46,16 @@ export class Event
   implements EventAttributes
 {
   public id!: number;
-
   public customerId?: number | null;
-
+  public title?: string | null;
   public eventDate!: string;
-
   public venueId?: number | null;
   public venueNameSnapshot?: string | null;
-
   public groomName?: string | null;
   public brideName?: string | null;
-
   public guestCount?: number | null;
-
-  public contractNumber?: string | null;
-  public title?: string | null;
   public notes?: string | null;
-
   public status!: EventStatus;
-
   public createdBy?: number | null;
   public updatedBy?: number | null;
 }
@@ -86,9 +67,13 @@ Event.init(
       autoIncrement: true,
       primaryKey: true,
     },
-
     customerId: {
       type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+
+    title: {
+      type: DataTypes.STRING(200),
       allowNull: true,
     },
 
@@ -119,16 +104,6 @@ Event.init(
 
     guestCount: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    contractNumber: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-
-    title: {
-      type: DataTypes.STRING(200),
       allowNull: true,
     },
 

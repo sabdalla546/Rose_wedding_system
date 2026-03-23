@@ -26,9 +26,7 @@ import {
   useUpdateContract,
 } from "@/hooks/contracts/useContractMutations";
 import { useContract } from "@/hooks/contracts/useContracts";
-import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useEvents } from "@/hooks/events/useEvents";
-import { useLeads } from "@/hooks/leads/useLeads";
 import { useQuotation, useQuotations } from "@/hooks/quotations/useQuotations";
 import { useEventServiceItems, useServices } from "@/hooks/services/useServices";
 import { cn } from "@/lib/utils";
@@ -97,8 +95,6 @@ const createContractFormSchema = (isEditMode: boolean) =>
       createMode: z.enum(["manual", "from_quotation"]),
       quotationId: z.string().optional(),
       eventId: z.string().optional(),
-      customerId: z.string().optional(),
-      leadId: z.string().optional(),
       contractNumber: z.string().max(100).optional(),
       signedDate: z.string().min(1, "Signed date is required"),
       eventDate: z.string().optional(),
@@ -244,8 +240,6 @@ const ContractFormPage = () => {
     searchQuery: "",
     quotationId: "",
     eventId: "",
-    customerId: "",
-    leadId: "",
     status: "all",
     signedDateFrom: "",
     signedDateTo: "",
@@ -255,8 +249,6 @@ const ContractFormPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     eventId: "",
-    customerId: "",
-    leadId: "",
     status: "all",
     issueDateFrom: "",
     issueDateTo: "",
@@ -267,29 +259,9 @@ const ContractFormPage = () => {
     searchQuery: "",
     status: "all",
     customerId: "",
-    leadId: "",
     venueId: "",
     dateFrom: "",
     dateTo: "",
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
-  const { data: leadsResponse } = useLeads({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    source: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
   });
   const { data: servicesResponse } = useServices({
     currentPage: 1,
@@ -306,8 +278,6 @@ const ContractFormPage = () => {
       createMode: requestedMode,
       quotationId: preselectedQuotationId,
       eventId: preselectedEventId,
-      customerId: "",
-      leadId: "",
       contractNumber: "",
       signedDate: new Date().toISOString().slice(0, 10),
       eventDate: "",
@@ -378,11 +348,6 @@ const ContractFormPage = () => {
     [quotationsResponse?.data],
   );
   const events = useMemo(() => eventsResponse?.data ?? [], [eventsResponse?.data]);
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
   const services = useMemo(
     () => servicesResponse?.data ?? [],
     [servicesResponse?.data],
@@ -458,8 +423,6 @@ const ContractFormPage = () => {
       createMode: "manual",
       quotationId: contract.quotationId ? String(contract.quotationId) : "",
       eventId: String(contract.eventId),
-      customerId: contract.customerId ? String(contract.customerId) : "",
-      leadId: contract.leadId ? String(contract.leadId) : "",
       contractNumber: contract.contractNumber ?? "",
       signedDate: contract.signedDate,
       eventDate: contract.eventDate ?? "",
@@ -524,18 +487,6 @@ const ContractFormPage = () => {
       });
     }
 
-    if (!form.getValues("customerId") && selectedQuotation.customerId) {
-      form.setValue("customerId", String(selectedQuotation.customerId), {
-        shouldDirty: true,
-      });
-    }
-
-    if (!form.getValues("leadId") && selectedQuotation.leadId) {
-      form.setValue("leadId", String(selectedQuotation.leadId), {
-        shouldDirty: true,
-      });
-    }
-
     if (!form.getValues("eventDate") && selectedQuotation.event?.eventDate) {
       form.setValue("eventDate", selectedQuotation.event.eventDate, {
         shouldDirty: true,
@@ -546,18 +497,6 @@ const ContractFormPage = () => {
   useEffect(() => {
     if (!selectedEvent || isEditMode) {
       return;
-    }
-
-    if (!form.getValues("customerId") && selectedEvent.customerId) {
-      form.setValue("customerId", String(selectedEvent.customerId), {
-        shouldDirty: true,
-      });
-    }
-
-    if (!form.getValues("leadId") && selectedEvent.leadId) {
-      form.setValue("leadId", String(selectedEvent.leadId), {
-        shouldDirty: true,
-      });
     }
 
     if (!form.getValues("eventDate") && selectedEvent.eventDate) {
@@ -717,8 +656,6 @@ const ContractFormPage = () => {
     const payload: ContractFormData = {
       quotationId: values.quotationId,
       eventId: values.eventId || "",
-      customerId: values.customerId,
-      leadId: values.leadId,
       contractNumber: values.contractNumber,
       signedDate: values.signedDate,
       eventDate: values.eventDate,
@@ -937,13 +874,11 @@ const ContractFormPage = () => {
                           label={t("contracts.customer", {
                             defaultValue: "Customer",
                           })}
-                          value={contract?.customer?.fullName || "-"}
-                        />
-                        <ReadonlyInfo
-                          label={t("contracts.lead", {
-                            defaultValue: "Lead",
-                          })}
-                          value={contract?.lead?.fullName || "-"}
+                          value={
+                            contract?.event?.customer?.fullName ||
+                            contract?.customer?.fullName ||
+                            "-"
+                          }
                         />
                       </div>
                     ) : null}
@@ -1070,82 +1005,6 @@ const ContractFormPage = () => {
 
                       {!isEditMode && watchedCreateMode === "manual" ? (
                         <>
-                          <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--lux-text)]">
-                              {t("contracts.customer", {
-                                defaultValue: "Customer",
-                              })}
-                            </span>
-                            <Select
-                              value={form.watch("customerId") || "none"}
-                              onValueChange={(value) =>
-                                form.setValue(
-                                  "customerId",
-                                  value === "none" ? "" : value,
-                                  { shouldDirty: true },
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t("contracts.selectCustomer", {
-                                    defaultValue: "Select customer",
-                                  })}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  {t("contracts.noCustomerSelected", {
-                                    defaultValue: "No customer selected",
-                                  })}
-                                </SelectItem>
-                                {customers.map((customer) => (
-                                  <SelectItem
-                                    key={customer.id}
-                                    value={String(customer.id)}
-                                  >
-                                    {customer.fullName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </label>
-
-                          <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--lux-text)]">
-                              {t("contracts.lead", {
-                                defaultValue: "Lead",
-                              })}
-                            </span>
-                            <Select
-                              value={form.watch("leadId") || "none"}
-                              onValueChange={(value) =>
-                                form.setValue("leadId", value === "none" ? "" : value, {
-                                  shouldDirty: true,
-                                })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t("contracts.selectLead", {
-                                    defaultValue: "Select lead",
-                                  })}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  {t("contracts.noLeadSelected", {
-                                    defaultValue: "No lead selected",
-                                  })}
-                                </SelectItem>
-                                {leads.map((lead) => (
-                                  <SelectItem key={lead.id} value={String(lead.id)}>
-                                    {lead.fullName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </label>
                         </>
                       ) : null}
 
@@ -1223,13 +1082,11 @@ const ContractFormPage = () => {
                           label={t("contracts.customer", {
                             defaultValue: "Customer",
                           })}
-                          value={selectedQuotation.customer?.fullName || "-"}
-                        />
-                        <ReadonlyInfo
-                          label={t("contracts.lead", {
-                            defaultValue: "Lead",
-                          })}
-                          value={selectedQuotation.lead?.fullName || "-"}
+                          value={
+                            selectedQuotation.event?.customer?.fullName ||
+                            selectedQuotation.customer?.fullName ||
+                            "-"
+                          }
                         />
                       </div>
                     ) : null}
@@ -1660,13 +1517,11 @@ const ContractFormPage = () => {
                               label={t("contracts.customer", {
                                 defaultValue: "Customer",
                               })}
-                              value={selectedQuotation.customer?.fullName || "-"}
-                            />
-                            <ReadonlyInfo
-                              label={t("contracts.lead", {
-                                defaultValue: "Lead",
-                              })}
-                              value={selectedQuotation.lead?.fullName || "-"}
+                              value={
+                                selectedQuotation.event?.customer?.fullName ||
+                                selectedQuotation.customer?.fullName ||
+                                "-"
+                              }
                             />
                           </div>
 

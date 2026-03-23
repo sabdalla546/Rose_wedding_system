@@ -13,8 +13,8 @@ interface UseAppointmentsParams {
   itemsPerPage: number;
   status: "all" | Appointment["status"];
   customerId: string;
-  venueId: string;
-  assignedToUserId: string;
+  venueId?: string;
+  assignedToUserId?: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -24,8 +24,6 @@ export const useAppointments = ({
   itemsPerPage,
   status,
   customerId,
-  venueId,
-  assignedToUserId,
   dateFrom,
   dateTo,
 }: UseAppointmentsParams) => {
@@ -36,8 +34,6 @@ export const useAppointments = ({
       itemsPerPage,
       status,
       customerId,
-      venueId,
-      assignedToUserId,
       dateFrom,
       dateTo,
     ],
@@ -48,10 +44,6 @@ export const useAppointments = ({
           limit: itemsPerPage,
           status: status === "all" ? undefined : status,
           customerId: customerId ? Number(customerId) : undefined,
-          venueId: venueId ? Number(venueId) : undefined,
-          assignedToUserId: assignedToUserId
-            ? Number(assignedToUserId)
-            : undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
         },

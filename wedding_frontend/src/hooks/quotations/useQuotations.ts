@@ -13,8 +13,6 @@ interface UseQuotationsParams {
   itemsPerPage: number;
   searchQuery: string;
   eventId: string;
-  customerId: string;
-  leadId?: string;
   status: "all" | QuotationStatus;
   issueDateFrom: string;
   issueDateTo: string;
@@ -25,8 +23,6 @@ export const useQuotations = ({
   itemsPerPage,
   searchQuery,
   eventId,
-  customerId,
-  leadId = "",
   status,
   issueDateFrom,
   issueDateTo,
@@ -38,8 +34,6 @@ export const useQuotations = ({
       itemsPerPage,
       searchQuery,
       eventId,
-      customerId,
-      leadId,
       status,
       issueDateFrom,
       issueDateTo,
@@ -51,8 +45,6 @@ export const useQuotations = ({
           limit: itemsPerPage,
           search: searchQuery || undefined,
           eventId: eventId ? Number(eventId) : undefined,
-          customerId: customerId ? Number(customerId) : undefined,
-          leadId: leadId ? Number(leadId) : undefined,
           status: status === "all" ? undefined : status,
           issueDateFrom: issueDateFrom || undefined,
           issueDateTo: issueDateTo || undefined,

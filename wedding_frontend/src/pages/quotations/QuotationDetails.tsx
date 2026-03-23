@@ -216,7 +216,7 @@ const QuotationDetailsPage = () => {
                 <CardDescription>
                   {t("quotations.relatedRecordsHint", {
                     defaultValue:
-                      "Linked event, customer, and lead information for this quotation.",
+                      "Linked event and customer information for this quotation.",
                   })}
                 </CardDescription>
               </CardHeader>
@@ -231,11 +231,10 @@ const QuotationDetailsPage = () => {
                 />
                 <DetailItem
                   label={t("quotations.customer", { defaultValue: "Customer" })}
-                  value={quotation.customer?.fullName}
-                />
-                <DetailItem
-                  label={t("quotations.lead", { defaultValue: "Lead" })}
-                  value={quotation.lead?.fullName}
+                  value={
+                    quotation.event?.customer?.fullName ||
+                    quotation.customer?.fullName
+                  }
                 />
               </CardContent>
             </Card>

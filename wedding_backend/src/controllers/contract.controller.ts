@@ -12,7 +12,7 @@ import {
   EventService,
   Service,
   Customer,
-  Lead,
+  Venue,
   User,
 } from "../models";
 import {
@@ -49,6 +49,36 @@ function computeContractTotals(
   return { subtotal, discountAmount: discount, totalAmount };
 }
 
+const contractInclude: any = [
+  { model: Quotation, as: "quotation" },
+  {
+    model: Event,
+    as: "event",
+    include: [
+      { model: Customer, as: "customer" },
+      { model: Venue, as: "venue" },
+    ],
+  },
+  {
+    model: ContractItem,
+    as: "items",
+    separate: true,
+    order: [
+      ["sortOrder", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
+  {
+    model: PaymentSchedule,
+    as: "paymentSchedules",
+    separate: true,
+    order: [
+      ["sortOrder", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
+];
+
 export const createContract = async (req: AuthRequest, res: Response) => {
   try {
     const data = createContractSchema.parse(req.body);
@@ -62,20 +92,6 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       const quotation = await Quotation.findByPk(data.quotationId);
       if (!quotation) {
         return res.status(404).json({ message: "Quotation not found" });
-      }
-    }
-
-    if (data.customerId) {
-      const customer = await Customer.findByPk(data.customerId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
-    }
-
-    if (data.leadId) {
-      const lead = await Lead.findByPk(data.leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
       }
     }
 
@@ -101,8 +117,7 @@ export const createContract = async (req: AuthRequest, res: Response) => {
     const contract = await Contract.create({
       quotationId: data.quotationId ?? null,
       eventId: data.eventId,
-      customerId: data.customerId ?? event.customerId ?? null,
-      //  leadId: data.leadId ?? event.leadId ?? null,
+      customerId: event.customerId ?? null,
       contractNumber: data.contractNumber ?? null,
       signedDate: data.signedDate,
       eventDate: data.eventDate ?? event.eventDate ?? null,
@@ -142,30 +157,7 @@ export const createContract = async (req: AuthRequest, res: Response) => {
     }
 
     const created = await Contract.findByPk(contract.id, {
-      include: [
-        { model: Quotation, as: "quotation" },
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: ContractItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-        {
-          model: PaymentSchedule,
-          as: "paymentSchedules",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: contractInclude,
     });
 
     return res.status(201).json({
@@ -240,7 +232,6 @@ export const createContractFromQuotation = async (
       quotationId: quotation.id,
       eventId: quotation.eventId,
       customerId: quotation.customerId ?? null,
-      leadId: quotation.leadId ?? null,
       contractNumber: data.contractNumber ?? null,
       signedDate: data.signedDate,
       eventDate: data.eventDate ?? quotationEvent?.eventDate ?? null,
@@ -285,30 +276,7 @@ export const createContractFromQuotation = async (
     });
 
     const created = await Contract.findByPk(contract.id, {
-      include: [
-        { model: Quotation, as: "quotation" },
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: ContractItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-        {
-          model: PaymentSchedule,
-          as: "paymentSchedules",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: contractInclude,
     });
 
     return res.status(201).json({
@@ -330,8 +298,6 @@ export const getContracts = async (req: Request, res: Response) => {
 
   const quotationId = Number(req.query.quotationId) || undefined;
   const eventId = Number(req.query.eventId) || undefined;
-  const customerId = Number(req.query.customerId) || undefined;
-  const leadId = Number(req.query.leadId) || undefined;
   const status = String(req.query.status ?? "").trim();
   const search = String(req.query.search ?? "").trim();
   const signedDateFrom = String(req.query.signedDateFrom ?? "").trim();
@@ -341,8 +307,6 @@ export const getContracts = async (req: Request, res: Response) => {
 
   if (quotationId) where.quotationId = quotationId;
   if (eventId) where.eventId = eventId;
-  if (customerId) where.customerId = customerId;
-  if (leadId) where.leadId = leadId;
   if (status) where.status = status;
 
   if (search) {
@@ -362,9 +326,14 @@ export const getContracts = async (req: Request, res: Response) => {
     where,
     include: [
       { model: Quotation, as: "quotation" },
-      { model: Event, as: "event" },
-      { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
+      {
+        model: Event,
+        as: "event",
+        include: [
+          { model: Customer, as: "customer" },
+          { model: Venue, as: "venue" },
+        ],
+      },
       { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
       { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
     ],
@@ -397,9 +366,14 @@ export const getContractById = async (req: Request, res: Response) => {
   const contract = await Contract.findByPk(id, {
     include: [
       { model: Quotation, as: "quotation" },
-      { model: Event, as: "event" },
-      { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
+      {
+        model: Event,
+        as: "event",
+        include: [
+          { model: Customer, as: "customer" },
+          { model: Venue, as: "venue" },
+        ],
+      },
       {
         model: ContractItem,
         as: "items",
@@ -455,12 +429,6 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
         typeof data.quotationId !== "undefined"
           ? data.quotationId
           : contract.quotationId,
-      customerId:
-        typeof data.customerId !== "undefined"
-          ? data.customerId
-          : contract.customerId,
-      leadId:
-        typeof data.leadId !== "undefined" ? data.leadId : contract.leadId,
       contractNumber:
         typeof data.contractNumber !== "undefined"
           ? data.contractNumber
@@ -498,30 +466,7 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
     });
 
     const updated = await Contract.findByPk(id, {
-      include: [
-        { model: Quotation, as: "quotation" },
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: ContractItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-        {
-          model: PaymentSchedule,
-          as: "paymentSchedules",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: contractInclude,
     });
 
     return res.json({

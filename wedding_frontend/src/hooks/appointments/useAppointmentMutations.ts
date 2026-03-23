@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
-import type { AppointmentFormData } from "@/pages/appointments/types";
+import type { AppointmentFormData, AppointmentType } from "@/pages/appointments/types";
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
@@ -19,28 +18,60 @@ const normalizeNullableString = (value?: string) => {
 const buildCreateAppointmentPayload = (values: AppointmentFormData) => ({
   customerId: Number(values.customerId),
   appointmentDate: values.appointmentDate,
-  appointmentStartTime: values.appointmentStartTime,
-  appointmentEndTime: normalizeOptionalString(values.appointmentEndTime),
-  meetingType: values.meetingType,
-  assignedToUserId: values.assignedToUserId
-    ? Number(values.assignedToUserId)
-    : null,
+  startTime: values.startTime,
+  endTime: normalizeOptionalString(values.endTime),
+  type: values.type,
   notes: normalizeOptionalString(values.notes),
-  nextStep: normalizeOptionalString(values.nextStep),
 });
 
 const buildUpdateAppointmentPayload = (values: AppointmentFormData) => ({
+  customerId: Number(values.customerId),
   appointmentDate: values.appointmentDate,
-  appointmentStartTime: values.appointmentStartTime,
-  appointmentEndTime: normalizeNullableString(values.appointmentEndTime),
-  status: values.status,
-  meetingType: values.meetingType,
-  assignedToUserId: values.assignedToUserId
-    ? Number(values.assignedToUserId)
-    : null,
+  startTime: values.startTime,
+  endTime: normalizeNullableString(values.endTime),
+  type: values.type,
   notes: normalizeNullableString(values.notes),
-  result: normalizeNullableString(values.result),
-  nextStep: normalizeNullableString(values.nextStep),
+  status: values.status,
+});
+
+type CreateAppointmentWithCustomerValues = {
+  customer?: {
+    fullName: string;
+    mobile: string;
+    mobile2?: string;
+    email?: string;
+    notes?: string;
+  };
+  customerId?: string;
+  appointment: {
+    appointmentDate: string;
+    startTime: string;
+    endTime?: string;
+    type: AppointmentType;
+    notes?: string;
+  };
+};
+
+const buildCreateAppointmentWithCustomerPayload = (
+  values: CreateAppointmentWithCustomerValues,
+) => ({
+  customerId: values.customerId?.trim() ? Number(values.customerId) : undefined,
+  customer: values.customer
+    ? {
+        fullName: values.customer.fullName.trim(),
+        mobile: values.customer.mobile.trim(),
+        mobile2: normalizeOptionalString(values.customer.mobile2),
+        email: normalizeOptionalString(values.customer.email),
+        notes: normalizeOptionalString(values.customer.notes),
+      }
+    : undefined,
+  appointment: {
+    appointmentDate: values.appointment.appointmentDate,
+    startTime: values.appointment.startTime,
+    endTime: normalizeOptionalString(values.appointment.endTime),
+    type: values.appointment.type,
+    notes: normalizeOptionalString(values.appointment.notes),
+  },
 });
 
 export const useCreateAppointment = () => {
@@ -79,66 +110,6 @@ export const useCreateAppointment = () => {
     },
   });
 };
-
-type CreateAppointmentWithCustomerValues = {
-  customer?: {
-    fullName: string;
-    mobile: string;
-    mobile2?: string;
-    email?: string;
-    groomName?: string;
-    brideName?: string;
-    weddingDate?: string;
-    guestCount?: string;
-    venueId?: string;
-    notes?: string;
-  };
-  customerId?: string;
-  appointment: {
-    appointmentDate: string;
-    appointmentStartTime: string;
-    appointmentEndTime?: string;
-    assignedToUserId?: string;
-    meetingType: AppointmentFormData["meetingType"];
-    notes?: string;
-    nextStep?: string;
-  };
-};
-
-const buildCreateAppointmentWithCustomerPayload = (
-  values: CreateAppointmentWithCustomerValues,
-) => ({
-  customerId: values.customerId?.trim() ? Number(values.customerId) : undefined,
-  customer: values.customer
-    ? {
-        fullName: values.customer.fullName.trim(),
-        mobile: values.customer.mobile.trim(),
-        mobile2: normalizeOptionalString(values.customer.mobile2),
-        email: normalizeOptionalString(values.customer.email),
-        groomName: normalizeOptionalString(values.customer.groomName),
-        brideName: normalizeOptionalString(values.customer.brideName),
-        weddingDate: normalizeOptionalString(values.customer.weddingDate),
-        guestCount: values.customer.guestCount?.trim()
-          ? Number(values.customer.guestCount)
-          : undefined,
-        venueId: values.customer.venueId ? Number(values.customer.venueId) : null,
-        notes: normalizeOptionalString(values.customer.notes),
-      }
-    : undefined,
-  appointment: {
-    appointmentDate: values.appointment.appointmentDate,
-    appointmentStartTime: values.appointment.appointmentStartTime,
-    appointmentEndTime: normalizeOptionalString(
-      values.appointment.appointmentEndTime,
-    ),
-    assignedToUserId: values.appointment.assignedToUserId
-      ? Number(values.appointment.assignedToUserId)
-      : null,
-    meetingType: values.appointment.meetingType,
-    notes: normalizeOptionalString(values.appointment.notes),
-    nextStep: normalizeOptionalString(values.appointment.nextStep),
-  },
-});
 
 export const useCreateAppointmentWithCustomer = () => {
   const queryClient = useQueryClient();
@@ -180,7 +151,6 @@ export const useCreateAppointmentWithCustomer = () => {
   });
 };
 
-
 export const useUpdateAppointment = (id?: string) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -204,7 +174,6 @@ export const useUpdateAppointment = (id?: string) => {
       navigate("/appointments");
     },
     onError: (error) => {
-      console.log(error)
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),

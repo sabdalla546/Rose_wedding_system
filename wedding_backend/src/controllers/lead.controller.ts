@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 
-import { Lead, Venue, User, Appointment, Customer } from "../models";
+import { Lead, Venue, User, Appointment, Customer, Event } from "../models";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { createLeadSchema, updateLeadSchema } from "../validation/lead.schemas";
 import { markLeadLostSchema } from "../validation/lead-action.schemas";
@@ -392,98 +392,48 @@ export const convertLeadToCustomer = async (
       });
     }
 
-    const existingCustomer = await Customer.findOne({
-      where: { sourceLeadId: lead.id },
-    });
-
-    if (existingCustomer) {
-      return res.status(400).json({
-        message: "A customer already exists for this lead",
-      });
-    }
-
-    if (
-      typeof data.customer?.venueId !== "undefined" &&
-      data.customer?.venueId !== null
-    ) {
-      const venue = await Venue.findByPk(data.customer.venueId);
-      if (!venue) {
-        return res.status(404).json({ message: "Venue not found" });
-      }
-    } else if (lead.venueId) {
-      const venue = await Venue.findByPk(lead.venueId);
-      if (!venue) {
-        return res.status(404).json({ message: "Lead venue not found" });
-      }
-    }
-
     const mergedCustomerNotes = [lead.notes, data.customer?.notes, data.notes]
       .filter(Boolean)
       .join(" | ");
 
     const customer = await Customer.create({
       fullName: data.customer?.fullName?.trim() || lead.fullName,
-
       mobile: data.customer?.mobile?.trim() || lead.mobile,
-
       mobile2:
         typeof data.customer?.mobile2 !== "undefined"
           ? data.customer.mobile2
             ? data.customer.mobile2.trim()
             : data.customer.mobile2
           : lead.mobile2,
-
       email:
         typeof data.customer?.email !== "undefined"
           ? data.customer.email
             ? data.customer.email.trim()
             : data.customer.email
           : lead.email,
-
-      groomName:
-        typeof data.customer?.groomName !== "undefined"
-          ? data.customer.groomName
-            ? data.customer.groomName.trim()
-            : data.customer.groomName
-          : lead.groomName,
-
-      brideName:
-        typeof data.customer?.brideName !== "undefined"
-          ? data.customer.brideName
-            ? data.customer.brideName.trim()
-            : data.customer.brideName
-          : lead.brideName,
-
-      weddingDate:
-        typeof data.customer?.weddingDate !== "undefined"
-          ? data.customer.weddingDate
-          : lead.weddingDate,
-
-      guestCount:
-        typeof data.customer?.guestCount !== "undefined"
-          ? data.customer.guestCount
-          : lead.guestCount,
-
-      venueId:
-        typeof data.customer?.venueId !== "undefined"
-          ? data.customer.venueId
-          : lead.venueId,
-
-      venueNameSnapshot:
-        typeof data.customer?.venueNameSnapshot !== "undefined"
-          ? data.customer.venueNameSnapshot
-            ? data.customer.venueNameSnapshot.trim()
-            : data.customer.venueNameSnapshot
-          : lead.venueNameSnapshot,
-
-      sourceLeadId: lead.id,
-
       notes: mergedCustomerNotes || null,
-
       status: data.customer?.status ?? "active",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
+
+    let event: Event | null = null;
+    if (lead.weddingDate) {
+      event = await Event.create({
+        customerId: customer.id,
+        title: `Wedding Event - ${customer.fullName}`,
+        eventDate: lead.weddingDate,
+        venueId: lead.venueId ?? null,
+        venueNameSnapshot: lead.venueNameSnapshot ?? null,
+        groomName: lead.groomName ?? null,
+        brideName: lead.brideName ?? null,
+        guestCount: lead.guestCount ?? null,
+        notes: lead.notes ?? null,
+        status: "draft",
+        createdBy: req.user?.id ?? null,
+        updatedBy: req.user?.id ?? null,
+      });
+    }
 
     await lead.update({
       status: "converted",
@@ -501,11 +451,6 @@ export const convertLeadToCustomer = async (
           separate: true,
           order: [["id", "DESC"]],
         },
-        {
-          model: Customer,
-          as: "customer",
-          include: [{ model: Venue, as: "venue" }],
-        },
         { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
         { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
       ],
@@ -516,6 +461,7 @@ export const convertLeadToCustomer = async (
       data: {
         lead: updatedLead,
         customer,
+        event,
       },
     });
   } catch (err) {

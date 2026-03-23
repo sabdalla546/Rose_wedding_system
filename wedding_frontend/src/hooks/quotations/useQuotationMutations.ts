@@ -33,8 +33,6 @@ const normalizeNullableNumber = (value?: string) => {
 
 const buildCreateQuotationPayload = (values: QuotationFormData) => ({
   eventId: Number(values.eventId),
-  customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   quotationNumber: normalizeOptionalString(values.quotationNumber),
   issueDate: values.issueDate,
   validUntil: normalizeOptionalString(values.validUntil),
@@ -68,8 +66,6 @@ const buildCreateFromEventPayload = (values: QuotationFromEventFormData) => ({
 });
 
 const buildUpdateQuotationPayload = (values: QuotationUpdateFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   quotationNumber: normalizeNullableString(values.quotationNumber),
   issueDate: values.issueDate || undefined,
   validUntil: normalizeNullableString(values.validUntil),

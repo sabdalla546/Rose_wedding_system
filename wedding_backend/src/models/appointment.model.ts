@@ -1,4 +1,3 @@
-// src/models/appointment.model.ts
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 
@@ -10,7 +9,7 @@ export type AppointmentStatus =
   | "cancelled"
   | "no_show";
 
-export type AppointmentMeetingType =
+export type AppointmentType =
   | "office_visit"
   | "phone_call"
   | "video_call"
@@ -19,20 +18,12 @@ export type AppointmentMeetingType =
 export interface AppointmentAttributes {
   id: number;
   customerId: number;
-
   appointmentDate: string;
-  appointmentStartTime: string;
-  appointmentEndTime?: string | null;
-
-  status: AppointmentStatus;
-  meetingType: AppointmentMeetingType;
-
-  assignedToUserId?: number | null;
-
+  startTime: string;
+  endTime?: string | null;
+  type: AppointmentType;
   notes?: string | null;
-  result?: string | null;
-  nextStep?: string | null;
-
+  status: AppointmentStatus;
   createdBy?: number | null;
   updatedBy?: number | null;
 }
@@ -40,13 +31,10 @@ export interface AppointmentAttributes {
 type AppointmentCreationAttributes = Optional<
   AppointmentAttributes,
   | "id"
-  | "appointmentEndTime"
-  | "status"
-  | "meetingType"
-  | "assignedToUserId"
+  | "endTime"
+  | "type"
   | "notes"
-  | "result"
-  | "nextStep"
+  | "status"
   | "createdBy"
   | "updatedBy"
 >;
@@ -57,20 +45,12 @@ export class Appointment
 {
   public id!: number;
   public customerId!: number;
-
   public appointmentDate!: string;
-  public appointmentStartTime!: string;
-  public appointmentEndTime?: string | null;
-
-  public status!: AppointmentStatus;
-  public meetingType!: AppointmentMeetingType;
-
-  public assignedToUserId?: number | null;
-
+  public startTime!: string;
+  public endTime?: string | null;
+  public type!: AppointmentType;
   public notes?: string | null;
-  public result?: string | null;
-  public nextStep?: string | null;
-
+  public status!: AppointmentStatus;
   public createdBy?: number | null;
   public updatedBy?: number | null;
 }
@@ -82,27 +62,39 @@ Appointment.init(
       autoIncrement: true,
       primaryKey: true,
     },
-
     customerId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
-
     appointmentDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-
-    appointmentStartTime: {
-      type: DataTypes.STRING(10), // HH:mm
+    startTime: {
+      type: DataTypes.STRING(10),
       allowNull: false,
+      field: "appointmentStartTime",
     },
-
-    appointmentEndTime: {
-      type: DataTypes.STRING(10), // HH:mm
+    endTime: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      field: "appointmentEndTime",
+    },
+    type: {
+      type: DataTypes.ENUM(
+        "office_visit",
+        "phone_call",
+        "video_call",
+        "venue_visit",
+      ),
+      allowNull: false,
+      defaultValue: "office_visit",
+      field: "meetingType",
+    },
+    notes: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
-
     status: {
       type: DataTypes.ENUM(
         "scheduled",
@@ -115,43 +107,10 @@ Appointment.init(
       allowNull: false,
       defaultValue: "scheduled",
     },
-
-    meetingType: {
-      type: DataTypes.ENUM(
-        "office_visit",
-        "phone_call",
-        "video_call",
-        "venue_visit",
-      ),
-      allowNull: false,
-      defaultValue: "office_visit",
-    },
-
-    assignedToUserId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    notes: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-
-    result: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-
-    nextStep: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-
     createdBy: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
-
     updatedBy: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
@@ -166,7 +125,6 @@ Appointment.init(
       { fields: ["customerId"] },
       { fields: ["appointmentDate"] },
       { fields: ["status"] },
-      { fields: ["assignedToUserId"] },
     ],
   },
 );

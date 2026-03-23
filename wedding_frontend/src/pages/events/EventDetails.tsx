@@ -291,7 +291,6 @@ const EventDetailsPage = () => {
       itemsPerPage: 200,
       searchQuery: "",
       eventId: String(id || ""),
-      customerId: "",
       status: "all",
       issueDateFrom: "",
       issueDateTo: "",
@@ -303,7 +302,6 @@ const EventDetailsPage = () => {
       searchQuery: "",
       quotationId: "",
       eventId: String(id || ""),
-      customerId: "",
       status: "all",
       signedDateFrom: "",
       signedDateTo: "",
@@ -833,16 +831,10 @@ const EventDetailsPage = () => {
                     label={t("events.groomName", { defaultValue: "Groom Name" })}
                     value={event.groomName}
                   />
-                  <DetailItem
-                    label={t("events.brideName", { defaultValue: "Bride Name" })}
-                    value={event.brideName}
-                  />
-                  <DetailItem
-                    label={t("events.contractNumber", {
-                      defaultValue: "Contract Number",
-                    })}
-                    value={event.contractNumber}
-                  />
+                <DetailItem
+                  label={t("events.brideName", { defaultValue: "Bride Name" })}
+                  value={event.brideName}
+                />
                   <DetailItem
                     label={t("events.guestCount", { defaultValue: "Guest Count" })}
                     value={event.guestCount}

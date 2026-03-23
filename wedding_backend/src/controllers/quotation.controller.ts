@@ -9,7 +9,7 @@ import {
   EventService,
   Service,
   Customer,
-  Lead,
+  Venue,
   User,
 } from "../models";
 import {
@@ -44,6 +44,26 @@ function computeQuotationTotals(
   return { subtotal, discountAmount: discount, totalAmount };
 }
 
+const quotationInclude: any = [
+  {
+    model: Event,
+    as: "event",
+    include: [
+      { model: Customer, as: "customer" },
+      { model: Venue, as: "venue" },
+    ],
+  },
+  {
+    model: QuotationItem,
+    as: "items",
+    separate: true,
+    order: [
+      ["sortOrder", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
+];
+
 export const createQuotation = async (req: AuthRequest, res: Response) => {
   try {
     const data = createQuotationSchema.parse(req.body);
@@ -51,20 +71,6 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
     const event = await Event.findByPk(data.eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
-    }
-
-    if (data.customerId) {
-      const customer = await Customer.findByPk(data.customerId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
-    }
-
-    if (data.leadId) {
-      const lead = await Lead.findByPk(data.leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
     }
 
     const preparedItems = data.items.map((item) => ({
@@ -87,8 +93,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
 
     const quotation = await Quotation.create({
       eventId: data.eventId,
-      customerId: data.customerId ?? event.customerId ?? null,
-      // leadId: data.leadId ?? event.leadId ?? null,
+      customerId: event.customerId ?? null,
       quotationNumber: data.quotationNumber ?? null,
       issueDate: data.issueDate,
       validUntil: data.validUntil ?? null,
@@ -111,20 +116,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
     );
 
     const created = await Quotation.findByPk(quotation.id, {
-      include: [
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: QuotationItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: quotationInclude,
     });
 
     return res.status(201).json({
@@ -196,7 +188,6 @@ export const createQuotationFromEvent = async (
     const quotation = await Quotation.create({
       eventId: event.id,
       customerId: event.customerId ?? null,
-      // leadId: event.leadId ?? null,
       quotationNumber: data.quotationNumber ?? null,
       issueDate: data.issueDate,
       validUntil: data.validUntil ?? null,
@@ -219,20 +210,7 @@ export const createQuotationFromEvent = async (
     );
 
     const created = await Quotation.findByPk(quotation.id, {
-      include: [
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: QuotationItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: quotationInclude,
     });
 
     return res.status(201).json({
@@ -253,8 +231,6 @@ export const getQuotations = async (req: Request, res: Response) => {
   const offset = (page - 1) * limit;
 
   const eventId = Number(req.query.eventId) || undefined;
-  const customerId = Number(req.query.customerId) || undefined;
-  const leadId = Number(req.query.leadId) || undefined;
   const status = String(req.query.status ?? "").trim();
   const search = String(req.query.search ?? "").trim();
   const issueDateFrom = String(req.query.issueDateFrom ?? "").trim();
@@ -263,8 +239,6 @@ export const getQuotations = async (req: Request, res: Response) => {
   const where: any = {};
 
   if (eventId) where.eventId = eventId;
-  if (customerId) where.customerId = customerId;
-  if (leadId) where.leadId = leadId;
   if (status) where.status = status;
 
   if (search) {
@@ -283,9 +257,14 @@ export const getQuotations = async (req: Request, res: Response) => {
   const { count, rows } = await Quotation.findAndCountAll({
     where,
     include: [
-      { model: Event, as: "event" },
-      { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
+      {
+        model: Event,
+        as: "event",
+        include: [
+          { model: Customer, as: "customer" },
+          { model: Venue, as: "venue" },
+        ],
+      },
       { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
       { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
     ],
@@ -317,9 +296,14 @@ export const getQuotationById = async (req: Request, res: Response) => {
 
   const quotation = await Quotation.findByPk(id, {
     include: [
-      { model: Event, as: "event" },
-      { model: Customer, as: "customer" },
-      { model: Lead, as: "lead" },
+      {
+        model: Event,
+        as: "event",
+        include: [
+          { model: Customer, as: "customer" },
+          { model: Venue, as: "venue" },
+        ],
+      },
       {
         model: QuotationItem,
         as: "items",
@@ -361,12 +345,6 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
     }
 
     await quotation.update({
-      customerId:
-        typeof data.customerId !== "undefined"
-          ? data.customerId
-          : quotation.customerId,
-      leadId:
-        typeof data.leadId !== "undefined" ? data.leadId : quotation.leadId,
       quotationNumber:
         typeof data.quotationNumber !== "undefined"
           ? data.quotationNumber
@@ -404,20 +382,7 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
     });
 
     const updated = await Quotation.findByPk(id, {
-      include: [
-        { model: Event, as: "event" },
-        { model: Customer, as: "customer" },
-        { model: Lead, as: "lead" },
-        {
-          model: QuotationItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: quotationInclude,
     });
 
     return res.json({

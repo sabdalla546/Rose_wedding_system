@@ -1,14 +1,10 @@
-import { format } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Edit, Eye, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
 import type { TableCustomer } from "@/pages/customers/adapters";
-
 import { CustomerStatusBadge } from "./customerStatusBadge";
 
 interface Props {
@@ -24,7 +20,6 @@ export const useCustomersColumns = ({
 }: Props): ColumnDef<TableCustomer>[] => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const dateLocale = i18n.language === "ar" ? ar : enUS;
   const alignClass = i18n.language === "ar" ? "text-right" : "text-left";
 
   return [
@@ -41,7 +36,7 @@ export const useCustomersColumns = ({
             {row.original.fullName}
           </div>
           <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.email || row.original.contactSummary}
+            {row.original.email || "-"}
           </div>
         </div>
       ),
@@ -55,63 +50,20 @@ export const useCustomersColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className={alignClass}>
-          <div>{row.original.mobile}</div>
-          <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.mobile2 || "-"}
-          </div>
-        </div>
+        <div className={alignClass}>{row.original.contactSummary || "-"}</div>
       ),
     },
     {
-      accessorKey: "weddingDate",
+      accessorKey: "notesPreview",
       header: () => (
         <div className={alignClass}>
-          {t("customers.weddingDate", { defaultValue: "Wedding Date" })}
+          {t("common.notes", { defaultValue: "Notes" })}
         </div>
       ),
       cell: ({ row }) => (
-        <div className={alignClass}>
-          {row.original.weddingDate
-            ? format(new Date(row.original.weddingDate), "MMM d, yyyy", {
-                locale: dateLocale,
-              })
-            : "-"}
+        <div className={`${alignClass} max-w-[280px] truncate`}>
+          {row.original.notesPreview}
         </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      id: "venue",
-      header: () => (
-        <div className={alignClass}>
-          {t("common.venue", { defaultValue: "Venue" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>{row.original.venueDisplay}</div>
-      ),
-    },
-    {
-      id: "sourceLead",
-      header: () => (
-        <div className={alignClass}>
-          {t("customers.sourceLead", { defaultValue: "Source Lead" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>{row.original.sourceLeadDisplay}</div>
-      ),
-    },
-    {
-      accessorKey: "guestCount",
-      header: () => (
-        <div className={alignClass}>
-          {t("customers.guestCount", { defaultValue: "Guests" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>{row.original.guestCount || "-"}</div>
       ),
     },
     {

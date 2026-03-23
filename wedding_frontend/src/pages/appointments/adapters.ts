@@ -1,15 +1,13 @@
 import type { CalendarEvent } from "@/types/calendar";
 import type {
   Appointment,
-  AppointmentMeetingType,
   AppointmentStatus,
+  AppointmentType,
   AppointmentsResponse,
 } from "@/pages/appointments/types";
 
 export type TableAppointment = Appointment & {
   customerName: string;
-  venueDisplay: string;
-  assignedUserDisplay: string;
   timeDisplay: string;
 };
 
@@ -26,14 +24,9 @@ export function toTableAppointments(
     ...appointment,
     customerName:
       appointment.customer?.fullName || `Customer #${appointment.customerId}`,
-    venueDisplay:
-      appointment.customer?.venue?.name ||
-      appointment.customer?.venueNameSnapshot ||
-      "-",
-    assignedUserDisplay: appointment.assignedToUser?.fullName || "Unassigned",
-    timeDisplay: appointment.appointmentEndTime
-      ? `${appointment.appointmentStartTime} - ${appointment.appointmentEndTime}`
-      : appointment.appointmentStartTime,
+    timeDisplay: appointment.endTime
+      ? `${appointment.startTime} - ${appointment.endTime}`
+      : appointment.startTime,
   }));
 
   return {
@@ -55,8 +48,8 @@ export const APPOINTMENT_STATUS_OPTIONS: Array<{
   { value: "no_show", label: "No Show" },
 ];
 
-export const APPOINTMENT_MEETING_TYPE_OPTIONS: Array<{
-  value: AppointmentMeetingType;
+export const APPOINTMENT_TYPE_OPTIONS: Array<{
+  value: AppointmentType;
   label: string;
 }> = [
   { value: "office_visit", label: "Office Visit" },
@@ -71,8 +64,8 @@ export const formatAppointmentStatus = (status: AppointmentStatus) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-export const formatMeetingType = (meetingType: AppointmentMeetingType) =>
-  meetingType
+export const formatAppointmentType = (value: AppointmentType) =>
+  value
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
@@ -100,14 +93,11 @@ function combineDateTime(date: string, time: string) {
 }
 
 export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
-  const baseEvents = appointments.map<CalendarEvent>((appointment) => {
-    const startAt = combineDateTime(
-      appointment.appointmentDate,
-      appointment.appointmentStartTime,
-    );
+  return appointments.map((appointment) => {
+    const startAt = combineDateTime(appointment.appointmentDate, appointment.startTime);
     const endAt = combineDateTime(
       appointment.appointmentDate,
-      appointment.appointmentEndTime || appointment.appointmentStartTime,
+      appointment.endTime || appointment.startTime,
     );
     const computedEndAt =
       endAt.getTime() > startAt.getTime()
@@ -121,51 +111,21 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       bookingNumber: `APPT-${String(appointment.id).padStart(4, "0")}`,
       title: `${customerName} Appointment`,
       clientName: customerName,
-      venue:
-        appointment.customer?.venue?.name ||
-        appointment.customer?.venueNameSnapshot ||
-        "-",
-      eventType: formatMeetingType(appointment.meetingType),
+      venue: "-",
+      eventType: formatAppointmentType(appointment.type),
       status: CALENDAR_STATUS_MAP[appointment.status],
-      packageName: formatMeetingType(appointment.meetingType),
-      coordinator: appointment.assignedToUser?.fullName || "Unassigned",
+      packageName: formatAppointmentType(appointment.type),
+      coordinator: "-",
       totalAmount: 0,
       paidAmount: 0,
-      notes:
-        [appointment.notes, appointment.result, appointment.nextStep]
-          .filter(Boolean)
-          .join(" | ") || "No notes added.",
+      notes: appointment.notes || "No notes added.",
       startAt,
       endAt: computedEndAt,
       accent: CALENDAR_ACCENT_MAP[appointment.status],
       appointmentId: appointment.id,
       customerId: appointment.customerId,
-      meetingType: appointment.meetingType,
-      guestCount: appointment.customer?.guestCount ?? null,
-    };
-  });
-
-  return baseEvents.map((event, _index, all) => {
-    const conflict = all.some((candidate) => {
-      if (candidate.id === event.id) {
-        return false;
-      }
-
-      if (
-        candidate.venue !== event.venue ||
-        candidate.startAt.toDateString() !== event.startAt.toDateString()
-      ) {
-        return false;
-      }
-
-      return (
-        event.startAt < candidate.endAt && candidate.startAt < event.endAt
-      );
-    });
-
-    return {
-      ...event,
-      conflict,
+      meetingType: appointment.type,
+      guestCount: null,
     };
   });
 }

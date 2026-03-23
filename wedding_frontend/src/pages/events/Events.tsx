@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  FileText,
   Filter,
   MapPin,
   Plus,
@@ -89,7 +88,6 @@ type CalendarEventItem = {
   customerId: string;
   customerName: string;
   partyNames: string;
-  contractNumber: string;
   notes: string;
   status: EventStatus;
   conflict: boolean;
@@ -176,9 +174,6 @@ const EventsPage = () => {
         customerName: event.customer?.fullName || "-",
         partyNames:
           [event.groomName, event.brideName].filter(Boolean).join(" / ") || "-",
-        contractNumber:
-          event.contractNumber?.trim() ||
-          `EVT-${String(event.id).padStart(4, "0")}`,
         notes: event.notes?.trim() || "No notes added.",
         status: event.status,
         conflict: false,
@@ -358,7 +353,7 @@ const EventsPage = () => {
                     <SearchInput
                       placeholder={t("events.searchPlaceholder", {
                         defaultValue:
-                          "Search by title, contract, party names, or venue...",
+                          "Search by title, party names, venue, or customer...",
                       })}
                       value={filters.search}
                       onChange={(value) =>
@@ -690,7 +685,7 @@ function EventQuickViewPanel({
                   {t("events.quickView", { defaultValue: "Quick View" })}
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold text-[var(--lux-text)]">{event.title}</h3>
-                <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">{event.contractNumber}</p>
+                <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">{event.customerName}</p>
               </div>
               <EventStatusBadge status={event.status} />
             </div>
@@ -708,7 +703,6 @@ function EventQuickViewPanel({
             <InfoBlock icon={MapPin} label={t("common.venue", { defaultValue: "Venue" })} value={event.venue} />
             <InfoBlock icon={UsersRound} label={t("events.partyNames", { defaultValue: "Party Names" })} value={event.partyNames} />
             <InfoBlock icon={UserRound} label={t("events.customer", { defaultValue: "Customer" })} value={event.customerName} />
-            <InfoBlock icon={FileText} label={t("contracts.contractNumber", { defaultValue: "Contract Number" })} value={event.contractNumber} />
           </div>
 
           <Separator />
@@ -865,7 +859,6 @@ function filterEvents(events: CalendarEventItem[], filters: FiltersState) {
     if (search) {
       const haystack = [
         event.title,
-        event.contractNumber,
         event.partyNames,
         event.venue,
         event.customerName,

@@ -20,9 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useEvents } from "@/hooks/events/useEvents";
-import { useLeads } from "@/hooks/leads/useLeads";
 import {
   useCreateQuotation,
   useCreateQuotationFromEvent,
@@ -58,8 +56,6 @@ const createQuotationFormSchema = (isEditMode: boolean) =>
     .object({
       createMode: z.enum(["manual", "from_event"]),
       eventId: z.string().min(1, "Event is required"),
-      customerId: z.string().optional(),
-      leadId: z.string().optional(),
       quotationNumber: z.string().max(100).optional(),
       issueDate: z.string().min(1, "Issue date is required"),
       validUntil: z.string().optional(),
@@ -163,29 +159,9 @@ const QuotationFormPage = () => {
     searchQuery: "",
     status: "all",
     customerId: "",
-    leadId: "",
     venueId: "",
     dateFrom: "",
     dateTo: "",
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
-  const { data: leadsResponse } = useLeads({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    source: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
   });
   const { data: servicesResponse } = useServices({
     currentPage: 1,
@@ -201,8 +177,6 @@ const QuotationFormPage = () => {
     defaultValues: {
       createMode: requestedMode,
       eventId: preselectedEventId,
-      customerId: "",
-      leadId: "",
       quotationNumber: "",
       issueDate: new Date().toISOString().slice(0, 10),
       validUntil: "",
@@ -247,18 +221,9 @@ const QuotationFormPage = () => {
   });
 
   const events = useMemo(() => eventsResponse?.data ?? [], [eventsResponse?.data]);
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
   const services = useMemo(
     () => servicesResponse?.data ?? [],
     [servicesResponse?.data],
-  );
-  const selectedEvent = useMemo(
-    () => events.find((event) => String(event.id) === watchedEventId),
-    [events, watchedEventId],
   );
   const availableEventServices = useMemo(
     () =>
@@ -316,8 +281,6 @@ const QuotationFormPage = () => {
     form.reset({
       createMode: "manual",
       eventId: String(quotation.eventId),
-      customerId: quotation.customerId ? String(quotation.customerId) : "",
-      leadId: quotation.leadId ? String(quotation.leadId) : "",
       quotationNumber: quotation.quotationNumber ?? "",
       issueDate: quotation.issueDate,
       validUntil: quotation.validUntil ?? "",
@@ -350,27 +313,6 @@ const QuotationFormPage = () => {
       });
     }
   }, [form, isEditMode, preselectedEventId]);
-
-  useEffect(() => {
-    if (!selectedEvent || isEditMode) {
-      return;
-    }
-
-    const currentCustomerId = form.getValues("customerId");
-    const currentLeadId = form.getValues("leadId");
-
-    if (!currentCustomerId && selectedEvent.customerId) {
-      form.setValue("customerId", String(selectedEvent.customerId), {
-        shouldDirty: true,
-      });
-    }
-
-    if (!currentLeadId && selectedEvent.leadId) {
-      form.setValue("leadId", String(selectedEvent.leadId), {
-        shouldDirty: true,
-      });
-    }
-  }, [form, isEditMode, selectedEvent]);
 
   useEffect(() => {
     if (!availableEventServices.length) {
@@ -474,8 +416,6 @@ const QuotationFormPage = () => {
   const onSubmit = (values: QuotationFormValues) => {
     if (isEditMode) {
       const payload: QuotationUpdateFormData = {
-        customerId: values.customerId,
-        leadId: values.leadId,
         quotationNumber: values.quotationNumber,
         issueDate: values.issueDate,
         validUntil: values.validUntil,
@@ -515,8 +455,6 @@ const QuotationFormPage = () => {
 
     const payload: QuotationFormData = {
       eventId: values.eventId,
-      customerId: values.customerId,
-      leadId: values.leadId,
       quotationNumber: values.quotationNumber,
       issueDate: values.issueDate,
       validUntil: values.validUntil,
@@ -777,74 +715,6 @@ const QuotationFormPage = () => {
                           })}
                         </span>
                         <Input type="date" {...form.register("validUntil")} />
-                      </label>
-
-                      <label className="space-y-2">
-                        <span className="text-sm font-medium text-[var(--lux-text)]">
-                          {t("quotations.customer", { defaultValue: "Customer" })}
-                        </span>
-                        <Select
-                          value={form.watch("customerId") || "none"}
-                          onValueChange={(value) =>
-                            form.setValue("customerId", value === "none" ? "" : value, {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={t("quotations.selectCustomer", {
-                                defaultValue: "Select customer",
-                              })}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">
-                              {t("quotations.noCustomerSelected", {
-                                defaultValue: "No customer selected",
-                              })}
-                            </SelectItem>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={String(customer.id)}>
-                                {customer.fullName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <label className="space-y-2">
-                        <span className="text-sm font-medium text-[var(--lux-text)]">
-                          {t("quotations.lead", { defaultValue: "Lead" })}
-                        </span>
-                        <Select
-                          value={form.watch("leadId") || "none"}
-                          onValueChange={(value) =>
-                            form.setValue("leadId", value === "none" ? "" : value, {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={t("quotations.selectLead", {
-                                defaultValue: "Select lead",
-                              })}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">
-                              {t("quotations.noLeadSelected", {
-                                defaultValue: "No lead selected",
-                              })}
-                            </SelectItem>
-                            {leads.map((lead) => (
-                              <SelectItem key={lead.id} value={String(lead.id)}>
-                                {lead.fullName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </label>
 
                       <label className="space-y-2">

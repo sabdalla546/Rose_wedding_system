@@ -25,9 +25,7 @@ import {
   SearchableSelectEmpty,
   SearchableSelectItem,
 } from "@/components/ui/searchable-select";
-import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useEvents } from "@/hooks/events/useEvents";
-import { useLeads } from "@/hooks/leads/useLeads";
 import { useDeleteQuotation } from "@/hooks/quotations/useDeleteQuotation";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
@@ -60,11 +58,7 @@ const QuotationsPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [eventSearch, setEventSearch] = useState("");
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [leadSearch, setLeadSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [leadFilter, setLeadFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | QuotationStatus>(
     "all",
   );
@@ -84,8 +78,6 @@ const QuotationsPage = () => {
     itemsPerPage,
     searchQuery,
     eventId: eventFilter,
-    customerId: customerFilter,
-    leadId: leadFilter,
     status: statusFilter,
     issueDateFrom,
     issueDateTo,
@@ -96,29 +88,9 @@ const QuotationsPage = () => {
     searchQuery: "",
     status: "all",
     customerId: "",
-    leadId: "",
     venueId: "",
     dateFrom: "",
     dateTo: "",
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
-  const { data: leadsResponse } = useLeads({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    source: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
   });
 
   const adapted = toTableQuotations(raw);
@@ -127,11 +99,6 @@ const QuotationsPage = () => {
   const totalPages = adapted.totalPages;
   const rowNumberStart = (currentPage - 1) * itemsPerPage + 1;
   const events = useMemo(() => eventsResponse?.data ?? [], [eventsResponse?.data]);
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const leads = useMemo(() => leadsResponse?.data ?? [], [leadsResponse?.data]);
 
   const filteredEvents = useMemo(
     () =>
@@ -141,22 +108,6 @@ const QuotationsPage = () => {
           .includes(eventSearch.trim().toLowerCase()),
       ),
     [eventSearch, events],
-  );
-  const filteredCustomers = useMemo(
-    () =>
-      customers.filter((customer) =>
-        customer.fullName
-          .toLowerCase()
-          .includes(customerSearch.trim().toLowerCase()),
-      ),
-    [customerSearch, customers],
-  );
-  const filteredLeads = useMemo(
-    () =>
-      leads.filter((lead) =>
-        lead.fullName.toLowerCase().includes(leadSearch.trim().toLowerCase()),
-      ),
-    [leadSearch, leads],
   );
 
   const deleteMutation = useDeleteQuotation();
@@ -169,8 +120,6 @@ const QuotationsPage = () => {
   });
   const activeFiltersCount = [
     Boolean(eventFilter),
-    Boolean(customerFilter),
-    Boolean(leadFilter),
     statusFilter !== "all",
     Boolean(issueDateFrom),
     Boolean(issueDateTo),
@@ -183,8 +132,6 @@ const QuotationsPage = () => {
 
   const resetFilters = () => {
     setEventFilter("");
-    setCustomerFilter("");
-    setLeadFilter("");
     setStatusFilter("all");
     setIssueDateFrom("");
     setIssueDateTo("");
@@ -220,7 +167,7 @@ const QuotationsPage = () => {
           search={{
             placeholder: t("quotations.searchPlaceholder", {
               defaultValue:
-                "Search by quotation number, notes, event, customer, or lead...",
+                "Search by quotation number, notes, event, or customer...",
             }),
             value: searchTerm,
             onChange: setSearchTerm,
@@ -257,7 +204,7 @@ const QuotationsPage = () => {
                     {t("quotations.filtersHint", {
                       defaultValue: isArabic
                         ? "ضيّق قائمة عروض الأسعار حسب الحفل والعميل والعميل المحتمل والحالة وتاريخ الإصدار."
-                        : "Refine the quotations list by event, customer, lead, status, and issue date.",
+                        : "Refine the quotations list by event, status, and issue date.",
                     })}
                   </p>
                 </div>
@@ -324,23 +271,6 @@ const QuotationsPage = () => {
                             events.find((event) => String(event.id) === eventFilter)!,
                           )
                         : eventFilter
-                    }
-                  />
-                ) : null}
-                {customerFilter ? (
-                  <FilterPill
-                    label={
-                      customers.find(
-                        (customer) => String(customer.id) === customerFilter,
-                      )?.fullName || customerFilter
-                    }
-                  />
-                ) : null}
-                {leadFilter ? (
-                  <FilterPill
-                    label={
-                      leads.find((lead) => String(lead.id) === leadFilter)?.fullName ||
-                      leadFilter
                     }
                   />
                 ) : null}
@@ -432,87 +362,6 @@ const QuotationsPage = () => {
                             filteredEvents.map((event) => (
                               <SearchableSelectItem key={event.id} value={String(event.id)}>
                                 {getEventDisplayTitle(event)}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("quotations.customer", {
-                          defaultValue: "Customer",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={customerFilter}
-                          onValueChange={(value) => {
-                            setCustomerFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setCustomerSearch}
-                          placeholder={t("quotations.allCustomers", {
-                            defaultValue: "All Customers",
-                          })}
-                          searchPlaceholder={t("quotations.searchCustomers", {
-                            defaultValue: isArabic
-                              ? "ابحث عن عميل..."
-                              : "Search customers...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredCustomers.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredCustomers.map((customer) => (
-                              <SearchableSelectItem
-                                key={customer.id}
-                                value={String(customer.id)}
-                              >
-                                {customer.fullName}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("quotations.lead", {
-                          defaultValue: "Lead",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={leadFilter}
-                          onValueChange={(value) => {
-                            setLeadFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setLeadSearch}
-                          placeholder={t("quotations.allLeads", {
-                            defaultValue: "All Leads",
-                          })}
-                          searchPlaceholder={t("quotations.searchLeads", {
-                            defaultValue: isArabic ? "ابحث عن عميل محتمل..." : "Search leads...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredLeads.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredLeads.map((lead) => (
-                              <SearchableSelectItem key={lead.id} value={String(lead.id)}>
-                                {lead.fullName}
                               </SearchableSelectItem>
                             ))
                           )}

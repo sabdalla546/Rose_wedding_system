@@ -46,8 +46,6 @@ export const paymentScheduleSchema = z.object({
 export const createContractSchema = z.object({
   quotationId: z.number().int().positive().optional().nullable(),
   eventId: z.number().int().positive(),
-  customerId: z.number().int().positive().optional().nullable(),
-  leadId: z.number().int().positive().optional().nullable(),
   contractNumber: z.string().max(100).optional(),
   signedDate: z.string().min(1),
   eventDate: z.string().optional(),
@@ -60,8 +58,6 @@ export const createContractSchema = z.object({
 
 export const updateContractSchema = z.object({
   quotationId: z.number().int().positive().optional().nullable(),
-  customerId: z.number().int().positive().optional().nullable(),
-  leadId: z.number().int().positive().optional().nullable(),
   contractNumber: z.string().max(100).optional().nullable(),
   signedDate: z.string().optional(),
   eventDate: z.string().optional().nullable(),

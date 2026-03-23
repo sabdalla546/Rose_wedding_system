@@ -34,7 +34,6 @@ const buildCreateEventPayload = (values: EventFormData) => ({
   groomName: normalizeOptionalString(values.groomName),
   brideName: normalizeOptionalString(values.brideName),
   guestCount: normalizeGuestCountForCreate(values.guestCount),
-  contractNumber: normalizeOptionalString(values.contractNumber),
   title: normalizeOptionalString(values.title),
   notes: normalizeOptionalString(values.notes),
   status: values.status || undefined,
@@ -45,7 +44,6 @@ const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
   eventDate: normalizeOptionalString(values.eventDate),
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
-  contractNumber: normalizeNullableString(values.contractNumber),
   title: normalizeNullableString(values.title),
   notes: normalizeNullableString(values.notes),
 });
@@ -58,7 +56,6 @@ const buildUpdateEventPayload = (values: EventFormData) => ({
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
   guestCount: normalizeGuestCountForUpdate(values.guestCount),
-  contractNumber: normalizeNullableString(values.contractNumber),
   title: normalizeNullableString(values.title),
   notes: normalizeNullableString(values.notes),
   status: values.status || undefined,

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatMeetingType, type TableAppointment } from "@/pages/appointments/adapters";
-
+import { formatAppointmentType, type TableAppointment } from "@/pages/appointments/adapters";
 import { AppointmentStatusBadge } from "./appointmentStatusBadge";
 
 interface Props {
@@ -63,7 +61,7 @@ export const useAppointmentsColumns = ({
             {row.original.customerName}
           </div>
           <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.venueDisplay}
+            {row.original.customer?.mobile || "-"}
           </div>
         </div>
       ),
@@ -94,31 +92,17 @@ export const useAppointmentsColumns = ({
       cell: ({ row }) => <div className={alignClass}>{row.original.timeDisplay}</div>,
     },
     {
-      accessorKey: "meetingType",
+      accessorKey: "type",
       header: () => (
         <div className={alignClass}>
-          {t("appointments.meetingType", { defaultValue: "Meeting Type" })}
+          {t("appointments.type", { defaultValue: "Type" })}
         </div>
       ),
       cell: ({ row }) => (
         <div className={alignClass}>
-          {t(`appointments.meetingTypeOptions.${row.original.meetingType}`, {
-            defaultValue: formatMeetingType(row.original.meetingType),
+          {t(`appointments.typeOptions.${row.original.type}`, {
+            defaultValue: formatAppointmentType(row.original.type),
           })}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "assignedUserDisplay",
-      header: () => (
-        <div className={alignClass}>
-          {t("appointments.assignedTo", { defaultValue: "Assigned To" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>
-          {row.original.assignedToUser?.fullName ||
-            t("appointments.unassigned", { defaultValue: "Unassigned" })}
         </div>
       ),
     },

@@ -118,7 +118,7 @@ const LeadDetailsPage = () => {
                 <ProtectedComponent permission="appointments.create">
                   <Button
                     variant="outline"
-                    onClick={() => navigate(`/appointments/create?leadId=${lead.id}`)}
+                    onClick={() => navigate("/appointments/create")}
                   >
                     <CalendarDays className="h-4 w-4" />
                     {t("leads.createAppointment", {

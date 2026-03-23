@@ -4,7 +4,6 @@ import {
   type MutateOptions,
 } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -93,11 +92,9 @@ export const useCancelAppointment = () =>
 export const useRescheduleAppointment = () => {
   const mutation = useAppointmentActionMutation<{
     appointmentDate: string;
-    appointmentStartTime: string;
-    appointmentEndTime?: string | null;
-    assignedToUserId?: number | null;
+    startTime: string;
+    endTime?: string | null;
     notes?: string;
-    nextStep?: string;
   }>(
     (id) => `/appointments/${id}/reschedule`,
     "appointments.toast.rescheduled",
@@ -108,25 +105,40 @@ export const useRescheduleAppointment = () => {
 
   return {
     ...mutation,
-    mutateReschedule: ({
-      id,
-      values,
-    }: {
-      id: number;
-      values: RescheduleAppointmentData;
-    }, options?: MutateOptions<unknown, unknown, { id: number; values: { appointmentDate: string; appointmentStartTime: string; appointmentEndTime?: string | null; assignedToUserId?: number | null; notes?: string; nextStep?: string } }, unknown>) =>
-      mutation.mutate({
+    mutateReschedule: (
+      {
         id,
-        values: {
-          appointmentDate: values.appointmentDate,
-          appointmentStartTime: values.appointmentStartTime,
-          appointmentEndTime: values.appointmentEndTime?.trim() || null,
-          assignedToUserId: values.assignedToUserId
-            ? Number(values.assignedToUserId)
-            : null,
-          notes: values.notes?.trim() || undefined,
-          nextStep: values.nextStep?.trim() || undefined,
+        values,
+      }: {
+        id: number;
+        values: RescheduleAppointmentData;
+      },
+      options?: MutateOptions<
+        unknown,
+        unknown,
+        {
+          id: number;
+          values: {
+            appointmentDate: string;
+            startTime: string;
+            endTime?: string | null;
+            notes?: string;
+          };
         },
-      }, options),
+        unknown
+      >,
+    ) =>
+      mutation.mutate(
+        {
+          id,
+          values: {
+            appointmentDate: values.appointmentDate,
+            startTime: values.startTime,
+            endTime: values.endTime?.trim() || null,
+            notes: values.notes?.trim() || undefined,
+          },
+        },
+        options,
+      ),
   };
 };

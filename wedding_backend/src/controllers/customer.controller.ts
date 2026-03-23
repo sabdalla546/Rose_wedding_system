@@ -2,46 +2,34 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { Customer, Venue, User } from "../models";
+import { Customer, User } from "../models";
 import {
   createCustomerSchema,
   updateCustomerSchema,
 } from "../validation/customer.schemas";
 
+const customerInclude = [
+  { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
+  { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+];
+
 export const createCustomer = async (req: AuthRequest, res: Response) => {
   try {
     const data = createCustomerSchema.parse(req.body);
 
-    if (data.venueId) {
-      const venue = await Venue.findByPk(data.venueId);
-      if (!venue) {
-        return res.status(404).json({ message: "Venue not found" });
-      }
-    }
-
     const customer = await Customer.create({
       fullName: data.fullName.trim(),
       mobile: data.mobile.trim(),
-      mobile2: data.mobile2 ?? null,
-      email: data.email ?? null,
-
-      groomName: data.groomName?.trim() || null,
-      brideName: data.brideName?.trim() || null,
-
-      weddingDate: data.weddingDate ?? null,
-      guestCount: data.guestCount ?? null,
-      venueId: data.venueId ?? null,
-      venueNameSnapshot: data.venueNameSnapshot ?? null,
+      mobile2: data.mobile2?.trim() || null,
+      email: data.email?.trim() || null,
       notes: data.notes ?? null,
       status: data.status ?? "active",
       createdBy: req.user?.id ?? null,
+      updatedBy: req.user?.id ?? null,
     });
+
     const created = await Customer.findByPk(customer.id, {
-      include: [
-        { model: Venue, as: "venue" },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: customerInclude,
     });
 
     return res.status(201).json({
@@ -63,9 +51,6 @@ export const getCustomers = async (req: Request, res: Response) => {
   const offset = (page - 1) * limit;
   const search = String(req.query.search ?? "").trim();
   const status = String(req.query.status ?? "").trim();
-  const venueId = Number(req.query.venueId) || undefined;
-  const weddingDateFrom = String(req.query.weddingDateFrom ?? "").trim();
-  const weddingDateTo = String(req.query.weddingDateTo ?? "").trim();
 
   const where: any = {};
 
@@ -75,26 +60,17 @@ export const getCustomers = async (req: Request, res: Response) => {
       { mobile: { [Op.like]: `%${search}%` } },
       { mobile2: { [Op.like]: `%${search}%` } },
       { email: { [Op.like]: `%${search}%` } },
-      { venueNameSnapshot: { [Op.like]: `%${search}%` } },
+      { notes: { [Op.like]: `%${search}%` } },
     ];
   }
 
-  if (status) where.status = status;
-  if (venueId) where.venueId = venueId;
-
-  if (weddingDateFrom || weddingDateTo) {
-    where.weddingDate = {};
-    if (weddingDateFrom) where.weddingDate[Op.gte] = weddingDateFrom;
-    if (weddingDateTo) where.weddingDate[Op.lte] = weddingDateTo;
+  if (status) {
+    where.status = status;
   }
 
   const { count, rows } = await Customer.findAndCountAll({
     where,
-    include: [
-      { model: Venue, as: "venue" },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
+    include: customerInclude,
     order: [["id", "DESC"]],
     limit,
     offset,
@@ -119,11 +95,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
   }
 
   const customer = await Customer.findByPk(id, {
-    include: [
-      { model: Venue, as: "venue" },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
+    include: customerInclude,
   });
 
   if (!customer) {
@@ -142,18 +114,10 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
     }
 
     const data = updateCustomerSchema.parse(req.body);
-
     const customer = await Customer.findByPk(id);
 
     if (!customer) {
       return res.status(404).json({ message: req.t("common.not_found") });
-    }
-
-    if (typeof data.venueId !== "undefined" && data.venueId !== null) {
-      const venue = await Venue.findByPk(data.venueId);
-      if (!venue) {
-        return res.status(404).json({ message: "Venue not found" });
-      }
     }
 
     await customer.update({
@@ -161,72 +125,25 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
         typeof data.fullName !== "undefined"
           ? data.fullName.trim()
           : customer.fullName,
-
       mobile:
         typeof data.mobile !== "undefined"
           ? data.mobile.trim()
           : customer.mobile,
-
       mobile2:
         typeof data.mobile2 !== "undefined"
-          ? data.mobile2
-            ? data.mobile2.trim()
-            : data.mobile2
+          ? data.mobile2?.trim() || null
           : customer.mobile2,
-
       email:
         typeof data.email !== "undefined"
-          ? data.email
-            ? data.email.trim()
-            : data.email
+          ? data.email?.trim() || null
           : customer.email,
-
-      groomName:
-        typeof data.groomName !== "undefined"
-          ? data.groomName
-            ? data.groomName.trim()
-            : data.groomName
-          : customer.groomName,
-
-      brideName:
-        typeof data.brideName !== "undefined"
-          ? data.brideName
-            ? data.brideName.trim()
-            : data.brideName
-          : customer.brideName,
-
-      weddingDate:
-        typeof data.weddingDate !== "undefined"
-          ? data.weddingDate
-          : customer.weddingDate,
-
-      guestCount:
-        typeof data.guestCount !== "undefined"
-          ? data.guestCount
-          : customer.guestCount,
-
-      venueId:
-        typeof data.venueId !== "undefined" ? data.venueId : customer.venueId,
-
-      venueNameSnapshot:
-        typeof data.venueNameSnapshot !== "undefined"
-          ? data.venueNameSnapshot
-            ? data.venueNameSnapshot.trim()
-            : data.venueNameSnapshot
-          : customer.venueNameSnapshot,
-
       notes: typeof data.notes !== "undefined" ? data.notes : customer.notes,
-
       status: data.status ?? customer.status,
       updatedBy: req.user?.id ?? null,
     });
 
     const updated = await Customer.findByPk(id, {
-      include: [
-        { model: Venue, as: "venue" },
-        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-      ],
+      include: customerInclude,
     });
 
     return res.json({

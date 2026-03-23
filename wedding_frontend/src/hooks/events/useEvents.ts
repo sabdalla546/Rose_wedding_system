@@ -9,7 +9,6 @@ interface UseEventsParams {
   searchQuery: string;
   status: "all" | Event["status"];
   customerId: string;
-  leadId?: string;
   venueId: string;
   dateFrom: string;
   dateTo: string;
@@ -21,7 +20,6 @@ export const useEvents = ({
   searchQuery,
   status,
   customerId,
-  leadId = "",
   venueId,
   dateFrom,
   dateTo,
@@ -34,7 +32,6 @@ export const useEvents = ({
       searchQuery,
       status,
       customerId,
-      leadId,
       venueId,
       dateFrom,
       dateTo,

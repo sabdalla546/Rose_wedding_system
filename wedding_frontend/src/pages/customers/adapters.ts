@@ -1,9 +1,8 @@
 import type { Customer, CustomersResponse } from "@/pages/customers/types";
 
 export type TableCustomer = Customer & {
-  venueDisplay: string;
   contactSummary: string;
-  sourceLeadDisplay: string;
+  notesPreview: string;
 };
 
 export type TableCustomersResponse = {
@@ -17,15 +16,8 @@ export function toTableCustomers(
 ): TableCustomersResponse {
   const customers = (res?.data ?? []).map<TableCustomer>((customer) => ({
     ...customer,
-    venueDisplay:
-      customer.venue?.name ||
-      customer.venueNameSnapshot ||
-      customer.venueId?.toString() ||
-      "-",
-    contactSummary: [customer.mobile, customer.mobile2]
-      .filter(Boolean)
-      .join(" / "),
-    sourceLeadDisplay: customer.sourceLead?.fullName || "-",
+    contactSummary: [customer.mobile, customer.mobile2].filter(Boolean).join(" / "),
+    notesPreview: customer.notes?.trim() || "-",
   }));
 
   return {

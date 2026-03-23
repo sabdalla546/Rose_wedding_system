@@ -135,8 +135,6 @@ export interface PaymentScheduleFormData {
 export interface ContractFormData {
   quotationId?: string;
   eventId: string;
-  customerId?: string;
-  leadId?: string;
   contractNumber?: string;
   signedDate: string;
   eventDate?: string;

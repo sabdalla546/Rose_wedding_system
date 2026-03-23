@@ -66,8 +66,12 @@ export const getQuotationDisplayNumber = (
 ) => quotation.quotationNumber?.trim() || `QT-${quotation.id}`;
 
 export const getQuotationPartyDisplay = (
-  quotation: Pick<Quotation, "customer" | "lead">,
-) => quotation.customer?.fullName || quotation.lead?.fullName || "-";
+  quotation: Pick<Quotation, "customer" | "lead" | "event">,
+) =>
+  quotation.event?.customer?.fullName ||
+  quotation.customer?.fullName ||
+  quotation.lead?.fullName ||
+  "-";
 
 export const getQuotationItemDisplayName = (item: QuotationItem) =>
   item.itemName || item.service?.name || item.eventService?.serviceNameSnapshot || "-";

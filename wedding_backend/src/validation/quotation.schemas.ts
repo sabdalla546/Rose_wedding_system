@@ -23,8 +23,6 @@ export const quotationItemSchema = z.object({
 
 export const createQuotationSchema = z.object({
   eventId: z.number().int().positive(),
-  customerId: z.number().int().positive().optional().nullable(),
-  leadId: z.number().int().positive().optional().nullable(),
   quotationNumber: z.string().max(100).optional(),
   issueDate: z.string().min(1),
   validUntil: z.string().optional(),
@@ -35,8 +33,6 @@ export const createQuotationSchema = z.object({
 });
 
 export const updateQuotationSchema = z.object({
-  customerId: z.number().int().positive().optional().nullable(),
-  leadId: z.number().int().positive().optional().nullable(),
   quotationNumber: z.string().max(100).optional().nullable(),
   issueDate: z.string().optional(),
   validUntil: z.string().optional().nullable(),

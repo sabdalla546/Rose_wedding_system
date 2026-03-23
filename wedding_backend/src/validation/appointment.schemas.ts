@@ -9,48 +9,41 @@ export const appointmentStatusEnum = z.enum([
   "no_show",
 ]);
 
-export const appointmentMeetingTypeEnum = z.enum([
+export const appointmentTypeEnum = z.enum([
   "office_visit",
   "phone_call",
   "video_call",
   "venue_visit",
 ]);
 
+const optionalNullableShortString = z.string().trim().max(30).nullable().optional();
+const optionalNullableEmail = z.string().trim().email().nullable().optional();
+
 export const createAppointmentSchema = z.object({
   customerId: z.number().int().positive(),
   appointmentDate: z.string().min(1),
-  appointmentStartTime: z.string().min(1).max(10),
-  appointmentEndTime: z.string().max(10).optional(),
+  startTime: z.string().min(1).max(10),
+  endTime: z.string().max(10).optional().nullable(),
+  type: appointmentTypeEnum.optional(),
+  notes: z.string().optional().nullable(),
   status: appointmentStatusEnum.optional(),
-  meetingType: appointmentMeetingTypeEnum.optional(),
-  assignedToUserId: z.number().int().positive().optional().nullable(),
-  notes: z.string().optional(),
-  result: z.string().optional(),
-  nextStep: z.string().max(255).optional(),
 });
 
 export const updateAppointmentSchema = z.object({
+  customerId: z.number().int().positive().optional(),
   appointmentDate: z.string().optional(),
-  appointmentStartTime: z.string().max(10).optional(),
-  appointmentEndTime: z.string().max(10).optional().nullable(),
-  status: appointmentStatusEnum.optional(),
-  meetingType: appointmentMeetingTypeEnum.optional(),
-  assignedToUserId: z.number().int().positive().optional().nullable(),
+  startTime: z.string().max(10).optional(),
+  endTime: z.string().max(10).optional().nullable(),
+  type: appointmentTypeEnum.optional(),
   notes: z.string().optional().nullable(),
-  result: z.string().optional().nullable(),
-  nextStep: z.string().max(255).optional().nullable(),
+  status: appointmentStatusEnum.optional(),
 });
 
 const appointmentCustomerPayloadSchema = z.object({
-  fullName: z.string().min(2).max(150),
-  mobile: z.string().min(3).max(30),
-  mobile2: z.string().max(30).optional().nullable(),
-  email: z.string().email().optional().nullable(),
-  groomName: z.string().max(150).optional().nullable(),
-  brideName: z.string().max(150).optional().nullable(),
-  weddingDate: z.string().min(1).optional().nullable(),
-  guestCount: z.number().int().positive().optional().nullable(),
-  venueId: z.number().int().positive().optional().nullable(),
+  fullName: z.string().trim().min(2).max(150),
+  mobile: z.string().trim().min(3).max(30),
+  mobile2: optionalNullableShortString,
+  email: optionalNullableEmail,
   notes: z.string().optional().nullable(),
 });
 
@@ -60,13 +53,11 @@ export const createAppointmentWithCustomerSchema = z
     customer: appointmentCustomerPayloadSchema.optional(),
     appointment: z.object({
       appointmentDate: z.string().min(1),
-      appointmentStartTime: z.string().min(1).max(10),
-      appointmentEndTime: z.string().max(10).optional(),
-      meetingType: appointmentMeetingTypeEnum.optional(),
-      assignedToUserId: z.number().int().positive().optional().nullable(),
-      notes: z.string().optional(),
-      result: z.string().optional(),
-      nextStep: z.string().max(255).optional(),
+      startTime: z.string().min(1).max(10),
+      endTime: z.string().max(10).optional().nullable(),
+      type: appointmentTypeEnum.optional(),
+      notes: z.string().optional().nullable(),
+      status: appointmentStatusEnum.optional(),
     }),
   })
   .refine((data) => Boolean(data.customerId || data.customer), {

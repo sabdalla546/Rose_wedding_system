@@ -11,15 +11,34 @@ import {
   createEventFromSourceSchema,
 } from "../validation/event.schemas";
 
+const eventInclude: any = [
+  { model: Customer, as: "customer" },
+  { model: Venue, as: "venue" },
+  {
+    model: EventSection,
+    as: "sections",
+    separate: true,
+    order: [
+      ["sortOrder", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
+  { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
+  { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+];
+
+const normalizeNullableString = (value?: string | null) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
 export const createEvent = async (req: AuthRequest, res: Response) => {
   try {
     const data = createEventSchema.parse(req.body);
 
-    if (data.customerId) {
-      const customer = await Customer.findByPk(data.customerId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
+    const customer = await Customer.findByPk(data.customerId);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
     }
 
     if (data.venueId) {
@@ -30,15 +49,14 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
     }
 
     const event = await Event.create({
-      customerId: data.customerId ?? null,
+      customerId: data.customerId,
+      title: normalizeNullableString(data.title),
       eventDate: data.eventDate,
       venueId: data.venueId ?? null,
-      venueNameSnapshot: data.venueNameSnapshot ?? null,
-      groomName: data.groomName ?? null,
-      brideName: data.brideName ?? null,
+      venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+      groomName: normalizeNullableString(data.groomName),
+      brideName: normalizeNullableString(data.brideName),
       guestCount: data.guestCount ?? null,
-      contractNumber: data.contractNumber ?? null,
-      title: data.title ?? null,
       notes: data.notes ?? null,
       status: data.status ?? "draft",
       createdBy: req.user?.id ?? null,
@@ -46,11 +64,7 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
     });
 
     const created = await Event.findByPk(event.id, {
-      include: [
-        { model: Customer, as: "customer" },
-        { model: Venue, as: "venue" },
-        { model: EventSection, as: "sections" },
-      ],
+      include: eventInclude,
     });
 
     return res.status(201).json({
@@ -72,66 +86,30 @@ export const createEventFromSource = async (
   try {
     const data = createEventFromSourceSchema.parse(req.body);
 
-    let customer: Customer | null = null;
-    if (data.customerId) {
-      customer = await Customer.findByPk(data.customerId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
+    const customer = await Customer.findByPk(data.customerId);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
     }
-    const sourceVenueId = customer?.venueId ?? null;
-    const sourceVenueName = customer?.venueNameSnapshot ?? null;
-    const sourceGroomName = customer?.groomName ?? null;
-    const sourceBrideName = customer?.brideName ?? null;
 
-    if (sourceVenueId) {
-      const venue = await Venue.findByPk(sourceVenueId);
+    if (data.venueId) {
+      const venue = await Venue.findByPk(data.venueId);
       if (!venue) {
-        return res.status(404).json({ message: "Source venue not found" });
+        return res.status(404).json({ message: "Venue not found" });
       }
     }
-
-    const resolvedEventDate = data.eventDate ?? customer?.weddingDate ?? "";
-
-    const resolvedGroomName =
-      typeof data.groomName !== "undefined"
-        ? data.groomName
-          ? data.groomName.trim()
-          : data.groomName
-        : sourceGroomName;
-
-    const resolvedBrideName =
-      typeof data.brideName !== "undefined"
-        ? data.brideName
-          ? data.brideName.trim()
-          : data.brideName
-        : sourceBrideName;
-
-    const resolvedTitle =
-      typeof data.title !== "undefined" && data.title !== null
-        ? data.title.trim()
-        : `Wedding Event - ${customer?.fullName ?? "Client"}`;
-
-    const resolvedContractNumber =
-      typeof data.contractNumber !== "undefined"
-        ? data.contractNumber
-          ? data.contractNumber.trim()
-          : data.contractNumber
-        : null;
 
     const event = await Event.create({
-      customerId: customer?.id ?? null,
-      eventDate: resolvedEventDate,
-      venueId: sourceVenueId,
-      venueNameSnapshot: sourceVenueName,
-      guestCount: customer?.guestCount ?? null,
-
-      groomName: resolvedGroomName,
-      brideName: resolvedBrideName,
-
-      contractNumber: resolvedContractNumber,
-      title: resolvedTitle,
-      notes: typeof data.notes !== "undefined" ? data.notes : null,
+      customerId: customer.id,
+      title:
+        normalizeNullableString(data.title) ||
+        `Wedding Event - ${customer.fullName}`,
+      eventDate: data.eventDate,
+      venueId: data.venueId ?? null,
+      venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+      groomName: normalizeNullableString(data.groomName),
+      brideName: normalizeNullableString(data.brideName),
+      guestCount: data.guestCount ?? null,
+      notes: data.notes ?? null,
       status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
@@ -157,19 +135,7 @@ export const createEventFromSource = async (
     }
 
     const created = await Event.findByPk(event.id, {
-      include: [
-        { model: Customer, as: "customer" },
-        { model: Venue, as: "venue" },
-        {
-          model: EventSection,
-          as: "sections",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: eventInclude,
     });
 
     return res.status(201).json({
@@ -212,7 +178,6 @@ export const getEvents = async (req: Request, res: Response) => {
   if (search) {
     where[Op.or] = [
       { title: { [Op.like]: `%${search}%` } },
-      { contractNumber: { [Op.like]: `%${search}%` } },
       { groomName: { [Op.like]: `%${search}%` } },
       { brideName: { [Op.like]: `%${search}%` } },
       { venueNameSnapshot: { [Op.like]: `%${search}%` } },
@@ -254,21 +219,7 @@ export const getEventById = async (req: Request, res: Response) => {
   }
 
   const event = await Event.findByPk(id, {
-    include: [
-      { model: Customer, as: "customer" },
-      { model: Venue, as: "venue" },
-      {
-        model: EventSection,
-        as: "sections",
-        separate: true,
-        order: [
-          ["sortOrder", "ASC"],
-          ["id", "ASC"],
-        ],
-      },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
+    include: eventInclude,
   });
 
   if (!event) {
@@ -287,8 +238,8 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
     }
 
     const data = updateEventSchema.parse(req.body);
-
     const event = await Event.findByPk(id);
+
     if (!event) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
@@ -312,49 +263,36 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
         typeof data.customerId !== "undefined"
           ? data.customerId
           : event.customerId,
+      title:
+        typeof data.title !== "undefined"
+          ? normalizeNullableString(data.title)
+          : event.title,
       eventDate: data.eventDate ?? event.eventDate,
       venueId:
         typeof data.venueId !== "undefined" ? data.venueId : event.venueId,
       venueNameSnapshot:
         typeof data.venueNameSnapshot !== "undefined"
-          ? data.venueNameSnapshot
+          ? normalizeNullableString(data.venueNameSnapshot)
           : event.venueNameSnapshot,
       groomName:
         typeof data.groomName !== "undefined"
-          ? data.groomName
+          ? normalizeNullableString(data.groomName)
           : event.groomName,
       brideName:
         typeof data.brideName !== "undefined"
-          ? data.brideName
+          ? normalizeNullableString(data.brideName)
           : event.brideName,
       guestCount:
         typeof data.guestCount !== "undefined"
           ? data.guestCount
           : event.guestCount,
-      contractNumber:
-        typeof data.contractNumber !== "undefined"
-          ? data.contractNumber
-          : event.contractNumber,
-      title: typeof data.title !== "undefined" ? data.title : event.title,
       notes: typeof data.notes !== "undefined" ? data.notes : event.notes,
       status: data.status ?? event.status,
       updatedBy: req.user?.id ?? null,
     });
 
     const updated = await Event.findByPk(id, {
-      include: [
-        { model: Customer, as: "customer" },
-        { model: Venue, as: "venue" },
-        {
-          model: EventSection,
-          as: "sections",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
+      include: eventInclude,
     });
 
     return res.json({
@@ -428,8 +366,8 @@ export const updateEventSection = async (req: AuthRequest, res: Response) => {
     }
 
     const data = updateEventSectionSchema.parse(req.body);
-
     const section = await EventSection.findByPk(id);
+
     if (!section) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }

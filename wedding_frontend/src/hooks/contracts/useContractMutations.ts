@@ -34,8 +34,6 @@ const normalizeNullableNumber = (value?: string) => {
 const buildCreateContractPayload = (values: ContractFormData) => ({
   quotationId: values.quotationId ? Number(values.quotationId) : null,
   eventId: Number(values.eventId),
-  customerId: values.customerId ? Number(values.customerId) : null,
-  leadId: values.leadId ? Number(values.leadId) : null,
   contractNumber: normalizeOptionalString(values.contractNumber),
   signedDate: values.signedDate,
   eventDate: normalizeOptionalString(values.eventDate),
