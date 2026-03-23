@@ -7,6 +7,14 @@ import {
   getVendorById,
   updateVendor,
   deleteVendor,
+  createVendorSubService,
+  listVendorSubServices,
+  getVendorSubServiceById,
+  updateVendorSubService,
+  createVendorPricingPlan,
+  listVendorPricingPlans,
+  getVendorPricingPlanById,
+  updateVendorPricingPlan,
   createEventVendor,
   getEventVendors,
   getEventVendorById,
@@ -17,6 +25,54 @@ import {
 const router = Router();
 
 router.get("/", authMiddleware, requirePermissions("vendors.read"), getVendors);
+router.get(
+  "/sub-services",
+  authMiddleware,
+  requirePermissions("vendors.read"),
+  listVendorSubServices,
+);
+router.get(
+  "/sub-services/:id",
+  authMiddleware,
+  requirePermissions("vendors.read"),
+  getVendorSubServiceById,
+);
+router.post(
+  "/sub-services",
+  authMiddleware,
+  requirePermissions("vendors.create"),
+  createVendorSubService,
+);
+router.put(
+  "/sub-services/:id",
+  authMiddleware,
+  requirePermissions("vendors.update"),
+  updateVendorSubService,
+);
+router.get(
+  "/pricing-plans",
+  authMiddleware,
+  requirePermissions("vendors.read"),
+  listVendorPricingPlans,
+);
+router.get(
+  "/pricing-plans/:id",
+  authMiddleware,
+  requirePermissions("vendors.read"),
+  getVendorPricingPlanById,
+);
+router.post(
+  "/pricing-plans",
+  authMiddleware,
+  requirePermissions("vendors.create"),
+  createVendorPricingPlan,
+);
+router.put(
+  "/pricing-plans/:id",
+  authMiddleware,
+  requirePermissions("vendors.update"),
+  updateVendorPricingPlan,
+);
 router.get(
   "/:id",
   authMiddleware,

@@ -16,6 +16,9 @@ export interface EventVendorAttributes {
 
   vendorId?: number | null;
   companyNameSnapshot?: string | null;
+  pricingPlanId?: number | null;
+  selectedSubServicesCount: number;
+  agreedPrice?: number | string | null;
 
   notes?: string | null;
   status: EventVendorStatus;
@@ -29,6 +32,9 @@ type EventVendorCreationAttributes = Optional<
   | "id"
   | "vendorId"
   | "companyNameSnapshot"
+  | "pricingPlanId"
+  | "selectedSubServicesCount"
+  | "agreedPrice"
   | "notes"
   | "status"
   | "createdBy"
@@ -46,6 +52,9 @@ export class EventVendor
 
   public vendorId?: number | null;
   public companyNameSnapshot?: string | null;
+  public pricingPlanId?: number | null;
+  public selectedSubServicesCount!: number;
+  public agreedPrice?: number | string | null;
 
   public notes?: string | null;
   public status!: EventVendorStatus;
@@ -87,6 +96,22 @@ EventVendor.init(
       allowNull: true,
     },
 
+    pricingPlanId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+
+    selectedSubServicesCount: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      defaultValue: 0,
+    },
+
+    agreedPrice: {
+      type: DataTypes.DECIMAL(12, 3),
+      allowNull: true,
+    },
+
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -116,7 +141,9 @@ EventVendor.init(
     indexes: [
       { fields: ["eventId"] },
       { fields: ["vendorId"] },
+      { fields: ["pricingPlanId"] },
       { fields: ["vendorType"] },
+      { fields: ["selectedSubServicesCount"] },
       { fields: ["providedBy"] },
       { fields: ["status"] },
     ],

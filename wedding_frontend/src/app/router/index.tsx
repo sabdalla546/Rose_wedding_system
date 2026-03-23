@@ -32,6 +32,10 @@ import QuotationFormPage from "@/pages/quotations/QuotationForm";
 import QuotationsPage from "@/pages/quotations/Quotations";
 import VendorDetailsPage from "@/pages/vendors/VendorDetails";
 import VendorFormPage from "@/pages/vendors/VendorForm";
+import VendorPricingPlanFormPage from "@/pages/vendors/VendorPricingPlanForm";
+import VendorPricingPlansPage from "@/pages/vendors/VendorPricingPlans";
+import VendorSubServiceFormPage from "@/pages/vendors/VendorSubServiceForm";
+import VendorSubServicesPage from "@/pages/vendors/VendorSubServices";
 import VendorsPage from "@/pages/vendors/Vendors";
 import { LoginPage } from "@/pages/auth/login-page";
 import RoleFormPage from "@/pages/roles/RoleForm";
@@ -60,6 +64,12 @@ const explicitModulePaths = new Set([
   "/settings/vendors/create",
   "/settings/vendors/edit/:id",
   "/settings/vendors/:id",
+  "/settings/vendors/sub-services",
+  "/settings/vendors/sub-services/create",
+  "/settings/vendors/sub-services/edit/:id",
+  "/settings/vendors/pricing-plans",
+  "/settings/vendors/pricing-plans/create",
+  "/settings/vendors/pricing-plans/edit/:id",
   "/settings/services",
   "/settings/services/create",
   "/settings/services/edit/:id",
@@ -259,6 +269,30 @@ export const router = createBrowserRouter([
           {
             path: "settings/vendors/:id",
             element: <VendorDetailsPage />,
+          },
+          {
+            path: "settings/vendors/sub-services",
+            element: <VendorSubServicesPage />,
+          },
+          {
+            path: "settings/vendors/sub-services/create",
+            element: <VendorSubServiceFormPage />,
+          },
+          {
+            path: "settings/vendors/sub-services/edit/:id",
+            element: <VendorSubServiceFormPage />,
+          },
+          {
+            path: "settings/vendors/pricing-plans",
+            element: <VendorPricingPlansPage />,
+          },
+          {
+            path: "settings/vendors/pricing-plans/create",
+            element: <VendorPricingPlanFormPage />,
+          },
+          {
+            path: "settings/vendors/pricing-plans/edit/:id",
+            element: <VendorPricingPlanFormPage />,
           },
           {
             path: "settings/services",

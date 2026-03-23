@@ -13,7 +13,10 @@ import { Customer } from "./customer.model";
 import { Event } from "./event.model";
 import { EventSection } from "./eventSection.model";
 import { Vendor } from "./vendor.model";
+import { VendorSubService } from "./vendorSubService.model";
+import { VendorPricingPlan } from "./vendorPricingPlan.model";
 import { EventVendor } from "./eventVendor.model";
+import { EventVendorSubService } from "./eventVendorSubService.model";
 import { Service } from "./service.model";
 import { EventService } from "./eventService.model";
 import { Quotation } from "./quotation.model";
@@ -206,6 +209,36 @@ EventVendor.belongsTo(Event, {
   as: "event",
 });
 
+// VendorPricingPlan -> EventVendor
+VendorPricingPlan.hasMany(EventVendor, {
+  foreignKey: "pricingPlanId",
+  as: "eventVendors",
+});
+EventVendor.belongsTo(VendorPricingPlan, {
+  foreignKey: "pricingPlanId",
+  as: "pricingPlan",
+});
+
+// EventVendor -> EventVendorSubService
+EventVendor.hasMany(EventVendorSubService, {
+  foreignKey: "eventVendorId",
+  as: "selectedSubServices",
+});
+EventVendorSubService.belongsTo(EventVendor, {
+  foreignKey: "eventVendorId",
+  as: "eventVendor",
+});
+
+// VendorSubService -> EventVendorSubService
+VendorSubService.hasMany(EventVendorSubService, {
+  foreignKey: "vendorSubServiceId",
+  as: "eventVendorSelections",
+});
+EventVendorSubService.belongsTo(VendorSubService, {
+  foreignKey: "vendorSubServiceId",
+  as: "vendorSubService",
+});
+
 // User -> Vendor audit
 User.hasMany(Vendor, {
   foreignKey: "createdBy",
@@ -225,6 +258,44 @@ Vendor.belongsTo(User, {
   as: "updatedByUser",
 });
 
+// User -> VendorSubService audit
+User.hasMany(VendorSubService, {
+  foreignKey: "createdBy",
+  as: "createdVendorSubServices",
+});
+VendorSubService.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(VendorSubService, {
+  foreignKey: "updatedBy",
+  as: "updatedVendorSubServices",
+});
+VendorSubService.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
+
+// User -> VendorPricingPlan audit
+User.hasMany(VendorPricingPlan, {
+  foreignKey: "createdBy",
+  as: "createdVendorPricingPlans",
+});
+VendorPricingPlan.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(VendorPricingPlan, {
+  foreignKey: "updatedBy",
+  as: "updatedVendorPricingPlans",
+});
+VendorPricingPlan.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
+
 // User -> EventVendor audit
 User.hasMany(EventVendor, {
   foreignKey: "createdBy",
@@ -240,6 +311,25 @@ User.hasMany(EventVendor, {
   as: "updatedEventVendors",
 });
 EventVendor.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
+
+// User -> EventVendorSubService audit
+User.hasMany(EventVendorSubService, {
+  foreignKey: "createdBy",
+  as: "createdEventVendorSubServices",
+});
+EventVendorSubService.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(EventVendorSubService, {
+  foreignKey: "updatedBy",
+  as: "updatedEventVendorSubServices",
+});
+EventVendorSubService.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
 });
@@ -560,7 +650,10 @@ export {
   Event,
   EventSection,
   Vendor,
+  VendorSubService,
+  VendorPricingPlan,
   EventVendor,
+  EventVendorSubService,
   Service,
   EventService,
   Quotation,

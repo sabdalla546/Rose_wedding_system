@@ -1,22 +1,26 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 
+export const vendorTypeValues = [
+  "dj",
+  "lighting",
+  "barcode",
+  "photography",
+  "perfumes",
+  "coffee_station",
+  "cheese",
+  "ac_generator",
+  "bleachers",
+  "instant_photography",
+  "valet",
+  "female_supplies",
+  "family_services",
+  "sweets_savories",
+  "other",
+] as const;
+
 export type VendorType =
-  | "dj"
-  | "lighting"
-  | "barcode"
-  | "photography"
-  | "perfumes"
-  | "coffee_station"
-  | "cheese"
-  | "ac_generator"
-  | "bleachers"
-  | "instant_photography"
-  | "valet"
-  | "female_supplies"
-  | "family_services"
-  | "sweets_savories"
-  | "other";
+  | (typeof vendorTypeValues)[number];
 
 export interface VendorAttributes {
   id: number;
@@ -81,23 +85,7 @@ Vendor.init(
     },
 
     type: {
-      type: DataTypes.ENUM(
-        "dj",
-        "lighting",
-        "barcode",
-        "photography",
-        "perfumes",
-        "coffee_station",
-        "cheese",
-        "ac_generator",
-        "bleachers",
-        "instant_photography",
-        "valet",
-        "female_supplies",
-        "family_services",
-        "sweets_savories",
-        "other",
-      ),
+      type: DataTypes.ENUM(...vendorTypeValues),
       allowNull: false,
     },
 

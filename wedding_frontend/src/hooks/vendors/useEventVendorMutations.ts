@@ -21,6 +21,7 @@ const buildCreateEventVendorPayload = (values: EventVendorLinkFormData) => ({
   providedBy: values.providedBy,
   vendorId: values.vendorId ? Number(values.vendorId) : null,
   companyNameSnapshot: normalizeOptionalString(values.companyNameSnapshot),
+  selectedSubServiceIds: values.selectedSubServiceIds ?? [],
   notes: normalizeOptionalString(values.notes),
   status: values.status,
 });
@@ -30,6 +31,7 @@ const buildUpdateEventVendorPayload = (values: EventVendorLinkFormData) => ({
   providedBy: values.providedBy,
   vendorId: values.vendorId ? Number(values.vendorId) : null,
   companyNameSnapshot: normalizeNullableString(values.companyNameSnapshot),
+  selectedSubServiceIds: values.selectedSubServiceIds ?? [],
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });

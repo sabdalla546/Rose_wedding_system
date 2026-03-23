@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, Handshake, Plus, Tags } from "lucide-react";
+import { Plus, Tags } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -8,21 +8,15 @@ import TableHeader from "@/components/common/TableHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
-import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import Pagination from "@/components/ui/pagination";
-import { useDeleteVendor } from "@/hooks/vendors/useDeleteVendor";
-import { useVendors } from "@/hooks/vendors/useVendors";
+import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 
-import {
-  toTableVendors,
-  VENDOR_TYPE_OPTIONS,
-  type TableVendor,
-} from "./adapters";
-import { useVendorsColumns } from "./_components/vendorsColumns";
+import { toTableVendorPricingPlans, VENDOR_TYPE_OPTIONS } from "./adapters";
+import { useVendorPricingPlansColumns } from "./_components/vendorPricingPlansColumns";
 import type { VendorType } from "./types";
 
-const VendorsPage = () => {
+const VendorPricingPlansPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -30,131 +24,94 @@ const VendorsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [typeFilter, setTypeFilter] = useState<"all" | VendorType>("all");
+  const [vendorTypeFilter, setVendorTypeFilter] = useState<"all" | VendorType>(
+    "all",
+  );
   const [isActiveFilter, setIsActiveFilter] = useState<
     "all" | "true" | "false"
   >("all");
-  const [deleteCandidate, setDeleteCandidate] = useState<TableVendor | null>(
-    null,
-  );
 
   const viewPermission = "vendors.read";
   const createPermission = "vendors.create";
   const editPermission = "vendors.update";
-  const deletePermission = "vendors.delete";
 
-  const { data: raw, isLoading } = useVendors({
+  const { data: raw, isLoading } = useVendorPricingPlans({
     currentPage,
     itemsPerPage,
     searchQuery,
-    type: typeFilter,
+    vendorType: vendorTypeFilter,
     isActive: isActiveFilter,
   });
 
-  const adapted = toTableVendors(raw);
-  const vendors = adapted.data.vendors;
+  const adapted = toTableVendorPricingPlans(raw);
+  const pricingPlans = adapted.data.pricingPlans;
   const totalItems = adapted.total;
   const totalPages = adapted.totalPages;
   const rowNumberStart = (currentPage - 1) * itemsPerPage + 1;
 
-  const columns = useVendorsColumns({
-    onDelete: setDeleteCandidate,
+  const columns = useVendorPricingPlansColumns({
     editPermission,
-    deletePermission,
   });
-
-  const deleteMutation = useDeleteVendor();
 
   const handleSearchSubmit = () => {
     setSearchQuery(searchTerm.trim());
     setCurrentPage(1);
   };
 
-  const handleDeleteConfirm = () => {
-    if (!deleteCandidate) {
-      return;
-    }
-
-    deleteMutation.mutate(deleteCandidate.id, {
-      onSettled: () => setDeleteCandidate(null),
-    });
-  };
-
   return (
     <ProtectedComponent permission={viewPermission}>
       <div className="min-h-screen space-y-4 bg-background p-4 text-foreground">
         <CompactHeader
-          icon={<Handshake className="h-5 w-5 text-primary" />}
-          title={t("vendors.title", { defaultValue: "Vendors" })}
+          icon={<Tags className="h-5 w-5 text-primary" />}
+          title={t("vendors.pricingPlans.title", {
+            defaultValue: "Vendor Pricing Plans",
+          })}
+          subtitle={t("vendors.pricingPlans.description", {
+            defaultValue:
+              "Vendor-type master pricing ranges based on the number of selected sub-services.",
+          })}
           totalText={
             <>
               {totalItems}{" "}
-              {t("vendors.totalVendors", { defaultValue: "total vendors" })}
+              {t("vendors.pricingPlans.total", {
+                defaultValue: "total pricing plans",
+              })}
             </>
           }
           search={{
-            placeholder: t("vendors.searchPlaceholder", {
-              defaultValue:
-                "Search by vendor name, contact person, phone, or email...",
+            placeholder: t("vendors.pricingPlans.searchPlaceholder", {
+              defaultValue: "Search by plan name or notes...",
             }),
             value: searchTerm,
             onChange: setSearchTerm,
             onSubmit: handleSearchSubmit,
           }}
           right={
-            <ProtectedComponent permission={createPermission}>
+            <>
               <Button
-                size="sm"
-                className="h-auto px-3 py-2 text-xs"
-                onClick={() => navigate("/settings/vendors/create")}
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/settings/vendors")}
               >
-                <Plus className="h-3.5 w-3.5" />
-                {t("vendors.create", { defaultValue: "Create Vendor" })}
+                {t("vendors.backToVendors", { defaultValue: "Back to Vendors" })}
               </Button>
-            </ProtectedComponent>
+              <ProtectedComponent permission={createPermission}>
+                <Button
+                  size="sm"
+                  className="h-auto px-3 py-2 text-xs"
+                  onClick={() =>
+                    navigate("/settings/vendors/pricing-plans/create")
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("vendors.pricingPlans.create", {
+                    defaultValue: "Create Pricing Plan",
+                  })}
+                </Button>
+              </ProtectedComponent>
+            </>
           }
         />
-
-        <SectionCard className="space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <h2 className="text-base font-semibold text-[var(--lux-heading)]">
-                {t("vendors.masterDataTitle", {
-                  defaultValue: "Vendor Master Data",
-                })}
-              </h2>
-              <p className="text-sm text-[var(--lux-text-secondary)]">
-                {t("vendors.masterDataDescription", {
-                  defaultValue:
-                    "Manage reusable vendor sub-services and pricing plans by vendor type without changing event-level vendor workflows.",
-                })}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/settings/vendors/sub-services")}
-              >
-                <ClipboardList className="h-4 w-4" />
-                {t("vendors.subServices.title", {
-                  defaultValue: "Vendor Sub Services",
-                })}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/settings/vendors/pricing-plans")}
-              >
-                <Tags className="h-4 w-4" />
-                {t("vendors.pricingPlans.title", {
-                  defaultValue: "Vendor Pricing Plans",
-                })}
-              </Button>
-            </div>
-          </div>
-        </SectionCard>
 
         <SectionCard className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
@@ -168,9 +125,9 @@ const VendorsPage = () => {
                   background: "var(--lux-control-surface)",
                   borderColor: "var(--lux-control-border)",
                 }}
-                value={typeFilter}
+                value={vendorTypeFilter}
                 onChange={(event) => {
-                  setTypeFilter(event.target.value as "all" | VendorType);
+                  setVendorTypeFilter(event.target.value as "all" | VendorType);
                   setCurrentPage(1);
                 }}
               >
@@ -206,7 +163,7 @@ const VendorsPage = () => {
                 }}
               >
                 <option value="all">
-                  {t("vendors.allStatuses", { defaultValue: "All Vendors" })}
+                  {t("vendors.allStatuses", { defaultValue: "All Records" })}
                 </option>
                 <option value="true">
                   {t("vendors.activeOnly", { defaultValue: "Active Only" })}
@@ -221,10 +178,14 @@ const VendorsPage = () => {
 
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <TableHeader
-            title={t("vendors.listTitle", { defaultValue: "Vendors List" })}
+            title={t("vendors.pricingPlans.listTitle", {
+              defaultValue: "Vendor Pricing Plans",
+            })}
             totalItems={totalItems}
-            currentCount={vendors.length}
-            entityName={t("vendors.title", { defaultValue: "Vendors" })}
+            currentCount={pricingPlans.length}
+            entityName={t("vendors.pricingPlans.title", {
+              defaultValue: "Vendor Pricing Plans",
+            })}
             itemsPerPage={itemsPerPage}
             setItemsPerPage={setItemsPerPage}
             setCurrentPage={setCurrentPage}
@@ -233,10 +194,10 @@ const VendorsPage = () => {
           <div className="overflow-hidden">
             <DataTable
               columns={columns}
-              data={vendors}
+              data={pricingPlans}
               rowNumberStart={rowNumberStart}
               enableRowNumbers
-              fileName="vendors"
+              fileName="vendor-pricing-plans"
               isLoading={isLoading}
             />
           </div>
@@ -256,22 +217,9 @@ const VendorsPage = () => {
             </div>
           ) : null}
         </div>
-
-        <ConfirmDialog
-          open={deleteCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteCandidate(null)}
-          title={t("vendors.deleteTitle", { defaultValue: "Delete Vendor" })}
-          message={t("vendors.deleteMessage", {
-            defaultValue: "Are you sure you want to delete this vendor?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-          onConfirm={handleDeleteConfirm}
-          isPending={deleteMutation.isPending}
-        />
       </div>
     </ProtectedComponent>
   );
 };
 
-export default VendorsPage;
+export default VendorPricingPlansPage;

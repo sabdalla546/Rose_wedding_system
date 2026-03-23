@@ -21,6 +21,7 @@ export type EventVendorStatus =
   | "approved"
   | "confirmed"
   | "cancelled";
+export type DecimalValue = number | string;
 
 export interface VendorUserSummary {
   id: number;
@@ -84,9 +85,14 @@ export interface EventVendorLink {
   providedBy: EventVendorProvidedBy;
   vendorId?: number | null;
   companyNameSnapshot?: string | null;
+  pricingPlanId?: number | null;
+  selectedSubServicesCount: number;
+  agreedPrice?: DecimalValue | null;
   notes?: string | null;
   status: EventVendorStatus;
   vendor?: Vendor | null;
+  pricingPlan?: VendorPricingPlan | null;
+  selectedSubServices?: EventVendorSelectedSubService[];
   event?: EventVendorEventSummary | null;
   createdByUser?: VendorUserSummary | null;
   updatedByUser?: VendorUserSummary | null;
@@ -109,12 +115,103 @@ export interface EventVendorLinkResponse {
   data: EventVendorLink;
 }
 
+export interface EventVendorSelectedSubService {
+  id: number;
+  eventVendorId: number;
+  vendorSubServiceId?: number | null;
+  nameSnapshot: string;
+  notes?: string | null;
+  sortOrder: number;
+  vendorSubService?: VendorSubService | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface EventVendorLinkFormData {
   eventId: number;
   vendorType: VendorType;
   providedBy: EventVendorProvidedBy;
   vendorId?: string;
   companyNameSnapshot?: string;
+  selectedSubServiceIds?: number[];
   notes?: string;
   status?: EventVendorStatus;
+}
+
+export interface VendorSubService {
+  id: number;
+  vendorType: VendorType;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdByUser?: VendorUserSummary | null;
+  updatedByUser?: VendorUserSummary | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+export interface VendorSubServicesResponse {
+  data: VendorSubService[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface VendorSubServiceResponse {
+  data: VendorSubService;
+}
+
+export interface VendorSubServiceFormData {
+  vendorType: VendorType;
+  name: string;
+  code?: string;
+  description?: string;
+  sortOrder: string;
+  isActive: boolean;
+}
+
+export interface VendorPricingPlan {
+  id: number;
+  vendorType: VendorType;
+  name: string;
+  minSubServices: number;
+  maxSubServices?: number | null;
+  price: DecimalValue;
+  notes?: string | null;
+  isActive: boolean;
+  createdByUser?: VendorUserSummary | null;
+  updatedByUser?: VendorUserSummary | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+export interface VendorPricingPlansResponse {
+  data: VendorPricingPlan[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface VendorPricingPlanResponse {
+  data: VendorPricingPlan;
+}
+
+export interface VendorPricingPlanFormData {
+  vendorType: VendorType;
+  name: string;
+  minSubServices: string;
+  maxSubServices?: string;
+  price: string;
+  notes?: string;
+  isActive: boolean;
 }

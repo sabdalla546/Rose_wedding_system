@@ -1,8 +1,13 @@
 import type {
+  DecimalValue,
   EventVendorLink,
   EventVendorProvidedBy,
   EventVendorStatus,
   Vendor,
+  VendorPricingPlan,
+  VendorPricingPlansResponse,
+  VendorSubService,
+  VendorSubServicesResponse,
   VendorsResponse,
   VendorType,
 } from "@/pages/vendors/types";
@@ -12,8 +17,30 @@ export type TableVendor = Vendor & {
   typeDisplay: string;
 };
 
+export type TableVendorSubService = VendorSubService & {
+  typeDisplay: string;
+};
+
+export type TableVendorPricingPlan = VendorPricingPlan & {
+  typeDisplay: string;
+  subServiceRangeDisplay: string;
+  priceDisplay: string;
+};
+
 export type TableVendorsResponse = {
   data: { vendors: TableVendor[] };
+  total: number;
+  totalPages: number;
+};
+
+export type TableVendorSubServicesResponse = {
+  data: { subServices: TableVendorSubService[] };
+  total: number;
+  totalPages: number;
+};
+
+export type TableVendorPricingPlansResponse = {
+  data: { pricingPlans: TableVendorPricingPlan[] };
   total: number;
   totalPages: number;
 };
@@ -23,6 +50,36 @@ export const formatVendorType = (value: VendorType) =>
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+
+export const toNumberValue = (value?: DecimalValue | null) => {
+  if (value === null || typeof value === "undefined" || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const formatMoney = (value?: DecimalValue | null) => {
+  const amount = toNumberValue(value);
+
+  if (amount === null) {
+    return "-";
+  }
+
+  return amount.toLocaleString(undefined, {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
+};
+
+export const formatVendorPricingRange = (
+  minSubServices: number,
+  maxSubServices?: number | null,
+) =>
+  maxSubServices === null || typeof maxSubServices === "undefined"
+    ? `${minSubServices}+`
+    : `${minSubServices} - ${maxSubServices}`;
 
 export const formatProvidedBy = (value: EventVendorProvidedBy) =>
   value.charAt(0).toUpperCase() + value.slice(1);
@@ -43,6 +100,43 @@ export function toTableVendors(res?: VendorsResponse): TableVendorsResponse {
   return {
     data: { vendors },
     total: res?.meta?.total ?? vendors.length,
+    totalPages: res?.meta?.pages ?? 1,
+  };
+}
+
+export function toTableVendorSubServices(
+  res?: VendorSubServicesResponse,
+): TableVendorSubServicesResponse {
+  const subServices = (res?.data ?? []).map<TableVendorSubService>(
+    (subService) => ({
+      ...subService,
+      typeDisplay: formatVendorType(subService.vendorType),
+    }),
+  );
+
+  return {
+    data: { subServices },
+    total: res?.meta?.total ?? subServices.length,
+    totalPages: res?.meta?.pages ?? 1,
+  };
+}
+
+export function toTableVendorPricingPlans(
+  res?: VendorPricingPlansResponse,
+): TableVendorPricingPlansResponse {
+  const pricingPlans = (res?.data ?? []).map<TableVendorPricingPlan>((plan) => ({
+    ...plan,
+    typeDisplay: formatVendorType(plan.vendorType),
+    subServiceRangeDisplay: formatVendorPricingRange(
+      plan.minSubServices,
+      plan.maxSubServices,
+    ),
+    priceDisplay: formatMoney(plan.price),
+  }));
+
+  return {
+    data: { pricingPlans },
+    total: res?.meta?.total ?? pricingPlans.length,
     totalPages: res?.meta?.pages ?? 1,
   };
 }

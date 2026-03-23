@@ -3,12 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
-import type { EventServiceItemFormData } from "@/pages/services/types";
-
-const normalizeOptionalString = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-};
+import type {
+  EventServiceItemFormData,
+  EventServiceStatus,
+} from "@/pages/services/types";
 
 const normalizeNullableString = (value?: string) => {
   const trimmed = value?.trim();
@@ -20,16 +18,6 @@ const normalizeRequiredNumber = (value?: string, fallback = 0) => {
   return trimmed ? Number(trimmed) : fallback;
 };
 
-const buildCreateEventServicePayload = (values: EventServiceItemFormData) => ({
-  eventId: values.eventId,
-  serviceId: values.serviceId ? Number(values.serviceId) : null,
-  serviceNameSnapshot: normalizeOptionalString(values.serviceNameSnapshot),
-  category: values.category,
-  notes: normalizeOptionalString(values.notes),
-  status: values.status,
-  sortOrder: normalizeRequiredNumber(values.sortOrder, 0),
-});
-
 const buildUpdateEventServicePayload = (values: EventServiceItemFormData) => ({
   serviceId: values.serviceId ? Number(values.serviceId) : null,
   serviceNameSnapshot: normalizeNullableString(values.serviceNameSnapshot),
@@ -39,7 +27,22 @@ const buildUpdateEventServicePayload = (values: EventServiceItemFormData) => ({
   sortOrder: normalizeRequiredNumber(values.sortOrder, 0),
 });
 
-export const useCreateEventService = (eventId: number) => {
+const normalizeOptionalString = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
+const buildCreateEventServicePayload = (values: EventServiceItemFormData) => ({
+  eventId: values.eventId,
+  serviceId: values.serviceId ? Number(values.serviceId) : undefined,
+  serviceNameSnapshot: normalizeOptionalString(values.serviceNameSnapshot),
+  category: values.category,
+  notes: normalizeOptionalString(values.notes),
+  status: (values.status || "confirmed") as EventServiceStatus,
+  sortOrder: values.sortOrder?.trim() ? Number(values.sortOrder) : 0,
+});
+
+export const useCreateEventService = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -47,24 +50,28 @@ export const useCreateEventService = (eventId: number) => {
   return useMutation({
     mutationFn: async (values: EventServiceItemFormData) =>
       api.post("/services/event-items", buildCreateEventServicePayload(values)),
-    onSuccess: () => {
+
+    onSuccess: (_response, variables) => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
-        description: t("services.eventItemToast.created", {
+        description: t("services.toast.eventServiceCreated", {
           defaultValue: "Event service added successfully",
         }),
       });
 
       queryClient.invalidateQueries({ queryKey: ["event-service-items"] });
-      queryClient.invalidateQueries({ queryKey: ["event", String(eventId)] });
+      queryClient.invalidateQueries({
+        queryKey: ["event", String(variables.eventId)],
+      });
     },
+
     onError: (error) => {
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),
         description: getApiErrorMessage(
           error,
-          t("services.eventItemToast.createFailed", {
+          t("services.toast.eventServiceCreateFailed", {
             defaultValue: "Failed to add event service",
           }),
         ),
@@ -72,7 +79,6 @@ export const useCreateEventService = (eventId: number) => {
     },
   });
 };
-
 export const useUpdateEventService = (eventId: number) => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -85,7 +91,11 @@ export const useUpdateEventService = (eventId: number) => {
     }: {
       id: number;
       values: EventServiceItemFormData;
-    }) => api.put(`/services/event-items/${id}`, buildUpdateEventServicePayload(values)),
+    }) =>
+      api.put(
+        `/services/event-items/${id}`,
+        buildUpdateEventServicePayload(values),
+      ),
     onSuccess: () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
