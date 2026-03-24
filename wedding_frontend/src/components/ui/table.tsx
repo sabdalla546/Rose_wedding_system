@@ -9,19 +9,23 @@ const useTableDirection = () => {
 };
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const direction = useTableDirection();
+
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-[22px] border"
+      className="relative w-full overflow-x-auto rounded-[var(--radius-xl)] border"
+      dir={direction}
       style={{
-        background: "var(--lux-panel-surface)",
-        borderColor: "var(--lux-panel-border)",
-        boxShadow: "var(--lux-panel-shadow)",
+        borderColor: "var(--color-border)",
+        background: "var(--color-surface)",
       }}
     >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
+        dir={direction}
+        style={{ color: "var(--color-text)" }}
         {...props}
       />
     </div>
@@ -33,7 +37,10 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn("[&_tr]:border-b", className)}
-      style={{ borderColor: "var(--lux-row-border)" }}
+      style={{
+        borderColor: "var(--color-border)",
+        background: "var(--color-surface-2)",
+      }}
       {...props}
     />
   );
@@ -55,8 +62,8 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
       data-slot="table-footer"
       className={cn("font-medium [&>tr]:last:border-b-0", className)}
       style={{
-        background: "var(--lux-control-hover)",
-        color: "var(--lux-text)",
+        background: "var(--color-surface-2)",
+        color: "var(--color-text)",
       }}
       {...props}
     />
@@ -68,7 +75,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn("border-b transition-colors duration-200", className)}
-      style={{ borderColor: "var(--lux-row-border)" }}
+      style={{ borderColor: "var(--color-border)" }}
       {...props}
     />
   );
@@ -81,13 +88,14 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-12 px-4 align-middle text-xs font-semibold uppercase tracking-[0.18em]",
+        "h-12 px-4 align-middle text-xs font-semibold",
+        direction === "rtl" ? "tracking-normal" : "uppercase tracking-[0.18em]",
         direction === "rtl" ? "text-right" : "text-left",
         className
       )}
       style={{
-        color: "var(--lux-text-secondary)",
-        background: "color-mix(in srgb, var(--lux-control-hover) 80%, transparent)",
+        color: "var(--color-text-muted)",
+        background: "var(--color-surface-2)",
       }}
       {...props}
     />
@@ -101,11 +109,14 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-4 py-4 align-middle text-sm",
+        "px-4 py-4 align-middle text-sm leading-6",
         direction === "rtl" ? "text-right" : "text-left",
         className
       )}
-      style={{ color: "var(--lux-text)" }}
+      style={{
+        color: "var(--color-text)",
+        unicodeBidi: "plaintext",
+      }}
       {...props}
     />
   );
@@ -125,7 +136,7 @@ function TableCaption({
         direction === "rtl" ? "text-right" : "text-left",
         className
       )}
-      style={{ color: "var(--lux-text-muted)" }}
+      style={{ color: "var(--color-text-muted)" }}
       {...props}
     />
   );

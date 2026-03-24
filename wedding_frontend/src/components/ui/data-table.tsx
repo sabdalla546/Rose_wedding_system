@@ -8,7 +8,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Loader2, SearchX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +30,8 @@ interface DataTableProps<TData, TValue> {
   showExportExcel?: boolean;
   showPrint?: boolean;
   fileName?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,6 +40,8 @@ export function DataTable<TData, TValue>({
   enableRowNumbers = false,
   rowNumberStart = 1,
   isLoading = false,
+  emptyTitle,
+  emptyDescription,
 }: DataTableProps<TData, TValue>) {
   const { i18n, t } = useTranslation();
   const isRtl = i18n.resolvedLanguage === "ar";
@@ -64,7 +68,7 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"}>
+    <div dir={isRtl ? "rtl" : "ltr"} className="w-full overflow-x-auto">
       <Table className="min-w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -86,8 +90,8 @@ export function DataTable<TData, TValue>({
                       disabled={!header.column.getCanSort()}
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <span className="truncate">
+                  >
+                      <span className="truncate" dir="auto">
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
@@ -114,15 +118,11 @@ export function DataTable<TData, TValue>({
           {isLoading ? (
             <TableRow>
               <TableCell className="py-12 text-center" colSpan={finalColumns.length}>
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <div
-                    className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-                    style={{
-                      borderColor: "var(--lux-gold)",
-                      borderTopColor: "transparent",
-                    }}
-                  />
-                  <p className="text-sm text-[var(--lux-text-secondary)]">
+                <div className="table-state">
+                  <div className="app-icon-chip h-12 w-12 rounded-full">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                  <p className="text-sm text-[var(--color-text-muted)]">
                     {t("common.loading", { defaultValue: "Loading..." })}
                   </p>
                 </div>
@@ -132,21 +132,23 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row, index) => (
               <TableRow
                 key={row.id}
+                className="hover:bg-[var(--color-surface-2)]"
                 style={
                   index % 2 === 0
                     ? undefined
                     : {
                         background:
-                          "color-mix(in srgb, var(--lux-control-hover) 70%, transparent)",
+                          "color-mix(in srgb, var(--color-surface-2) 72%, transparent)",
                       }
                 }
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     <div
+                      dir="auto"
                       className={cn(
-                        "flex",
-                        isRtl ? "justify-end text-right" : "justify-start text-left"
+                        "w-full min-w-0",
+                        isRtl ? "text-right" : "text-left"
                       )}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -158,18 +160,25 @@ export function DataTable<TData, TValue>({
           ) : (
             <TableRow>
               <TableCell className="py-12 text-center" colSpan={finalColumns.length}>
-                <div className="flex flex-col items-center justify-center gap-2">
+                <div className="table-state">
+                  <div className="app-icon-chip h-12 w-12 rounded-full">
+                    <SearchX className="h-5 w-5" />
+                  </div>
                   <p
                     className="text-base font-semibold"
-                    style={{ color: "var(--lux-heading)" }}
+                    style={{ color: "var(--color-heading)" }}
                   >
-                    {t("common.noResultsTitle", { defaultValue: "No results found" })}
+                    {emptyTitle ??
+                      t("common.noResultsTitle", {
+                        defaultValue: "No results found",
+                      })}
                   </p>
-                  <p style={{ color: "var(--lux-text-muted)" }}>
-                    {t("common.noResultsDescription", {
-                      defaultValue:
-                        "Try adjusting your search or filters to find what you need.",
-                    })}
+                  <p style={{ color: "var(--color-text-muted)" }}>
+                    {emptyDescription ??
+                      t("common.noResultsDescription", {
+                        defaultValue:
+                          "Try adjusting your search or filters to find what you need.",
+                      })}
                   </p>
                 </div>
               </TableCell>

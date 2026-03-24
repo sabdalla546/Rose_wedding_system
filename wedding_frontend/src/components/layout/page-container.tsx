@@ -7,11 +7,5 @@ type PageContainerProps = PropsWithChildren<{
 }>;
 
 export function PageContainer({ children, className }: PageContainerProps) {
-  return (
-    <div
-      className={cn("w-full space-y-3.5 px-0 py-0.5 md:space-y-4", className)}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn("app-page", className)}>{children}</div>;
 }

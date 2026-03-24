@@ -65,44 +65,37 @@ const navigationTree: NavigationItem[] = [
     icon: CalendarCheck2,
     children: [
       {
-        id: "calendars",
-        labelKey: "sidebar.nav.calendars",
+        id: "calendar-master",
+        labelKey: "sidebar.nav.calendar",
+        label: "Master Calendar",
+        labelAr: "الموعيد اليوميه",
+        href: "/calendar",
+        icon: CalendarDays,
+        subtitle: "Manage event dates, bookings, and venue availability.",
+        subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
+      },
+      {
+        id: "events-all",
+        labelKey: "sidebar.nav.allEvents",
+        label: "All Events",
+        labelAr: "حجز حفلة",
+        href: "/events",
         icon: CalendarRange,
-        children: [
-          {
-            id: "calendar-master",
-            labelKey: "sidebar.nav.calendar",
-            label: "Master Calendar",
-            labelAr: "الموعيد اليوميه",
-            href: "/calendar",
-            icon: CalendarDays,
-            subtitle: "Manage event dates, bookings, and venue availability.",
-            subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
-          },
-          {
-            id: "events-all",
-            labelKey: "sidebar.nav.allEvents",
-            label: "All Events",
-            labelAr: "حجز حفلة",
-            href: "/events",
-            icon: CalendarRange,
-            subtitle:
-              "Manage wedding events, planning sections, and linked records.",
-            subtitleAr: "إدارة الحفلات وأقسام التخطيط والروابط المرتبطة.",
-          },
-          {
-            id: "calendar-appointments",
-            labelKey: "sidebar.nav.appointments",
-            label: "Appointments",
-            labelAr: "المواعيد",
-            href: "/appointments",
-            icon: CalendarCheck2,
-            subtitle:
-              "Manage lead appointments, meeting statuses, and team assignment.",
-            subtitleAr:
-              "إدارة مواعيد العملاء المحتملين وحالة الاجتماع وتوزيع الفريق.",
-          },
-        ],
+        subtitle:
+          "Manage wedding events, planning sections, and linked records.",
+        subtitleAr: "إدارة الحفلات وأقسام التخطيط والروابط المرتبطة.",
+      },
+      {
+        id: "calendar-appointments",
+        labelKey: "sidebar.nav.appointments",
+        label: "Appointments",
+        labelAr: "المواعيد",
+        href: "/appointments",
+        icon: CalendarCheck2,
+        subtitle:
+          "Manage lead appointments, meeting statuses, and team assignment.",
+        subtitleAr:
+          "إدارة مواعيد العملاء المحتملين وحالة الاجتماع وتوزيع الفريق.",
       },
 
       {

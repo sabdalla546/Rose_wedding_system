@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import CompactHeader from "@/components/common/CompactHeader";
-import TableHeader from "@/components/common/TableHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import {
+  CrudFilterField,
+  CrudFilters,
+  CrudPageLayout,
+} from "@/components/shared/crud-layout";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
-import Pagination from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { useDeleteVenue } from "@/hooks/venues/useDeleteVenue";
 import { useVenues } from "@/hooks/venues/useVenues";
@@ -73,7 +76,7 @@ const VenuesPage = () => {
 
   return (
     <ProtectedComponent permission={viewPermission}>
-      <div className="min-h-screen space-y-4 bg-background p-4 text-foreground">
+      <CrudPageLayout>
         <CompactHeader
           icon={<Building2 className="h-5 w-5 text-primary" />}
           title={t("venues.title", { defaultValue: "Venues" })}
@@ -105,18 +108,18 @@ const VenuesPage = () => {
           }
         />
 
-        <SectionCard className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="min-w-[200px] space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
-                {t("venues.statusFilter", { defaultValue: "Status Filter" })}
-              </span>
+        <CrudFilters
+          title={t("common.filters", { defaultValue: "Filters" })}
+          description={t("venues.filterDescription", {
+            defaultValue: "Refine venue records by active availability.",
+          })}
+          contentClassName="md:grid-cols-[minmax(0,220px)]"
+        >
+          <CrudFilterField
+            label={t("venues.statusFilter", { defaultValue: "Status Filter" })}
+          >
               <select
-                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
+                className="app-native-select"
                 value={isActiveFilter}
                 onChange={(event) => {
                   setIsActiveFilter(
@@ -135,47 +138,34 @@ const VenuesPage = () => {
                   {t("venues.inactiveOnly", { defaultValue: "Inactive Only" })}
                 </option>
               </select>
-            </label>
-          </div>
-        </SectionCard>
+          </CrudFilterField>
+        </CrudFilters>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("venues.listTitle", { defaultValue: "Venues List" })}
-            totalItems={totalItems}
-            currentCount={venues.length}
-            entityName={t("venues.title", { defaultValue: "Venues" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
+        <DataTableShell
+          title={t("venues.listTitle", { defaultValue: "Venues List" })}
+          totalItems={totalItems}
+          currentCount={venues.length}
+          entityName={t("venues.title", { defaultValue: "Venues" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
+          <DataTable
+            columns={columns}
+            data={venues}
+            rowNumberStart={rowNumberStart}
+            enableRowNumbers
+            fileName="venues"
+            isLoading={isLoading}
           />
-
-          <div className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={venues}
-              rowNumberStart={rowNumberStart}
-              enableRowNumbers
-              fileName="venues"
-              isLoading={isLoading}
-            />
-          </div>
-
-          {totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -189,7 +179,7 @@ const VenuesPage = () => {
           onConfirm={handleDeleteConfirm}
           isPending={deleteMutation.isPending}
         />
-      </div>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

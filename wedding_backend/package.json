@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "scan:permissions": "ts-node src/seed/scanRoutePermissions.ts",
-    "seed:rbac": "ts-node src/seed/seedRbac.ts"
+    "seed:rbac": "ts-node src/seed/seedRbac.ts",
+    "seed:vendors": "ts-node src/seed/seedExternalVendors.ts",
+    "seed:appointments-events": "ts-node src/seed/seedCustomersAppointmentsEvents.ts",
+    "seed:services": "ts-node src/seed/seedServices.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

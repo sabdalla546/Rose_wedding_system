@@ -2,28 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Search } from "lucide-react";
 
+import {
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogShell,
+} from "@/components/shared/app-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-
-import { useServices } from "@/hooks/services/useServices";
 import { useCreateEventService } from "@/hooks/services/useEventServiceMutations";
+import { useServices } from "@/hooks/services/useServices";
 import type {
   EventServiceItemFormData,
   Service,
   ServiceCategory,
 } from "@/pages/services/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Props = {
   open: boolean;
@@ -49,7 +45,6 @@ export function EventServicesChecklistDialog({
   existingServiceIds = [],
 }: Props) {
   const { t } = useTranslation();
-
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -65,23 +60,21 @@ export function EventServicesChecklistDialog({
   });
 
   const services: Service[] = data?.data ?? [];
-
-  const availableServices = useMemo(
-    () => services.filter((item) => !existingServiceIds.includes(item.id)),
-    [services, existingServiceIds],
+  const existingServiceIdSet = useMemo(
+    () => new Set(existingServiceIds),
+    [existingServiceIds],
   );
 
-  const groupedServices = useMemo(() => {
-    return availableServices.reduce<Record<string, Service[]>>(
-      (acc, service) => {
+  const groupedServices = useMemo(
+    () =>
+      services.reduce<Record<string, Service[]>>((accumulator, service) => {
         const key = service.category;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(service);
-        return acc;
-      },
-      {},
-    );
-  }, [availableServices]);
+        if (!accumulator[key]) accumulator[key] = [];
+        accumulator[key].push(service);
+        return accumulator;
+      }, {}),
+    [services],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -105,8 +98,10 @@ export function EventServicesChecklistDialog({
     try {
       setSubmitting(true);
 
-      const selectedServices = availableServices.filter((service) =>
-        selectedServiceIds.includes(service.id),
+      const selectedServices = services.filter(
+        (service) =>
+          selectedServiceIds.includes(service.id) &&
+          !existingServiceIdSet.has(service.id),
       );
 
       await Promise.all(
@@ -132,130 +127,182 @@ export function EventServicesChecklistDialog({
   };
 
   const selectedCount = selectedServiceIds.length;
+  const categoryCount = Object.keys(groupedServices).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[var(--lux-gold-border)] bg-[var(--lux-card)] p-0">
-        {" "}
-        <DialogHeader className="shrink-0 border-b border-[var(--lux-gold-border)] px-6 py-5">
-          <DialogTitle className="text-right text-2xl font-semibold text-[var(--lux-heading)]">
-            {t("services.addEventServiceChecklist", {
-              defaultValue: "إضافة خدمات للحفل",
-            })}
-          </DialogTitle>
-          <DialogDescription className="text-right text-sm text-[var(--lux-text-secondary)]">
-            {t("services.addEventServiceChecklistHint", {
-              defaultValue:
-                "اختر الخدمات التي تريد إضافتها لهذا الحفل. سيتم حفظها بالحالة الافتراضية: معتمد.",
-            })}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex min-h-0 flex-1 flex-col space-y-4 px-6 py-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-md">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("services.searchPlaceholder", {
-                  defaultValue: "ابحث عن خدمة...",
-                })}
-                className="pr-10"
-              />
-            </div>
+      <AppDialogShell
+        size="lg"
+        className="max-h-[92dvh] h-[min(92dvh,860px)] w-[min(96vw,980px)] max-w-[980px]"
+      >
+        <AppDialogHeader
+          title={t("services.addEventServiceChecklist", {
+            defaultValue: "Add Event Services",
+          })}
+          description={t("services.addEventServiceChecklistHint", {
+            defaultValue:
+              "Choose the services you want to add to this event. New items will be saved with the default confirmed status.",
+          })}
+        />
 
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="rounded-full px-3 py-1">
-                {t("services.defaultStatus", {
-                  defaultValue: "الحالة الافتراضية",
-                })}
-                :{" "}
-                {t("services.status.confirmed", {
-                  defaultValue: "معتمد",
-                })}
-              </Badge>
+        <AppDialogBody className="min-h-0 flex flex-1 flex-col overflow-y-auto gap-0 px-0 py-0">
+          <div className="shrink-0 border-b border-[var(--lux-gold-border)] px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-2">
+              <div className="relative w-full">
+                <Search className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={t("services.searchPlaceholder", {
+                    defaultValue:
+                      "Search by service name, code, or category...",
+                  })}
+                  className="h-10 rounded-2xl pr-10 text-sm"
+                />
+              </div>
 
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                {t("services.selectedCount", {
-                  defaultValue: "المحدد",
-                })}
-                : {selectedCount}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                >
+                  {t("services.defaultStatus", {
+                    defaultValue: "Default Status",
+                  })}
+                  :{" "}
+                  {t("services.status.confirmed", {
+                    defaultValue: "Confirmed",
+                  })}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                >
+                  {t("services.availableCount", {
+                    defaultValue: "Available",
+                  })}
+                  : {services.length}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                >
+                  {t("services.selectedCount", {
+                    defaultValue: "Selected",
+                  })}
+                  : {selectedCount}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                >
+                  {t("services.categoryCount", {
+                    defaultValue: "Categories",
+                  })}
+                  : {categoryCount}
+                </Badge>
+              </div>
             </div>
           </div>
-          <Separator />
-          <ScrollArea className="min-h-0 flex-1 pr-2">
-            {" "}
+
+          <div className="min-h-[320px] flex-1 px-4 pb-4 pt-3 sm:min-h-[420px] sm:px-6 sm:pb-6 sm:pt-4">
             {isLoading ? (
-              <div className="flex h-32 items-center justify-center text-sm text-[var(--lux-text-secondary)]">
+              <div className="flex min-h-[320px] items-center justify-center text-sm text-[var(--lux-text-secondary)] sm:min-h-[420px]">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t("common.loading", { defaultValue: "Loading..." })}
               </div>
-            ) : availableServices.length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-sm text-[var(--lux-text-secondary)]">
+            ) : services.length === 0 ? (
+              <div className="flex min-h-[320px] items-center justify-center rounded-[24px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-6 text-center text-sm text-[var(--lux-text-secondary)] sm:min-h-[420px]">
                 {t("services.noAvailableServices", {
                   defaultValue:
-                    "لا توجد خدمات متاحة للإضافة. قد تكون كل الخدمات مضافة بالفعل أو لا توجد خدمات فعالة.",
+                    "No services are available. They might already be linked or no active services were found.",
                 })}
               </div>
             ) : (
               <div className="space-y-5">
                 {Object.entries(groupedServices).map(([category, items]) => (
-                  <div key={category} className="space-y-3">
-                    <div className="sticky top-0 z-10 rounded-xl bg-[var(--lux-card)]/95 py-1 text-sm font-semibold text-[var(--lux-heading)] backdrop-blur">
-                      {formatCategoryLabel(category as ServiceCategory, t)}
+                  <section
+                    key={category}
+                    className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-3.5 sm:p-4"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3 rounded-[16px] border border-[var(--lux-gold-border)] bg-[var(--lux-panel-surface)] px-4 py-2.5">
+                      <h3 className="text-sm font-semibold text-[var(--lux-heading)] sm:text-base">
+                        {formatCategoryLabel(category as ServiceCategory, t)}
+                      </h3>
+                      <Badge
+                        variant="outline"
+                        className="rounded-full px-3 py-1 text-[10px] font-semibold"
+                      >
+                        {items.length}
+                      </Badge>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
                       {items.map((service) => {
                         const checked = selectedServiceIds.includes(service.id);
+                        const alreadyAdded = existingServiceIdSet.has(
+                          service.id,
+                        );
 
                         return (
                           <label
                             key={service.id}
-                            className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${
+                            className={`flex min-h-[78px] min-w-0 items-start gap-3 rounded-[20px] border px-4 py-3 transition-all ${
+                              alreadyAdded
+                                ? "cursor-not-allowed opacity-70"
+                                : "cursor-pointer"
+                            } ${
                               checked
-                                ? "border-[var(--lux-gold-border)] bg-[var(--lux-gold-glow)]/10"
-                                : "border-[var(--lux-border)] bg-[var(--lux-card)]"
+                                ? "border-[var(--lux-gold-border)] bg-[var(--lux-gold-glow)]/10 shadow-[0_0_0_1px_rgba(247,211,91,0.08)]"
+                                : "border-[var(--lux-border)] bg-[var(--lux-card)] hover:border-[var(--lux-gold-border)] hover:bg-[var(--lux-control-hover)]"
                             }`}
                           >
                             <Checkbox
-                              checked={checked}
+                              checked={alreadyAdded ? true : checked}
                               onCheckedChange={(value) =>
+                                !alreadyAdded &&
                                 toggleService(service.id, Boolean(value))
                               }
-                              className="mt-1"
+                              className="mt-0.5 shrink-0"
+                              disabled={alreadyAdded}
                             />
 
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold text-[var(--lux-heading)]">
-                                {service.name}
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="text-sm font-semibold leading-6 text-[var(--lux-heading)]">
+                                  {service.name}
+                                </div>
+                                {alreadyAdded ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                                  >
+                                    {t("services.alreadyAdded", {
+                                      defaultValue: "Added",
+                                    })}
+                                  </Badge>
+                                ) : null}
                               </div>
 
-                              <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
+                              <div className="text-xs leading-5 text-[var(--lux-text-secondary)]">
                                 {formatCategoryLabel(service.category, t)}
                               </div>
-
-                              {service.description ? (
-                                <div className="mt-2 text-xs text-[var(--lux-text-muted)]">
-                                  {service.description}
-                                </div>
-                              ) : null}
                             </div>
                           </label>
                         );
                       })}
                     </div>
-                  </div>
+                  </section>
                 ))}
               </div>
             )}
-          </ScrollArea>
-        </div>
-        <div className="shrink-0 border-t border-[var(--lux-gold-border)] px-6 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm text-[var(--lux-text-secondary)]">
-              {t("services.selectedCount", { defaultValue: "المحدد" })}:{" "}
+          </div>
+        </AppDialogBody>
+
+        <AppDialogFooter className="border-[var(--lux-gold-border)] px-5 py-4 sm:px-6">
+          <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-base text-[var(--lux-text-secondary)]">
+              {t("services.selectedCount", { defaultValue: "Selected" })}:{" "}
               <span className="font-semibold text-[var(--lux-heading)]">
                 {selectedCount}
               </span>
@@ -266,6 +313,7 @@ export function EventServicesChecklistDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="h-11 rounded-2xl px-6"
               >
                 {t("common.cancel", { defaultValue: "Cancel" })}
               </Button>
@@ -274,6 +322,7 @@ export function EventServicesChecklistDialog({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!selectedCount || submitting}
+                className="h-11 rounded-2xl px-6"
               >
                 {submitting ? (
                   <>
@@ -282,14 +331,14 @@ export function EventServicesChecklistDialog({
                   </>
                 ) : (
                   t("services.addSelectedServices", {
-                    defaultValue: "إضافة الخدمات المحددة",
+                    defaultValue: "Add Selected Services",
                   })
                 )}
               </Button>
             </div>
           </div>
-        </div>
-      </DialogContent>
+        </AppDialogFooter>
+      </AppDialogShell>
     </Dialog>
   );
 }

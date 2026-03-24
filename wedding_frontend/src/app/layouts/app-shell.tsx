@@ -103,11 +103,12 @@ export function AppShell() {
 
         <div
           className={cn(
-            "fixed inset-0 z-[90] bg-black/50 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden",
+            "fixed inset-0 z-[90] transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden",
             sidebarOpen && isMobile
               ? "pointer-events-auto opacity-100"
               : "pointer-events-none opacity-0",
           )}
+          style={{ background: "var(--lux-overlay)" }}
           onClick={() => setSidebarOpen(false)}
         />
 

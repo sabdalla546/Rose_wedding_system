@@ -1,12 +1,4 @@
-import {
-  Bell,
-  Menu,
-  MessageSquareText,
-  MoonStar,
-  Search,
-  ShieldAlert,
-  SunMedium,
-} from "lucide-react";
+import { Menu, MoonStar, SunMedium } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -183,10 +175,7 @@ export function AppHeader({
               AR
             </button>
           </div>
-          <IconAction icon={Search} />
-          <IconAction badge="3" icon={Bell} />
-          <IconAction badge="2" icon={MessageSquareText} />
-          <IconAction icon={ShieldAlert} />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -228,32 +217,5 @@ export function AppHeader({
         </div>
       </div>
     </header>
-  );
-}
-
-type IconActionProps = {
-  icon: typeof Bell;
-  badge?: string;
-};
-
-function IconAction({ icon: Icon, badge }: IconActionProps) {
-  return (
-    <Button
-      className="relative h-11 w-11 rounded-[17px]"
-      size="icon"
-      variant="secondary"
-      style={{
-        background: "var(--lux-shell-chrome-control)",
-        borderColor: "var(--lux-shell-chrome-control-border)",
-        color: "var(--lux-shell-chrome-text)",
-      }}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {badge ? (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-[0_6px_14px_rgba(59,130,246,0.28)]" style={{ background: "var(--lux-gold)", color: "var(--lux-shell-surface)" }}>
-          {badge}
-        </span>
-      ) : null}
-    </Button>
   );
 }

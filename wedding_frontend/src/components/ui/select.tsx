@@ -17,19 +17,21 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[18px] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--lux-text-muted)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[18px] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--color-text-muted)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     style={{
-      background: "var(--lux-control-surface)",
-      borderColor: "var(--lux-control-border)",
-      color: "var(--lux-text)",
+      background: "var(--color-control)",
+      borderColor: "var(--color-control-border)",
+      color: "var(--color-text)",
+      boxShadow: "var(--inset-highlight)",
+      ["--tw-ring-color" as string]: "var(--color-border-strong)",
     }}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-[var(--lux-text-muted)] opacity-80" />
+      <ChevronDown className="h-4 w-4 text-[var(--color-text-muted)] opacity-80" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -42,12 +44,13 @@ const SelectScrollUpButton = React.forwardRef<
     <SelectPrimitive.ScrollUpButton
       ref={ref}
       className={cn(
-        "flex cursor-default items-center justify-center py-2",
+        "flex cursor-default items-center justify-center border-b py-2",
         className,
       )}
       style={{
-        background: "var(--lux-control-surface)",
-        color: "var(--lux-text-muted)",
+        background: "var(--color-surface-2)",
+        borderColor: "var(--color-border)",
+        color: "var(--color-text-muted)",
       }}
       {...props}
     >
@@ -63,12 +66,13 @@ const SelectScrollDownButton = React.forwardRef<
     <SelectPrimitive.ScrollDownButton
       ref={ref}
       className={cn(
-        "flex cursor-default items-center justify-center py-2",
+        "flex cursor-default items-center justify-center border-t py-2",
         className,
       )}
       style={{
-        background: "var(--lux-control-surface)",
-        color: "var(--lux-text-muted)",
+        background: "var(--color-surface-2)",
+        borderColor: "var(--color-border)",
+        color: "var(--color-text-muted)",
       }}
       {...props}
     >
@@ -92,9 +96,9 @@ const SelectContent = React.forwardRef<
         className,
       )}
       style={{
-        background: "var(--lux-panel-surface)",
-        borderColor: "var(--lux-panel-border)",
-        color: "var(--lux-text)",
+        background: "var(--color-surface)",
+        borderColor: "var(--color-border)",
+        color: "var(--color-text)",
       }}
       position={position}
       {...props}
@@ -122,7 +126,7 @@ const SelectLabel = React.forwardRef<
   <SelectPrimitive.Label
     ref={ref}
     className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em]", className)}
-    style={{ color: "var(--lux-text-muted)" }}
+    style={{ color: "var(--color-text-muted)" }}
     {...props}
   />
 ));
@@ -135,15 +139,15 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-[14px] py-2.5 pl-3 pr-8 text-sm outline-none transition-colors focus:text-[var(--lux-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-[14px] py-2.5 pl-3 pr-8 text-sm outline-none transition-colors data-[highlighted]:bg-[var(--color-control-hover)] data-[highlighted]:text-[var(--color-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[state=checked]:bg-[color-mix(in_srgb,var(--color-primary)_12%,var(--color-surface))] data-[state=checked]:text-[var(--color-heading)]",
       className,
     )}
-    style={{ color: "var(--lux-text-secondary)" }}
+    style={{ color: "var(--color-text-subtle)" }}
     {...props}
   >
     <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
+        <Check className="h-4 w-4 text-[var(--color-primary)]" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -158,7 +162,7 @@ const SelectSeparator = React.forwardRef<
   <SelectPrimitive.Separator
     ref={ref}
     className={cn("-mx-1 my-1 h-px", className)}
-    style={{ background: "var(--lux-row-border)" }}
+    style={{ background: "var(--color-border)" }}
     {...props}
   />
 ));

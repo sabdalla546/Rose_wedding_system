@@ -3,14 +3,17 @@ import { PackageOpen, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import CompactHeader from "@/components/common/CompactHeader";
-import TableHeader from "@/components/common/TableHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import {
+  CrudFilterField,
+  CrudFilters,
+  CrudPageHeader,
+  CrudPageLayout,
+} from "@/components/shared/crud-layout";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
-import Pagination from "@/components/ui/pagination";
 import { useDeleteService } from "@/hooks/services/useDeleteService";
 import { useServices } from "@/hooks/services/useServices";
 
@@ -84,11 +87,11 @@ const ServicesPage = () => {
 
   return (
     <ProtectedComponent permission={viewPermission}>
-      <div className="min-h-screen space-y-4 bg-background p-4 text-foreground">
-        <CompactHeader
+      <CrudPageLayout>
+        <CrudPageHeader
           icon={<PackageOpen className="h-5 w-5 text-primary" />}
           title={t("services.title", { defaultValue: "Services" })}
-          totalText={
+          meta={
             <>
               {totalItems}{" "}
               {t("services.totalServices", { defaultValue: "total services" })}
@@ -103,34 +106,30 @@ const ServicesPage = () => {
             onChange: setSearchTerm,
             onSubmit: handleSearchSubmit,
           }}
-          right={
+          actions={
             <ProtectedComponent permission={createPermission}>
-              <Button
-                size="sm"
-                className="h-auto px-3 py-2 text-xs"
-                onClick={() => navigate("/settings/services/create")}
-              >
-                <Plus className="h-3.5 w-3.5" />
+              <Button onClick={() => navigate("/settings/services/create")}>
+                <Plus className="h-4 w-4" />
                 {t("services.create", { defaultValue: "Create Service" })}
               </Button>
             </ProtectedComponent>
           }
         />
 
-        <SectionCard className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="min-w-[220px] space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
-                {t("services.categoryLabel", {
-                  defaultValue: "Service Category",
-                })}
-              </span>
+        <CrudFilters
+          title={t("common.filters", { defaultValue: "Filters" })}
+          description={t("services.filterDescription", {
+            defaultValue: "Refine the service catalog by category and active status.",
+          })}
+          contentClassName="md:grid-cols-2 xl:grid-cols-[repeat(2,minmax(220px,1fr))]"
+        >
+          <CrudFilterField
+            label={t("services.categoryLabel", {
+              defaultValue: "Service Category",
+            })}
+          >
               <select
-                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
+                className="app-native-select"
                 value={categoryFilter}
                 onChange={(event) => {
                   setCategoryFilter(event.target.value as "all" | ServiceCategory);
@@ -150,18 +149,13 @@ const ServicesPage = () => {
                   </option>
                 ))}
               </select>
-            </label>
+          </CrudFilterField>
 
-            <label className="min-w-[220px] space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
-                {t("services.statusFilter", { defaultValue: "Status Filter" })}
-              </span>
+          <CrudFilterField
+            label={t("services.statusFilter", { defaultValue: "Status Filter" })}
+          >
               <select
-                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
+                className="app-native-select"
                 value={isActiveFilter}
                 onChange={(event) => {
                   setIsActiveFilter(
@@ -180,47 +174,34 @@ const ServicesPage = () => {
                   {t("services.inactiveOnly", { defaultValue: "Inactive Only" })}
                 </option>
               </select>
-            </label>
-          </div>
-        </SectionCard>
+          </CrudFilterField>
+        </CrudFilters>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("services.listTitle", { defaultValue: "Services List" })}
-            totalItems={totalItems}
-            currentCount={services.length}
-            entityName={t("services.title", { defaultValue: "Services" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
+        <DataTableShell
+          title={t("services.listTitle", { defaultValue: "Services List" })}
+          totalItems={totalItems}
+          currentCount={services.length}
+          entityName={t("services.title", { defaultValue: "Services" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
+          <DataTable
+            columns={columns}
+            data={services}
+            rowNumberStart={rowNumberStart}
+            enableRowNumbers
+            fileName="services"
+            isLoading={isLoading}
           />
-
-          <div className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={services}
-              rowNumberStart={rowNumberStart}
-              enableRowNumbers
-              fileName="services"
-              isLoading={isLoading}
-            />
-          </div>
-
-          {totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -234,7 +215,7 @@ const ServicesPage = () => {
           onConfirm={handleDeleteConfirm}
           isPending={deleteMutation.isPending}
         />
-      </div>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

@@ -10,6 +10,7 @@ interface TableHeaderProps {
   setItemsPerPage: (size: number) => void;
   setCurrentPage: (page: number) => void;
   showMeta?: boolean;
+  actions?: React.ReactNode;
 }
 
 const TableHeader: React.FC<TableHeaderProps> = ({
@@ -21,6 +22,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   setItemsPerPage,
   setCurrentPage,
   showMeta = true,
+  actions,
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === "ar";
@@ -29,13 +31,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     <div
       className="border-b px-6 py-4"
       style={{
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--lux-control-hover) 65%, transparent), transparent)",
-        borderColor: "var(--lux-row-border)",
+        background: "var(--lux-panel-surface)",
+        borderColor: "var(--lux-panel-border)",
       }}
     >
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
             {title}
           </h3>
@@ -50,44 +51,45 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 {t("common.of", {
                   defaultValue: isArabic ? "من" : "of",
                 })}{" "}
-                {totalItems}{" "}
-                {entityName}
+                {totalItems} {entityName}
               </p>
             )}
         </div>
 
-        {/* Items per page selector */}
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="itemsPerPageTop"
-            className="text-sm text-[var(--lux-text-secondary)]"
-          >
-            {t("common.itemsPerPage", {
-              defaultValue: isArabic ? "العناصر لكل صفحة" : "Items per page",
-            })}
-            :
-          </label>
-          <select
-            id="itemsPerPageTop"
-            value={itemsPerPage}
-            onChange={(e) => {
-              const newSize = Number(e.target.value);
-              setItemsPerPage(newSize);
-              setCurrentPage(1);
-            }}
-            className="rounded-[14px] border px-3 py-1.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
-            style={{
-              background: "var(--lux-control-surface)",
-              borderColor: "var(--lux-control-border)",
-              color: "var(--lux-text)",
-            }}
-          >
-            {[1, 5, 10, 20, 50, 100, 200, 300].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-3 md:items-end">
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+              {actions}
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="itemsPerPageTop"
+              className="text-sm text-[var(--lux-text-secondary)]"
+            >
+              {t("common.itemsPerPage", {
+                defaultValue: isArabic ? "العناصر لكل صفحة" : "Items per page",
+              })}
+              :
+            </label>
+            <select
+              id="itemsPerPageTop"
+              value={itemsPerPage}
+              onChange={(e) => {
+                const newSize = Number(e.target.value);
+                setItemsPerPage(newSize);
+                setCurrentPage(1);
+              }}
+              className="app-native-select h-10 w-[88px] rounded-[14px] px-3 py-1.5 text-sm"
+            >
+              {[1, 5, 10, 20, 50, 100, 200, 300].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>

@@ -17,7 +17,14 @@ import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import {
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogShell,
+} from "@/components/shared/app-dialog";
+import { CrudPageHeader } from "@/components/shared/crud-layout";
+import { SummaryCard } from "@/components/dashboard/summary-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,14 +36,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmDialog from "@/components/ui/confirmDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -145,14 +145,6 @@ type EventServiceFormState = {
 
 const textareaClassName =
   "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] sm:min-h-[130px]";
-
-const eventDialogContentClassName =
-  "max-h-[calc(100vh-1rem)] gap-3 overflow-y-auto p-4 sm:max-w-2xl sm:gap-4 sm:p-6";
-
-const eventDialogHeaderClassName = "pr-12";
-
-const eventDialogFooterClassName =
-  "gap-2 pt-2 [&>button]:w-full sm:[&>button]:w-auto";
 
 const createDefaultSectionState = (sortOrder = 0): SectionFormState => ({
   sectionType: "client_info",
@@ -953,49 +945,27 @@ const EventDetailsPage = () => {
             dir={i18n.dir()}
             className="mx-auto w-full max-w-6xl space-y-6"
           >
-              <button
-                type="button"
-                onClick={() => navigate("/events")}
-                className="inline-flex items-center gap-2 text-sm text-[var(--lux-text-secondary)] transition-colors hover:text-[var(--lux-gold)]"
-              >
-                {"<-"}{" "}
-                {t("events.backToEvents", { defaultValue: "Back to Events" })}
-              </button>
-
-              <SectionCard className="space-y-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
-                      style={{
-                        background: "var(--lux-control-hover)",
-                        borderColor: "var(--lux-control-border)",
-                        color: "var(--lux-gold)",
-                      }}
-                    >
-                      <CalendarRange className="h-6 w-6" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-                          {getEventDisplayTitle(event)}
-                        </h1>
-                        <EventStatusBadge status={event.status} />
-                      </div>
-                      <p className="text-sm text-[var(--lux-text-secondary)]">
-                        {format(new Date(event.eventDate), "MMM d, yyyy", {
-                          locale: dateLocale,
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
+              <CrudPageHeader
+                backAction={
+                  <button
+                    type="button"
+                    onClick={() => navigate("/events")}
+                    className="crud-header-back"
+                  >
+                    <span aria-hidden="true">←</span>
+                    {t("events.backToEvents", { defaultValue: "Back to Events" })}
+                  </button>
+                }
+                icon={<CalendarRange className="h-5 w-5 text-primary" />}
+                title={getEventDisplayTitle(event)}
+                description={format(new Date(event.eventDate), "MMM d, yyyy", {
+                  locale: dateLocale,
+                })}
+                meta={<EventStatusBadge status={event.status} />}
+                actions={
+                  <>
                     <ProtectedComponent permission="events.update">
-                      <Button
-                        onClick={() => navigate(`/events/edit/${event.id}`)}
-                      >
+                      <Button onClick={() => navigate(`/events/edit/${event.id}`)}>
                         <Edit className="h-4 w-4" />
                         {t("common.edit", { defaultValue: "Edit" })}
                       </Button>
@@ -1004,9 +974,7 @@ const EventDetailsPage = () => {
                       <ProtectedComponent permission="customers.read">
                         <Button
                           variant="outline"
-                          onClick={() =>
-                            navigate(`/customers/${event.customerId}`)
-                          }
+                          onClick={() => navigate(`/customers/${event.customerId}`)}
                         >
                           <Link2 className="h-4 w-4" />
                           {t("events.viewCustomer", {
@@ -1015,9 +983,36 @@ const EventDetailsPage = () => {
                         </Button>
                       </ProtectedComponent>
                     ) : null}
-                  </div>
-                </div>
-              </SectionCard>
+                  </>
+                }
+              />
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <SummaryCard
+                  label={t("events.eventDate", { defaultValue: "Event Date" })}
+                  value={format(new Date(event.eventDate), "MMM d, yyyy", {
+                    locale: dateLocale,
+                  })}
+                  hint={t("events.statusLabel", { defaultValue: "Status" }) + `: ${t(`events.status.${event.status}`, {
+                    defaultValue: event.status,
+                  })}`}
+                />
+                <SummaryCard
+                  label={t("events.customer", { defaultValue: "Customer" })}
+                  value={event.customer?.fullName || "-"}
+                  hint={t("common.venue", { defaultValue: "Venue" }) + `: ${event.venue?.name || event.venueNameSnapshot || "-"}`}
+                />
+                <SummaryCard
+                  label={t("events.partyNames", { defaultValue: "Party Names" })}
+                  value={[event.groomName, event.brideName].filter(Boolean).join(" / ") || "-"}
+                  hint={t("events.guestCount", { defaultValue: "Guest Count" }) + `: ${event.guestCount ?? "-"}`}
+                />
+                <SummaryCard
+                  label={t("events.auditTrail", { defaultValue: "Audit Trail" })}
+                  value={event.updatedByUser?.fullName || event.createdByUser?.fullName || "-"}
+                  hint={t("events.updatedAt", { defaultValue: "Updated At" }) + `: ${event.updatedAt ? format(new Date(event.updatedAt), "MMM d, yyyy", { locale: dateLocale }) : "-"}`}
+                />
+              </div>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                 <Card>
@@ -2231,22 +2226,21 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <DialogContent className={eventDialogContentClassName}>
-            <DialogHeader className={eventDialogHeaderClassName}>
-              <DialogTitle>
-                {editingSection
+          <AppDialogShell size="md">
+            <AppDialogHeader
+              title={
+                editingSection
                   ? t("events.editSection", { defaultValue: "Edit Section" })
-                  : t("events.addSection", { defaultValue: "Add Section" })}
-              </DialogTitle>
-              <DialogDescription>
-                {t("events.sectionDialogHint", {
-                  defaultValue:
-                    "Keep section notes clean and use JSON only for structured planning data.",
-                })}
-              </DialogDescription>
-            </DialogHeader>
+                  : t("events.addSection", { defaultValue: "Add Section" })
+              }
+              description={t("events.sectionDialogHint", {
+                defaultValue:
+                  "Keep section notes clean and use JSON only for structured planning data.",
+              })}
+            />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <AppDialogBody>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm font-medium text-[var(--lux-text)]">
                   {t("events.sectionTypeLabel", {
@@ -2378,11 +2372,13 @@ const EventDetailsPage = () => {
               </span>
             </label>
 
-            {sectionError ? (
-              <p className="text-sm text-[var(--lux-danger)]">{sectionError}</p>
-            ) : null}
+              {sectionError ? (
+                <p className="text-sm text-[var(--lux-danger)]">{sectionError}</p>
+              ) : null}
 
-            <DialogFooter className={eventDialogFooterClassName}>
+            </AppDialogBody>
+
+            <AppDialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -2407,10 +2403,10 @@ const EventDetailsPage = () => {
                   ? t("common.processing", { defaultValue: "Processing..." })
                   : editingSection
                     ? t("common.update", { defaultValue: "Update" })
-                    : t("common.create", { defaultValue: "Create" })}
+                  : t("common.create", { defaultValue: "Create" })}
               </Button>
-            </DialogFooter>
-          </DialogContent>
+            </AppDialogFooter>
+          </AppDialogShell>
         </Dialog>
 
         <Dialog
@@ -2422,25 +2418,24 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <DialogContent className={eventDialogContentClassName}>
-            <DialogHeader className={eventDialogHeaderClassName}>
-              <DialogTitle>
-                {editingVendorLink
+          <AppDialogShell size="lg">
+            <AppDialogHeader
+              title={
+                editingVendorLink
                   ? t("vendors.editVendorAssignment", {
                       defaultValue: "Edit Vendor Assignment",
                     })
                   : t("vendors.assignVendor", {
                       defaultValue: "Assign Vendor",
-                    })}
-              </DialogTitle>
-              <DialogDescription>
-                {t("vendors.vendorAssignmentHint", {
-                  defaultValue:
-                    "Link a catalog vendor or record a manual company snapshot for this event.",
-                })}
-              </DialogDescription>
-            </DialogHeader>
+                    })
+              }
+              description={t("vendors.vendorAssignmentHint", {
+                defaultValue:
+                  "Link a catalog vendor or record a manual company snapshot for this event.",
+              })}
+            />
 
+            <AppDialogBody>
             <div className="space-y-4">
               <div
                 className="space-y-4 rounded-[24px] border p-5"
@@ -3127,11 +3122,12 @@ const EventDetailsPage = () => {
               </div>
             </div>
 
-            {vendorError ? (
-              <p className="text-sm text-[var(--lux-danger)]">{vendorError}</p>
-            ) : null}
+              {vendorError ? (
+                <p className="text-sm text-[var(--lux-danger)]">{vendorError}</p>
+              ) : null}
+            </AppDialogBody>
 
-            <DialogFooter className={eventDialogFooterClassName}>
+            <AppDialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -3156,10 +3152,10 @@ const EventDetailsPage = () => {
                   ? t("common.processing", { defaultValue: "Processing..." })
                   : editingVendorLink
                     ? t("common.update", { defaultValue: "Update" })
-                    : t("common.create", { defaultValue: "Create" })}
+                  : t("common.create", { defaultValue: "Create" })}
               </Button>
-            </DialogFooter>
-          </DialogContent>
+            </AppDialogFooter>
+          </AppDialogShell>
         </Dialog>
 
         <Dialog
@@ -3171,26 +3167,29 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <DialogContent className={eventDialogContentClassName}>
-            <DialogHeader className={eventDialogHeaderClassName}>
-              <DialogTitle>
-                {t("services.editEventService", {
-                  defaultValue: "Edit Event Service",
-                })}
-              </DialogTitle>
-              <DialogDescription>
-                {t("services.editEventServiceHint", {
-                  defaultValue: "Update the selected event service details.",
-                })}
-              </DialogDescription>
-              <DialogDescription>
-                {t("services.eventServiceHint", {
-                  defaultValue:
-                    "Link a catalog service or record a manual service line for this event.",
-                })}
-              </DialogDescription>
-            </DialogHeader>
+          <AppDialogShell size="md">
+            <AppDialogHeader
+              title={t("services.editEventService", {
+                defaultValue: "Edit Event Service",
+              })}
+              description={
+                <>
+                  <span>
+                    {t("services.editEventServiceHint", {
+                      defaultValue: "Update the selected event service details.",
+                    })}
+                  </span>
+                  <span className="block">
+                    {t("services.eventServiceHint", {
+                      defaultValue:
+                        "Link a catalog service or record a manual service line for this event.",
+                    })}
+                  </span>
+                </>
+              }
+            />
 
+            <AppDialogBody>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <label className="space-y-2">
                 <span className="text-sm font-medium text-[var(--lux-text)]">
@@ -3373,11 +3372,12 @@ const EventDetailsPage = () => {
               />
             </label>
 
-            {serviceError ? (
-              <p className="text-sm text-[var(--lux-danger)]">{serviceError}</p>
-            ) : null}
+              {serviceError ? (
+                <p className="text-sm text-[var(--lux-danger)]">{serviceError}</p>
+              ) : null}
+            </AppDialogBody>
 
-            <DialogFooter className={eventDialogFooterClassName}>
+            <AppDialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -3402,8 +3402,8 @@ const EventDetailsPage = () => {
                   ? t("common.processing", { defaultValue: "Processing..." })
                   : t("common.update", { defaultValue: "Update" })}
               </Button>
-            </DialogFooter>
-          </DialogContent>
+            </AppDialogFooter>
+          </AppDialogShell>
         </Dialog>
         <EventServicesChecklistDialog
           open={serviceChecklistOpen}

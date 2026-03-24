@@ -32,7 +32,7 @@ export function SearchInput({
         )}
       />
       <Input
-        className={cn('pl-11', inputClassName)}
+        className={cn('h-11 rounded-[var(--radius-lg)] pl-11', inputClassName)}
         placeholder={placeholder ?? t('common.searchAnything')}
         value={value}
         onChange={(event) => onChange?.(event.target.value)}

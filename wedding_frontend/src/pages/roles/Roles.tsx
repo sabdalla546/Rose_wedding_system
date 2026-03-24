@@ -6,11 +6,11 @@ import { FaPlus } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import Pagination from "@/components/ui/pagination";
 import ConfirmDialog from "@/components/ui/confirmDialog";
-import TableHeader from "@/components/common/TableHeader";
 import CompactHeader from "@/components/common/CompactHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { CrudPageLayout } from "@/components/shared/crud-layout";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 
 import { useRoles } from "@/hooks/roles/useRoles";
 import { useDeleteRole } from "@/hooks/roles/useDeleteRole";
@@ -90,7 +90,7 @@ const RolesPage = () => {
 
   return (
     <ProtectedComponent permission={viewPermission}>
-      <div className="min-h-screen space-y-4 bg-background p-4 text-foreground">
+      <CrudPageLayout>
         <CompactHeader
           icon={<ShieldCheck className="h-5 w-5 text-primary" />}
           title={t("roles.title", { defaultValue: "Roles" })}
@@ -121,43 +121,31 @@ const RolesPage = () => {
           }
         />
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("roles.listTitle", { defaultValue: "Roles List" })}
-            totalItems={totalItems}
-            currentCount={paginatedRoles.length}
-            entityName={t("roles.title", { defaultValue: "Roles" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
+        <DataTableShell
+          title={t("roles.listTitle", { defaultValue: "Roles List" })}
+          totalItems={totalItems}
+          currentCount={paginatedRoles.length}
+          entityName={t("roles.title", { defaultValue: "Roles" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
+          <DataTable
+            columns={columns}
+            data={paginatedRoles}
+            rowNumberStart={rowNumberStart}
+            enableRowNumbers
+            fileName="roles"
+            isLoading={isLoading}
           />
-
-          <div className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={paginatedRoles}
-              rowNumberStart={rowNumberStart}
-              enableRowNumbers
-              fileName="roles"
-              isLoading={isLoading}
-            />
-          </div>
-
-          {totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={safeCurrentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -171,7 +159,7 @@ const RolesPage = () => {
           onConfirm={handleDeleteConfirm}
           isPending={deleteMutation.isPending}
         />
-      </div>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

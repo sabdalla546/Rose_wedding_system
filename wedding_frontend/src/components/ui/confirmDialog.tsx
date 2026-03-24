@@ -1,17 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import type { ButtonProps } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ClipLoader } from "react-spinners";
 import { useTranslation } from "react-i18next";
+
+import { ConfirmActionDialog } from "@/components/shared/app-dialog";
+import type { ButtonProps } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -39,43 +31,17 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const { t } = useTranslation();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100vh-1rem)] overflow-y-auto border-border bg-card p-4 text-foreground sm:max-w-md sm:p-6">
-        <DialogHeader>
-          <DialogTitle>{t(title)}</DialogTitle>
-          <DialogDescription>{t(message)}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="[&>button]:w-full sm:[&>button]:w-auto">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto"
-          >
-            {t(cancelLabel)}
-          </Button>
-          <Button
-            variant={confirmVariant}
-            onClick={onConfirm}
-            disabled={isPending}
-            className="w-full sm:w-auto"
-          >
-            {isPending ? (
-              <ClipLoader
-                size={18}
-                color={
-                  confirmVariant === "destructive"
-                    ? "var(--lux-danger)"
-                    : "var(--lux-primary-text)"
-                }
-                className="mr-2"
-              />
-            ) : (
-              t(confirmLabel)
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmActionDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t(title)}
+      description={t(message)}
+      confirmLabel={t(confirmLabel)}
+      cancelLabel={t(cancelLabel)}
+      onConfirm={onConfirm}
+      isPending={isPending}
+      confirmVariant={confirmVariant}
+    />
   );
 };
 

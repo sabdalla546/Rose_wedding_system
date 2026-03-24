@@ -1,17 +1,22 @@
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { PageContainer } from "@/components/layout/page-container";
+
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import {
+  CrudFilterField,
+  CrudFilters,
+  CrudPageHeader,
+  CrudPageLayout,
+} from "@/components/shared/crud-layout";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
 import ConfirmDialog from "@/components/ui/confirmDialog";
-import TableHeader from "@/components/common/TableHeader";
-import Pagination from "@/components/ui/pagination";
-import { useCustomers } from "@/hooks/customers/useCustomers";
+import { DataTable } from "@/components/ui/data-table";
 import { useDeleteCustomer } from "@/hooks/customers/useDeleteCustomer";
+import { useCustomers } from "@/hooks/customers/useCustomers";
+
 import {
   CUSTOMER_STATUS_OPTIONS,
   toTableCustomers,
@@ -56,78 +61,85 @@ const CustomersPage = () => {
 
   return (
     <ProtectedComponent permission="customers.read">
-      <PageContainer className="space-y-6 pb-4 pt-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-              {t("customers.title", { defaultValue: "Customers" })}
-            </h1>
-            <p className="text-sm text-[var(--lux-text-secondary)]">
-              {t("customers.basicInformationHint", {
-                defaultValue:
-                  "Customer master records only. Event details now live under events.",
-              })}
-            </p>
-          </div>
+      <CrudPageLayout>
+        <CrudPageHeader
+          title={t("customers.title", { defaultValue: "Customers" })}
+          description={t("customers.basicInformationHint", {
+            defaultValue:
+              "Customer master records only. Event details now live under events.",
+          })}
+          search={{
+            placeholder: t("customers.searchPlaceholder", {
+              defaultValue: "Search customers by name, mobile, or email",
+            }),
+            value: searchQuery,
+            onChange: (value) => {
+              setSearchQuery(value);
+              setCurrentPage(1);
+            },
+            onSubmit: () => undefined,
+            submitLabel: t("common.search", { defaultValue: "Search" }),
+          }}
+          actions={
+            <ProtectedComponent permission="customers.create">
+              <Button onClick={() => navigate("/customers/create")}>
+                <Plus className="h-4 w-4" />
+                {t("customers.create", { defaultValue: "Create Customer" })}
+              </Button>
+            </ProtectedComponent>
+          }
+        />
 
-          <ProtectedComponent permission="customers.create">
-            <Button onClick={() => navigate("/customers/create")}>
-              <Plus className="h-4 w-4" />
-              {t("customers.create", { defaultValue: "Create Customer" })}
-            </Button>
-          </ProtectedComponent>
-        </div>
-
-        <div className="grid gap-4 rounded-[24px] border p-4 md:grid-cols-[1fr_220px]">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
-            <Input
-              className="pl-10"
-              value={searchQuery}
+        <CrudFilters
+          title={t("common.filters", { defaultValue: "Filters" })}
+          description={t("customers.filterDescription", {
+            defaultValue: "Filter customer records by current lifecycle status.",
+          })}
+          contentClassName="md:grid-cols-[minmax(0,220px)]"
+        >
+          <CrudFilterField
+            label={t("customers.status", { defaultValue: "Status" })}
+          >
+            <select
+              className="app-native-select"
+              value={statusFilter}
               onChange={(event) => {
-                setSearchQuery(event.target.value);
+                setStatusFilter(
+                  event.target.value as "all" | TableCustomer["status"],
+                );
                 setCurrentPage(1);
               }}
-              placeholder={t("customers.searchPlaceholder", {
-                defaultValue: "Search customers by name, mobile, or email",
-              })}
-            />
-          </div>
-
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={statusFilter}
-            onChange={(event) => {
-              setStatusFilter(
-                event.target.value as "all" | TableCustomer["status"],
-              );
-              setCurrentPage(1);
-            }}
-          >
-            <option value="all">
-              {t("customers.allStatuses", { defaultValue: "All Statuses" })}
-            </option>
-            {CUSTOMER_STATUS_OPTIONS.map((status) => (
-              <option key={status.value} value={status.value}>
-                {t(`customers.status.${status.value}`, {
-                  defaultValue: status.label,
-                })}
+            >
+              <option value="all">
+                {t("customers.allStatuses", { defaultValue: "All Statuses" })}
               </option>
-            ))}
-          </select>
-        </div>
+              {CUSTOMER_STATUS_OPTIONS.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {t(`customers.status.${status.value}`, {
+                    defaultValue: status.label,
+                  })}
+                </option>
+              ))}
+            </select>
+          </CrudFilterField>
+        </CrudFilters>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("customers.listTitle", { defaultValue: "Customers List" })}
-            totalItems={totalItems}
-            currentCount={customers.length}
-            entityName={t("customers.title", { defaultValue: "Customers" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
-          />
-
+        <DataTableShell
+          title={t("customers.listTitle", { defaultValue: "Customers List" })}
+          totalItems={totalItems}
+          currentCount={customers.length}
+          entityName={t("customers.title", { defaultValue: "Customers" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value: number) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
           <DataTable
             columns={columns}
             data={customers}
@@ -136,22 +148,7 @@ const CustomersPage = () => {
             isLoading={isLoading}
             fileName="customers"
           />
-
-          {totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value: number) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -177,7 +174,7 @@ const CustomersPage = () => {
           }}
           isPending={deleteMutation.isPending}
         />
-      </PageContainer>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

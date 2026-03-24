@@ -13,34 +13,34 @@ const statusStyles: Record<
   }
 > = {
   draft: {
-    background: "color-mix(in srgb, var(--lux-gold) 14%, transparent)",
-    borderColor: "color-mix(in srgb, var(--lux-gold) 32%, transparent)",
-    color: "var(--lux-gold)",
+    background: "var(--color-surface-3)",
+    borderColor: "var(--color-border)",
+    color: "var(--color-text-subtle)",
   },
   designing: {
-    background: "color-mix(in srgb, #7c5cff 14%, transparent)",
-    borderColor: "color-mix(in srgb, #7c5cff 34%, transparent)",
-    color: "#6d46ff",
+    background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+    borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
+    color: "var(--color-primary)",
   },
   confirmed: {
-    background: "color-mix(in srgb, #16a34a 14%, transparent)",
-    borderColor: "color-mix(in srgb, #16a34a 34%, transparent)",
-    color: "#15803d",
+    background: "var(--color-success-soft)",
+    borderColor: "color-mix(in srgb, var(--color-success) 34%, transparent)",
+    color: "var(--color-success)",
   },
   in_progress: {
-    background: "color-mix(in srgb, #0284c7 14%, transparent)",
-    borderColor: "color-mix(in srgb, #0284c7 34%, transparent)",
-    color: "#0369a1",
+    background: "var(--color-info-soft)",
+    borderColor: "color-mix(in srgb, var(--color-info) 34%, transparent)",
+    color: "var(--color-info)",
   },
   completed: {
-    background: "color-mix(in srgb, #059669 14%, transparent)",
-    borderColor: "color-mix(in srgb, #059669 34%, transparent)",
-    color: "#047857",
+    background: "var(--color-warning-soft)",
+    borderColor: "color-mix(in srgb, var(--color-warning) 34%, transparent)",
+    color: "var(--color-warning)",
   },
   cancelled: {
-    background: "color-mix(in srgb, var(--lux-danger) 14%, transparent)",
-    borderColor: "color-mix(in srgb, var(--lux-danger) 34%, transparent)",
-    color: "var(--lux-danger)",
+    background: "var(--color-danger-soft)",
+    borderColor: "color-mix(in srgb, var(--color-danger) 34%, transparent)",
+    color: "var(--color-danger)",
   },
 };
 

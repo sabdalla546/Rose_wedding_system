@@ -5,146 +5,189 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Theme maintenance guide:
+   * 1. Update semantic tokens here first.
+   * 2. Shared UI primitives consume these tokens.
+   * 3. Legacy --lux-* variables are compatibility aliases during the refactor.
+   */
   :root {
     color-scheme: dark;
 
-    --background: 0 0% 7%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 45 64% 52%;
-    --primary-foreground: 0 0% 7%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 74%;
-    --accent: 0 0% 10%;
-    --accent-foreground: 0 0% 100%;
-    --border: 45 52% 24%;
-    --input: 0 0% 10%;
-    --ring: 45 64% 52%;
-    --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-border: 45 40% 18%;
+    --color-bg: #121212;
+    --color-shell: #121212;
+    --color-shell-elevated: #161616;
+    --color-surface: #171717;
+    --color-surface-2: #1d1d1d;
+    --color-surface-3: rgba(255, 255, 255, 0.04);
+    --color-row: rgba(255, 255, 255, 0.02);
+    --color-control: rgba(255, 255, 255, 0.03);
+    --color-control-hover: rgba(247, 211, 91, 0.08);
+    --color-border: rgba(247, 211, 91, 0.14);
+    --color-border-strong: rgba(247, 211, 91, 0.22);
+    --color-control-border: rgba(247, 211, 91, 0.16);
+    --color-text: #ffffff;
+    --color-text-muted: #9a9aa6;
+    --color-text-subtle: #d0d0d7;
+    --color-heading: #ffffff;
+    --color-primary: #f7d35b;
+    --color-primary-hover: #ebc743;
+    --color-primary-foreground: #121212;
+    --color-danger: #f87171;
+    --color-danger-soft: rgba(248, 113, 113, 0.16);
+    --color-success: #34d399;
+    --color-success-soft: rgba(52, 211, 153, 0.14);
+    --color-info: #60a5fa;
+    --color-info-soft: rgba(96, 165, 250, 0.14);
+    --color-warning: #f7d35b;
+    --color-warning-soft: rgba(247, 211, 91, 0.14);
+    --color-overlay: rgba(0, 0, 0, 0.56);
+    --color-overlay-strong: rgba(0, 0, 0, 0.72);
+    --shadow-sm: 0 10px 26px rgba(0, 0, 0, 0.18);
+    --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.26);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.32);
+    --radius-sm: 0.75rem;
+    --radius-md: 1rem;
+    --radius-lg: 1.5rem;
+    --radius-xl: 1.75rem;
+    --space-page: 1rem;
+    --space-section: 1.5rem;
+    --space-card: 1.25rem;
+    --focus-ring: 0 0 0 2px rgba(247, 211, 91, 0.16);
+    --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 
-    --lux-background: #121212;
-    --lux-sidebar: #121212;
-    --lux-card: #161616;
-    --lux-elevated: #181818;
-    --lux-text: #ffffff;
-    --lux-text-secondary: #d0d0d7;
-    --lux-text-muted: #9a9aa6;
-    --lux-gold: #f7d35b;
-    --lux-gold-soft: #d4af37;
-    --lux-gold-border: rgba(247, 211, 91, 0.22);
+    --lux-background: var(--color-bg);
+    --lux-sidebar: var(--color-shell);
+    --lux-card: var(--color-surface);
+    --lux-panel: var(--color-surface);
+    --lux-elevated: var(--color-surface-2);
+    --lux-text: var(--color-text);
+    --lux-text-secondary: var(--color-text-subtle);
+    --lux-text-muted: var(--color-text-muted);
+    --lux-gold: var(--color-primary);
+    --lux-gold-soft: var(--color-primary-hover);
+    --lux-gold-border: var(--color-border-strong);
     --lux-gold-glow: rgba(247, 211, 91, 0.16);
-    --lux-shell-surface: #121212;
-    --lux-shell-chrome-surface: #121212;
-    --lux-shell-chrome-elevated: #161616;
-    --lux-shell-chrome-control: rgba(255, 255, 255, 0.03);
-    --lux-shell-chrome-control-border: rgba(247, 211, 91, 0.18);
-    --lux-shell-chrome-control-hover: rgba(247, 211, 91, 0.1);
-    --lux-shell-chrome-text: #ffffff;
-    --lux-shell-chrome-muted: #d0d0d7;
-    --lux-shell-border: rgba(247, 211, 91, 0.14);
-    --lux-panel-surface: #161616;
-    --lux-panel-border: rgba(247, 211, 91, 0.14);
-    --lux-panel-shadow:
-      0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.02);
-    --lux-row-surface: rgba(20, 20, 20, 0.96);
-    --lux-row-border: rgba(247, 211, 91, 0.1);
-    --lux-control-surface: rgba(255, 255, 255, 0.03);
-    --lux-control-border: rgba(247, 211, 91, 0.14);
-    --lux-control-hover: rgba(247, 211, 91, 0.08);
-    --lux-heading: #ffffff;
-    --lux-soft-text: #f3f4f6;
-    --lux-strong-text: #ffffff;
-    --lux-sidebar-active-bg: #f7d35b;
-    --lux-sidebar-active-text: #121212;
-    --lux-badge-surface: #f7d35b;
-    --lux-badge-text: #121212;
-    --lux-primary-surface: #f7d35b;
-    --lux-primary-text: #121212;
-    --lux-danger: #f0a4a4;
-    --lux-danger-soft: rgba(154, 63, 63, 0.16);
-    --lux-success: #7ed6a7;
-    --lux-success-soft: rgba(58, 124, 86, 0.16);
-    --lux-overlay: rgba(0, 0, 0, 0.56);
-    --lux-overlay-strong: rgba(0, 0, 0, 0.72);
-    --lux-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.02);
-    --lux-avatar-surface: var(--lux-control-hover);
+    --lux-shell-surface: var(--color-shell);
+    --lux-shell-chrome-surface: var(--color-shell);
+    --lux-shell-chrome-elevated: var(--color-shell-elevated);
+    --lux-shell-chrome-control: var(--color-control);
+    --lux-shell-chrome-control-border: var(--color-control-border);
+    --lux-shell-chrome-control-hover: var(--color-control-hover);
+    --lux-shell-chrome-text: var(--color-text);
+    --lux-shell-chrome-muted: var(--color-text-subtle);
+    --lux-shell-border: var(--color-border);
+    --lux-panel-surface: var(--color-surface);
+    --lux-panel-border: var(--color-border);
+    --lux-panel-shadow: var(--shadow-md);
+    --lux-row-surface: var(--color-surface-2);
+    --lux-row-border: rgba(255, 255, 255, 0.08);
+    --lux-control-surface: var(--color-control);
+    --lux-control-border: var(--color-control-border);
+    --lux-control-hover: var(--color-control-hover);
+    --lux-heading: var(--color-heading);
+    --lux-soft-text: var(--color-text-subtle);
+    --lux-strong-text: var(--color-text);
+    --lux-sidebar-active-bg: var(--color-primary);
+    --lux-sidebar-active-text: var(--color-primary-foreground);
+    --lux-badge-surface: var(--color-primary);
+    --lux-badge-text: var(--color-primary-foreground);
+    --lux-primary-surface: var(--color-primary);
+    --lux-primary-text: var(--color-primary-foreground);
+    --lux-danger: var(--color-danger);
+    --lux-danger-soft: var(--color-danger-soft);
+    --lux-success: var(--color-success);
+    --lux-success-soft: var(--color-success-soft);
+    --lux-overlay: var(--color-overlay);
+    --lux-overlay-strong: var(--color-overlay-strong);
+    --lux-inset-highlight: var(--inset-highlight);
+    --lux-avatar-surface: var(--color-control-hover);
   }
 
   :root[data-theme="light"] {
     color-scheme: light;
 
-    --background: 220 12% 93%;
-    --foreground: 0 0% 8%;
-    --card: 220 14% 95%;
-    --card-foreground: 0 0% 8%;
-    --popover: 220 14% 95%;
-    --popover-foreground: 0 0% 8%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 95%;
-    --secondary-foreground: 0 0% 8%;
-    --muted: 220 14% 95%;
-    --muted-foreground: 0 0% 20%;
-    --accent: 220 14% 95%;
-    --accent-foreground: 0 0% 8%;
-    --border: 236 15% 86%;
-    --input: 220 14% 95%;
-    --ring: 217 91% 60%;
+    --color-bg: #eef2f7;
+    --color-shell: #000;
+    --color-shell-elevated: #000;
+    --color-surface: #ffffff;
+    --color-surface-2: #f6f8fb;
+    --color-surface-3: rgba(59, 130, 246, 0.08);
+    --color-row: rgba(59, 130, 246, 0.04);
+    --color-control: rgba(245, 247, 250, 0.98);
+    --color-control-hover: rgba(59, 130, 246, 0.08);
+    --color-border: rgba(15, 23, 42, 0.08);
+    --color-border-strong: rgba(59, 130, 246, 0.24);
+    --color-control-border: rgba(15, 23, 42, 0.08);
+    --color-text: #111827;
+    --color-text-muted: #6b7280;
+    --color-text-subtle: #374151;
+    --color-heading: #0f172a;
+    --color-primary: #054dc2;
+    --color-primary-hover: #2563eb;
+    --color-primary-foreground: #ffffff;
+    --color-danger: #dc2626;
+    --color-danger-soft: rgba(220, 38, 38, 0.14);
+    --color-success: #059669;
+    --color-success-soft: rgba(5, 150, 105, 0.14);
+    --color-info: #115bfa;
+    --color-info-soft: rgba(37, 99, 235, 0.12);
+    --color-warning: #d97706;
+    --color-warning-soft: rgba(217, 119, 6, 0.12);
+    --color-overlay: rgba(15, 23, 42, 0.34);
+    --color-overlay-strong: rgba(15, 23, 42, 0.52);
+    --shadow-sm: 0 10px 26px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 18px 44px rgba(15, 23, 42, 0.1);
+    --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.12);
+    --focus-ring: 0 0 0 2px rgba(59, 130, 246, 0.16);
+    --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.88);
 
-    --lux-background: #edf0f3;
-    --lux-sidebar: #e7ebef;
-    --lux-card: #f2f4f7;
-    --lux-elevated: #f0f2f5;
-    --lux-text: #111111;
-    --lux-text-secondary: #222222;
-    --lux-text-muted: #4a4a4a;
-    --lux-gold: #3b82f6;
-    --lux-gold-soft: #2563eb;
-    --lux-gold-border: rgba(59, 130, 246, 0.28);
-    --lux-gold-glow: rgba(59, 130, 246, 0.2);
-    --lux-shell-surface: #121212;
-    --lux-shell-chrome-surface: #121212;
-    --lux-shell-chrome-elevated: #161616;
+    --lux-background: var(--color-bg);
+    --lux-sidebar: var(--color-shell);
+    --lux-card: var(--color-surface);
+    --lux-panel: var(--color-surface);
+    --lux-elevated: var(--color-surface-2);
+    --lux-text: var(--color-text);
+    --lux-text-secondary: var(--color-text-subtle);
+    --lux-text-muted: var(--color-text-muted);
+    --lux-gold: var(--color-primary);
+    --lux-gold-soft: var(--color-primary-hover);
+    --lux-gold-border: var(--color-border-strong);
+    --lux-gold-glow: rgba(59, 130, 246, 0.16);
+    --lux-shell-surface: var(--color-shell);
+    --lux-shell-chrome-surface: var(--color-shell);
+    --lux-shell-chrome-elevated: var(--color-shell-elevated);
     --lux-shell-chrome-control: rgba(59, 130, 246, 0.08);
     --lux-shell-chrome-control-border: rgba(59, 130, 246, 0.24);
     --lux-shell-chrome-control-hover: rgba(59, 130, 246, 0.16);
     --lux-shell-chrome-text: #ffffff;
     --lux-shell-chrome-muted: #c9dbff;
     --lux-shell-border: rgba(59, 130, 246, 0.2);
-    --lux-panel-surface: #ffffff;
-    --lux-panel-border: rgba(17, 17, 17, 0.08);
-    --lux-panel-shadow:
-      0 18px 40px rgba(17, 17, 17, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    --lux-row-surface: rgba(255, 255, 255, 0.98);
-    --lux-row-border: rgba(17, 17, 17, 0.08);
-    --lux-control-surface: rgba(245, 247, 250, 0.98);
-    --lux-control-border: rgba(17, 17, 17, 0.08);
-    --lux-control-hover: rgba(59, 130, 246, 0.08);
-    --lux-heading: #111111;
-    --lux-soft-text: #1f1f1f;
-    --lux-strong-text: #111111;
-    --lux-sidebar-active-bg: #3b82f6;
-    --lux-sidebar-active-text: #121212;
-    --lux-badge-surface: #3b82f6;
-    --lux-badge-text: #ffffff;
-    --lux-primary-surface: #3b82f6;
-    --lux-primary-text: #ffffff;
-    --lux-danger: #dc2626;
-    --lux-danger-soft: rgba(220, 38, 38, 0.14);
-    --lux-success: #4f9b73;
-    --lux-success-soft: rgba(79, 155, 115, 0.14);
-    --lux-overlay: rgba(15, 23, 42, 0.34);
-    --lux-overlay-strong: rgba(15, 23, 42, 0.52);
-    --lux-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.88);
-    --lux-avatar-surface: var(--lux-control-hover);
+    --lux-panel-surface: var(--color-surface);
+    --lux-panel-border: var(--color-border);
+    --lux-panel-shadow: var(--shadow-md);
+    --lux-row-surface: var(--color-surface-2);
+    --lux-row-border: rgba(15, 23, 42, 0.08);
+    --lux-control-surface: var(--color-control);
+    --lux-control-border: var(--color-control-border);
+    --lux-control-hover: var(--color-control-hover);
+    --lux-heading: var(--color-heading);
+    --lux-soft-text: var(--color-text-subtle);
+    --lux-strong-text: var(--color-text);
+    --lux-sidebar-active-bg: var(--color-primary);
+    --lux-sidebar-active-text: var(--color-primary-foreground);
+    --lux-badge-surface: var(--color-primary);
+    --lux-badge-text: var(--color-primary-foreground);
+    --lux-primary-surface: var(--color-primary);
+    --lux-primary-text: var(--color-primary-foreground);
+    --lux-danger: var(--color-danger);
+    --lux-danger-soft: var(--color-danger-soft);
+    --lux-success: var(--color-success);
+    --lux-success-soft: var(--color-success-soft);
+    --lux-overlay: var(--color-overlay);
+    --lux-overlay-strong: var(--color-overlay-strong);
+    --lux-inset-highlight: var(--inset-highlight);
+    --lux-avatar-surface: var(--color-control-hover);
   }
 
   * {
@@ -154,27 +197,17 @@
   html {
     @apply scroll-smooth;
     scrollbar-width: thin;
-    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    background-color: var(--color-bg);
     scrollbar-width: thin;
-    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
-    background-image: none;
-    background-color: var(--lux-background);
-  }
-
-  :root[data-theme="light"] body {
-    background-image: none;
-    background-color: var(--lux-background);
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   body::before {
-    content: none;
-  }
-
-  :root[data-theme="light"] body::before {
     content: none;
   }
 
@@ -190,62 +223,556 @@
 
   html::-webkit-scrollbar-track,
   body::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 999px;
+    background: transparent;
   }
 
   html::-webkit-scrollbar-thumb,
   body::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      var(--lux-gold-soft),
-      var(--lux-gold-border)
-    );
+    background: var(--color-border-strong);
     border-radius: 999px;
-    border: 1px solid var(--lux-gold-border);
   }
 
   html::-webkit-scrollbar-thumb:hover,
   body::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--lux-gold), var(--lux-gold-soft));
+    background: var(--color-primary-hover);
   }
 }
 
 @layer components {
-  .lux-panel {
-    @apply rounded-[28px];
-    border-color: var(--lux-panel-border);
-    background: var(--lux-panel-surface);
-    box-shadow: var(--lux-panel-shadow);
+  .app-page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-section);
+    padding: var(--space-page);
   }
 
-  .lux-elevated {
-    @apply rounded-[28px];
-    border-color: var(--lux-panel-border);
-    background: var(--lux-panel-surface);
-    box-shadow: var(--lux-panel-shadow);
-  }
-
+  .surface-card,
+  .lux-panel,
+  .lux-elevated,
   .lux-dashboard-panel {
-    border-color: var(--lux-panel-border);
-    background: var(--lux-panel-surface);
-    box-shadow: var(--lux-panel-shadow);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  .surface-card-muted {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+  }
+
+  .surface-card-soft {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-3);
+  }
+
+  .page-header {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .page-eyebrow {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .page-title {
+    color: var(--color-heading);
+    font-size: clamp(1.18rem, 1rem + 0.62vw, 1.55rem);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    color: var(--color-text-subtle);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .section-title {
+    color: var(--color-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .section-description {
+    color: var(--color-text-subtle);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .section-divider {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.9rem;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .crud-page-main {
+    width: 100%;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-section);
+  }
+
+  .crud-header-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text-subtle);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 180ms ease;
+  }
+
+  .crud-header-back:hover {
+    color: var(--color-primary);
+  }
+
+  .crud-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .crud-toolbar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .crud-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .crud-filters-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .crud-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .crud-filter-label {
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .crud-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    color: var(--color-text-subtle);
+    padding: 0.35rem 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .crud-form-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .crud-content {
+    overflow: hidden;
+  }
+
+  .crud-actions-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 1.5rem;
+  }
+
+  .dialog-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .dialog-shell {
+    display: flex;
+    max-height: min(90dvh, 960px);
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .dialog-header-shell {
+    flex-shrink: 0;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    padding: 1rem;
+  }
+
+  .dialog-footer-bar {
+    flex-shrink: 0;
+    border-top: 1px solid var(--color-border);
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .dialog-body,
+    .dialog-header-shell,
+    .dialog-footer-bar {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  .table-state {
+    display: flex;
+    min-height: 16rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .crud-toolbar-header {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .crud-actions-bar {
+      flex-direction: row;
+    }
+  }
+
+  .app-control {
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-control);
+    color: var(--color-text);
+    box-shadow: var(--inset-highlight);
+  }
+
+  .app-control-sm {
+    min-height: 2.5rem;
+    border-radius: var(--radius-md);
+  }
+
+  .app-native-select {
+    min-height: 2.75rem;
+    width: 100%;
+    appearance: none;
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-control);
+    color: var(--color-text);
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+    box-shadow: var(--inset-highlight);
+  }
+
+  .app-native-select:focus {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--focus-ring), var(--inset-highlight);
+  }
+
+  .app-native-select option,
+  .app-native-select optgroup {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .app-native-select option:checked,
+  .app-native-select option:hover,
+  .app-native-select option:focus {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
+  .app-textarea {
+    min-height: 8rem;
+    width: 100%;
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-control);
+    color: var(--color-text);
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+    box-shadow: var(--inset-highlight);
+  }
+
+  .app-textarea::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .app-textarea:focus {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--focus-ring), var(--inset-highlight);
+  }
+
+  .app-icon-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-md);
+    background: var(--color-control-hover);
+    color: var(--color-primary);
+  }
+
+  .app-info-block {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    padding: 1rem;
+  }
+
+  .app-empty-state {
+    display: flex;
+    min-height: 14rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface-2);
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .table-shell {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-shell-footer {
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    padding: 1rem 1.5rem;
+  }
+
+  .app-calendar-shell {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface-2);
+  }
+
+  .app-calendar-shell .fc {
+    --fc-border-color: var(--color-border);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: var(--color-surface-2);
+    --fc-list-event-hover-bg-color: var(--color-control-hover);
+    --fc-today-bg-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    --fc-button-text-color: var(--color-text);
+    --fc-button-bg-color: var(--color-control);
+    --fc-button-border-color: var(--color-control-border);
+    --fc-button-hover-bg-color: var(--color-control-hover);
+    --fc-button-hover-border-color: var(--color-border-strong);
+    --fc-button-active-bg-color: var(--color-primary);
+    --fc-button-active-border-color: var(--color-border-strong);
+    --fc-button-active-text-color: var(--color-primary-foreground);
+    color: var(--color-text);
+  }
+
+  .app-calendar-shell .fc-theme-standard td,
+  .app-calendar-shell .fc-theme-standard th {
+    border-color: var(--color-border);
+  }
+
+  .app-calendar-shell .fc-scrollgrid,
+  .app-calendar-shell .fc-list {
+    border-color: var(--color-border);
+  }
+
+  .app-calendar-shell .fc-col-header-cell {
+    background: var(--color-surface);
+    padding-block: 0.35rem;
+  }
+
+  .app-calendar-shell .fc-col-header-cell-cushion,
+  .app-calendar-shell .fc-daygrid-day-number,
+  .app-calendar-shell .fc-timegrid-axis-cushion,
+  .app-calendar-shell .fc-timegrid-slot-label-cushion,
+  .app-calendar-shell .fc-list-day-text,
+  .app-calendar-shell .fc-list-day-side-text {
+    color: var(--color-text-subtle);
+    font-weight: 600;
+  }
+
+  .app-calendar-shell .fc-daygrid-day-frame,
+  .app-calendar-shell .fc-timegrid-col-frame {
+    background: var(--color-surface-2);
+  }
+
+  .app-calendar-shell .fc-day-other .fc-daygrid-day-frame {
+    opacity: 0.55;
+  }
+
+  .app-calendar-shell .fc-day-today .fc-daygrid-day-frame,
+  .app-calendar-shell .fc-day-today .fc-timegrid-col-frame {
+    background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface-2));
+  }
+
+  .app-calendar-shell .fc-timegrid-now-indicator-line {
+    border-color: var(--color-primary);
+  }
+
+  .app-calendar-shell .fc-timegrid-now-indicator-arrow {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .app-calendar-shell .fc-list-event-dot {
+    border-color: var(--color-primary);
+  }
+
+  .app-calendar-shell .fc-list-event:hover td {
+    background: var(--color-control-hover);
+  }
+
+  .app-calendar-shell .fc-event {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app-calendar-event {
+    min-height: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 0.9rem;
+    padding: 0.45rem 0.55rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .app-calendar-event__time {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .app-calendar-event__title {
+    margin-top: 0.2rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--color-text);
+  }
+
+  .app-calendar-event__meta {
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--color-text-subtle);
+  }
+
+  .app-calendar-accent-dot--gold,
+  .app-calendar-event--gold {
+    color: var(--color-primary);
+  }
+
+  .app-calendar-event--gold {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  }
+
+  .app-calendar-accent-dot--emerald,
+  .app-calendar-event--emerald {
+    color: var(--color-success);
+  }
+
+  .app-calendar-event--emerald {
+    border-color: color-mix(in srgb, var(--color-success) 26%, transparent);
+    background: color-mix(in srgb, var(--color-success) 9%, var(--color-surface));
+  }
+
+  .app-calendar-accent-dot--blue,
+  .app-calendar-event--blue {
+    color: var(--color-info);
+  }
+
+  .app-calendar-event--blue {
+    border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
+    background: color-mix(in srgb, var(--color-info) 9%, var(--color-surface));
+  }
+
+  .app-calendar-accent-dot--rose,
+  .app-calendar-event--rose {
+    color: var(--color-danger);
+  }
+
+  .app-calendar-event--rose {
+    border-color: color-mix(in srgb, var(--color-danger) 22%, transparent);
+    background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  }
+
+  .app-calendar-accent-dot--slate,
+  .app-calendar-event--slate {
+    color: var(--color-text-subtle);
+  }
+
+  .app-calendar-event--slate {
+    border-color: var(--color-border);
+    background: var(--color-surface);
   }
 
   .lux-ring {
-    box-shadow:
-      0 0 0 1px rgba(212, 175, 55, 0.12),
-      0 16px 48px rgba(0, 0, 0, 0.24),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    box-shadow: var(--focus-ring), var(--shadow-sm);
   }
 
   .shadow-luxe {
-    box-shadow: var(--lux-panel-shadow);
+    box-shadow: var(--shadow-md);
   }
 
   .subtle-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   .subtle-scrollbar::-webkit-scrollbar {
@@ -254,21 +781,15 @@
   }
 
   .subtle-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 999px;
+    background: transparent;
   }
 
   .subtle-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      var(--lux-gold-soft),
-      var(--lux-gold-border)
-    );
+    background: var(--color-border-strong);
     border-radius: 999px;
-    border: 1px solid var(--lux-gold-border);
   }
 
   .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--lux-gold), var(--lux-gold-soft));
+    background: var(--color-primary-hover);
   }
 }

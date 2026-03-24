@@ -7,10 +7,14 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 
-import { PageContainer } from "@/components/layout/page-container";
+import {
+  CrudActionsBar,
+  CrudFormLayout,
+  CrudFormSection,
+  CrudPageLayout,
+} from "@/components/shared/crud-layout";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -55,9 +59,6 @@ const vendorSchema = z.object({
 });
 
 type VendorFormValues = z.infer<typeof vendorSchema>;
-
-const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
-const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
 const VendorFormPage = () => {
   const { t, i18n } = useTranslation();
@@ -130,85 +131,50 @@ const VendorFormPage = () => {
     <ProtectedComponent
       permission={isEditMode ? "vendors.update" : "vendors.create"}
     >
-      <PageContainer className="pb-4 pt-4 text-foreground">
-        <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
-          <button
-            type="button"
-            onClick={() => navigate("/settings/vendors")}
-            className="inline-flex items-center gap-2 text-sm text-[var(--lux-text-secondary)] transition-colors hover:text-[var(--lux-gold)]"
-          >
-            {"<-"}{" "}
-            {t("vendors.backToVendors", { defaultValue: "Back to Vendors" })}
-          </button>
-
-          <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
-            style={{
-              background: "var(--lux-panel-surface)",
-              borderColor: "var(--lux-panel-border)",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
-                style={{
-                  background: "var(--lux-control-hover)",
-                  borderColor: "var(--lux-control-border)",
-                  color: "var(--lux-gold)",
-                }}
+      <CrudPageLayout>
+        <div dir={i18n.dir()}>
+          <CrudFormLayout
+            icon={<Handshake className="h-5 w-5 text-primary" />}
+            title={
+              isEditMode
+                ? t("vendors.editTitle", { defaultValue: "Edit Vendor" })
+                : t("vendors.createTitle", { defaultValue: "Create Vendor" })
+            }
+            description={
+              isEditMode
+                ? t("vendors.editDescription", {
+                    defaultValue:
+                      "Update vendor details, contact data, and status.",
+                  })
+                : t("vendors.createDescription", {
+                    defaultValue:
+                      "Create a vendor catalog record for event partners and external providers.",
+                  })
+            }
+            backAction={
+              <button
+                type="button"
+                onClick={() => navigate("/settings/vendors")}
+                className="crud-header-back"
               >
-                <Handshake className="h-6 w-6" />
-              </div>
-
-              <div className="space-y-1">
-                <h1 className="text-xl font-bold text-[var(--lux-heading)]">
-                  {isEditMode
-                    ? t("vendors.editTitle", { defaultValue: "Edit Vendor" })
-                    : t("vendors.createTitle", {
-                        defaultValue: "Create Vendor",
-                      })}
-                </h1>
-                <p className="text-sm text-[var(--lux-text-secondary)]">
-                  {isEditMode
-                    ? t("vendors.editDescription", {
-                        defaultValue:
-                          "Update vendor details, contact data, and status.",
-                      })
-                    : t("vendors.createDescription", {
-                        defaultValue:
-                          "Create a vendor catalog record for event partners and external providers.",
-                      })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Card className="overflow-hidden rounded-[24px]">
+                <span aria-hidden="true">←</span>
+                {t("vendors.backToVendors", { defaultValue: "Back to Vendors" })}
+              </button>
+            }
+          >
             <div className="p-6 md:p-8">
               <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-8"
-                >
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("vendors.basicInformation", {
-                          defaultValue: "Basic Information",
-                        })}
-                      </h2>
-                      <p className={sectionHintClass}>
-                        {t("vendors.basicInformationHint", {
-                          defaultValue:
-                            "Capture the core vendor information and service type.",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  <CrudFormSection
+                    title={t("vendors.basicInformation", {
+                      defaultValue: "Basic Information",
+                    })}
+                    description={t("vendors.basicInformationHint", {
+                      defaultValue:
+                        "Capture the core vendor information and service type.",
+                    })}
+                  >
+                    <div className="crud-form-grid md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="name"
@@ -240,10 +206,7 @@ const VendorFormPage = () => {
                                 defaultValue: "Vendor Type",
                               })}
                             </FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
+                            <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue
@@ -255,10 +218,7 @@ const VendorFormPage = () => {
                               </FormControl>
                               <SelectContent>
                                 {VENDOR_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
+                                  <SelectItem key={option.value} value={option.value}>
                                     {t(`vendors.type.${option.value}`, {
                                       defaultValue: option.label,
                                     })}
@@ -271,27 +231,18 @@ const VendorFormPage = () => {
                         )}
                       />
                     </div>
-                  </section>
+                  </CrudFormSection>
 
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("vendors.contactSection", {
-                          defaultValue: "Contact Details",
-                        })}
-                      </h2>
-                      <p className={sectionHintClass}>
-                        {t("vendors.contactSectionHint", {
-                          defaultValue:
-                            "Save the main contact points for the vendor team.",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <CrudFormSection
+                    title={t("vendors.contactSection", {
+                      defaultValue: "Contact Details",
+                    })}
+                    description={t("vendors.contactSectionHint", {
+                      defaultValue:
+                        "Save the main contact points for the vendor team.",
+                    })}
+                  >
+                    <div className="crud-form-grid md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="contactPerson"
@@ -305,12 +256,9 @@ const VendorFormPage = () => {
                             <FormControl>
                               <Input
                                 {...field}
-                                placeholder={t(
-                                  "vendors.contactPersonPlaceholder",
-                                  {
-                                    defaultValue: "Enter contact person name",
-                                  },
-                                )}
+                                placeholder={t("vendors.contactPersonPlaceholder", {
+                                  defaultValue: "Enter contact person name",
+                                })}
                               />
                             </FormControl>
                             <FormMessage />
@@ -405,20 +353,13 @@ const VendorFormPage = () => {
                         </FormItem>
                       )}
                     />
-                  </section>
+                  </CrudFormSection>
 
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("vendors.statusSection", {
-                          defaultValue: "Status & Notes",
-                        })}
-                      </h2>
-                    </div>
-
+                  <CrudFormSection
+                    title={t("vendors.statusSection", {
+                      defaultValue: "Status & Notes",
+                    })}
+                  >
                     <label
                       className="flex items-center gap-3 rounded-[20px] border p-4"
                       style={{
@@ -460,29 +401,20 @@ const VendorFormPage = () => {
                           <FormControl>
                             <textarea
                               {...field}
-                              className="min-h-[140px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
+                              className="app-textarea"
                               placeholder={t("vendors.notesPlaceholder", {
                                 defaultValue:
                                   "Add service notes, operating details, or internal remarks...",
                               })}
-                              style={{
-                                background: "var(--lux-control-surface)",
-                                borderColor: "var(--lux-control-border)",
-                                boxShadow:
-                                  "inset 0 1px 0 rgba(255,255,255,0.02)",
-                              }}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </section>
+                  </CrudFormSection>
 
-                  <div
-                    className="flex flex-col justify-end gap-3 pt-6 sm:flex-row"
-                    style={{ borderTop: "1px solid var(--lux-row-border)" }}
-                  >
+                  <CrudActionsBar>
                     <Button
                       type="button"
                       variant="outline"
@@ -501,13 +433,13 @@ const VendorFormPage = () => {
                           ? t("common.update", { defaultValue: "Update" })
                           : t("common.create", { defaultValue: "Create" })}
                     </Button>
-                  </div>
+                  </CrudActionsBar>
                 </form>
               </Form>
             </div>
-          </Card>
+          </CrudFormLayout>
         </div>
-      </PageContainer>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

@@ -7,11 +7,11 @@ import { FaPlus } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import Pagination from "@/components/ui/pagination";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 
-import TableHeader from "@/components/common/TableHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { CrudPageLayout } from "@/components/shared/crud-layout";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
 
@@ -124,7 +124,7 @@ const Users = () => {
 
   return (
     <ProtectedComponent permission={viewPermission}>
-      <div className="min-h-screen space-y-4 bg-background p-4 text-foreground">
+      <CrudPageLayout>
         <CompactHeader
           icon={<UsersIcon className="h-5 w-5 text-primary" />}
           title={t("users.title", { defaultValue: "Users" })}
@@ -167,46 +167,34 @@ const Users = () => {
           }
         />
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("users.listTitle", { defaultValue: "Users List" })}
-            totalItems={totalItems}
-            currentCount={users.length}
-            entityName={t("users.title", { defaultValue: "Users" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
+        <DataTableShell
+          title={t("users.listTitle", { defaultValue: "Users List" })}
+          totalItems={totalItems}
+          currentCount={users.length}
+          entityName={t("users.title", { defaultValue: "Users" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
+          <DataTable
+            columns={columns}
+            data={users}
+            rowNumberStart={rowNumberStart}
+            enableRowNumbers
+            showExportCSV
+            showExportExcel
+            showPrint
+            fileName="users"
+            isLoading={isLoading}
           />
-
-          <div className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={users}
-              rowNumberStart={rowNumberStart}
-              enableRowNumbers
-              showExportCSV
-              showExportExcel
-              showPrint
-              fileName="users"
-              isLoading={isLoading}
-            />
-          </div>
-
-          {totalPages > 1 && (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          )}
-        </div>
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -233,7 +221,7 @@ const Users = () => {
           onConfirm={handleRestoreConfirm}
           isPending={restoreMutation.isPending}
         />
-      </div>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };
