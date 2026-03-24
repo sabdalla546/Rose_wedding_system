@@ -6,7 +6,7 @@ export const luxuryThemeTokens = {
   text: "#FFFFFF",
   textSecondary: "#B8B8C2",
   textMuted: "#8A8A95",
-  gold: "#D4AF37",
+  gold: "#f7d35b",
   goldSoft: "#B8902C",
   goldBorder: "rgba(212,175,55,0.22)",
   goldGlow: "rgba(212,175,55,0.18)",

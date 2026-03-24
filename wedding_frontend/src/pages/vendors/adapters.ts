@@ -18,10 +18,12 @@ export type TableVendor = Vendor & {
 };
 
 export type TableVendorSubService = VendorSubService & {
+  vendorDisplay: string;
   typeDisplay: string;
 };
 
 export type TableVendorPricingPlan = VendorPricingPlan & {
+  vendorDisplay: string;
   typeDisplay: string;
   subServiceRangeDisplay: string;
   priceDisplay: string;
@@ -110,7 +112,10 @@ export function toTableVendorSubServices(
   const subServices = (res?.data ?? []).map<TableVendorSubService>(
     (subService) => ({
       ...subService,
-      typeDisplay: formatVendorType(subService.vendorType),
+      vendorDisplay: subService.vendor?.name || "-",
+      typeDisplay: formatVendorType(
+        subService.vendor?.type ?? subService.vendorType,
+      ),
     }),
   );
 
@@ -126,7 +131,8 @@ export function toTableVendorPricingPlans(
 ): TableVendorPricingPlansResponse {
   const pricingPlans = (res?.data ?? []).map<TableVendorPricingPlan>((plan) => ({
     ...plan,
-    typeDisplay: formatVendorType(plan.vendorType),
+    vendorDisplay: plan.vendor?.name || "-",
+    typeDisplay: formatVendorType(plan.vendor?.type ?? plan.vendorType),
     subServiceRangeDisplay: formatVendorPricingRange(
       plan.minSubServices,
       plan.maxSubServices,

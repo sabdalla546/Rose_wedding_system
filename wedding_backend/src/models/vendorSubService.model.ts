@@ -4,6 +4,7 @@ import { type VendorType, vendorTypeValues } from "./vendor.model";
 
 export interface VendorSubServiceAttributes {
   id: number;
+  vendorId?: number | null;
   vendorType: VendorType;
   name: string;
   code?: string | null;
@@ -17,6 +18,7 @@ export interface VendorSubServiceAttributes {
 type VendorSubServiceCreationAttributes = Optional<
   VendorSubServiceAttributes,
   | "id"
+  | "vendorId"
   | "code"
   | "description"
   | "sortOrder"
@@ -30,6 +32,7 @@ export class VendorSubService
   implements VendorSubServiceAttributes
 {
   public id!: number;
+  public vendorId?: number | null;
   public vendorType!: VendorType;
   public name!: string;
   public code?: string | null;
@@ -47,9 +50,13 @@ VendorSubService.init(
       autoIncrement: true,
       primaryKey: true,
     },
+    vendorId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
     vendorType: {
       type: DataTypes.ENUM(...vendorTypeValues),
-      allowNull: false,
+      allowNull: true,
     },
     name: {
       type: DataTypes.STRING(150),
@@ -88,6 +95,7 @@ VendorSubService.init(
     timestamps: true,
     paranoid: true,
     indexes: [
+      { fields: ["vendorId"] },
       { fields: ["vendorType"] },
       { fields: ["name"] },
       { fields: ["code"] },

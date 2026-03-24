@@ -44,17 +44,22 @@ export const useVendorSubServicesColumns = ({
       enableSorting: true,
     },
     {
-      accessorKey: "vendorType",
+      id: "vendor",
       header: () => (
         <div className={alignClass}>
-          {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
+          {t("vendors.vendorSelection", { defaultValue: "Vendor" })}
         </div>
       ),
       cell: ({ row }) => (
         <div className={alignClass}>
-          {t(`vendors.type.${row.original.vendorType}`, {
-            defaultValue: row.original.typeDisplay,
-          })}
+          <div className="font-medium text-[var(--lux-text)]">
+            {row.original.vendorDisplay}
+          </div>
+          <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
+            {t(`vendors.type.${row.original.vendorType}`, {
+              defaultValue: row.original.typeDisplay,
+            })}
+          </div>
         </div>
       ),
     },

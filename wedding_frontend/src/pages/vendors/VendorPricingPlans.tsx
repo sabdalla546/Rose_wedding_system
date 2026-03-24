@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import Pagination from "@/components/ui/pagination";
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
+import { useVendors } from "@/hooks/vendors/useVendors";
 
 import { toTableVendorPricingPlans, VENDOR_TYPE_OPTIONS } from "./adapters";
 import { useVendorPricingPlansColumns } from "./_components/vendorPricingPlansColumns";
@@ -24,6 +25,7 @@ const VendorPricingPlansPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [vendorFilter, setVendorFilter] = useState("all");
   const [vendorTypeFilter, setVendorTypeFilter] = useState<"all" | VendorType>(
     "all",
   );
@@ -35,13 +37,24 @@ const VendorPricingPlansPage = () => {
   const createPermission = "vendors.create";
   const editPermission = "vendors.update";
 
+  const { data: vendorsResponse } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: vendorTypeFilter,
+    isActive: "all",
+  });
+
   const { data: raw, isLoading } = useVendorPricingPlans({
     currentPage,
     itemsPerPage,
     searchQuery,
+    vendorId: vendorFilter === "all" ? undefined : Number(vendorFilter),
     vendorType: vendorTypeFilter,
     isActive: isActiveFilter,
   });
+
+  const vendors = vendorsResponse?.data ?? [];
 
   const adapted = toTableVendorPricingPlans(raw);
   const pricingPlans = adapted.data.pricingPlans;
@@ -68,7 +81,7 @@ const VendorPricingPlansPage = () => {
           })}
           subtitle={t("vendors.pricingPlans.description", {
             defaultValue:
-              "Vendor-type master pricing ranges based on the number of selected sub-services.",
+              "Vendor-based pricing ranges based on the number of selected sub-services.",
           })}
           totalText={
             <>
@@ -117,6 +130,33 @@ const VendorPricingPlansPage = () => {
           <div className="flex flex-wrap items-end gap-3">
             <label className="min-w-[220px] space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
+                {t("vendors.vendorSelection", { defaultValue: "Vendor" })}
+              </span>
+              <select
+                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
+                style={{
+                  background: "var(--lux-control-surface)",
+                  borderColor: "var(--lux-control-border)",
+                }}
+                value={vendorFilter}
+                onChange={(event) => {
+                  setVendorFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="all">
+                  {t("vendors.allVendors", { defaultValue: "All Vendors" })}
+                </option>
+                {vendors.map((vendor) => (
+                  <option key={vendor.id} value={String(vendor.id)}>
+                    {vendor.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="min-w-[220px] space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
                 {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
               </span>
               <select
@@ -128,6 +168,7 @@ const VendorPricingPlansPage = () => {
                 value={vendorTypeFilter}
                 onChange={(event) => {
                   setVendorTypeFilter(event.target.value as "all" | VendorType);
+                  setVendorFilter("all");
                   setCurrentPage(1);
                 }}
               >

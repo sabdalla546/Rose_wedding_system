@@ -120,13 +120,13 @@ export function AppSidebar({
     const itemHeightClass = depth > 0 ? "h-[40px]" : "h-[46px]";
     const textClass = depth > 0 ? "text-[12px]" : "text-[13px]";
     const activeFillClass =
-      "text-[var(--lux-sidebar-active-text)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.2),0_12px_28px_rgba(0,0,0,0.24)]";
+      "border-[var(--lux-gold)] text-[var(--lux-shell-surface)] shadow-none";
     const parentChildActiveClass = isNested
-      ? "text-[var(--lux-gold)]"
-      : "text-[var(--lux-gold)]";
+      ? "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]"
+      : "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]";
 
     const baseRowClassName = cn(
-      "group flex w-full items-center rounded-[16px] px-3 font-medium transition-all duration-200",
+      "group flex w-full items-center rounded-[16px] border px-3 font-medium transition-all duration-200",
       itemHeightClass,
       textClass,
       showFull ? "justify-between" : "justify-center gap-0",
@@ -134,15 +134,15 @@ export function AppSidebar({
         ? activeFillClass
         : childActive
           ? parentChildActiveClass
-          : "text-[var(--lux-shell-chrome-muted)] hover:text-[var(--lux-shell-chrome-text)]",
+          : "border-transparent text-[var(--lux-shell-chrome-text)] hover:border-[var(--lux-shell-chrome-control-border)] hover:bg-[var(--lux-shell-chrome-control)] hover:text-[var(--lux-shell-chrome-text)]",
     );
 
     const disabledRowClassName = cn(
-      "group flex w-full cursor-not-allowed items-center rounded-[16px] px-3 font-medium opacity-45",
+      "group flex w-full cursor-not-allowed items-center rounded-[16px] border border-transparent px-3 font-medium opacity-45",
       itemHeightClass,
       textClass,
       showFull ? "justify-between" : "justify-center gap-0",
-      "text-[var(--lux-shell-chrome-muted)]",
+      "text-[var(--lux-shell-chrome-text)]",
     );
 
     const iconSlot = (
@@ -194,12 +194,12 @@ export function AppSidebar({
 
     const chevronSlot =
       hasChildren && showFull ? (
-        <motion.div
-          animate={{ opacity: 1, width: "auto", x: 0 }}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-shell-chrome-muted)]"
-          exit={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
-          initial={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
-          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          <motion.div
+            animate={{ opacity: 1, width: "auto", x: 0 }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-shell-chrome-text)]"
+            exit={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
+            initial={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function AppSidebar({
               cn(baseRowClassName, isActive ? activeFillClass : undefined)
             }
             style={({ isActive }) => ({
-              background: isActive ? "var(--lux-sidebar-active-bg)" : "transparent",
+              background: isActive ? "var(--lux-gold)" : "transparent",
             })}
             end
             title={!showFull ? label : ""}
@@ -235,7 +235,7 @@ export function AppSidebar({
             disabled={disabled}
             style={{
               background: active && !disabled
-                ? "var(--lux-sidebar-active-bg)"
+                ? "var(--lux-gold)"
                 : "transparent",
             }}
             title={!showFull ? label : ""}
@@ -316,6 +316,8 @@ export function AppSidebar({
       dir={isRtl ? "rtl" : "ltr"}
       style={{
         background: "var(--lux-shell-chrome-surface)",
+        borderRight: isRtl ? undefined : "1px solid var(--lux-shell-border)",
+        borderLeft: isRtl ? "1px solid var(--lux-shell-border)" : undefined,
         width: `${showFull ? SIDEBAR_EXPANDED_WIDTH : SIDEBAR_COLLAPSED_WIDTH}px`,
       }}
       onMouseLeave={() => !isOpen && setHoverOpen(false)}
@@ -333,7 +335,7 @@ export function AppSidebar({
             !showFull && "justify-center",
           )}
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgba(212,175,55,0.18)] bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14),rgba(212,175,55,0.04)_70%)] shadow-[0_0_0_1px_rgba(212,175,55,0.06),0_10px_22px_rgba(212,175,55,0.08)]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-[0_0_0_1px_rgba(59,130,246,0.08),0_10px_22px_rgba(59,130,246,0.08)]" style={{ borderColor: "var(--lux-shell-chrome-control-border)", background: "var(--lux-shell-chrome-control)" }}>
             <img
               alt="WeddingPro logo"
               className="h-full w-full object-cover"
@@ -352,7 +354,7 @@ export function AppSidebar({
                 initial={{ opacity: 0, width: 0, x: isRtl ? 8 : -8 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
               >
-                <p className="font-display text-[19px] leading-none text-[#f4e5c5]">
+                <p className="font-display text-[19px] leading-none text-[var(--lux-shell-chrome-text)]">
                   {t("sidebar.brand")}
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--lux-shell-chrome-muted)]">
@@ -365,7 +367,7 @@ export function AppSidebar({
       </div>
 
       <div
-        className="subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[rgba(212,175,55,0.08)]"
+        className="subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[var(--lux-shell-border)]"
         style={{
           background: "var(--lux-shell-chrome-surface)",
         }}

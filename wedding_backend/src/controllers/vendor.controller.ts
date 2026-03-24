@@ -28,18 +28,40 @@ const userAuditInclude = [
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
 
+const buildVendorSummaryInclude = () => ({
+  model: Vendor,
+  as: "vendor",
+  attributes: ["id", "name", "type", "isActive"],
+});
+
 const eventVendorInclude = [
-  { model: Vendor, as: "vendor" },
+  buildVendorSummaryInclude(),
   { model: Event, as: "event" },
   {
     model: VendorPricingPlan,
     as: "pricingPlan",
+    include: [buildVendorSummaryInclude()],
   },
   {
     model: EventVendorSubService,
     as: "selectedSubServices",
-    include: [{ model: VendorSubService, as: "vendorSubService" }],
+    include: [
+      {
+        model: VendorSubService,
+        as: "vendorSubService",
+        include: [buildVendorSummaryInclude()],
+      },
+    ],
   },
+  ...userAuditInclude,
+];
+
+const vendorSubServiceInclude = [
+  buildVendorSummaryInclude(),
+  ...userAuditInclude,
+];
+const vendorPricingPlanInclude = [
+  buildVendorSummaryInclude(),
   ...userAuditInclude,
 ];
 
@@ -51,8 +73,11 @@ const parseBooleanQuery = (value: unknown) => {
   return String(value) === "true";
 };
 
-const normalizeIdList = (ids?: number[]) =>
-  [...new Set((ids ?? []).filter((value) => Number.isInteger(value) && value > 0))];
+const normalizeIdList = (ids?: number[]) => [
+  ...new Set(
+    (ids ?? []).filter((value) => Number.isInteger(value) && value > 0),
+  ),
+];
 
 const toNumberValue = (value?: number | string | null) => {
   if (value === null || typeof value === "undefined" || value === "") {
@@ -69,7 +94,9 @@ const sanitizeEventVendorPayload = (eventVendor: any) => {
   }
 
   const plain =
-    typeof eventVendor.toJSON === "function" ? eventVendor.toJSON() : eventVendor;
+    typeof eventVendor.toJSON === "function"
+      ? eventVendor.toJSON()
+      : eventVendor;
 
   if (Array.isArray(plain.selectedSubServices)) {
     plain.selectedSubServices = [...plain.selectedSubServices]
@@ -97,17 +124,34 @@ const sanitizeEventVendorPayload = (eventVendor: any) => {
 
   plain.hasManualPriceOverride =
     agreedPriceValue !== null &&
-    (pricingPlanPriceValue === null || agreedPriceValue !== pricingPlanPriceValue);
+    (pricingPlanPriceValue === null ||
+      agreedPriceValue !== pricingPlanPriceValue);
 
   return plain;
 };
 
+const resolveVendorById = async ({
+  vendorId,
+  transaction,
+}: {
+  vendorId: number;
+  transaction?: Transaction;
+}) => {
+  const vendor = await Vendor.findByPk(vendorId, { transaction });
+
+  if (!vendor) {
+    throw new Error("Vendor not found");
+  }
+
+  return vendor;
+};
+
 const findMatchingPricingPlan = async ({
-  vendorType,
+  vendorId,
   selectedSubServicesCount,
   transaction,
 }: {
-  vendorType: string;
+  vendorId: number;
   selectedSubServicesCount: number;
   transaction: Transaction;
 }) => {
@@ -117,7 +161,7 @@ const findMatchingPricingPlan = async ({
 
   return VendorPricingPlan.findOne({
     where: {
-      vendorType,
+      vendorId,
       isActive: true,
       minSubServices: { [Op.lte]: selectedSubServicesCount },
       [Op.or]: [
@@ -164,11 +208,11 @@ const parseEventVendorOrder = (
 };
 
 const resolveSelectedVendorSubServices = async ({
-  vendorType,
+  vendorId,
   selectedSubServiceIds,
   transaction,
 }: {
-  vendorType: string;
+  vendorId: number;
   selectedSubServiceIds?: number[];
   transaction: Transaction;
 }) => {
@@ -181,7 +225,7 @@ const resolveSelectedVendorSubServices = async ({
   const selectedSubServices = await VendorSubService.findAll({
     where: {
       id: { [Op.in]: normalizedIds },
-      vendorType,
+      vendorId,
     },
     order: [
       ["sortOrder", "ASC"],
@@ -351,7 +395,7 @@ export const updateVendor = async (req: AuthRequest, res: Response) => {
           ? data.contactPerson
           : typeof data.contactName !== "undefined"
             ? data.contactName
-          : vendor.contactPerson,
+            : vendor.contactPerson,
       phone:
         typeof data.phone !== "undefined"
           ? data.phone
@@ -407,9 +451,11 @@ export const createVendorSubService = async (
 ) => {
   try {
     const data = createVendorSubServiceSchema.parse(req.body);
+    const vendor = await resolveVendorById({ vendorId: data.vendorId });
 
     const subService = await VendorSubService.create({
-      vendorType: data.vendorType,
+      vendorId: vendor.id,
+      vendorType: vendor.type,
       name: data.name.trim(),
       code: data.code ?? null,
       description: data.description ?? null,
@@ -420,7 +466,7 @@ export const createVendorSubService = async (
     });
 
     const created = await VendorSubService.findByPk(subService.id, {
-      include: userAuditInclude,
+      include: vendorSubServiceInclude,
     });
 
     return res.status(201).json({
@@ -430,6 +476,9 @@ export const createVendorSubService = async (
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });
@@ -442,6 +491,7 @@ export const listVendorSubServices = async (req: Request, res: Response) => {
   const offset = (page - 1) * limit;
 
   const search = String(req.query.search ?? "").trim();
+  const vendorId = Number(req.query.vendorId) || undefined;
   const vendorType = String(req.query.vendorType ?? "").trim();
   const isActive = parseBooleanQuery(req.query.isActive);
 
@@ -455,13 +505,15 @@ export const listVendorSubServices = async (req: Request, res: Response) => {
     ];
   }
 
+  if (vendorId) where.vendorId = vendorId;
   if (vendorType) where.vendorType = vendorType;
   if (typeof isActive === "boolean") where.isActive = isActive;
 
   const { count, rows } = await VendorSubService.findAndCountAll({
     where,
-    include: userAuditInclude,
+    include: vendorSubServiceInclude,
     order: [
+      ["vendorId", "ASC"],
       ["sortOrder", "ASC"],
       ["name", "ASC"],
       ["id", "ASC"],
@@ -489,7 +541,7 @@ export const getVendorSubServiceById = async (req: Request, res: Response) => {
   }
 
   const subService = await VendorSubService.findByPk(id, {
-    include: userAuditInclude,
+    include: vendorSubServiceInclude,
   });
 
   if (!subService) {
@@ -517,8 +569,22 @@ export const updateVendorSubService = async (
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
+    const vendor =
+      typeof data.vendorId !== "undefined"
+        ? await resolveVendorById({ vendorId: data.vendorId })
+        : subService.vendorId
+          ? await resolveVendorById({ vendorId: subService.vendorId })
+          : null;
+
+    if (!vendor) {
+      return res.status(400).json({
+        message: "Vendor sub-service must be linked to a vendor",
+      });
+    }
+
     await subService.update({
-      vendorType: data.vendorType ?? subService.vendorType,
+      vendorId: vendor.id,
+      vendorType: vendor.type,
       name: data.name ?? subService.name,
       code: typeof data.code !== "undefined" ? data.code : subService.code,
       description:
@@ -537,7 +603,7 @@ export const updateVendorSubService = async (
     });
 
     const updated = await VendorSubService.findByPk(id, {
-      include: userAuditInclude,
+      include: vendorSubServiceInclude,
     });
 
     return res.json({
@@ -547,6 +613,9 @@ export const updateVendorSubService = async (
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });
@@ -559,9 +628,11 @@ export const createVendorPricingPlan = async (
 ) => {
   try {
     const data = createVendorPricingPlanSchema.parse(req.body);
+    const vendor = await resolveVendorById({ vendorId: data.vendorId });
 
     const pricingPlan = await VendorPricingPlan.create({
-      vendorType: data.vendorType,
+      vendorId: vendor.id,
+      vendorType: vendor.type,
       name: data.name.trim(),
       minSubServices: data.minSubServices,
       maxSubServices: data.maxSubServices ?? null,
@@ -573,7 +644,7 @@ export const createVendorPricingPlan = async (
     });
 
     const created = await VendorPricingPlan.findByPk(pricingPlan.id, {
-      include: userAuditInclude,
+      include: vendorPricingPlanInclude,
     });
 
     return res.status(201).json({
@@ -583,6 +654,9 @@ export const createVendorPricingPlan = async (
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });
@@ -595,6 +669,7 @@ export const listVendorPricingPlans = async (req: Request, res: Response) => {
   const offset = (page - 1) * limit;
 
   const search = String(req.query.search ?? "").trim();
+  const vendorId = Number(req.query.vendorId) || undefined;
   const vendorType = String(req.query.vendorType ?? "").trim();
   const isActive = parseBooleanQuery(req.query.isActive);
 
@@ -607,14 +682,15 @@ export const listVendorPricingPlans = async (req: Request, res: Response) => {
     ];
   }
 
+  if (vendorId) where.vendorId = vendorId;
   if (vendorType) where.vendorType = vendorType;
   if (typeof isActive === "boolean") where.isActive = isActive;
 
   const { count, rows } = await VendorPricingPlan.findAndCountAll({
     where,
-    include: userAuditInclude,
+    include: vendorPricingPlanInclude,
     order: [
-      ["vendorType", "ASC"],
+      ["vendorId", "ASC"],
       ["minSubServices", "ASC"],
       ["id", "ASC"],
     ],
@@ -633,10 +709,7 @@ export const listVendorPricingPlans = async (req: Request, res: Response) => {
   });
 };
 
-export const getVendorPricingPlanById = async (
-  req: Request,
-  res: Response,
-) => {
+export const getVendorPricingPlanById = async (req: Request, res: Response) => {
   const id = Number(req.params.id);
 
   if (!id) {
@@ -644,7 +717,7 @@ export const getVendorPricingPlanById = async (
   }
 
   const pricingPlan = await VendorPricingPlan.findByPk(id, {
-    include: userAuditInclude,
+    include: vendorPricingPlanInclude,
   });
 
   if (!pricingPlan) {
@@ -670,6 +743,19 @@ export const updateVendorPricingPlan = async (
     const pricingPlan = await VendorPricingPlan.findByPk(id);
     if (!pricingPlan) {
       return res.status(404).json({ message: req.t("common.not_found") });
+    }
+
+    const vendor =
+      typeof data.vendorId !== "undefined"
+        ? await resolveVendorById({ vendorId: data.vendorId })
+        : pricingPlan.vendorId
+          ? await resolveVendorById({ vendorId: pricingPlan.vendorId })
+          : null;
+
+    if (!vendor) {
+      return res.status(400).json({
+        message: "Vendor pricing plan must be linked to a vendor",
+      });
     }
 
     const minSubServices =
@@ -699,7 +785,8 @@ export const updateVendorPricingPlan = async (
     }
 
     await pricingPlan.update({
-      vendorType: data.vendorType ?? pricingPlan.vendorType,
+      vendorId: vendor.id,
+      vendorType: vendor.type,
       name: data.name ?? pricingPlan.name,
       minSubServices,
       maxSubServices: maxSubServices ?? null,
@@ -713,7 +800,7 @@ export const updateVendorPricingPlan = async (
     });
 
     const updated = await VendorPricingPlan.findByPk(id, {
-      include: userAuditInclude,
+      include: vendorPricingPlanInclude,
     });
 
     return res.json({
@@ -723,6 +810,9 @@ export const updateVendorPricingPlan = async (
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });
@@ -738,37 +828,53 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    let selectedVendor: Vendor | null = null;
+
     if (data.vendorId) {
-      const vendor = await Vendor.findByPk(data.vendorId);
-      if (!vendor) {
-        return res.status(404).json({ message: "Vendor not found" });
-      }
+      selectedVendor = await resolveVendorById({ vendorId: data.vendorId });
+    }
+
+    if (selectedVendor && selectedVendor.type !== data.vendorType) {
+      return res.status(400).json({
+        message: "Selected vendor does not match the chosen vendor type",
+      });
+    }
+
+    if (!selectedVendor && normalizeIdList(data.selectedSubServiceIds).length) {
+      return res.status(400).json({
+        message: "Select a vendor before choosing vendor sub-services",
+      });
     }
 
     const eventVendor = await sequelize.transaction(async (transaction) => {
-      const selectedSubServices = await resolveSelectedVendorSubServices({
-        vendorType: data.vendorType,
-        selectedSubServiceIds: data.selectedSubServiceIds,
-        transaction,
-      });
+      const selectedSubServices = selectedVendor
+        ? await resolveSelectedVendorSubServices({
+            vendorId: selectedVendor.id,
+            selectedSubServiceIds: data.selectedSubServiceIds,
+            transaction,
+          })
+        : [];
       const selectedSubServicesCount = selectedSubServices.length;
-      const pricingPlan = await findMatchingPricingPlan({
-        vendorType: data.vendorType,
-        selectedSubServicesCount,
-        transaction,
-      });
+      const pricingPlan = selectedVendor
+        ? await findMatchingPricingPlan({
+            vendorId: selectedVendor.id,
+            selectedSubServicesCount,
+            transaction,
+          })
+        : null;
       const agreedPrice =
         typeof data.agreedPrice !== "undefined"
           ? data.agreedPrice
-          : pricingPlan?.price ?? null;
+          : (pricingPlan?.price ?? null);
 
       const createdEventVendor = await EventVendor.create(
         {
           eventId: data.eventId,
-          vendorType: data.vendorType,
+          vendorType: selectedVendor?.type ?? data.vendorType,
           providedBy: data.providedBy,
           vendorId: data.vendorId ?? null,
-          companyNameSnapshot: data.companyNameSnapshot ?? null,
+          companyNameSnapshot:
+            data.companyNameSnapshot ?? selectedVendor?.name ?? null,
           pricingPlanId: pricingPlan?.id ?? null,
           selectedSubServicesCount,
           agreedPrice,
@@ -801,6 +907,9 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
     if (
       err instanceof Error &&
@@ -888,44 +997,76 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (typeof data.vendorId !== "undefined" && data.vendorId !== null) {
-      const vendor = await Vendor.findByPk(data.vendorId);
-      if (!vendor) {
-        return res.status(404).json({ message: "Vendor not found" });
-      }
+    const nextProvidedBy = data.providedBy ?? eventVendor.providedBy;
+    const nextVendorId =
+      typeof data.vendorId !== "undefined"
+        ? data.vendorId
+        : (eventVendor.vendorId ?? null);
+    let nextVendor: Vendor | null = null;
+
+    if (nextVendorId) {
+      nextVendor = await resolveVendorById({ vendorId: nextVendorId });
+    }
+
+    if (
+      nextVendor &&
+      typeof data.vendorType !== "undefined" &&
+      data.vendorType !== nextVendor.type
+    ) {
+      return res.status(400).json({
+        message: "Selected vendor does not match the chosen vendor type",
+      });
+    }
+
+    const nextVendorType =
+      nextVendor?.type ?? data.vendorType ?? eventVendor.vendorType;
+
+    if (
+      !nextVendor &&
+      Array.isArray(data.selectedSubServiceIds) &&
+      normalizeIdList(data.selectedSubServiceIds).length
+    ) {
+      return res.status(400).json({
+        message: "Select a vendor before choosing vendor sub-services",
+      });
     }
 
     await sequelize.transaction(async (transaction) => {
-      const nextVendorType = data.vendorType ?? eventVendor.vendorType;
       const shouldReplaceSelectedSubServices =
         Array.isArray(data.selectedSubServiceIds) ||
-        nextVendorType !== eventVendor.vendorType;
+        nextVendorType !== eventVendor.vendorType ||
+        nextVendorId !== (eventVendor.vendorId ?? null) ||
+        nextProvidedBy !== eventVendor.providedBy;
 
       let selectedSubServicesCount = eventVendor.selectedSubServicesCount ?? 0;
       let pricingPlanId = eventVendor.pricingPlanId ?? null;
       let agreedPrice = eventVendor.agreedPrice ?? null;
 
       if (shouldReplaceSelectedSubServices) {
-        const selectedSubServices = Array.isArray(data.selectedSubServiceIds)
-          ? await resolveSelectedVendorSubServices({
-              vendorType: nextVendorType,
-              selectedSubServiceIds: data.selectedSubServiceIds,
-              transaction,
-            })
+        const selectedSubServices = nextVendor
+          ? Array.isArray(data.selectedSubServiceIds)
+            ? await resolveSelectedVendorSubServices({
+                vendorId: nextVendor.id,
+                selectedSubServiceIds: data.selectedSubServiceIds,
+                transaction,
+              })
+            : []
           : [];
 
         selectedSubServicesCount = selectedSubServices.length;
-        const pricingPlan = await findMatchingPricingPlan({
-          vendorType: nextVendorType,
-          selectedSubServicesCount,
-          transaction,
-        });
+        const pricingPlan = nextVendor
+          ? await findMatchingPricingPlan({
+              vendorId: nextVendor.id,
+              selectedSubServicesCount,
+              transaction,
+            })
+          : null;
 
         pricingPlanId = pricingPlan?.id ?? null;
         agreedPrice =
           typeof data.agreedPrice !== "undefined"
             ? data.agreedPrice
-            : pricingPlan?.price ?? null;
+            : (pricingPlan?.price ?? null);
 
         await syncEventVendorSubServices({
           eventVendorId: eventVendor.id,
@@ -935,22 +1076,26 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
         });
       }
 
-      if (!shouldReplaceSelectedSubServices && typeof data.agreedPrice !== "undefined") {
+      if (
+        !shouldReplaceSelectedSubServices &&
+        typeof data.agreedPrice !== "undefined"
+      ) {
         agreedPrice = data.agreedPrice;
       }
+
+      const nextCompanyNameSnapshot =
+        typeof data.companyNameSnapshot !== "undefined"
+          ? data.companyNameSnapshot
+          : nextVendorId !== (eventVendor.vendorId ?? null)
+            ? (nextVendor?.name ?? null)
+            : eventVendor.companyNameSnapshot;
 
       await eventVendor.update(
         {
           vendorType: nextVendorType,
-          providedBy: data.providedBy ?? eventVendor.providedBy,
-          vendorId:
-            typeof data.vendorId !== "undefined"
-              ? data.vendorId
-              : eventVendor.vendorId,
-          companyNameSnapshot:
-            typeof data.companyNameSnapshot !== "undefined"
-              ? data.companyNameSnapshot
-              : eventVendor.companyNameSnapshot,
+          providedBy: nextProvidedBy,
+          vendorId: nextVendorId,
+          companyNameSnapshot: nextCompanyNameSnapshot,
           pricingPlanId,
           selectedSubServicesCount,
           agreedPrice,
@@ -974,6 +1119,9 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (err instanceof Error && err.message === "Vendor not found") {
+      return res.status(404).json({ message: err.message });
     }
     if (
       err instanceof Error &&

@@ -63,7 +63,8 @@ export const updateEventVendorSchema = z.object({
 });
 
 export const createVendorSubServiceSchema = z.object({
-  vendorType: vendorTypeEnum,
+  vendorId: z.number().int().positive(),
+  vendorType: vendorTypeEnum.optional(),
   name: z.string().min(2).max(150),
   code: z.string().max(50).optional(),
   description: z.string().optional(),
@@ -72,6 +73,7 @@ export const createVendorSubServiceSchema = z.object({
 });
 
 export const updateVendorSubServiceSchema = z.object({
+  vendorId: z.number().int().positive().optional(),
   vendorType: vendorTypeEnum.optional(),
   name: z.string().min(2).max(150).optional(),
   code: z.string().max(50).optional().nullable(),
@@ -81,7 +83,8 @@ export const updateVendorSubServiceSchema = z.object({
 });
 
 const vendorPricingPlanShape = {
-  vendorType: vendorTypeEnum,
+  vendorId: z.number().int().positive(),
+  vendorType: vendorTypeEnum.optional(),
   name: z.string().min(2).max(150),
   minSubServices: z.coerce.number().int().min(0),
   maxSubServices: z.coerce.number().int().min(0).optional().nullable(),
@@ -105,6 +108,7 @@ export const createVendorPricingPlanSchema = z
 
 export const updateVendorPricingPlanSchema = z
   .object({
+    vendorId: z.number().int().positive().optional(),
     vendorType: vendorTypeEnum.optional(),
     name: z.string().min(2).max(150).optional(),
     minSubServices: z.coerce.number().int().min(0).optional(),

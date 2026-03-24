@@ -4,6 +4,7 @@ import { type VendorType, vendorTypeValues } from "./vendor.model";
 
 export interface VendorPricingPlanAttributes {
   id: number;
+  vendorId?: number | null;
   vendorType: VendorType;
   name: string;
   minSubServices: number;
@@ -18,6 +19,7 @@ export interface VendorPricingPlanAttributes {
 type VendorPricingPlanCreationAttributes = Optional<
   VendorPricingPlanAttributes,
   | "id"
+  | "vendorId"
   | "maxSubServices"
   | "notes"
   | "isActive"
@@ -30,6 +32,7 @@ export class VendorPricingPlan
   implements VendorPricingPlanAttributes
 {
   public id!: number;
+  public vendorId?: number | null;
   public vendorType!: VendorType;
   public name!: string;
   public minSubServices!: number;
@@ -48,9 +51,13 @@ VendorPricingPlan.init(
       autoIncrement: true,
       primaryKey: true,
     },
+    vendorId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
     vendorType: {
       type: DataTypes.ENUM(...vendorTypeValues),
-      allowNull: false,
+      allowNull: true,
     },
     name: {
       type: DataTypes.STRING(150),
@@ -94,6 +101,7 @@ VendorPricingPlan.init(
     timestamps: true,
     paranoid: true,
     indexes: [
+      { fields: ["vendorId"] },
       { fields: ["vendorType"] },
       { fields: ["name"] },
       { fields: ["minSubServices"] },

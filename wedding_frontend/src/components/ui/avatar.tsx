@@ -14,7 +14,7 @@ const Avatar = React.forwardRef<
     )}
     style={{
       borderColor: 'var(--lux-control-border)',
-      background: 'var(--lux-control-hover)',
+      background: 'var(--lux-avatar-surface)',
     }}
     ref={ref}
     {...props}
@@ -43,10 +43,7 @@ const AvatarFallback = React.forwardRef<
       'flex h-full w-full items-center justify-center text-xs font-semibold text-[var(--lux-gold)]',
       className,
     )}
-    style={{
-      background:
-        'linear-gradient(180deg, color-mix(in srgb, var(--lux-control-hover) 86%, transparent), color-mix(in srgb, var(--lux-gold-glow) 60%, transparent))',
-    }}
+    style={{ background: 'var(--lux-avatar-surface)' }}
     ref={ref}
     {...props}
   />

@@ -33,19 +33,15 @@ import {
   useUpdateVendorSubService,
 } from "@/hooks/vendors/useVendorSubServiceMutations";
 import { useVendorSubService } from "@/hooks/vendors/useVendorSubServices";
+import { useVendors } from "@/hooks/vendors/useVendors";
 
-import { VENDOR_TYPE_OPTIONS } from "./adapters";
-import type { VendorSubServiceFormData, VendorType } from "./types";
+import { formatVendorType } from "./adapters";
+import type { VendorSubServiceFormData } from "./types";
 
 const isNonNegativeInteger = (value: string) => /^\d+$/.test(value.trim());
 
 const vendorSubServiceSchema = z.object({
-  vendorType: z.enum(
-    VENDOR_TYPE_OPTIONS.map((option) => option.value) as [
-      VendorType,
-      ...VendorType[],
-    ],
-  ),
+  vendorId: z.string().min(1, "Vendor is required"),
   name: z.string().min(2, "Sub-service name is required").max(150),
   code: z.string().max(50).optional(),
   description: z.string().optional(),
@@ -68,13 +64,21 @@ const VendorSubServiceFormPage = () => {
   const isEditMode = Boolean(id);
 
   const { data: subService, isLoading: subServiceLoading } = useVendorSubService(id);
+  const { data: vendorsResponse, isLoading: vendorsLoading } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: "all",
+    isActive: "all",
+  });
   const createMutation = useCreateVendorSubService();
   const updateMutation = useUpdateVendorSubService(id);
+  const vendors = vendorsResponse?.data ?? [];
 
   const form = useForm<VendorSubServiceFormValues>({
     resolver: zodResolver(vendorSubServiceSchema) as any,
     defaultValues: {
-      vendorType: "other",
+      vendorId: "",
       name: "",
       code: "",
       description: "",
@@ -89,7 +93,7 @@ const VendorSubServiceFormPage = () => {
     }
 
     form.reset({
-      vendorType: subService.vendorType,
+      vendorId: subService.vendorId ? String(subService.vendorId) : "",
       name: subService.name,
       code: subService.code ?? "",
       description: subService.description ?? "",
@@ -98,8 +102,15 @@ const VendorSubServiceFormPage = () => {
     });
   }, [form, isEditMode, subService]);
 
+  const selectedVendor =
+    vendors.find((vendor) => String(vendor.id) === form.watch("vendorId")) ??
+    null;
+
   const onSubmit: SubmitHandler<VendorSubServiceFormValues> = (values) => {
-    const payload: VendorSubServiceFormData = values;
+    const payload: VendorSubServiceFormData = {
+      ...values,
+      vendorType: selectedVendor?.type,
+    };
 
     if (isEditMode) {
       updateMutation.mutate(payload);
@@ -110,7 +121,10 @@ const VendorSubServiceFormPage = () => {
   };
 
   const isBusy =
-    subServiceLoading || createMutation.isPending || updateMutation.isPending;
+    subServiceLoading ||
+    vendorsLoading ||
+    createMutation.isPending ||
+    updateMutation.isPending;
 
   if (subServiceLoading) {
     return (
@@ -172,11 +186,11 @@ const VendorSubServiceFormPage = () => {
                   {isEditMode
                     ? t("vendors.subServices.editDescription", {
                         defaultValue:
-                          "Update reusable vendor-type checklist options and ordering.",
+                          "Update reusable vendor checklist options and ordering.",
                       })
                     : t("vendors.subServices.createDescription", {
                         defaultValue:
-                          "Create a reusable vendor-type checklist option for future event vendor setup.",
+                          "Create a reusable checklist option under a specific vendor.",
                       })}
                 </p>
               </div>
@@ -203,7 +217,7 @@ const VendorSubServiceFormPage = () => {
                       <p className={sectionHintClass}>
                         {t("vendors.subServices.basicHint", {
                           defaultValue:
-                            "Capture the reusable checklist label, vendor type, and optional code used in master data.",
+                            "Capture the reusable checklist label, linked vendor, and optional code used in master data.",
                         })}
                       </p>
                     </div>
@@ -237,12 +251,12 @@ const VendorSubServiceFormPage = () => {
 
                       <FormField
                         control={form.control}
-                        name="vendorType"
+                        name="vendorId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              {t("vendors.typeLabel", {
-                                defaultValue: "Vendor Type",
+                              {t("vendors.vendorSelection", {
+                                defaultValue: "Vendor",
                               })}
                             </FormLabel>
                             <Select
@@ -252,21 +266,16 @@ const VendorSubServiceFormPage = () => {
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue
-                                    placeholder={t("vendors.selectType", {
-                                      defaultValue: "Select vendor type",
+                                    placeholder={t("vendors.selectVendor", {
+                                      defaultValue: "Select vendor",
                                     })}
                                   />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {VENDOR_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {t(`vendors.type.${option.value}`, {
-                                      defaultValue: option.label,
-                                    })}
+                                {vendors.map((vendor) => (
+                                  <SelectItem key={vendor.id} value={String(vendor.id)}>
+                                    {vendor.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -275,6 +284,29 @@ const VendorSubServiceFormPage = () => {
                           </FormItem>
                         )}
                       />
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[var(--lux-text)]">
+                          {t("vendors.typeLabel", {
+                            defaultValue: "Vendor Type",
+                          })}
+                        </label>
+                        <Input
+                          value={
+                            selectedVendor
+                              ? t(`vendors.type.${selectedVendor.type}`, {
+                                  defaultValue: formatVendorType(
+                                    selectedVendor.type,
+                                  ),
+                                })
+                              : ""
+                          }
+                          placeholder={t("vendors.selectVendorFirst", {
+                            defaultValue: "Select a vendor first",
+                          })}
+                          readOnly
+                        />
+                      </div>
 
                       <FormField
                         control={form.control}

@@ -33,9 +33,10 @@ import {
   useUpdateVendorPricingPlan,
 } from "@/hooks/vendors/useVendorPricingPlanMutations";
 import { useVendorPricingPlan } from "@/hooks/vendors/useVendorPricingPlans";
+import { useVendors } from "@/hooks/vendors/useVendors";
 
-import { VENDOR_TYPE_OPTIONS } from "./adapters";
-import type { VendorPricingPlanFormData, VendorType } from "./types";
+import { formatVendorType } from "./adapters";
+import type { VendorPricingPlanFormData } from "./types";
 
 const isNonNegativeInteger = (value: string) => /^\d+$/.test(value.trim());
 const isNonNegativeNumber = (value: string) => {
@@ -50,12 +51,7 @@ const isNonNegativeNumber = (value: string) => {
 
 const vendorPricingPlanSchema = z
   .object({
-    vendorType: z.enum(
-      VENDOR_TYPE_OPTIONS.map((option) => option.value) as [
-        VendorType,
-        ...VendorType[],
-      ],
-    ),
+    vendorId: z.string().min(1, "Vendor is required"),
     name: z.string().min(2, "Pricing plan name is required").max(150),
     minSubServices: z
       .string()
@@ -99,13 +95,21 @@ const VendorPricingPlanFormPage = () => {
 
   const { data: pricingPlan, isLoading: pricingPlanLoading } =
     useVendorPricingPlan(id);
+  const { data: vendorsResponse, isLoading: vendorsLoading } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: "all",
+    isActive: "all",
+  });
   const createMutation = useCreateVendorPricingPlan();
   const updateMutation = useUpdateVendorPricingPlan(id);
+  const vendors = vendorsResponse?.data ?? [];
 
   const form = useForm<VendorPricingPlanFormValues>({
     resolver: zodResolver(vendorPricingPlanSchema) as any,
     defaultValues: {
-      vendorType: "other",
+      vendorId: "",
       name: "",
       minSubServices: "0",
       maxSubServices: "",
@@ -121,7 +125,7 @@ const VendorPricingPlanFormPage = () => {
     }
 
     form.reset({
-      vendorType: pricingPlan.vendorType,
+      vendorId: pricingPlan.vendorId ? String(pricingPlan.vendorId) : "",
       name: pricingPlan.name,
       minSubServices: String(pricingPlan.minSubServices),
       maxSubServices:
@@ -135,8 +139,15 @@ const VendorPricingPlanFormPage = () => {
     });
   }, [form, isEditMode, pricingPlan]);
 
+  const selectedVendor =
+    vendors.find((vendor) => String(vendor.id) === form.watch("vendorId")) ??
+    null;
+
   const onSubmit: SubmitHandler<VendorPricingPlanFormValues> = (values) => {
-    const payload: VendorPricingPlanFormData = values;
+    const payload: VendorPricingPlanFormData = {
+      ...values,
+      vendorType: selectedVendor?.type,
+    };
 
     if (isEditMode) {
       updateMutation.mutate(payload);
@@ -147,7 +158,10 @@ const VendorPricingPlanFormPage = () => {
   };
 
   const isBusy =
-    pricingPlanLoading || createMutation.isPending || updateMutation.isPending;
+    pricingPlanLoading ||
+    vendorsLoading ||
+    createMutation.isPending ||
+    updateMutation.isPending;
 
   if (pricingPlanLoading) {
     return (
@@ -209,11 +223,11 @@ const VendorPricingPlanFormPage = () => {
                   {isEditMode
                     ? t("vendors.pricingPlans.editDescription", {
                         defaultValue:
-                          "Update vendor-type pricing thresholds and active status without changing any event vendor rows.",
+                          "Update vendor pricing thresholds and active status without changing any event vendor rows.",
                       })
                     : t("vendors.pricingPlans.createDescription", {
                         defaultValue:
-                          "Create a vendor-type pricing plan based on the number of selected sub-services for future phases.",
+                          "Create a pricing plan under a specific vendor based on selected sub-service counts.",
                       })}
                 </p>
               </div>
@@ -240,7 +254,7 @@ const VendorPricingPlanFormPage = () => {
                       <p className={sectionHintClass}>
                         {t("vendors.pricingPlans.basicHint", {
                           defaultValue:
-                            "Capture the vendor type, pricing plan name, and sub-service count thresholds.",
+                            "Capture the linked vendor, pricing plan name, and sub-service count thresholds.",
                         })}
                       </p>
                     </div>
@@ -274,12 +288,12 @@ const VendorPricingPlanFormPage = () => {
 
                       <FormField
                         control={form.control}
-                        name="vendorType"
+                        name="vendorId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              {t("vendors.typeLabel", {
-                                defaultValue: "Vendor Type",
+                              {t("vendors.vendorSelection", {
+                                defaultValue: "Vendor",
                               })}
                             </FormLabel>
                             <Select
@@ -289,21 +303,16 @@ const VendorPricingPlanFormPage = () => {
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue
-                                    placeholder={t("vendors.selectType", {
-                                      defaultValue: "Select vendor type",
+                                    placeholder={t("vendors.selectVendor", {
+                                      defaultValue: "Select vendor",
                                     })}
                                   />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {VENDOR_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {t(`vendors.type.${option.value}`, {
-                                      defaultValue: option.label,
-                                    })}
+                                {vendors.map((vendor) => (
+                                  <SelectItem key={vendor.id} value={String(vendor.id)}>
+                                    {vendor.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -312,6 +321,29 @@ const VendorPricingPlanFormPage = () => {
                           </FormItem>
                         )}
                       />
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[var(--lux-text)]">
+                          {t("vendors.typeLabel", {
+                            defaultValue: "Vendor Type",
+                          })}
+                        </label>
+                        <Input
+                          value={
+                            selectedVendor
+                              ? t(`vendors.type.${selectedVendor.type}`, {
+                                  defaultValue: formatVendorType(
+                                    selectedVendor.type,
+                                  ),
+                                })
+                              : ""
+                          }
+                          placeholder={t("vendors.selectVendorFirst", {
+                            defaultValue: "Select a vendor first",
+                          })}
+                          readOnly
+                        />
+                      </div>
 
                       <FormField
                         control={form.control}

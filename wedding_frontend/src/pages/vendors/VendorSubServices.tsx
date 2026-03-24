@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import Pagination from "@/components/ui/pagination";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
+import { useVendors } from "@/hooks/vendors/useVendors";
 
 import { toTableVendorSubServices, VENDOR_TYPE_OPTIONS } from "./adapters";
 import { useVendorSubServicesColumns } from "./_components/vendorSubServicesColumns";
@@ -24,6 +25,7 @@ const VendorSubServicesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [vendorFilter, setVendorFilter] = useState("all");
   const [vendorTypeFilter, setVendorTypeFilter] = useState<"all" | VendorType>(
     "all",
   );
@@ -35,13 +37,24 @@ const VendorSubServicesPage = () => {
   const createPermission = "vendors.create";
   const editPermission = "vendors.update";
 
+  const { data: vendorsResponse } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: vendorTypeFilter,
+    isActive: "all",
+  });
+
   const { data: raw, isLoading } = useVendorSubServices({
     currentPage,
     itemsPerPage,
     searchQuery,
+    vendorId: vendorFilter === "all" ? undefined : Number(vendorFilter),
     vendorType: vendorTypeFilter,
     isActive: isActiveFilter,
   });
+
+  const vendors = vendorsResponse?.data ?? [];
 
   const adapted = toTableVendorSubServices(raw);
   const subServices = adapted.data.subServices;
@@ -68,7 +81,7 @@ const VendorSubServicesPage = () => {
           })}
           subtitle={t("vendors.subServices.description", {
             defaultValue:
-              "Reusable vendor-type checklist options for future event vendor selection.",
+              "Reusable checklist options linked to each vendor for future event vendor selection.",
           })}
           totalText={
             <>
@@ -115,6 +128,33 @@ const VendorSubServicesPage = () => {
           <div className="flex flex-wrap items-end gap-3">
             <label className="min-w-[220px] space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
+                {t("vendors.vendorSelection", { defaultValue: "Vendor" })}
+              </span>
+              <select
+                className="h-11 w-full rounded-2xl border px-4 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]"
+                style={{
+                  background: "var(--lux-control-surface)",
+                  borderColor: "var(--lux-control-border)",
+                }}
+                value={vendorFilter}
+                onChange={(event) => {
+                  setVendorFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="all">
+                  {t("vendors.allVendors", { defaultValue: "All Vendors" })}
+                </option>
+                {vendors.map((vendor) => (
+                  <option key={vendor.id} value={String(vendor.id)}>
+                    {vendor.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="min-w-[220px] space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lux-text-muted)]">
                 {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
               </span>
               <select
@@ -126,6 +166,7 @@ const VendorSubServicesPage = () => {
                 value={vendorTypeFilter}
                 onChange={(event) => {
                   setVendorTypeFilter(event.target.value as "all" | VendorType);
+                  setVendorFilter("all");
                   setCurrentPage(1);
                 }}
               >

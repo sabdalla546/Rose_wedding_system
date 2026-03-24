@@ -8,85 +8,73 @@
   :root {
     color-scheme: dark;
 
-    --background: 240 5% 4%;
+    --background: 0 0% 7%;
     --foreground: 0 0% 100%;
-    --card: 240 6% 8%;
+    --card: 0 0% 10%;
     --card-foreground: 0 0% 100%;
-    --popover: 240 6% 8%;
+    --popover: 0 0% 10%;
     --popover-foreground: 0 0% 100%;
     --primary: 45 64% 52%;
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 5% 12%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 6% 72%;
-    --accent: 240 5% 10%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 74%;
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 100%;
-    --border: 40 42% 24%;
-    --input: 240 5% 10%;
+    --border: 45 52% 24%;
+    --input: 0 0% 10%;
     --ring: 45 64% 52%;
-    --sidebar-background: 240 8% 5%;
+    --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-border: 45 36% 18%;
+    --sidebar-border: 45 40% 18%;
 
     --lux-background: #121212;
     --lux-sidebar: #121212;
-    --lux-card: #121212;
-    --lux-elevated: #16161a;
+    --lux-card: #161616;
+    --lux-elevated: #181818;
     --lux-text: #ffffff;
-    --lux-text-secondary: #b8b8c2;
-    --lux-text-muted: #8a8a95;
-    --lux-gold: #d4af37;
-    --lux-gold-soft: #b8902c;
-    --lux-gold-border: rgba(212, 175, 55, 0.22);
-    --lux-gold-glow: rgba(212, 175, 55, 0.18);
-    --lux-shell-surface: #0a0a0c;
-    --lux-shell-chrome-surface: linear-gradient(
-      180deg,
-      rgba(12, 12, 14, 0.96),
-      rgba(8, 8, 10, 0.94)
-    );
-    --lux-shell-chrome-elevated: linear-gradient(
-      180deg,
-      rgba(14, 14, 16, 0.98),
-      rgba(10, 10, 12, 0.96)
-    );
-    --lux-shell-chrome-control: rgba(255, 255, 255, 0.02);
-    --lux-shell-chrome-control-border: rgba(212, 175, 55, 0.16);
-    --lux-shell-chrome-control-hover: rgba(212, 175, 55, 0.08);
-    --lux-shell-chrome-text: #f4e5c5;
-    --lux-shell-chrome-muted: #b8b8c2;
-    --lux-shell-border: rgba(212, 175, 55, 0.12);
-    --lux-panel-surface: linear-gradient(
-      180deg,
-      rgba(18, 18, 20, 0.96),
-      rgba(13, 13, 15, 0.98)
-    );
-    --lux-panel-border: rgba(212, 175, 55, 0.12);
+    --lux-text-secondary: #d0d0d7;
+    --lux-text-muted: #9a9aa6;
+    --lux-gold: #f7d35b;
+    --lux-gold-soft: #d4af37;
+    --lux-gold-border: rgba(247, 211, 91, 0.22);
+    --lux-gold-glow: rgba(247, 211, 91, 0.16);
+    --lux-shell-surface: #121212;
+    --lux-shell-chrome-surface: #121212;
+    --lux-shell-chrome-elevated: #161616;
+    --lux-shell-chrome-control: rgba(255, 255, 255, 0.03);
+    --lux-shell-chrome-control-border: rgba(247, 211, 91, 0.18);
+    --lux-shell-chrome-control-hover: rgba(247, 211, 91, 0.1);
+    --lux-shell-chrome-text: #ffffff;
+    --lux-shell-chrome-muted: #d0d0d7;
+    --lux-shell-border: rgba(247, 211, 91, 0.14);
+    --lux-panel-surface: #161616;
+    --lux-panel-border: rgba(247, 211, 91, 0.14);
     --lux-panel-shadow:
       0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.02);
-    --lux-row-surface: rgba(15, 15, 17, 0.96);
-    --lux-row-border: rgba(212, 175, 55, 0.1);
-    --lux-control-surface: rgba(17, 17, 19, 0.88);
-    --lux-control-border: rgba(212, 175, 55, 0.12);
-    --lux-control-hover: rgba(212, 175, 55, 0.06);
-    --lux-heading: #f6e7c8;
-    --lux-soft-text: #efe2c8;
+    --lux-row-surface: rgba(20, 20, 20, 0.96);
+    --lux-row-border: rgba(247, 211, 91, 0.1);
+    --lux-control-surface: rgba(255, 255, 255, 0.03);
+    --lux-control-border: rgba(247, 211, 91, 0.14);
+    --lux-control-hover: rgba(247, 211, 91, 0.08);
+    --lux-heading: #ffffff;
+    --lux-soft-text: #f3f4f6;
     --lux-strong-text: #ffffff;
-    --lux-sidebar-active-bg: linear-gradient(
-      180deg,
-      rgba(76, 58, 34, 0.9),
-      rgba(41, 31, 20, 0.85)
-    );
-    --lux-sidebar-active-text: #fff3d6;
-    --lux-badge-surface: linear-gradient(180deg, #a97938, #7d5422);
-    --lux-badge-text: #fff1d4;
-    --lux-primary-surface: linear-gradient(180deg, #745a35, #554024);
-    --lux-primary-text: #fff3d7;
+    --lux-sidebar-active-bg: #f7d35b;
+    --lux-sidebar-active-text: #121212;
+    --lux-badge-surface: #f7d35b;
+    --lux-badge-text: #121212;
+    --lux-primary-surface: #f7d35b;
+    --lux-primary-text: #121212;
     --lux-danger: #f0a4a4;
     --lux-danger-soft: rgba(154, 63, 63, 0.16);
     --lux-success: #7ed6a7;
     --lux-success-soft: rgba(58, 124, 86, 0.16);
+    --lux-overlay: rgba(0, 0, 0, 0.56);
+    --lux-overlay-strong: rgba(0, 0, 0, 0.72);
+    --lux-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    --lux-avatar-surface: var(--lux-control-hover);
   }
 
   :root[data-theme="light"] {
@@ -98,7 +86,7 @@
     --card-foreground: 0 0% 8%;
     --popover: 220 14% 95%;
     --popover-foreground: 0 0% 8%;
-    --primary: 341 63% 63%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 95%;
     --secondary-foreground: 0 0% 8%;
@@ -108,7 +96,7 @@
     --accent-foreground: 0 0% 8%;
     --border: 236 15% 86%;
     --input: 220 14% 95%;
-    --ring: 341 63% 63%;
+    --ring: 217 91% 60%;
 
     --lux-background: #edf0f3;
     --lux-sidebar: #e7ebef;
@@ -117,58 +105,46 @@
     --lux-text: #111111;
     --lux-text-secondary: #222222;
     --lux-text-muted: #4a4a4a;
-    --lux-gold: #e06a92;
-    --lux-gold-soft: #c94f7d;
-    --lux-gold-border: rgba(224, 106, 146, 0.28);
-    --lux-gold-glow: rgba(224, 106, 146, 0.2);
-    --lux-shell-surface: #eceff3;
-    --lux-shell-chrome-surface:
-      radial-gradient(
-        circle at top right,
-        rgba(224, 106, 146, 0.14),
-        transparent 34%
-      ),
-      linear-gradient(180deg, rgba(16, 12, 17, 0.98), rgba(8, 8, 10, 0.96));
-    --lux-shell-chrome-elevated:
-      radial-gradient(
-        circle at top left,
-        rgba(224, 106, 146, 0.16),
-        transparent 30%
-      ),
-      linear-gradient(180deg, rgba(19, 14, 20, 0.98), rgba(10, 10, 12, 0.97));
-    --lux-shell-chrome-control: rgba(255, 255, 255, 0.06);
-    --lux-shell-chrome-control-border: rgba(224, 106, 146, 0.16);
-    --lux-shell-chrome-control-hover: rgba(224, 106, 146, 0.14);
-    --lux-shell-chrome-text: #f6dce5;
-    --lux-shell-chrome-muted: #c6a8b6;
-    --lux-shell-border: rgba(224, 106, 146, 0.12);
-    --lux-panel-surface: linear-gradient(
-      180deg,
-      rgba(246, 248, 250, 0.98),
-      rgba(237, 240, 244, 0.98)
-    );
+    --lux-gold: #3b82f6;
+    --lux-gold-soft: #2563eb;
+    --lux-gold-border: rgba(59, 130, 246, 0.28);
+    --lux-gold-glow: rgba(59, 130, 246, 0.2);
+    --lux-shell-surface: #121212;
+    --lux-shell-chrome-surface: #121212;
+    --lux-shell-chrome-elevated: #161616;
+    --lux-shell-chrome-control: rgba(59, 130, 246, 0.08);
+    --lux-shell-chrome-control-border: rgba(59, 130, 246, 0.24);
+    --lux-shell-chrome-control-hover: rgba(59, 130, 246, 0.16);
+    --lux-shell-chrome-text: #ffffff;
+    --lux-shell-chrome-muted: #c9dbff;
+    --lux-shell-border: rgba(59, 130, 246, 0.2);
+    --lux-panel-surface: #ffffff;
     --lux-panel-border: rgba(17, 17, 17, 0.08);
     --lux-panel-shadow:
       0 18px 40px rgba(17, 17, 17, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    --lux-row-surface: rgba(243, 245, 248, 0.96);
+    --lux-row-surface: rgba(255, 255, 255, 0.98);
     --lux-row-border: rgba(17, 17, 17, 0.08);
-    --lux-control-surface: rgba(241, 244, 247, 0.96);
+    --lux-control-surface: rgba(245, 247, 250, 0.98);
     --lux-control-border: rgba(17, 17, 17, 0.08);
-    --lux-control-hover: rgba(224, 106, 146, 0.12);
+    --lux-control-hover: rgba(59, 130, 246, 0.08);
     --lux-heading: #111111;
     --lux-soft-text: #1f1f1f;
     --lux-strong-text: #111111;
-    --lux-sidebar-active-bg: linear-gradient(180deg, #d9678f, #b84e74);
-    --lux-sidebar-active-text: #fff8fa;
-    --lux-badge-surface: linear-gradient(180deg, #df6d95, #bf5378);
+    --lux-sidebar-active-bg: #3b82f6;
+    --lux-sidebar-active-text: #121212;
+    --lux-badge-surface: #3b82f6;
     --lux-badge-text: #ffffff;
-    --lux-primary-surface: linear-gradient(180deg, #e16f97, #bf4f79);
+    --lux-primary-surface: #3b82f6;
     --lux-primary-text: #ffffff;
-    --lux-danger: #cb5f78;
-    --lux-danger-soft: rgba(203, 95, 120, 0.14);
+    --lux-danger: #dc2626;
+    --lux-danger-soft: rgba(220, 38, 38, 0.14);
     --lux-success: #4f9b73;
     --lux-success-soft: rgba(79, 155, 115, 0.14);
+    --lux-overlay: rgba(15, 23, 42, 0.34);
+    --lux-overlay-strong: rgba(15, 23, 42, 0.52);
+    --lux-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    --lux-avatar-surface: var(--lux-control-hover);
   }
 
   * {
@@ -185,58 +161,21 @@
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
     scrollbar-width: thin;
     scrollbar-color: var(--lux-gold-border) rgba(255, 255, 255, 0.02);
-    background-image:
-      radial-gradient(
-        circle at top left,
-        rgba(212, 175, 55, 0.08),
-        transparent 26%
-      ),
-      radial-gradient(
-        circle at top right,
-        rgba(212, 175, 55, 0.06),
-        transparent 24%
-      ),
-      radial-gradient(
-        circle at bottom left,
-        rgba(255, 255, 255, 0.02),
-        transparent 20%
-      ),
-      linear-gradient(180deg, #070708 0%, #09090a 48%, #070708 100%);
+    background-image: none;
+    background-color: var(--lux-background);
   }
 
   :root[data-theme="light"] body {
-    background-image:
-      radial-gradient(
-        circle at top left,
-        rgba(207, 127, 144, 0.12),
-        transparent 26%
-      ),
-      radial-gradient(
-        circle at top right,
-        rgba(224, 157, 102, 0.12),
-        transparent 24%
-      ),
-      linear-gradient(180deg, #eef1f4 0%, #e7ebef 48%, #f1f4f7 100%);
+    background-image: none;
+    background-color: var(--lux-background);
   }
 
   body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 80px 80px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 75%);
-    opacity: 0.15;
+    content: none;
   }
 
   :root[data-theme="light"] body::before {
-    background-image:
-      linear-gradient(to right, rgba(49, 50, 70, 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(49, 50, 70, 0.04) 1px, transparent 1px);
-    opacity: 0.08;
+    content: none;
   }
 
   #root {

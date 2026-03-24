@@ -342,8 +342,11 @@ const EventDetailsPage = () => {
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
-    vendorType: vendorForm.vendorType,
+    vendorId: vendorForm.vendorId ? Number(vendorForm.vendorId) : undefined,
+    vendorType: "all",
     isActive: "all",
+    enabled:
+      vendorForm.providedBy === "company" && Boolean(vendorForm.vendorId),
   });
   const {
     data: vendorPricingPlansResponse,
@@ -352,8 +355,11 @@ const EventDetailsPage = () => {
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
-    vendorType: vendorForm.vendorType,
+    vendorId: vendorForm.vendorId ? Number(vendorForm.vendorId) : undefined,
+    vendorType: "all",
     isActive: "true",
+    enabled:
+      vendorForm.providedBy === "company" && Boolean(vendorForm.vendorId),
   });
   const { data: serviceCatalogResponse } = useServices({
     currentPage: 1,
@@ -824,6 +830,19 @@ const EventDetailsPage = () => {
       setVendorError(
         t("vendors.clientVendorNameRequired", {
           defaultValue: "Enter the client-provided vendor name.",
+        }),
+      );
+      return;
+    }
+
+    if (
+      !vendorForm.vendorId &&
+      vendorForm.selectedSubServiceIds.length > 0
+    ) {
+      setVendorError(
+        t("vendors.selectVendorForSubServices", {
+          defaultValue:
+            "Select a company vendor to load that vendor's sub-services.",
         }),
       );
       return;
@@ -2491,6 +2510,16 @@ const EventDetailsPage = () => {
                           ...current,
                           providedBy: value as EventVendorProvidedBy,
                           vendorId: value === "client" ? "" : current.vendorId,
+                          selectedSubServiceIds:
+                            value === "client"
+                              ? []
+                              : current.selectedSubServiceIds,
+                          agreedPrice:
+                            value === "client" ? "" : current.agreedPrice,
+                          isPriceOverride:
+                            value === "client"
+                              ? false
+                              : current.isPriceOverride,
                         }))
                       }
                     >
@@ -2585,6 +2614,9 @@ const EventDetailsPage = () => {
                                 return {
                                   ...current,
                                   vendorId: nextValue,
+                                  selectedSubServiceIds: [],
+                                  agreedPrice: "",
+                                  isPriceOverride: false,
                                   companyNameSnapshot:
                                     selectedVendor?.name ||
                                     current.companyNameSnapshot,
@@ -2744,7 +2776,7 @@ const EventDetailsPage = () => {
                     <p className="text-xs text-[var(--lux-text-secondary)]">
                       {t("vendors.selectedSubServicesHint", {
                         defaultValue:
-                          "Choose the reusable checklist items needed for this event vendor. Active pricing is matched from the selected count.",
+                          "Choose the reusable checklist items configured for the selected vendor. Active pricing is matched from that vendor's plan thresholds.",
                       })}
                     </p>
                   </div>
@@ -2756,7 +2788,33 @@ const EventDetailsPage = () => {
                   </Badge>
                 </div>
 
-              {vendorSubServicesLoading ? (
+              {vendorForm.providedBy !== "company" ? (
+                <div
+                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
+                  style={{
+                    background: "var(--lux-panel-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  {t("vendors.clientModeNoSubServices", {
+                    defaultValue:
+                      "Vendor sub-services are available only when a company vendor is selected.",
+                  })}
+                </div>
+              ) : !vendorForm.vendorId ? (
+                <div
+                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
+                  style={{
+                    background: "var(--lux-panel-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  {t("vendors.selectVendorForSubServices", {
+                    defaultValue:
+                      "Select a company vendor to load that vendor's sub-services.",
+                  })}
+                </div>
+              ) : vendorSubServicesLoading ? (
                 <p className="text-sm text-[var(--lux-text-secondary)]">
                   {t("common.loading", { defaultValue: "Loading..." })}
                 </p>
@@ -2829,7 +2887,7 @@ const EventDetailsPage = () => {
                 >
                   {t("vendors.noVendorSubServicesForType", {
                     defaultValue:
-                      "No vendor sub-services are configured for this vendor type yet.",
+                      "No vendor sub-services are configured for this vendor yet.",
                   })}
                 </div>
               )}
@@ -2851,7 +2909,7 @@ const EventDetailsPage = () => {
                   <p className="text-xs text-[var(--lux-text-secondary)]">
                     {t("vendors.pricingSummaryHint", {
                       defaultValue:
-                        "Pricing plan stays visible for reference even if you override the agreed price manually.",
+                        "Pricing plans are resolved from the selected vendor and stay visible for reference even if you override the agreed price manually.",
                     })}
                   </p>
                 </div>
@@ -2870,7 +2928,17 @@ const EventDetailsPage = () => {
                       })}
                     </p>
                     <p className="mt-1 text-sm font-medium text-[var(--lux-text)]">
-                      {vendorPricingPlansLoading
+                      {vendorForm.providedBy !== "company"
+                        ? t("vendors.clientModeNoPricingPlan", {
+                            defaultValue:
+                              "No auto pricing in client mode without a linked vendor",
+                          })
+                        : !vendorForm.vendorId
+                          ? t("vendors.selectVendorForPricing", {
+                              defaultValue:
+                                "Select a company vendor to load pricing plans",
+                            })
+                          : vendorPricingPlansLoading
                         ? t("common.loading", { defaultValue: "Loading..." })
                         : calculatedVendorPricingPlan?.name ||
                           (vendorForm.selectedSubServiceIds.length
@@ -2920,7 +2988,9 @@ const EventDetailsPage = () => {
                   </div>
                 </div>
 
-                {vendorForm.selectedSubServiceIds.length > 0 &&
+                {vendorForm.providedBy === "company" &&
+                Boolean(vendorForm.vendorId) &&
+                vendorForm.selectedSubServiceIds.length > 0 &&
                 !calculatedVendorPricingPlan &&
                 !vendorPricingPlansLoading ? (
                   <div

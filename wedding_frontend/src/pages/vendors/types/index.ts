@@ -144,12 +144,14 @@ export interface EventVendorLinkFormData {
 
 export interface VendorSubService {
   id: number;
+  vendorId?: number | null;
   vendorType: VendorType;
   name: string;
   code?: string | null;
   description?: string | null;
   sortOrder: number;
   isActive: boolean;
+  vendor?: Vendor | null;
   createdByUser?: VendorUserSummary | null;
   updatedByUser?: VendorUserSummary | null;
   createdAt?: string;
@@ -172,7 +174,8 @@ export interface VendorSubServiceResponse {
 }
 
 export interface VendorSubServiceFormData {
-  vendorType: VendorType;
+  vendorId: string;
+  vendorType?: VendorType;
   name: string;
   code?: string;
   description?: string;
@@ -182,6 +185,7 @@ export interface VendorSubServiceFormData {
 
 export interface VendorPricingPlan {
   id: number;
+  vendorId?: number | null;
   vendorType: VendorType;
   name: string;
   minSubServices: number;
@@ -189,6 +193,7 @@ export interface VendorPricingPlan {
   price: DecimalValue;
   notes?: string | null;
   isActive: boolean;
+  vendor?: Vendor | null;
   createdByUser?: VendorUserSummary | null;
   updatedByUser?: VendorUserSummary | null;
   createdAt?: string;
@@ -211,7 +216,8 @@ export interface VendorPricingPlanResponse {
 }
 
 export interface VendorPricingPlanFormData {
-  vendorType: VendorType;
+  vendorId: string;
+  vendorType?: VendorType;
   name: string;
   minSubServices: string;
   maxSubServices?: string;

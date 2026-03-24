@@ -12,16 +12,20 @@ interface UseVendorPricingPlansParams {
   currentPage: number;
   itemsPerPage: number;
   searchQuery: string;
+  vendorId?: number;
   vendorType: "all" | VendorType;
   isActive: "all" | "true" | "false";
+  enabled?: boolean;
 }
 
 export const useVendorPricingPlans = ({
   currentPage,
   itemsPerPage,
   searchQuery,
+  vendorId,
   vendorType,
   isActive,
+  enabled = true,
 }: UseVendorPricingPlansParams) => {
   return useQuery<VendorPricingPlansResponse>({
     queryKey: [
@@ -29,6 +33,7 @@ export const useVendorPricingPlans = ({
       currentPage,
       itemsPerPage,
       searchQuery,
+      vendorId,
       vendorType,
       isActive,
     ],
@@ -38,6 +43,7 @@ export const useVendorPricingPlans = ({
           page: currentPage,
           limit: itemsPerPage,
           search: searchQuery || undefined,
+          vendorId: vendorId || undefined,
           vendorType: vendorType === "all" ? undefined : vendorType,
           isActive: isActive === "all" ? undefined : isActive,
         },
@@ -45,6 +51,7 @@ export const useVendorPricingPlans = ({
 
       return res.data;
     },
+    enabled,
   });
 };
 

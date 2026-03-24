@@ -19,6 +19,7 @@ const normalizeNullableString = (value?: string) => {
 const buildCreateVendorPricingPlanPayload = (
   values: VendorPricingPlanFormData,
 ) => ({
+  vendorId: Number(values.vendorId),
   vendorType: values.vendorType,
   name: values.name.trim(),
   minSubServices: Number(values.minSubServices),
@@ -33,6 +34,7 @@ const buildCreateVendorPricingPlanPayload = (
 const buildUpdateVendorPricingPlanPayload = (
   values: VendorPricingPlanFormData,
 ) => ({
+  vendorId: Number(values.vendorId),
   vendorType: values.vendorType,
   name: values.name.trim(),
   minSubServices: Number(values.minSubServices),

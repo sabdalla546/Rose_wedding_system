@@ -199,6 +199,26 @@ EventVendor.belongsTo(Vendor, {
   as: "vendor",
 });
 
+// Vendor -> VendorSubService
+Vendor.hasMany(VendorSubService, {
+  foreignKey: "vendorId",
+  as: "subServices",
+});
+VendorSubService.belongsTo(Vendor, {
+  foreignKey: "vendorId",
+  as: "vendor",
+});
+
+// Vendor -> VendorPricingPlan
+Vendor.hasMany(VendorPricingPlan, {
+  foreignKey: "vendorId",
+  as: "pricingPlans",
+});
+VendorPricingPlan.belongsTo(Vendor, {
+  foreignKey: "vendorId",
+  as: "vendor",
+});
+
 // Event -> EventVendor
 Event.hasMany(EventVendor, {
   foreignKey: "eventId",

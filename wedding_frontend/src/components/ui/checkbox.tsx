@@ -17,7 +17,7 @@ const Checkbox = React.forwardRef<
     style={{
       background: "var(--lux-control-surface)",
       borderColor: "var(--lux-control-border)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
+      boxShadow: "var(--lux-inset-highlight)",
     }}
     {...props}
   >

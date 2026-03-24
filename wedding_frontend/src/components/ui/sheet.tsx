@@ -14,7 +14,8 @@ const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
-    className={cn('fixed inset-0 z-50 bg-black/70 backdrop-blur-sm', className)}
+    className={cn('fixed inset-0 z-50 backdrop-blur-sm', className)}
+    style={{ background: 'var(--lux-overlay-strong)' }}
     ref={ref}
     {...props}
   />
@@ -38,8 +39,7 @@ const SheetContent = React.forwardRef<
         className,
       )}
       style={{
-        background:
-          'linear-gradient(180deg, color-mix(in srgb, var(--lux-sidebar) 96%, transparent), color-mix(in srgb, var(--lux-shell-surface) 98%, transparent))',
+        background: 'var(--lux-shell-chrome-surface)',
       }}
       ref={ref}
       {...props}

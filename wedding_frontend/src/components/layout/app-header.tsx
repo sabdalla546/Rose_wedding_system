@@ -85,12 +85,14 @@ export function AppHeader({
       style={{
         ...fixedStyle,
         background: "var(--lux-shell-chrome-surface)",
+        borderBottom: "1px solid var(--lux-shell-border)",
       }}
     >
       <div
         className="flex w-full items-center gap-2.5 px-3 py-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
         style={{
           background: "var(--lux-shell-chrome-elevated)",
+          color: "var(--lux-shell-chrome-text)",
         }}
       >
         <Button
@@ -151,12 +153,12 @@ export function AppHeader({
             <button
               className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "en"
-                  ? "text-[var(--lux-shell-chrome-text)]"
+                  ? "text-[var(--lux-shell-surface)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
               }`}
               style={
                 i18n.resolvedLanguage === "en"
-                  ? { background: "var(--lux-shell-chrome-control-hover)" }
+                  ? { background: "var(--lux-gold)" }
                   : undefined
               }
               type="button"
@@ -167,12 +169,12 @@ export function AppHeader({
             <button
               className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "ar"
-                  ? "text-[var(--lux-shell-chrome-text)]"
+                  ? "text-[var(--lux-shell-surface)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
               }`}
               style={
                 i18n.resolvedLanguage === "ar"
-                  ? { background: "var(--lux-shell-chrome-control-hover)" }
+                  ? { background: "var(--lux-gold)" }
                   : undefined
               }
               type="button"
@@ -248,7 +250,7 @@ function IconAction({ icon: Icon, badge }: IconActionProps) {
     >
       <Icon className="h-3.5 w-3.5" />
       {badge ? (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c88f54] px-1 text-[10px] font-bold text-white shadow-[0_6px_14px_rgba(200,143,84,0.3)]">
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-[0_6px_14px_rgba(59,130,246,0.28)]" style={{ background: "var(--lux-gold)", color: "var(--lux-shell-surface)" }}>
           {badge}
         </span>
       ) : null}
