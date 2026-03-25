@@ -2,6 +2,11 @@ import type { Customer } from "@/pages/customers/types";
 import type { Event } from "@/pages/events/types";
 import type { Lead } from "@/pages/leads/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
+import type {
+  EventVendorLink,
+  Vendor,
+  VendorPricingPlan,
+} from "@/pages/vendors/types";
 
 export type QuotationStatus =
   | "draft"
@@ -12,6 +17,7 @@ export type QuotationStatus =
   | "converted_to_contract";
 
 export type DecimalValue = number | string;
+export type QuotationItemType = "service" | "vendor";
 
 export interface QuotationUserSummary {
   id: number;
@@ -21,8 +27,12 @@ export interface QuotationUserSummary {
 export interface QuotationItem {
   id: number;
   quotationId: number;
+  itemType: QuotationItemType;
   eventServiceId?: number | null;
   serviceId?: number | null;
+  eventVendorId?: number | null;
+  vendorId?: number | null;
+  pricingPlanId?: number | null;
   itemName: string;
   category?: string | null;
   quantity?: DecimalValue | null;
@@ -32,6 +42,9 @@ export interface QuotationItem {
   sortOrder: number;
   eventService?: EventServiceItem | null;
   service?: Service | null;
+  eventVendor?: EventVendorLink | null;
+  vendor?: Vendor | null;
+  pricingPlan?: VendorPricingPlan | null;
   createdByUser?: QuotationUserSummary | null;
   updatedByUser?: QuotationUserSummary | null;
   createdAt?: string;
@@ -79,12 +92,20 @@ export interface QuotationResponse {
 
 export interface QuotationItemFormData {
   id?: number;
+  itemType: QuotationItemType;
   eventServiceId?: string;
   serviceId?: string;
+  eventVendorId?: string;
+  vendorId?: string;
+  pricingPlanId?: string;
   itemName: string;
   category?: string;
+  quantity: string;
+  unitPrice: string;
+  totalPrice?: string;
   notes?: string;
   sortOrder?: string;
+  isTotalManual?: boolean;
 }
 
 export interface QuotationFormData {
@@ -92,7 +113,7 @@ export interface QuotationFormData {
   quotationNumber?: string;
   issueDate: string;
   validUntil?: string;
-  subtotal: string;
+  subtotal?: string;
   discountAmount?: string;
   notes?: string;
   status?: QuotationStatus;
@@ -104,10 +125,11 @@ export interface QuotationFromEventFormData {
   quotationNumber?: string;
   issueDate: string;
   validUntil?: string;
-  subtotal: string;
+  subtotal?: string;
   discountAmount?: string;
   notes?: string;
   eventServiceIds: string[];
+  eventVendorIds: string[];
   status?: QuotationStatus;
 }
 

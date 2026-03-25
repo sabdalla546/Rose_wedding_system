@@ -5,9 +5,13 @@ export interface ContractItemAttributes {
   id: number;
   contractId: number;
 
+  itemType: "service" | "vendor";
   quotationItemId?: number | null;
   eventServiceId?: number | null;
   serviceId?: number | null;
+  eventVendorId?: number | null;
+  vendorId?: number | null;
+  pricingPlanId?: number | null;
 
   itemName: string;
   category?: string | null;
@@ -26,9 +30,13 @@ export interface ContractItemAttributes {
 type ContractItemCreationAttributes = Optional<
   ContractItemAttributes,
   | "id"
+  | "itemType"
   | "quotationItemId"
   | "eventServiceId"
   | "serviceId"
+  | "eventVendorId"
+  | "vendorId"
+  | "pricingPlanId"
   | "category"
   | "notes"
   | "sortOrder"
@@ -43,9 +51,13 @@ export class ContractItem
   public id!: number;
   public contractId!: number;
 
+  public itemType!: "service" | "vendor";
   public quotationItemId?: number | null;
   public eventServiceId?: number | null;
   public serviceId?: number | null;
+  public eventVendorId?: number | null;
+  public vendorId?: number | null;
+  public pricingPlanId?: number | null;
 
   public itemName!: string;
   public category?: string | null;
@@ -74,6 +86,12 @@ ContractItem.init(
       allowNull: false,
     },
 
+    itemType: {
+      type: DataTypes.ENUM("service", "vendor"),
+      allowNull: false,
+      defaultValue: "service",
+    },
+
     quotationItemId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
@@ -85,6 +103,21 @@ ContractItem.init(
     },
 
     serviceId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+
+    eventVendorId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+
+    vendorId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+
+    pricingPlanId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -143,9 +176,13 @@ ContractItem.init(
     paranoid: true,
     indexes: [
       { fields: ["contractId"] },
+      { fields: ["itemType"] },
       { fields: ["quotationItemId"] },
       { fields: ["eventServiceId"] },
       { fields: ["serviceId"] },
+      { fields: ["eventVendorId"] },
+      { fields: ["vendorId"] },
+      { fields: ["pricingPlanId"] },
       { fields: ["category"] },
       { fields: ["sortOrder"] },
     ],

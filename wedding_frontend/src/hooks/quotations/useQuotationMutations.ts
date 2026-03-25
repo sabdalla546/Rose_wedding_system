@@ -10,6 +10,7 @@ import type {
   QuotationResponse,
   QuotationUpdateFormData,
 } from "@/pages/quotations/types";
+import { computeQuotationItemTotal } from "@/pages/quotations/adapters";
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
@@ -36,15 +37,24 @@ const buildCreateQuotationPayload = (values: QuotationFormData) => ({
   quotationNumber: normalizeOptionalString(values.quotationNumber),
   issueDate: values.issueDate,
   validUntil: normalizeOptionalString(values.validUntil),
-  subtotal: Number(values.subtotal),
+  subtotal: normalizeOptionalNumber(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
   notes: normalizeOptionalString(values.notes),
   status: values.status || undefined,
   items: values.items.map((item) => ({
+    itemType: item.itemType,
     eventServiceId: item.eventServiceId ? Number(item.eventServiceId) : null,
     serviceId: item.serviceId ? Number(item.serviceId) : null,
+    eventVendorId: item.eventVendorId ? Number(item.eventVendorId) : null,
+    vendorId: item.vendorId ? Number(item.vendorId) : null,
+    pricingPlanId: item.pricingPlanId ? Number(item.pricingPlanId) : null,
     itemName: item.itemName.trim(),
     category: normalizeOptionalString(item.category),
+    quantity: Number(item.quantity),
+    unitPrice: Number(item.unitPrice),
+    totalPrice: item.totalPrice?.trim()
+      ? Number(item.totalPrice)
+      : computeQuotationItemTotal(item.quantity, item.unitPrice),
     notes: normalizeOptionalString(item.notes),
     sortOrder: item.sortOrder?.trim() ? Number(item.sortOrder) : undefined,
   })),
@@ -55,10 +65,11 @@ const buildCreateFromEventPayload = (values: QuotationFromEventFormData) => ({
   quotationNumber: normalizeOptionalString(values.quotationNumber),
   issueDate: values.issueDate,
   validUntil: normalizeOptionalString(values.validUntil),
-  subtotal: Number(values.subtotal),
+  subtotal: normalizeOptionalNumber(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
   notes: normalizeOptionalString(values.notes),
   eventServiceIds: values.eventServiceIds.map((value) => Number(value)),
+  eventVendorIds: values.eventVendorIds.map((value) => Number(value)),
   status: values.status || undefined,
 });
 
@@ -75,8 +86,19 @@ const buildUpdateQuotationPayload = (values: QuotationUpdateFormData) => ({
 const buildUpdateQuotationItemPayload = (
   item: QuotationUpdateFormData["items"][number],
 ) => ({
+  itemType: item.itemType,
+  eventServiceId: item.eventServiceId ? Number(item.eventServiceId) : null,
+  serviceId: item.serviceId ? Number(item.serviceId) : null,
+  eventVendorId: item.eventVendorId ? Number(item.eventVendorId) : null,
+  vendorId: item.vendorId ? Number(item.vendorId) : null,
+  pricingPlanId: item.pricingPlanId ? Number(item.pricingPlanId) : null,
   itemName: item.itemName.trim(),
   category: normalizeNullableString(item.category),
+  quantity: Number(item.quantity),
+  unitPrice: Number(item.unitPrice),
+  totalPrice: item.totalPrice?.trim()
+    ? Number(item.totalPrice)
+    : computeQuotationItemTotal(item.quantity, item.unitPrice),
   notes: normalizeNullableString(item.notes),
   sortOrder: item.sortOrder?.trim() ? Number(item.sortOrder) : 0,
 });
@@ -137,7 +159,7 @@ export const useCreateQuotationFromEvent = () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
         description: t("quotations.toast.createdFromEvent", {
-          defaultValue: "Quotation created from event services successfully",
+          defaultValue: "Quotation created from event items successfully",
         }),
       });
 
@@ -152,7 +174,7 @@ export const useCreateQuotationFromEvent = () => {
         description: getApiErrorMessage(
           error,
           t("quotations.toast.createFromEventFailed", {
-            defaultValue: "Failed to create quotation from event services",
+            defaultValue: "Failed to create quotation from event items",
           }),
         ),
       });

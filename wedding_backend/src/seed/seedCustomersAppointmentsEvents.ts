@@ -1,16 +1,12 @@
 import { initDatabase, sequelize } from "../config/database";
 import { Appointment, Customer, Event } from "../models";
+import { ensureSeedVenues } from "./seedVenues";
 
 const SEED_COUNT = 50;
 const SEED_EMAIL_DOMAIN = "seed.rose.local";
 const SEED_NOTE_TAG = "[seed:customers-appointments-events]";
 
-const appointmentTypes = [
-  "office_visit",
-  "phone_call",
-  "video_call",
-  "venue_visit",
-] as const;
+const appointmentTypes = ["office_visit"] as const;
 
 const appointmentStatuses = [
   "scheduled",
@@ -94,10 +90,7 @@ const buildAppointmentSlot = (slotIndex: number) => {
   const endMinutes = startMinutes + 30;
 
   return {
-    startTime: formatTime(
-      Math.floor(startMinutes / 60),
-      startMinutes % 60
-    ),
+    startTime: formatTime(Math.floor(startMinutes / 60), startMinutes % 60),
     endTime: formatTime(Math.floor(endMinutes / 60), endMinutes % 60),
   };
 };
@@ -123,10 +116,16 @@ const seedCustomersAppointmentsEvents = async () => {
   await initDatabase();
 
   await sequelize.transaction(async (transaction) => {
+    const seededVenues = await ensureSeedVenues(transaction);
+
+    if (seededVenues.length === 0) {
+      throw new Error("No venues available for event seeding");
+    }
+
     const seededCustomers = await Customer.findAll({
       where: {
         email: Array.from({ length: SEED_COUNT }, (_, index) =>
-          buildCustomerEmail(index)
+          buildCustomerEmail(index),
         ),
       },
       transaction,
@@ -167,7 +166,7 @@ const seedCustomersAppointmentsEvents = async () => {
           createdBy: null,
           updatedBy: null,
         },
-        { transaction }
+        { transaction },
       );
 
       const appointmentDayOffset = index % 12;
@@ -187,34 +186,35 @@ const seedCustomersAppointmentsEvents = async () => {
           createdBy: null,
           updatedBy: null,
         },
-        { transaction }
+        { transaction },
       );
 
       const eventDayOffset = 5 + ((index * 9) % 46);
       const eventDate = addDays(appointmentDate, eventDayOffset);
+      const venue = seededVenues[index % seededVenues.length];
 
       await Event.create(
         {
           customerId: customer.id,
           title: `حفل رقم ${String(index + 1).padStart(2, "0")}`,
           eventDate: formatDateOnly(eventDate),
-          venueId: null,
-          venueNameSnapshot: venueSnapshots[index % venueSnapshots.length],
+          venueId: venue.id,
+          venueNameSnapshot: venue.name,
           groomName: buildGroomName(index),
           brideName: buildBrideName(index),
           guestCount: 150 + ((index * 25) % 350),
-          notes: `${SEED_NOTE_TAG} Event ${index + 1} created ${eventDayOffset} days after the appointment date`,
+          notes: `${SEED_NOTE_TAG} Event ${index + 1} created ${eventDayOffset} days after the appointment date at ${venue.name}`,
           status: eventStatuses[index % eventStatuses.length],
           createdBy: null,
           updatedBy: null,
         },
-        { transaction }
+        { transaction },
       );
     }
   });
 
   console.log(
-    `Seed completed: ${SEED_COUNT} customers, ${SEED_COUNT} appointments, ${SEED_COUNT} events`
+    `Seed completed: ${SEED_COUNT} customers, ${SEED_COUNT} appointments, ${SEED_COUNT} events linked to seeded venues`,
   );
 };
 

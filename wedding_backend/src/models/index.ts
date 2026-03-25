@@ -7,7 +7,6 @@ import { UserRole } from "./userRole.model";
 import { RolePermission } from "./rolePermission.model";
 import { RefreshToken } from "./refreshToken.model";
 import { Appointment } from "./appointment.model";
-import { Lead } from "./lead.model";
 import { Venue } from "./venue.model";
 import { Customer } from "./customer.model";
 import { Event } from "./event.model";
@@ -45,14 +44,6 @@ User.hasMany(RefreshToken, { foreignKey: "userId" });
 // =========================
 
 // Venue -> Lead
-Venue.hasMany(Lead, {
-  foreignKey: "venueId",
-  as: "leads",
-});
-Lead.belongsTo(Venue, {
-  foreignKey: "venueId",
-  as: "venue",
-});
 
 // Customer -> Appointment
 Customer.hasMany(Appointment, {
@@ -62,25 +53,6 @@ Customer.hasMany(Appointment, {
 Appointment.belongsTo(Customer, {
   foreignKey: "customerId",
   as: "customer",
-});
-
-// User -> Lead (audit)
-User.hasMany(Lead, {
-  foreignKey: "createdBy",
-  as: "createdLeads",
-});
-Lead.belongsTo(User, {
-  foreignKey: "createdBy",
-  as: "createdByUser",
-});
-
-User.hasMany(Lead, {
-  foreignKey: "updatedBy",
-  as: "updatedLeads",
-});
-Lead.belongsTo(User, {
-  foreignKey: "updatedBy",
-  as: "updatedByUser",
 });
 
 // User -> Appointment (audit)
@@ -432,14 +404,6 @@ Quotation.belongsTo(Customer, {
 });
 
 // Lead -> Quotation
-Lead.hasMany(Quotation, {
-  foreignKey: "leadId",
-  as: "quotations",
-});
-Quotation.belongsTo(Lead, {
-  foreignKey: "leadId",
-  as: "lead",
-});
 
 // Quotation -> QuotationItem
 Quotation.hasMany(QuotationItem, {
@@ -469,6 +433,36 @@ Service.hasMany(QuotationItem, {
 QuotationItem.belongsTo(Service, {
   foreignKey: "serviceId",
   as: "service",
+});
+
+// EventVendor -> QuotationItem
+EventVendor.hasMany(QuotationItem, {
+  foreignKey: "eventVendorId",
+  as: "quotationItems",
+});
+QuotationItem.belongsTo(EventVendor, {
+  foreignKey: "eventVendorId",
+  as: "eventVendor",
+});
+
+// Vendor -> QuotationItem
+Vendor.hasMany(QuotationItem, {
+  foreignKey: "vendorId",
+  as: "quotationItems",
+});
+QuotationItem.belongsTo(Vendor, {
+  foreignKey: "vendorId",
+  as: "vendor",
+});
+
+// VendorPricingPlan -> QuotationItem
+VendorPricingPlan.hasMany(QuotationItem, {
+  foreignKey: "pricingPlanId",
+  as: "quotationItems",
+});
+QuotationItem.belongsTo(VendorPricingPlan, {
+  foreignKey: "pricingPlanId",
+  as: "pricingPlan",
 });
 
 // User -> Quotation audit
@@ -539,16 +533,6 @@ Contract.belongsTo(Customer, {
   as: "customer",
 });
 
-// Lead -> Contract
-Lead.hasMany(Contract, {
-  foreignKey: "leadId",
-  as: "contracts",
-});
-Contract.belongsTo(Lead, {
-  foreignKey: "leadId",
-  as: "lead",
-});
-
 // Contract -> ContractItem
 Contract.hasMany(ContractItem, {
   foreignKey: "contractId",
@@ -597,6 +581,36 @@ Service.hasMany(ContractItem, {
 ContractItem.belongsTo(Service, {
   foreignKey: "serviceId",
   as: "service",
+});
+
+// EventVendor -> ContractItem
+EventVendor.hasMany(ContractItem, {
+  foreignKey: "eventVendorId",
+  as: "contractItems",
+});
+ContractItem.belongsTo(EventVendor, {
+  foreignKey: "eventVendorId",
+  as: "eventVendor",
+});
+
+// Vendor -> ContractItem
+Vendor.hasMany(ContractItem, {
+  foreignKey: "vendorId",
+  as: "contractItems",
+});
+ContractItem.belongsTo(Vendor, {
+  foreignKey: "vendorId",
+  as: "vendor",
+});
+
+// VendorPricingPlan -> ContractItem
+VendorPricingPlan.hasMany(ContractItem, {
+  foreignKey: "pricingPlanId",
+  as: "contractItems",
+});
+ContractItem.belongsTo(VendorPricingPlan, {
+  foreignKey: "pricingPlanId",
+  as: "pricingPlan",
 });
 
 // User -> Contract audit
@@ -664,7 +678,6 @@ export {
   RolePermission,
   RefreshToken,
   Venue,
-  Lead,
   Appointment,
   Customer,
   Event,

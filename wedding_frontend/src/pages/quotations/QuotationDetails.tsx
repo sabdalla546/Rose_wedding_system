@@ -24,8 +24,11 @@ import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
   formatMoney,
   formatQuotationItemCategory,
+  getQuotationCompanyDisplayName,
   getQuotationDisplayNumber,
   getQuotationItemDisplayName,
+  isServiceItem,
+  isVendorItem,
 } from "./adapters";
 import { QuotationStatusBadge } from "./_components/quotationStatusBadge";
 
@@ -54,6 +57,9 @@ const QuotationDetailsPage = () => {
   const deleteMutation = useDeleteQuotation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
+  const sortedItems = [...(quotation?.items ?? [])].sort(
+    (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
+  );
 
   if (isLoading) {
     return (
@@ -280,7 +286,7 @@ const QuotationDetailsPage = () => {
               <CardDescription>
                 {t("quotations.itemsHint", {
                   defaultValue:
-                    "Descriptive services included in this quotation document.",
+                    "Services and companies included in this quotation document.",
                 })}
               </CardDescription>
             </CardHeader>
@@ -289,39 +295,57 @@ const QuotationDetailsPage = () => {
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
-                      <th className="px-3 py-3 text-start">#</th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.itemName", { defaultValue: "Item" })}
+                        {t("quotations.serviceColumn", {
+                          defaultValue: "Services",
+                        })}
                       </th>
                       <th className="px-3 py-3 text-start">
                         {t("quotations.category", { defaultValue: "Category" })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("common.notes", { defaultValue: "Notes" })}
+                        {t("quotations.companyColumn", {
+                          defaultValue: "Companies",
+                        })}
+                      </th>
+                      <th className="px-3 py-3 text-start">
+                        {t("quotations.companyPriceColumn", {
+                          defaultValue: "Company Prices",
+                        })}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(quotation.items ?? []).map((item, index) => (
+                    {sortedItems.map((item) => (
                       <tr
                         key={item.id}
                         className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
                       >
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {index + 1}
-                        </td>
                         <td className="px-3 py-3">
-                          <div className="font-medium text-[var(--lux-text)]">
-                            {getQuotationItemDisplayName(item)}
-                          </div>
+                          {isServiceItem(item) ? (
+                            <div className="font-medium text-[var(--lux-text)]">
+                              {getQuotationItemDisplayName(item)}
+                            </div>
+                          ) : (
+                            <span className="text-[var(--lux-text-secondary)]">-</span>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
                           {t(`services.category.${item.category}`, {
                             defaultValue: formatQuotationItemCategory(item.category),
                           })}
                         </td>
+                        <td className="px-3 py-3">
+                          {isVendorItem(item) ? (
+                            <div className="font-medium text-[var(--lux-text)]">
+                              {getQuotationCompanyDisplayName(item)}
+                            </div>
+                          ) : (
+                            <span className="text-[var(--lux-text-secondary)]">-</span>
+                          )}
+                        </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {item.notes || "-"}
+                          {isVendorItem(item) ? formatMoney(item.totalPrice) : "-"}
                         </td>
                       </tr>
                     ))}

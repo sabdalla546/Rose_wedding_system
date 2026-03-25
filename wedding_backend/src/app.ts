@@ -15,7 +15,6 @@ import userRoutes from "./routes/user.routes";
 import roleRoutes from "./routes/role.routes";
 import permissionRoutes from "./routes/permission.routes";
 import venueRoutes from "./routes/venue.routes";
-import leadRoutes from "./routes/lead.routes";
 import appointmentRoutes from "./routes/appointment.routes";
 import customerRoutes from "./routes/customer.routes";
 import eventRoutes from "./routes/event.routes";
@@ -58,7 +57,6 @@ export const createApp = async () => {
   app.use("/api/v1/permissions", permissionRoutes);
 
   app.use("/api/v1/venues", venueRoutes);
-  app.use("/api/v1/leads", leadRoutes);
   app.use("/api/v1/appointments", appointmentRoutes);
   app.use("/api/v1/customers", customerRoutes);
 

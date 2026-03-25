@@ -1143,7 +1143,7 @@ export const resources = {
         createTitle: "Create Quotation",
         editTitle: "Edit Quotation",
         createDescription:
-          "Create a manual quotation or build one directly from event services.",
+          "Create one quotation with mixed service and vendor items, or build it directly from event selections.",
         editDescription:
           "Update quotation header details and revise the existing line items.",
         createFromEvent: "Create From Event",
@@ -1197,6 +1197,12 @@ export const resources = {
         itemReference: "Line Reference",
         itemName: "Item Name",
         itemNamePlaceholder: "Enter item name",
+        type: "Type",
+        service: "Service",
+        serviceColumn: "Services",
+        vendor: "Vendor",
+        companyColumn: "Companies",
+        companyPriceColumn: "Company Prices",
         category: "Category",
         categoryPlaceholder: "Enter item category",
         quantity: "Quantity",
@@ -1211,13 +1217,13 @@ export const resources = {
         lead: "Lead",
         createModeTitle: "Creation Mode",
         createModeHint:
-          "Choose whether to prepare the quotation manually or create it from event services.",
+          "Choose whether to prepare the quotation manually or create it from event selections.",
         manualMode: "Manual Quotation",
         manualModeHint:
-          "Build the quotation lines manually and control each item directly.",
-        fromEventMode: "Create From Event Services",
+          "Add service and vendor rows into one mixed quotation document.",
+        fromEventMode: "Create From Event",
         fromEventModeHint:
-          "Select an event and convert its service lines into a quotation.",
+          "Select event services and event vendors together, then create one quotation.",
         selectEvent: "Select event",
         noEventSelected: "No event selected",
         selectCustomer: "Select customer",
@@ -1228,22 +1234,49 @@ export const resources = {
         notesPlaceholder:
           "Add commercial notes, assumptions, or internal remarks...",
         editItemsHint:
-          "Update the existing quotation items. Adding or deleting items will be connected in a later backend phase.",
+          "Update the existing quotation items, including mixed service and vendor rows.",
         addItem: "Add Item",
         removeItem: "Remove",
+        addServiceItem: "Add service item",
+        addVendorItem: "Add vendor item",
+        mixedQuotationItems: "Mixed quotation items",
+        mixedQuotationItemsHint:
+          "Choose service and vendor sources first, then review everything together in one quotation items table.",
+        companyServices: "Company Services",
+        companyServicesHint:
+          "Add rows from event services or the service catalog.",
+        companyVendors: "Company Vendors",
+        companyVendorsHint:
+          "Vendor quotation rows come from event vendors and use agreed price as the default snapshot.",
         linkedEventService: "Event Service",
         selectEventService: "Select event service",
         noEventServiceSelected: "No event service selected",
         linkedService: "Catalog Service",
         selectService: "Select service",
         noServiceSelected: "No service selected",
+        linkedEventVendor: "Event Vendor",
+        selectEventVendor: "Select event vendor",
+        pricingPlan: "Pricing Plan",
+        agreedPrice: "Agreed Price",
+        vendorType: "Vendor Type",
+        selectedSubServicesCount: "Selected Sub-Services",
+        selectedServices: "Selected Services",
+        selectedVendors: "Selected Vendors",
+        selectedServicesSourceTitle: "Event Services",
+        selectedServicesSourceHint:
+          "Choose the event service rows to include in this quotation.",
+        selectedVendorsSourceTitle: "Event Vendors",
+        selectedVendorsSourceHint:
+          "Choose the event vendor rows to include in this quotation.",
         itemNotesPlaceholder:
           "Add item notes, scope details, or commercial remarks...",
         editItemsRestriction:
           "This phase supports updating existing quotation items only. Adding or deleting lines will be enabled when backend endpoints are available.",
+        snapshotOnlyHint:
+          "This changes the quotation snapshot only. It does not change the original vendor pricing on the event.",
         fromEventSelectionTitle: "Event Service Selection",
         fromEventSelectionHint:
-          "Choose whether to use all event services or only selected lines for the quotation.",
+          "Select event services and event vendors together, then review the mixed preview before creating the quotation.",
         selectionModeAll: "Use All Event Services",
         selectionModeAllHint:
           "Every active event service line will be converted into the quotation.",
@@ -1252,11 +1285,18 @@ export const resources = {
           "Pick only the service lines that should appear on the quotation.",
         selectEventBeforeServices:
           "Select an event first to preview its service lines.",
+        selectEventBeforeVendors:
+          "Select an event first to preview its event vendors.",
         noEventServicesForEvent:
           "No active event services are available for the selected event.",
+        noEventVendorsForEvent:
+          "No event vendors are available for the selected event.",
         itemStatus: "Status",
         fromEventSelectionRequired:
           "Select at least one event service to continue.",
+        cannotSelectCancelledVendor: "Cannot select cancelled vendor",
+        vendorHasNoAgreedPrice: "Vendor has no agreed price",
+        noItemsSelected: "No quotation items have been selected yet.",
         status: {
           draft: "Draft",
           sent: "Sent",
@@ -1268,10 +1308,8 @@ export const resources = {
         toast: {
           created: "Quotation created successfully",
           createFailed: "Failed to create quotation",
-          createdFromEvent:
-            "Quotation created from event services successfully",
-          createFromEventFailed:
-            "Failed to create quotation from event services",
+          createdFromEvent: "Quotation created from event items successfully",
+          createFromEventFailed: "Failed to create quotation from event items",
           updated: "Quotation updated successfully",
           updateFailed: "Failed to update quotation",
           deleted: "Quotation deleted successfully",
@@ -2315,7 +2353,7 @@ export const resources = {
         createTitle: "إنشاء عرض سعر",
         editTitle: "تعديل عرض السعر",
         createDescription:
-          "أنشئ عرض سعر يدويًا أو كوّنه مباشرة من خدمات الحفل.",
+          "أنشئ عرض سعر واحدًا يضم بنود خدمات ومورّدين معًا، أو كوّنه مباشرة من اختيارات الحفل.",
         editDescription: "حدّث بيانات رأس عرض السعر وراجع البنود الحالية.",
         createFromEvent: "إنشاء من الحفل",
         backToQuotations: "العودة إلى عروض الأسعار",
@@ -2367,6 +2405,12 @@ export const resources = {
         itemReference: "مرجع السطر",
         itemName: "اسم البند",
         itemNamePlaceholder: "أدخل اسم البند",
+        type: "النوع",
+        service: "خدمة",
+        serviceColumn: "الخدمات",
+        vendor: "مورد",
+        companyColumn: "الشركات",
+        companyPriceColumn: "أسعار الشركات",
         category: "التصنيف",
         categoryPlaceholder: "أدخل تصنيف البند",
         quantity: "الكمية",
@@ -2381,11 +2425,11 @@ export const resources = {
         lead: "العميل المحتمل",
         createModeTitle: "طريقة الإنشاء",
         createModeHint:
-          "اختر ما إذا كنت تريد إعداد عرض السعر يدويًا أو إنشاؤه من خدمات الحفل.",
+          "اختر ما إذا كنت تريد إعداد عرض السعر يدويًا أو إنشاؤه من اختيارات الحفل.",
         manualMode: "عرض سعر يدوي",
-        manualModeHint: "أنشئ البنود يدويًا وتحكم في كل بند بشكل مباشر.",
-        fromEventMode: "إنشاء من خدمات الحفل",
-        fromEventModeHint: "اختر الحفل وحوّل بنود خدماته إلى عرض سعر.",
+        manualModeHint: "أضف بنود خدمات وموردين داخل عرض سعر واحد مختلط.",
+        fromEventMode: "إنشاء من الحفل",
+        fromEventModeHint: "اختر خدمات الحفل وموردي الحفل معًا ثم أنشئ عرض سعر واحد.",
         selectEvent: "اختر الحفل",
         noEventSelected: "لا يوجد حفل محدد",
         selectCustomer: "اختر العميل",
@@ -2395,22 +2439,49 @@ export const resources = {
         discountPlaceholder: "أدخل قيمة الخصم",
         notesPlaceholder: "أضف ملاحظات تجارية أو افتراضات أو ملاحظات داخلية...",
         editItemsHint:
-          "يمكن في هذه المرحلة تعديل البنود الحالية فقط. إضافة البنود أو حذفها ستُربط لاحقًا عند توفر واجهات backend اللازمة.",
+          "حدّث بنود عرض السعر الحالية، بما في ذلك بنود الخدمات والموردين المختلطة.",
         addItem: "إضافة بند",
         removeItem: "حذف",
+        addServiceItem: "إضافة بند خدمة",
+        addVendorItem: "إضافة بند مورد",
+        mixedQuotationItems: "بنود عرض سعر مختلطة",
+        mixedQuotationItemsHint:
+          "اختر مصادر الخدمات والموردين أولًا، ثم راجعها معًا داخل جدول واحد لبنود عرض السعر.",
+        companyServices: "خدمات الشركة",
+        companyServicesHint:
+          "أضف بنودًا من خدمات الحفل أو من كتالوج الخدمات.",
+        companyVendors: "موردو الشركة",
+        companyVendorsHint:
+          "تأتي بنود الموردين من موردي الحفل وتستخدم السعر المتفق عليه كلقطة افتراضية.",
         linkedEventService: "خدمة الحفل",
         selectEventService: "اختر خدمة الحفل",
         noEventServiceSelected: "لا توجد خدمة حفل محددة",
         linkedService: "خدمة من الكتالوج",
         selectService: "اختر الخدمة",
         noServiceSelected: "لا توجد خدمة محددة",
+        linkedEventVendor: "مورد الحفل",
+        selectEventVendor: "اختر مورد الحفل",
+        pricingPlan: "خطة التسعير",
+        agreedPrice: "السعر المتفق عليه",
+        vendorType: "نوع المورد",
+        selectedSubServicesCount: "الخدمات الفرعية المختارة",
+        selectedServices: "الخدمات المختارة",
+        selectedVendors: "الموردون المختارون",
+        selectedServicesSourceTitle: "خدمات الحفل",
+        selectedServicesSourceHint:
+          "اختر بنود خدمات الحفل التي تريد تضمينها في عرض السعر.",
+        selectedVendorsSourceTitle: "موردو الحفل",
+        selectedVendorsSourceHint:
+          "اختر بنود موردي الحفل التي تريد تضمينها في عرض السعر.",
         itemNotesPlaceholder:
           "أضف ملاحظات البند أو تفاصيل النطاق أو الملاحظات التجارية...",
         editItemsRestriction:
           "تدعم هذه المرحلة تعديل البنود الحالية فقط. إضافة السطور أو حذفها ستتوفر عند جاهزية واجهات backend المطلوبة.",
+        snapshotOnlyHint:
+          "هذا يغيّر لقطة عرض السعر فقط، ولا يغيّر تسعير المورد الأصلي على الحفل.",
         fromEventSelectionTitle: "اختيار خدمات الحفل",
         fromEventSelectionHint:
-          "اختر ما إذا كنت تريد استخدام كل خدمات الحفل أو بنودًا محددة فقط في عرض السعر.",
+          "اختر خدمات الحفل وموردي الحفل معًا، ثم راجع المعاينة المختلطة قبل إنشاء عرض السعر.",
         selectionModeAll: "استخدام كل خدمات الحفل",
         selectionModeAllHint:
           "سيتم تحويل كل بنود خدمات الحفل النشطة إلى عرض السعر.",
@@ -2418,9 +2489,14 @@ export const resources = {
         selectionModeSelectedHint:
           "اختر فقط البنود التي يجب أن تظهر في عرض السعر.",
         selectEventBeforeServices: "اختر الحفل أولًا لمعاينة بنود خدماته.",
+        selectEventBeforeVendors: "اختر الحفل أولًا لمعاينة موردي الحفل.",
         noEventServicesForEvent: "لا توجد خدمات حفل نشطة متاحة للحفل المحدد.",
+        noEventVendorsForEvent: "لا يوجد موردو حفل متاحون للحفل المحدد.",
         itemStatus: "الحالة",
         fromEventSelectionRequired: "اختر خدمة حفل واحدة على الأقل للمتابعة.",
+        cannotSelectCancelledVendor: "لا يمكن اختيار مورد ملغي",
+        vendorHasNoAgreedPrice: "لا يوجد سعر متفق عليه لهذا المورد",
+        noItemsSelected: "لم يتم اختيار أي بنود لعرض السعر بعد.",
         status: {
           draft: "مسودة",
           sent: "مرسل",
@@ -2432,8 +2508,8 @@ export const resources = {
         toast: {
           created: "تم إنشاء عرض السعر بنجاح",
           createFailed: "تعذر إنشاء عرض السعر",
-          createdFromEvent: "تم إنشاء عرض السعر من خدمات الحفل بنجاح",
-          createFromEventFailed: "تعذر إنشاء عرض السعر من خدمات الحفل",
+          createdFromEvent: "تم إنشاء عرض السعر من بنود الحفل بنجاح",
+          createFromEventFailed: "تعذر إنشاء عرض السعر من بنود الحفل",
           updated: "تم تحديث عرض السعر بنجاح",
           updateFailed: "تعذر تحديث عرض السعر",
           deleted: "تم حذف عرض السعر بنجاح",
