@@ -72,6 +72,8 @@ const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
 type CreateMode = "manual" | "from_event";
+const MANUAL_SERVICES_SUMMARY_CATEGORY = "service_summary";
+const MANUAL_SERVICES_SUMMARY_NAME = "Total Services";
 
 const getFirstErrorMessage = (value: unknown): string | null => {
   if (!value || typeof value !== "object") {
@@ -111,6 +113,13 @@ const quotationFormSchema = (isEditMode: boolean) =>
         .refine(
           (value) => !value || Number(value) >= 0,
           "Discount must be zero or greater",
+        ),
+      manualServicesTotal: z
+        .string()
+        .optional()
+        .refine(
+          (value) => !value || Number(value) >= 0,
+          "Services total must be zero or greater",
         ),
       notes: z.string().optional(),
       status: z.enum(
@@ -178,11 +187,16 @@ const quotationFormSchema = (isEditMode: boolean) =>
         return;
       }
 
-      if (!isEditMode && values.items.length === 0) {
+      if (
+        !isEditMode &&
+        values.createMode === "manual" &&
+        values.items.length === 0 &&
+        (Number(values.manualServicesTotal || 0) <= 0)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["items"],
-          message: "At least one quotation item is required",
+          message: "Add a vendor row or enter a total services amount",
         });
       }
 
@@ -245,10 +259,8 @@ const buildServiceItemFromEventService = (
   itemName: item.serviceNameSnapshot || item.service?.name || "",
   category: item.category,
   quantity: String(item.quantity ?? 1),
-  unitPrice: String(item.unitPrice ?? 0),
-  totalPrice: String(
-    computeQuotationItemTotal(item.quantity ?? 1, item.unitPrice ?? 0, item.totalPrice),
-  ),
+  unitPrice: "0",
+  totalPrice: "0",
   notes: item.notes ?? "",
 });
 
@@ -292,6 +304,73 @@ const getEventVendorDisabledReason = (item: EventVendorLink) => {
   }
 
   return null;
+};
+
+const getManualServicesTotalValue = (value?: string) =>
+  Number(Math.max(0, toVendorNumberValue(value) ?? 0).toFixed(3));
+
+const buildManualServicesSummaryItem = (
+  manualServicesTotal?: string,
+  sortOrder = 0,
+): QuotationItemFormData => {
+  const amount = getManualServicesTotalValue(manualServicesTotal);
+  const amountString = String(amount);
+
+  return {
+    ...createEmptyQuotationItem("service", sortOrder),
+    itemName: MANUAL_SERVICES_SUMMARY_NAME,
+    category: MANUAL_SERVICES_SUMMARY_CATEGORY,
+    quantity: "1",
+    unitPrice: amountString,
+    totalPrice: amountString,
+    sortOrder: String(sortOrder),
+    isTotalManual: true,
+  };
+};
+
+const isManualServicesSummaryItem = (item: Partial<QuotationItemFormData>) =>
+  item.itemType === "service" && item.category === MANUAL_SERVICES_SUMMARY_CATEGORY;
+
+const buildManualModePayloadItems = (
+  items: QuotationItemFormData[],
+  manualServicesTotal?: string,
+) => {
+  const summaryAmount = getManualServicesTotalValue(manualServicesTotal);
+  const vendorItems = items.filter((item) => item.itemType === "vendor");
+  const serviceReferenceItems = items
+    .filter(
+      (item) => item.itemType === "service" && !isManualServicesSummaryItem(item),
+    )
+    .map((item) => ({
+      ...item,
+      unitPrice: "0",
+      totalPrice: "0",
+      isTotalManual: false,
+    }));
+
+  const combinedItems = [
+    ...(summaryAmount > 0 ? [buildManualServicesSummaryItem(manualServicesTotal, 0)] : []),
+    ...serviceReferenceItems,
+    ...vendorItems,
+  ];
+
+  return combinedItems.map((item, index) => ({
+    ...item,
+    sortOrder: String(index),
+    totalPrice:
+      item.itemType === "vendor"
+        ? item.totalPrice?.trim()
+          || String(computeQuotationItemTotal(item.quantity, item.unitPrice))
+        : isManualServicesSummaryItem(item)
+          ? String(summaryAmount)
+          : "0",
+    unitPrice:
+      item.itemType === "vendor"
+        ? item.unitPrice
+        : isManualServicesSummaryItem(item)
+          ? String(summaryAmount)
+          : "0",
+  }));
 };
 
 const QuotationFormPage = () => {
@@ -341,6 +420,7 @@ const QuotationFormPage = () => {
       issueDate: new Date().toISOString().slice(0, 10),
       validUntil: "",
       discountAmount: "0",
+      manualServicesTotal: "0",
       notes: "",
       status: "draft",
       eventServiceIds: [],
@@ -367,6 +447,10 @@ const QuotationFormPage = () => {
   const watchedDiscountAmount = useWatch({
     control: form.control,
     name: "discountAmount",
+  });
+  const watchedManualServicesTotal = useWatch({
+    control: form.control,
+    name: "manualServicesTotal",
   });
   const watchedItems = useWatch({ control: form.control, name: "items" }) ?? [];
   const watchedEventServiceIds =
@@ -415,21 +499,36 @@ const QuotationFormPage = () => {
 
   const fromEventPreviewItems = useMemo(
     () => [
-      ...selectedEventServices.map((item) => buildServiceItemFromEventService(item, 0)),
+      ...(getManualServicesTotalValue(watchedManualServicesTotal) > 0
+        ? [buildManualServicesSummaryItem(watchedManualServicesTotal, 0)]
+        : []),
       ...selectedEventVendors
         .filter((item) => !getEventVendorDisabledReason(item))
-        .map((item) => buildVendorItemFromEventVendor(item, 0)),
+        .map((item, index) =>
+          buildVendorItemFromEventVendor(
+            item,
+            index + (getManualServicesTotalValue(watchedManualServicesTotal) > 0 ? 1 : 0),
+          ),
+        ),
     ],
-    [selectedEventServices, selectedEventVendors],
+    [selectedEventVendors, watchedManualServicesTotal],
+  );
+
+  const manualModePayloadItems = useMemo(
+    () => buildManualModePayloadItems(watchedItems, watchedManualServicesTotal),
+    [watchedItems, watchedManualServicesTotal],
   );
 
   const editorTotals = useMemo(
     () =>
       computeQuotationTotals({
-        items: watchedItems,
+        items:
+          !isEditMode && watchedCreateMode === "manual"
+            ? manualModePayloadItems
+            : watchedItems,
         discountAmount: watchedDiscountAmount,
       }),
-    [watchedDiscountAmount, watchedItems],
+    [isEditMode, manualModePayloadItems, watchedCreateMode, watchedDiscountAmount, watchedItems],
   );
   const fromEventTotals = useMemo(
     () =>
@@ -494,6 +593,12 @@ const QuotationFormPage = () => {
       validUntil: quotation.validUntil ?? "",
       discountAmount:
         quotation.discountAmount != null ? String(quotation.discountAmount) : "0",
+      manualServicesTotal: String(
+        (quotation.items ?? []).find((item) =>
+          item.itemType === "service" &&
+          item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
+        )?.totalPrice ?? 0,
+      ),
       notes: quotation.notes ?? "",
       status: quotation.status,
       eventServiceIds: [],
@@ -711,22 +816,26 @@ const QuotationFormPage = () => {
       return;
     }
 
+    const manualPayloadItems = buildManualModePayloadItems(
+      values.items,
+      values.manualServicesTotal,
+    );
+
     const payload: QuotationFormData = {
       eventId: values.eventId,
       quotationNumber: values.quotationNumber,
       issueDate: values.issueDate,
       validUntil: values.validUntil,
-      subtotal: String(editorTotals.subtotal),
+      subtotal: String(
+        computeQuotationTotals({
+          items: manualPayloadItems,
+          discountAmount: values.discountAmount,
+        }).subtotal,
+      ),
       discountAmount: values.discountAmount,
       notes: values.notes,
       status: values.status,
-      items: values.items.map((item, index) => ({
-        ...item,
-        sortOrder: String(index),
-        totalPrice:
-          item.totalPrice?.trim()
-          || String(computeQuotationItemTotal(item.quantity, item.unitPrice)),
-      })),
+      items: manualPayloadItems,
     };
 
     createMutation.mutate(payload);
@@ -1005,6 +1114,35 @@ const QuotationFormPage = () => {
                         {...form.register("discountAmount")}
                       />
                     </FieldBlock>
+
+                    {!isEditMode ? (
+                      <div className="md:col-span-2 xl:col-span-3">
+                        <FieldBlock
+                          label={t("quotations.totalServicesAmount", {
+                            defaultValue: "Total Services Amount",
+                          })}
+                          error={form.formState.errors.manualServicesTotal?.message}
+                        >
+                          <div className="space-y-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.001"
+                              placeholder={t("quotations.totalServicesAmount", {
+                                defaultValue: "Total Services Amount",
+                              })}
+                              {...form.register("manualServicesTotal")}
+                            />
+                            <p className="text-xs text-[var(--lux-text-secondary)]">
+                              {t("quotations.totalServicesAmountHint", {
+                                defaultValue:
+                                  "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
+                              })}
+                            </p>
+                          </div>
+                        </FieldBlock>
+                      </div>
+                    ) : null}
                   </section>
 
                   <FieldBlock label={t("common.notes", { defaultValue: "Notes" })}>
@@ -1042,8 +1180,8 @@ const QuotationFormPage = () => {
                           })}
                           hint={t("quotations.companyServicesHint", {
                             defaultValue:
-                              "Add rows from event services or the service catalog.",
-                          })}
+                              "Add rows from event services or the service catalog for scope/reference. Pricing comes from the Total Services Amount field.",
+                            })}
                         >
                           {!watchedEventId ? (
                             <EmptyHint
@@ -1248,7 +1386,7 @@ const QuotationFormPage = () => {
                           })}
                           hint={t("quotations.selectedServicesSourceHint", {
                             defaultValue:
-                              "Choose the event service rows to include in this quotation.",
+                              "Choose the event service rows to include for scope/reference. Pricing comes from the Total Services Amount field.",
                           })}
                         >
                           {!watchedEventId ? (
@@ -1283,18 +1421,10 @@ const QuotationFormPage = () => {
                                       `${t("quotations.quantity", {
                                         defaultValue: "Quantity",
                                       })}: ${item.quantity ?? 1}`,
-                                      `${t("quotations.unitPrice", {
-                                        defaultValue: "Unit Price",
-                                      })}: ${safeMoney(item.unitPrice ?? 0)}`,
-                                      `${t("quotations.totalPrice", {
-                                        defaultValue: "Total Price",
-                                      })}: ${safeMoney(
-                                        item.totalPrice
-                                          ?? computeQuotationItemTotal(
-                                            item.quantity ?? 1,
-                                            item.unitPrice ?? 0,
-                                          ),
-                                      )}`,
+                                      t("quotations.totalServicesAmountHintShort", {
+                                        defaultValue:
+                                          "Pricing handled by Total Services Amount",
+                                      }),
                                     ]}
                                     helperText={item.notes ?? undefined}
                                   />
@@ -1396,6 +1526,7 @@ const QuotationFormPage = () => {
                             (item) => !getEventVendorDisabledReason(item),
                           ).length
                         }
+                        manualServicesTotal={watchedManualServicesTotal || "0"}
                         previewItems={fromEventPreviewItems}
                       />
                     </section>
@@ -1601,11 +1732,13 @@ function PreviewSummary({
   t,
   selectedServicesCount,
   selectedVendorsCount,
+  manualServicesTotal,
   previewItems,
 }: {
   t: (key: string, options?: Record<string, unknown>) => string;
   selectedServicesCount: number;
   selectedVendorsCount: number;
+  manualServicesTotal: string;
   previewItems: QuotationItemFormData[];
 }) {
   return (
@@ -1618,6 +1751,12 @@ function PreviewSummary({
         <span className="rounded-full border px-3 py-1 text-[var(--lux-text-secondary)]">
           {t("quotations.selectedVendors", { defaultValue: "Selected Vendors" })}:{" "}
           {selectedVendorsCount}
+        </span>
+        <span className="rounded-full border px-3 py-1 text-[var(--lux-text-secondary)]">
+          {t("quotations.totalServicesAmount", {
+            defaultValue: "Total Services Amount",
+          })}
+          : {formatMoney(getManualServicesTotalValue(manualServicesTotal))}
         </span>
       </div>
       <PreviewTable t={t} items={previewItems} />
@@ -1688,6 +1827,7 @@ function EditableItemsSection({
         <tbody>
           {fields.map((field, index) => {
             const itemValues = items[index];
+            const isCreateServiceReference = !isEditMode && itemValues?.itemType === "service";
             const itemNameField = form.register(`items.${index}.itemName`);
             const categoryField = form.register(`items.${index}.category`);
             const quantityField = form.register(`items.${index}.quantity`);
@@ -1744,6 +1884,14 @@ function EditableItemsSection({
                               { defaultValue: "Catalog Service" },
                             )}: #${itemValues.serviceId}`
                           : null}
+                        {isCreateServiceReference ? (
+                          <div className="mt-1">
+                            {t("quotations.serviceReferencePricingHint", {
+                              defaultValue:
+                                "Pricing for service work is handled by Total Services Amount.",
+                            })}
+                          </div>
+                        ) : null}
                       </>
                     )}
                   </div>
@@ -1766,7 +1914,13 @@ function EditableItemsSection({
                     min="0"
                     step="0.001"
                     {...unitPriceField}
-                    onChange={(event) => onUnitPriceChange(index, event, unitPriceField.onChange)}
+                    readOnly={isCreateServiceReference}
+                    onChange={
+                      isCreateServiceReference
+                        ? undefined
+                        : (event) =>
+                            onUnitPriceChange(index, event, unitPriceField.onChange)
+                    }
                   />
                 </td>
                 <td className="min-w-[140px] px-3 py-3">
@@ -1775,7 +1929,13 @@ function EditableItemsSection({
                     min="0"
                     step="0.001"
                     {...totalPriceField}
-                    onChange={(event) => onTotalPriceChange(index, event, totalPriceField.onChange)}
+                    readOnly={isCreateServiceReference}
+                    onChange={
+                      isCreateServiceReference
+                        ? undefined
+                        : (event) =>
+                            onTotalPriceChange(index, event, totalPriceField.onChange)
+                    }
                   />
                 </td>
                 <td className="min-w-[220px] px-3 py-3">
