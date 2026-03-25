@@ -1,17 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import type { CheckedState } from "@radix-ui/react-checkbox";
-import {
-  CalendarRange,
-  CheckCircle2,
-  Edit,
-  GripVertical,
-  Link2,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -23,17 +12,8 @@ import {
   AppDialogHeader,
   AppDialogShell,
 } from "@/components/shared/app-dialog";
-import { CrudPageHeader } from "@/components/shared/crud-layout";
-import { SummaryCard } from "@/components/dashboard/summary-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { Dialog } from "@/components/ui/dialog";
@@ -69,25 +49,23 @@ import {
 } from "@/hooks/vendors/useEventVendorMutations";
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
+import { EventBusinessDocsPanels } from "./_components/EventBusinessDocsPanels";
+import { EventDetailsHero } from "./_components/EventDetailsHero";
+import { EventSectionsPanel } from "./_components/EventSectionsPanel";
 import { EventServicesChecklistDialog } from "./_components/EventServicesChecklistDialog";
+import { EventServicesPanel } from "./_components/EventServicesPanel";
+import { EventVendorsPanel } from "./_components/EventVendorsPanel";
 import {
   EVENT_SERVICE_STATUS_OPTIONS,
   formatMoney,
-  formatServiceCategory,
-  getEventServiceDisplayName,
   SERVICE_CATEGORY_OPTIONS,
   toNumberValue,
 } from "@/pages/services/adapters";
-import { EventServiceStatusBadge } from "@/pages/services/_components/eventServiceStatusBadge";
 import type {
   EventServiceItem,
   EventServiceStatus,
   ServiceCategory,
 } from "@/pages/services/types";
-import { getContractDisplayNumber } from "@/pages/contracts/adapters";
-import { ContractStatusBadge } from "@/pages/contracts/_components/contractStatusBadge";
-import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
-import { QuotationStatusBadge } from "@/pages/quotations/_components/quotationStatusBadge";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import {
   EVENT_VENDOR_PROVIDED_BY_OPTIONS,
@@ -96,7 +74,6 @@ import {
   getEventVendorDisplayName,
   VENDOR_TYPE_OPTIONS,
 } from "@/pages/vendors/adapters";
-import { EventVendorStatusBadge } from "@/pages/vendors/_components/eventVendorStatusBadge";
 import type {
   EventVendorLink,
   EventVendorProvidedBy,
@@ -105,12 +82,7 @@ import type {
   VendorType,
 } from "@/pages/vendors/types";
 
-import {
-  EVENT_SECTION_TYPE_OPTIONS,
-  formatEventSectionType,
-  getEventDisplayTitle,
-} from "./adapters";
-import { EventStatusBadge } from "./_components/eventStatusBadge";
+import { EVENT_SECTION_TYPE_OPTIONS } from "./adapters";
 import type { EventSection, EventSectionType } from "./types";
 
 type SectionFormState = {
@@ -145,6 +117,20 @@ type EventServiceFormState = {
 
 const textareaClassName =
   "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] sm:min-h-[130px]";
+const fieldGroupClassName = "space-y-2";
+const fieldLabelClassName = "text-sm font-medium text-[var(--lux-text)]";
+const helperTextClassName = "text-xs leading-5 text-[var(--lux-text-secondary)]";
+const dialogBodyClassName = "space-y-5";
+const dialogSectionClassName =
+  "space-y-4 rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 sm:p-5";
+const dialogSectionHeaderClassName = "space-y-1.5";
+const dialogSectionTitleClassName = "text-sm font-semibold text-[var(--lux-text)]";
+const dialogHintBoxClassName =
+  "rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] p-3 text-sm text-[var(--lux-text-secondary)]";
+const dialogInsetBoxClassName =
+  "rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-3";
+const dialogCheckboxCardClassName =
+  "flex items-center gap-3 rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4";
 
 const createDefaultSectionState = (sortOrder = 0): SectionFormState => ({
   sectionType: "client_info",
@@ -229,39 +215,6 @@ const createDefaultEventServiceState = (
   status: "draft",
   sortOrder: String(sortOrder),
 });
-
-function DetailItem({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | number | null;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-        {label}
-      </p>
-      <p className="text-sm text-[var(--lux-text)]">{value || "-"}</p>
-    </div>
-  );
-}
-
-function renderDataValue(value: unknown) {
-  if (value === null || typeof value === "undefined" || value === "") {
-    return "-";
-  }
-
-  if (
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return String(value);
-  }
-
-  return JSON.stringify(value);
-}
 
 const EventDetailsPage = () => {
   const { t, i18n } = useTranslation();
@@ -945,1274 +898,93 @@ const EventDetailsPage = () => {
             dir={i18n.dir()}
             className="mx-auto w-full max-w-6xl space-y-6"
           >
-              <CrudPageHeader
-                backAction={
-                  <button
-                    type="button"
-                    onClick={() => navigate("/events")}
-                    className="crud-header-back"
-                  >
-                    <span aria-hidden="true">←</span>
-                    {t("events.backToEvents", { defaultValue: "Back to Events" })}
-                  </button>
-                }
-                icon={<CalendarRange className="h-5 w-5 text-primary" />}
-                title={getEventDisplayTitle(event)}
-                description={format(new Date(event.eventDate), "MMM d, yyyy", {
-                  locale: dateLocale,
-                })}
-                meta={<EventStatusBadge status={event.status} />}
-                actions={
-                  <>
-                    <ProtectedComponent permission="events.update">
-                      <Button onClick={() => navigate(`/events/edit/${event.id}`)}>
-                        <Edit className="h-4 w-4" />
-                        {t("common.edit", { defaultValue: "Edit" })}
-                      </Button>
-                    </ProtectedComponent>
-                    {event.customerId ? (
-                      <ProtectedComponent permission="customers.read">
-                        <Button
-                          variant="outline"
-                          onClick={() => navigate(`/customers/${event.customerId}`)}
-                        >
-                          <Link2 className="h-4 w-4" />
-                          {t("events.viewCustomer", {
-                            defaultValue: "View Customer",
-                          })}
-                        </Button>
-                      </ProtectedComponent>
-                    ) : null}
-                  </>
+              <EventDetailsHero
+                event={event}
+                dateLocale={dateLocale}
+                t={t}
+                onBack={() => navigate("/events")}
+                onEdit={() => navigate(`/events/edit/${event.id}`)}
+                onViewCustomer={
+                  event.customerId
+                    ? () => navigate(`/customers/${event.customerId}`)
+                    : undefined
                 }
               />
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <SummaryCard
-                  label={t("events.eventDate", { defaultValue: "Event Date" })}
-                  value={format(new Date(event.eventDate), "MMM d, yyyy", {
-                    locale: dateLocale,
-                  })}
-                  hint={t("events.statusLabel", { defaultValue: "Status" }) + `: ${t(`events.status.${event.status}`, {
-                    defaultValue: event.status,
-                  })}`}
-                />
-                <SummaryCard
-                  label={t("events.customer", { defaultValue: "Customer" })}
-                  value={event.customer?.fullName || "-"}
-                  hint={t("common.venue", { defaultValue: "Venue" }) + `: ${event.venue?.name || event.venueNameSnapshot || "-"}`}
-                />
-                <SummaryCard
-                  label={t("events.partyNames", { defaultValue: "Party Names" })}
-                  value={[event.groomName, event.brideName].filter(Boolean).join(" / ") || "-"}
-                  hint={t("events.guestCount", { defaultValue: "Guest Count" }) + `: ${event.guestCount ?? "-"}`}
-                />
-                <SummaryCard
-                  label={t("events.auditTrail", { defaultValue: "Audit Trail" })}
-                  value={event.updatedByUser?.fullName || event.createdByUser?.fullName || "-"}
-                  hint={t("events.updatedAt", { defaultValue: "Updated At" }) + `: ${event.updatedAt ? format(new Date(event.updatedAt), "MMM d, yyyy", { locale: dateLocale }) : "-"}`}
-                />
-              </div>
+              <EventSectionsPanel
+                sections={sortedSections}
+                t={t}
+                onAdd={() => setSectionDialogOpen(true)}
+                onEdit={(section) => {
+                  setEditingSection(section);
+                  setSectionDialogOpen(true);
+                }}
+                onDelete={(section) => setDeleteCandidate(section)}
+              />
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {t("events.generalInfo", {
-                        defaultValue: "General Info",
-                      })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("events.generalInfoCardHint", {
-                        defaultValue:
-                          "Core event details, planning names, and contract information.",
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    <DetailItem
-                      label={t("events.eventDate", {
-                        defaultValue: "Event Date",
-                      })}
-                      value={format(new Date(event.eventDate), "MMM d, yyyy", {
-                        locale: dateLocale,
-                      })}
-                    />
-                    <DetailItem
-                      label={t("events.titleField", { defaultValue: "Title" })}
-                      value={event.title}
-                    />
-                    <DetailItem
-                      label={t("events.groomName", {
-                        defaultValue: "Groom Name",
-                      })}
-                      value={event.groomName}
-                    />
-                    <DetailItem
-                      label={t("events.brideName", {
-                        defaultValue: "Bride Name",
-                      })}
-                      value={event.brideName}
-                    />
-                    <DetailItem
-                      label={t("events.guestCount", {
-                        defaultValue: "Guest Count",
-                      })}
-                      value={event.guestCount}
-                    />
-                  </CardContent>
-                </Card>
+              <EventVendorsPanel
+                vendorLinks={sortedEventVendorLinks}
+                loading={eventVendorLinksLoading}
+                expandedVendorIds={expandedVendorIds}
+                t={t}
+                onAdd={() => setVendorDialogOpen(true)}
+                onEdit={(vendorLink) => {
+                  setEditingVendorLink(vendorLink);
+                  setVendorDialogOpen(true);
+                }}
+                onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
+                onToggleExpanded={(vendorId) =>
+                  setExpandedVendorIds((current) =>
+                    current.includes(vendorId)
+                      ? current.filter((value) => value !== vendorId)
+                      : [...current, vendorId],
+                  )
+                }
+              />
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {t("events.linkedRecords", {
-                        defaultValue: "Linked Records",
-                      })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("events.linkedRecordsCardHint", {
-                        defaultValue:
-                          "Customer, venue, and current event status.",
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    <DetailItem
-                      label={t("events.customer", { defaultValue: "Customer" })}
-                      value={event.customer?.fullName}
-                    />
-                    <DetailItem
-                      label={t("common.venue", { defaultValue: "Venue" })}
-                      value={event.venue?.name || event.venueNameSnapshot}
-                    />
-                    <DetailItem
-                      label={t("events.statusLabel", {
-                        defaultValue: "Status",
-                      })}
-                      value={t(`events.status.${event.status}`, {
-                        defaultValue: event.status,
-                      })}
-                    />
-                  </CardContent>
-                </Card>
+              <EventServicesPanel
+                serviceItems={sortedEventServiceItems}
+                loading={eventServiceItemsLoading}
+                summary={eventServiceSummary}
+                t={t}
+                onAdd={() => setServiceChecklistOpen(true)}
+                onEdit={(serviceItem) => {
+                  setEditingServiceItem(serviceItem);
+                  setServiceEditorOpen(true);
+                }}
+                onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
+              />
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {t("events.auditTrail", { defaultValue: "Audit Trail" })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("events.auditTrailHint", {
-                        defaultValue:
-                          "Who created the event and when it was last updated.",
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    <DetailItem
-                      label={t("events.createdBy", {
-                        defaultValue: "Created By",
-                      })}
-                      value={event.createdByUser?.fullName}
-                    />
-                    <DetailItem
-                      label={t("events.updatedBy", {
-                        defaultValue: "Updated By",
-                      })}
-                      value={event.updatedByUser?.fullName}
-                    />
-                    <DetailItem
-                      label={t("events.createdAt", {
-                        defaultValue: "Created At",
-                      })}
-                      value={
-                        event.createdAt
-                          ? format(new Date(event.createdAt), "MMM d, yyyy p", {
-                              locale: dateLocale,
-                            })
-                          : "-"
-                      }
-                    />
-                    <DetailItem
-                      label={t("events.updatedAt", {
-                        defaultValue: "Updated At",
-                      })}
-                      value={
-                        event.updatedAt
-                          ? format(new Date(event.updatedAt), "MMM d, yyyy p", {
-                              locale: dateLocale,
-                            })
-                          : "-"
-                      }
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {t("common.notes", { defaultValue: "Notes" })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-[var(--lux-text-secondary)]">
-                    {event.notes ||
-                      t("events.noNotes", {
-                        defaultValue: "No notes added yet.",
-                      })}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <CardTitle>
-                      {t("events.sectionsTitle", {
-                        defaultValue: "Event Sections",
-                      })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("events.sectionsHint", {
-                        defaultValue:
-                          "Manage the ordered planning sections for this event.",
-                      })}
-                    </CardDescription>
-                  </div>
-                  <ProtectedComponent permission="events.update">
-                    <Button onClick={() => setSectionDialogOpen(true)}>
-                      <Plus className="h-4 w-4" />
-                      {t("events.addSection", { defaultValue: "Add Section" })}
-                    </Button>
-                  </ProtectedComponent>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {sortedSections.length ? (
-                    sortedSections.map((section) => (
-                      <div
-                        key={section.id}
-                        className="rounded-[22px] border p-4"
-                        style={{
-                          background: "var(--lux-row-surface)",
-                          borderColor: "var(--lux-row-border)",
-                        }}
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs font-medium text-[var(--lux-text)]">
-                                <GripVertical className="h-3.5 w-3.5 text-[var(--lux-text-muted)]" />
-                                {t(
-                                  `events.sectionType.${section.sectionType}`,
-                                  {
-                                    defaultValue: formatEventSectionType(
-                                      section.sectionType,
-                                    ),
-                                  },
-                                )}
-                              </span>
-                              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]">
-                                {t("events.sortOrder", {
-                                  defaultValue: "Sort Order",
-                                })}
-                                : {section.sortOrder}
-                              </span>
-                              {section.isCompleted ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-[color:color-mix(in_srgb,#059669_34%,transparent)] bg-[color:color-mix(in_srgb,#059669_14%,transparent)] px-3 py-1 text-xs text-[#047857]">
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                  {t("events.completed", {
-                                    defaultValue: "Completed",
-                                  })}
-                                </span>
-                              ) : null}
-                            </div>
-
-                            <h3 className="text-base font-semibold text-[var(--lux-heading)]">
-                              {section.title ||
-                                t(`events.sectionType.${section.sectionType}`, {
-                                  defaultValue: formatEventSectionType(
-                                    section.sectionType,
-                                  ),
-                                })}
-                            </h3>
-
-                            {Object.keys(section.data ?? {}).length ? (
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                {Object.entries(section.data ?? {}).map(
-                                  ([key, value]) => (
-                                    <div
-                                      key={key}
-                                      className="rounded-2xl border px-4 py-3"
-                                      style={{
-                                        background: "var(--lux-panel-surface)",
-                                        borderColor: "var(--lux-row-border)",
-                                      }}
-                                    >
-                                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                        {key.replace(/_/g, " ")}
-                                      </p>
-                                      <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[var(--lux-text)]">
-                                        {renderDataValue(value)}
-                                      </p>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-[var(--lux-text-secondary)]">
-                                {t("events.emptySectionData", {
-                                  defaultValue:
-                                    "No structured data added to this section yet.",
-                                })}
-                              </p>
-                            )}
-
-                            {section.notes ? (
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                  {t("common.notes", { defaultValue: "Notes" })}
-                                </p>
-                                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--lux-text-secondary)]">
-                                  {section.notes}
-                                </p>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <ProtectedComponent permission="events.update">
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingSection(section);
-                                  setSectionDialogOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                {t("common.edit", { defaultValue: "Edit" })}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() => setDeleteCandidate(section)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                {t("common.delete", { defaultValue: "Delete" })}
-                              </Button>
-                            </div>
-                          </ProtectedComponent>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                      {t("events.noSections", {
-                        defaultValue:
-                          "No sections have been added to this event yet.",
-                      })}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <CardTitle>
-                      {t("vendors.eventVendors", {
-                        defaultValue: "Event Vendors",
-                      })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("vendors.eventVendorsHint", {
-                        defaultValue:
-                          "Track which company or client is responsible for each vendor category in this event.",
-                      })}
-                    </CardDescription>
-                  </div>
-                  <ProtectedComponent permission="events.update">
-                    <Button onClick={() => setVendorDialogOpen(true)}>
-                      <Plus className="h-4 w-4" />
-                      {t("vendors.assignVendor", {
-                        defaultValue: "Assign Vendor",
-                      })}
-                    </Button>
-                  </ProtectedComponent>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {eventVendorLinksLoading ? (
-                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                      {t("common.loading", { defaultValue: "Loading..." })}
-                    </p>
-                  ) : sortedEventVendorLinks.length ? (
-                    sortedEventVendorLinks.map((vendorLink) => (
-                      <article
-                        key={vendorLink.id}
-                        className="rounded-[24px] border p-4 shadow-sm"
-                        style={{
-                          background:
-                            "linear-gradient(180deg, color-mix(in srgb, var(--lux-row-surface) 85%, var(--lux-panel-surface)), var(--lux-panel-surface))",
-                          borderColor: "var(--lux-row-border)",
-                        }}
-                      >
-                        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1 space-y-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="outline">
-                                {t(`vendors.type.${vendorLink.vendorType}`, {
-                                  defaultValue: formatVendorType(
-                                    vendorLink.vendorType,
-                                  ),
-                                })}
-                              </Badge>
-                              <Badge variant="secondary">
-                                {t(
-                                  `vendors.providedBy.${vendorLink.providedBy}`,
-                                  {
-                                    defaultValue: vendorLink.providedBy,
-                                  },
-                                )}
-                              </Badge>
-                              {vendorLink.hasManualPriceOverride ? (
-                                <Badge variant="outline">
-                                  {t("vendors.manualPriceOverride", {
-                                    defaultValue: "Manual Price",
-                                  })}
-                                </Badge>
-                              ) : null}
-                              <EventVendorStatusBadge
-                                status={vendorLink.status}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.9fr)]">
-                              <div className="space-y-2">
-                                <div className="space-y-1">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("vendors.resolvedCompanyName", {
-                                      defaultValue: "Resolved Company / Vendor",
-                                    })}
-                                  </p>
-                                  <h3 className="break-words text-lg font-semibold text-[var(--lux-heading)]">
-                                    {vendorLink.resolvedCompanyName ||
-                                      getEventVendorDisplayName(vendorLink)}
-                                  </h3>
-                                </div>
-
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--lux-text-secondary)]">
-                                  <span>
-                                    {t("vendors.providedByLabel", {
-                                      defaultValue: "Provided By",
-                                    })}
-                                    {": "}
-                                    {t(
-                                      `vendors.providedBy.${vendorLink.providedBy}`,
-                                      {
-                                        defaultValue: vendorLink.providedBy,
-                                      },
-                                    )}
-                                  </span>
-                                  {vendorLink.vendor ? (
-                                    <span>
-                                      {[ 
-                                        vendorLink.vendor.contactPerson,
-                                        vendorLink.vendor.phone,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" / ") ||
-                                        vendorLink.vendor.email ||
-                                        "-"}
-                                    </span>
-                                  ) : vendorLink.providedBy === "client" ? (
-                                    <span>
-                                      {t("vendors.clientProvidedVendor", {
-                                        defaultValue: "Client-provided vendor",
-                                      })}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-
-                              <div
-                                className="grid grid-cols-1 gap-3 rounded-[20px] border p-4 sm:grid-cols-3 lg:grid-cols-1"
-                                style={{
-                                  background: "var(--lux-panel-surface)",
-                                  borderColor: "var(--lux-row-border)",
-                                }}
-                              >
-                                <div className="space-y-1">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("vendors.pricingPlans.name", {
-                                      defaultValue: "Pricing Plan",
-                                    })}
-                                  </p>
-                                  <p className="text-sm font-medium text-[var(--lux-text)]">
-                                    {vendorLink.resolvedPricingLabel ||
-                                      (vendorLink.selectedSubServicesCount > 0
-                                        ? t("vendors.noMatchingPricingPlan", {
-                                            defaultValue:
-                                              "No matching pricing plan",
-                                          })
-                                        : t("vendors.noPricingPlan", {
-                                            defaultValue:
-                                              "No pricing plan selected",
-                                          }))}
-                                  </p>
-                                </div>
-
-                                <div className="space-y-1">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("vendors.selectedSubServicesCount", {
-                                      defaultValue: "Selected Count",
-                                    })}
-                                  </p>
-                                  <p className="text-sm font-medium text-[var(--lux-text)]">
-                                    {vendorLink.selectedSubServicesCount}
-                                  </p>
-                                </div>
-
-                                <div className="space-y-1">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("vendors.agreedPrice", {
-                                      defaultValue: "Agreed Price",
-                                    })}
-                                  </p>
-                                  <p className="text-base font-semibold text-[var(--lux-heading)]">
-                                    {vendorLink.agreedPrice !== null &&
-                                    typeof vendorLink.agreedPrice !== "undefined"
-                                      ? formatMoney(vendorLink.agreedPrice)
-                                      : "-"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                  {t("vendors.selectedSubServices", {
-                                    defaultValue: "Selected Sub Services",
-                                  })}
-                                </p>
-                                {vendorLink.selectedSubServices?.length ? (
-                                  <>
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                      {(expandedVendorIds.includes(vendorLink.id)
-                                        ? vendorLink.selectedSubServices
-                                        : vendorLink.selectedSubServices.slice(
-                                            0,
-                                            6,
-                                          )
-                                      ).map((selectedSubService) => (
-                                        <span
-                                          key={selectedSubService.id}
-                                          className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]"
-                                        >
-                                          {selectedSubService.nameSnapshot}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    {vendorLink.selectedSubServices.length > 6 ? (
-                                      <div className="mt-2">
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-auto px-0 py-0 text-xs text-[var(--lux-text-secondary)]"
-                                          onClick={() =>
-                                            setExpandedVendorIds((current) =>
-                                              current.includes(vendorLink.id)
-                                                ? current.filter(
-                                                    (value) =>
-                                                      value !== vendorLink.id,
-                                                  )
-                                                : [...current, vendorLink.id],
-                                            )
-                                          }
-                                        >
-                                          {expandedVendorIds.includes(
-                                            vendorLink.id,
-                                          )
-                                            ? t("common.showLess", {
-                                                defaultValue: "Show less",
-                                              })
-                                            : t("common.showMore", {
-                                                defaultValue:
-                                                  "Show all sub-services",
-                                              })}
-                                        </Button>
-                                      </div>
-                                    ) : null}
-                                  </>
-                                ) : (
-                                  <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
-                                    {t("vendors.noSelectedSubServices", {
-                                      defaultValue:
-                                        "No sub-services selected for this vendor.",
-                                    })}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {vendorLink.notes ? (
-                              <div className="rounded-[18px] border p-3" style={{
-                                background: "var(--lux-panel-surface)",
-                                borderColor: "var(--lux-row-border)",
-                              }}>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                  {t("common.notes", { defaultValue: "Notes" })}
-                                </p>
-                                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--lux-text-secondary)]">
-                                  {vendorLink.notes}
-                                </p>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <ProtectedComponent permission="events.update">
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingVendorLink(vendorLink);
-                                  setVendorDialogOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                {t("common.edit", { defaultValue: "Edit" })}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() =>
-                                  setDeleteVendorCandidate(vendorLink)
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                {t("common.delete", { defaultValue: "Delete" })}
-                              </Button>
-                            </div>
-                          </ProtectedComponent>
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <div
-                      className="rounded-[22px] border px-5 py-8 text-center"
-                      style={{
-                        background: "var(--lux-panel-surface)",
-                        borderColor: "var(--lux-row-border)",
-                      }}
-                    >
-                      <p className="text-base font-semibold text-[var(--lux-heading)]">
-                        {t("vendors.noEventVendorsTitle", {
-                          defaultValue: "No vendor assignments yet",
-                        })}
-                      </p>
-                      <p className="mt-2 text-sm text-[var(--lux-text-secondary)]">
-                        {t("vendors.noEventVendors", {
-                          defaultValue:
-                            "Add the first vendor assignment to capture company ownership, selected sub-services, and pricing for this event.",
-                        })}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <CardTitle>
-                      {t("services.eventServices", {
-                        defaultValue: "Event Services",
-                      })}
-                    </CardTitle>
-                    <CardDescription>
-                      {t("services.eventServicesHint", {
-                        defaultValue:
-                          "Track the selected services and operational line items for this event.",
-                      })}
-                    </CardDescription>
-                  </div>
-                  <ProtectedComponent permission="events.update">
-                    <Button onClick={() => setServiceChecklistOpen(true)}>
-                      <Plus className="h-4 w-4" />
-                      {t("services.addEventService", {
-                        defaultValue: "Add Event Service",
-                      })}
-                    </Button>
-                  </ProtectedComponent>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div
-                      className="rounded-2xl border px-4 py-3"
-                      style={{
-                        background: "var(--lux-panel-surface)",
-                        borderColor: "var(--lux-row-border)",
-                      }}
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                        {t("services.summaryItems", {
-                          defaultValue: "Items",
-                        })}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                        {eventServiceSummary.itemsCount}
-                      </p>
-                    </div>
-                  </div>
-
-                  {eventServiceItemsLoading ? (
-                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                      {t("common.loading", { defaultValue: "Loading..." })}
-                    </p>
-                  ) : sortedEventServiceItems.length ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {sortedEventServiceItems.map((serviceItem) => (
-                        <div
-                          key={serviceItem.id}
-                          className="flex h-full flex-col justify-between rounded-[22px] border p-4"
-                          style={{
-                            background: "var(--lux-row-surface)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
-                          <div className="space-y-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]">
-                                {t(
-                                  `services.category.${serviceItem.category}`,
-                                  {
-                                    defaultValue: formatServiceCategory(
-                                      serviceItem.category,
-                                    ),
-                                  },
-                                )}
-                              </span>
-                              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1 text-xs text-[var(--lux-text-secondary)]">
-                                {t("services.sortOrder", {
-                                  defaultValue: "Sort Order",
-                                })}
-                                : {serviceItem.sortOrder}
-                              </span>
-                              <EventServiceStatusBadge
-                                status={serviceItem.status}
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <h3 className="text-lg font-semibold leading-7 text-[var(--lux-heading)]">
-                                {getEventServiceDisplayName(serviceItem)}
-                              </h3>
-                              {serviceItem.service?.code ? (
-                                <p className="text-sm text-[var(--lux-text-secondary)]">
-                                  {serviceItem.service.code}
-                                </p>
-                              ) : null}
-                            </div>
-
-                            {serviceItem.notes ? (
-                              <p className="text-sm leading-6 text-[var(--lux-text-secondary)]">
-                                {serviceItem.notes}
-                              </p>
-                            ) : null}
-                          </div>
-
-                          <ProtectedComponent permission="events.update">
-                            <div className="mt-4 flex flex-wrap gap-2 pt-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingServiceItem(serviceItem);
-                                  setServiceEditorOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                {t("common.edit", { defaultValue: "Edit" })}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() =>
-                                  setDeleteServiceCandidate(serviceItem)
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                {t("common.delete", { defaultValue: "Delete" })}
-                              </Button>
-                            </div>
-                          </ProtectedComponent>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--lux-text-secondary)]">
-                      {t("services.noEventServices", {
-                        defaultValue:
-                          "No service items have been added to this event yet.",
-                      })}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="space-y-1">
-                        <CardTitle>
-                          {t("events.quotations", {
-                            defaultValue: "Quotations",
-                          })}
-                        </CardTitle>
-                        <CardDescription>
-                          {t("events.quotationsHint", {
-                            defaultValue:
-                              "Review linked quotations and move quickly into quotation workflows for this event.",
-                          })}
-                        </CardDescription>
-                      </div>
-
-                      <ProtectedComponent permission="quotations.create">
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              navigate(`/quotations/create?eventId=${event.id}`)
-                            }
-                          >
-                            <Plus className="h-4 w-4" />
-                            {t("quotations.create", {
-                              defaultValue: "Create Quotation",
-                            })}
-                          </Button>
-                          <Button
-                            onClick={() =>
-                              navigate(
-                                `/quotations/create?mode=from-event&eventId=${event.id}`,
-                              )
-                            }
-                          >
-                            <Plus className="h-4 w-4" />
-                            {t("quotations.createFromEvent", {
-                              defaultValue: "Create From Event",
-                            })}
-                          </Button>
-                        </div>
-                      </ProtectedComponent>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {sortedEventQuotations.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div
-                          className="rounded-2xl border px-4 py-3"
-                          style={{
-                            background: "var(--lux-panel-surface)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                            {t("events.quotationCount", {
-                              defaultValue: "Quotation Count",
-                            })}
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-[var(--lux-heading)]">
-                            {quotationSummary.itemsCount}
-                          </p>
-                        </div>
-                        <div
-                          className="rounded-2xl border px-4 py-3"
-                          style={{
-                            background: "var(--lux-panel-surface)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                            {t("events.quotationTotalAmount", {
-                              defaultValue: "Quoted Total",
-                            })}
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-[var(--lux-heading)]">
-                            {formatMoney(quotationSummary.totalAmount)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {eventQuotationsLoading ? (
-                      <p className="text-sm text-[var(--lux-text-secondary)]">
-                        {t("common.loading", { defaultValue: "Loading..." })}
-                      </p>
-                    ) : sortedEventQuotations.length > 0 ? (
-                      <div className="space-y-3">
-                        {sortedEventQuotations.map((quotation) => (
-                          <div
-                            key={quotation.id}
-                            className="rounded-[22px] border p-4"
-                            style={{
-                              background: "var(--lux-row-surface)",
-                              borderColor: "var(--lux-row-border)",
-                            }}
-                          >
-                            <div className="flex flex-col gap-4">
-                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                <div className="space-y-2">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-base font-semibold text-[var(--lux-heading)]">
-                                      {getQuotationDisplayNumber(quotation)}
-                                    </p>
-                                    <QuotationStatusBadge
-                                      status={quotation.status}
-                                    />
-                                  </div>
-                                  <p className="text-sm text-[var(--lux-text-secondary)]">
-                                    {quotation.customer?.fullName ||
-                                      t("events.noQuotationParty", {
-                                        defaultValue: "No customer linked",
-                                      })}
-                                  </p>
-                                </div>
-
-                                <ProtectedComponent permission="quotations.read">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                      navigate(`/quotations/${quotation.id}`)
-                                    }
-                                  >
-                                    <Link2 className="h-4 w-4" />
-                                    {t("events.viewQuotation", {
-                                      defaultValue: "View Quotation",
-                                    })}
-                                  </Button>
-                                </ProtectedComponent>
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("quotations.issueDate", {
-                                      defaultValue: "Issue Date",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {format(
-                                      new Date(quotation.issueDate),
-                                      "PPP",
-                                      {
-                                        locale: dateLocale,
-                                      },
-                                    )}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("quotations.validUntil", {
-                                      defaultValue: "Valid Until",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {quotation.validUntil
-                                      ? format(
-                                          new Date(quotation.validUntil),
-                                          "PPP",
-                                          {
-                                            locale: dateLocale,
-                                          },
-                                        )
-                                      : "-"}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("quotations.subtotal", {
-                                      defaultValue: "Subtotal",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {formatMoney(quotation.subtotal)}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("quotations.totalAmount", {
-                                      defaultValue: "Total Amount",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                                    {formatMoney(quotation.totalAmount)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-[var(--lux-text-secondary)]">
-                        {t("events.noQuotations", {
-                          defaultValue:
-                            "No quotations have been created for this event yet.",
-                        })}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="space-y-1">
-                        <CardTitle>
-                          {t("events.contracts", { defaultValue: "Contracts" })}
-                        </CardTitle>
-                        <CardDescription>
-                          {t("events.contractsHint", {
-                            defaultValue:
-                              "Review linked contracts and move quickly into contract workflows for this event.",
-                          })}
-                        </CardDescription>
-                      </div>
-
-                      <ProtectedComponent permission="contracts.create">
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              navigate(`/contracts/create?eventId=${event.id}`)
-                            }
-                          >
-                            <Plus className="h-4 w-4" />
-                            {t("contracts.create", {
-                              defaultValue: "Create Contract",
-                            })}
-                          </Button>
-                          <Button
-                            onClick={() =>
-                              navigate(
-                                `/contracts/create?mode=from-quotation&eventId=${event.id}`,
-                              )
-                            }
-                          >
-                            <Plus className="h-4 w-4" />
-                            {t("contracts.createFromQuotation", {
-                              defaultValue: "Create From Quotation",
-                            })}
-                          </Button>
-                        </div>
-                      </ProtectedComponent>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {sortedEventContracts.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div
-                          className="rounded-2xl border px-4 py-3"
-                          style={{
-                            background: "var(--lux-panel-surface)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                            {t("events.contractCount", {
-                              defaultValue: "Contract Count",
-                            })}
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-[var(--lux-heading)]">
-                            {contractSummary.itemsCount}
-                          </p>
-                        </div>
-                        <div
-                          className="rounded-2xl border px-4 py-3"
-                          style={{
-                            background: "var(--lux-panel-surface)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                            {t("events.contractTotalAmount", {
-                              defaultValue: "Contracted Total",
-                            })}
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-[var(--lux-heading)]">
-                            {formatMoney(contractSummary.totalAmount)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {eventContractsLoading ? (
-                      <p className="text-sm text-[var(--lux-text-secondary)]">
-                        {t("common.loading", { defaultValue: "Loading..." })}
-                      </p>
-                    ) : sortedEventContracts.length > 0 ? (
-                      <div className="space-y-3">
-                        {sortedEventContracts.map((contract) => (
-                          <div
-                            key={contract.id}
-                            className="rounded-[22px] border p-4"
-                            style={{
-                              background: "var(--lux-row-surface)",
-                              borderColor: "var(--lux-row-border)",
-                            }}
-                          >
-                            <div className="flex flex-col gap-4">
-                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                <div className="space-y-2">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-base font-semibold text-[var(--lux-heading)]">
-                                      {getContractDisplayNumber(contract)}
-                                    </p>
-                                    <ContractStatusBadge
-                                      status={contract.status}
-                                    />
-                                  </div>
-                                  <p className="text-sm text-[var(--lux-text-secondary)]">
-                                    {contract.customer?.fullName ||
-                                      t("events.noContractParty", {
-                                        defaultValue: "No customer linked",
-                                      })}
-                                  </p>
-                                </div>
-
-                                <ProtectedComponent permission="contracts.read">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                      navigate(`/contracts/${contract.id}`)
-                                    }
-                                  >
-                                    <Link2 className="h-4 w-4" />
-                                    {t("events.viewContract", {
-                                      defaultValue: "View Contract",
-                                    })}
-                                  </Button>
-                                </ProtectedComponent>
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("contracts.signedDate", {
-                                      defaultValue: "Signed Date",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {format(
-                                      new Date(contract.signedDate),
-                                      "PPP",
-                                      {
-                                        locale: dateLocale,
-                                      },
-                                    )}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("contracts.eventDate", {
-                                      defaultValue: "Event Date",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {contract.eventDate
-                                      ? format(
-                                          new Date(contract.eventDate),
-                                          "PPP",
-                                          {
-                                            locale: dateLocale,
-                                          },
-                                        )
-                                      : "-"}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("contracts.subtotal", {
-                                      defaultValue: "Subtotal",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm text-[var(--lux-text)]">
-                                    {formatMoney(contract.subtotal)}
-                                  </p>
-                                </div>
-                                <div
-                                  className="rounded-2xl border px-4 py-3"
-                                  style={{
-                                    background: "var(--lux-panel-surface)",
-                                    borderColor: "var(--lux-row-border)",
-                                  }}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                                    {t("contracts.totalAmount", {
-                                      defaultValue: "Total Amount",
-                                    })}
-                                  </p>
-                                  <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                                    {formatMoney(contract.totalAmount)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-[var(--lux-text-secondary)]">
-                        {t("events.noContracts", {
-                          defaultValue:
-                            "No contracts have been created for this event yet.",
-                        })}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+              <EventBusinessDocsPanels
+                quotations={sortedEventQuotations}
+                quotationsLoading={eventQuotationsLoading}
+                quotationSummary={quotationSummary}
+                contracts={sortedEventContracts}
+                contractsLoading={eventContractsLoading}
+                contractSummary={contractSummary}
+                dateLocale={dateLocale}
+                t={t}
+                onCreateQuotation={() =>
+                  navigate(`/quotations/create?eventId=${event.id}`)
+                }
+                onCreateQuotationFromEvent={() =>
+                  navigate(`/quotations/create?mode=from-event&eventId=${event.id}`)
+                }
+                onViewQuotation={(quotationId) =>
+                  navigate(`/quotations/${quotationId}`)
+                }
+                onCreateContract={() =>
+                  navigate(`/contracts/create?eventId=${event.id}`)
+                }
+                onCreateContractFromQuotation={() =>
+                  navigate(
+                    `/contracts/create?mode=from-quotation&eventId=${event.id}`,
+                  )
+                }
+                onViewContract={(contractId) =>
+                  navigate(`/contracts/${contractId}`)
+                }
+              />
             </div>
           </PageContainer>
         </ProtectedComponent>
@@ -2226,7 +998,7 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <AppDialogShell size="md">
+          <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
             <AppDialogHeader
               title={
                 editingSection
@@ -2239,10 +1011,22 @@ const EventDetailsPage = () => {
               })}
             />
 
-            <AppDialogBody>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
+            <AppDialogBody className={dialogBodyClassName}>
+              <div className={dialogSectionClassName}>
+                <div className={dialogSectionHeaderClassName}>
+                  <p className={dialogSectionTitleClassName}>
+                    {t("events.sectionSetup", { defaultValue: "Section Setup" })}
+                  </p>
+                  <p className={helperTextClassName}>
+                    {t("events.sectionSetupHint", {
+                      defaultValue:
+                        "Define the section type, title, and ordering before adding structured values.",
+                    })}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
                   {t("events.sectionTypeLabel", {
                     defaultValue: "Section Type",
                   })}
@@ -2271,8 +1055,8 @@ const EventDetailsPage = () => {
                 </Select>
               </label>
 
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
                   {t("events.sortOrder", { defaultValue: "Sort Order" })}
                 </span>
                 <Input
@@ -2289,9 +1073,9 @@ const EventDetailsPage = () => {
               </label>
             </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
-                {t("events.sectionTitle", { defaultValue: "Title" })}
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
+              {t("events.sectionTitle", { defaultValue: "Title" })}
               </span>
               <Input
                 value={sectionForm.title}
@@ -2306,9 +1090,23 @@ const EventDetailsPage = () => {
                 })}
               />
             </label>
+              </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
+              <div className={dialogSectionClassName}>
+                <div className={dialogSectionHeaderClassName}>
+                  <p className={dialogSectionTitleClassName}>
+                    {t("events.sectionContent", { defaultValue: "Section Content" })}
+                  </p>
+                  <p className={helperTextClassName}>
+                    {t("events.sectionContentHint", {
+                      defaultValue:
+                        "Use structured JSON for operational values and plain notes for planner context.",
+                    })}
+                  </p>
+                </div>
+
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
                 {t("events.sectionData", { defaultValue: "Structured Data" })}
               </span>
               <textarea
@@ -2328,8 +1126,8 @@ const EventDetailsPage = () => {
               />
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
                 {t("common.notes", { defaultValue: "Notes" })}
               </span>
               <textarea
@@ -2351,13 +1149,7 @@ const EventDetailsPage = () => {
               />
             </label>
 
-            <label
-              className="flex items-center gap-3 rounded-[20px] border p-4"
-              style={{
-                background: "var(--lux-control-hover)",
-                borderColor: "var(--lux-row-border)",
-              }}
-            >
+            <label className={dialogCheckboxCardClassName}>
               <Checkbox
                 checked={sectionForm.isCompleted}
                 onCheckedChange={(checked: CheckedState) =>
@@ -2371,6 +1163,7 @@ const EventDetailsPage = () => {
                 {t("events.completed", { defaultValue: "Completed" })}
               </span>
             </label>
+              </div>
 
               {sectionError ? (
                 <p className="text-sm text-[var(--lux-danger)]">{sectionError}</p>
@@ -2378,7 +1171,7 @@ const EventDetailsPage = () => {
 
             </AppDialogBody>
 
-            <AppDialogFooter>
+            <AppDialogFooter className="gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -2418,7 +1211,7 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <AppDialogShell size="lg">
+          <AppDialogShell size="lg" className="h-[min(92dvh,920px)]">
             <AppDialogHeader
               title={
                 editingVendorLink
@@ -2435,22 +1228,16 @@ const EventDetailsPage = () => {
               })}
             />
 
-            <AppDialogBody>
-            <div className="space-y-4">
-              <div
-                className="space-y-4 rounded-[24px] border p-5"
-                style={{
-                  background: "var(--lux-row-surface)",
-                  borderColor: "var(--lux-row-border)",
-                }}
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+            <AppDialogBody className={dialogBodyClassName}>
+            <div className="space-y-5">
+              <div className={dialogSectionClassName}>
+                <div className={dialogSectionHeaderClassName}>
+                  <p className={dialogSectionTitleClassName}>
                     {t("vendors.vendorSetup", {
                       defaultValue: "Vendor Setup",
                     })}
                   </p>
-                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                  <p className={helperTextClassName}>
                     {t("vendors.vendorSetupHint", {
                       defaultValue:
                         "Choose the vendor type, source, and assignment status before selecting sub-services.",
@@ -2459,8 +1246,8 @@ const EventDetailsPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                  <label className={fieldGroupClassName}>
+                    <span className={fieldLabelClassName}>
                       {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
                     </span>
                     <Select
@@ -2492,8 +1279,8 @@ const EventDetailsPage = () => {
                     </Select>
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                  <label className={fieldGroupClassName}>
+                    <span className={fieldLabelClassName}>
                       {t("vendors.providedByLabel", {
                         defaultValue: "Provided By",
                       })}
@@ -2533,8 +1320,8 @@ const EventDetailsPage = () => {
                     </Select>
                   </label>
 
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                  <label className={fieldGroupClassName}>
+                    <span className={fieldLabelClassName}>
                       {t("vendors.assignmentStatusLabel", {
                         defaultValue: "Assignment Status",
                       })}
@@ -2564,13 +1351,7 @@ const EventDetailsPage = () => {
                   </label>
                 </div>
 
-                <div
-                  className="rounded-[20px] border p-4"
-                  style={{
-                    background: "var(--lux-panel-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
+                <div className={dialogInsetBoxClassName}>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">
                       {t(`vendors.providedBy.${vendorForm.providedBy}`, {
@@ -2590,8 +1371,8 @@ const EventDetailsPage = () => {
                   <div className="space-y-4">
                     {vendorForm.providedBy === "company" ? (
                       <>
-                        <label className="space-y-2">
-                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                        <label className={fieldGroupClassName}>
+                          <span className={fieldLabelClassName}>
                             {t("vendors.vendorSelection", {
                               defaultValue: "Catalog Vendor",
                             })}
@@ -2650,13 +1431,7 @@ const EventDetailsPage = () => {
                         </label>
 
                         {!filteredVendorCatalog.length ? (
-                          <div
-                            className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
-                            style={{
-                              background: "var(--lux-control-hover)",
-                              borderColor: "var(--lux-row-border)",
-                            }}
-                          >
+                          <div className={dialogHintBoxClassName}>
                             {t("vendors.noVendorsForType", {
                               defaultValue:
                                 "No catalog vendors are available for this vendor type yet. You can still save a company snapshot.",
@@ -2664,8 +1439,8 @@ const EventDetailsPage = () => {
                           </div>
                         ) : null}
 
-                        <label className="space-y-2">
-                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                        <label className={fieldGroupClassName}>
+                          <span className={fieldLabelClassName}>
                             {t("vendors.companyNameSnapshot", {
                               defaultValue: "Company Name Snapshot",
                             })}
@@ -2686,7 +1461,7 @@ const EventDetailsPage = () => {
                               },
                             )}
                           />
-                          <p className="text-xs text-[var(--lux-text-secondary)]">
+                          <p className={helperTextClassName}>
                             {t("vendors.vendorSelectionHint", {
                               defaultValue:
                                 "Choose a catalog vendor for this type, or keep a snapshot-only name when the booking needs a manual fallback.",
@@ -2696,20 +1471,14 @@ const EventDetailsPage = () => {
                       </>
                     ) : (
                       <>
-                        <div
-                          className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
-                          style={{
-                            background: "var(--lux-control-hover)",
-                            borderColor: "var(--lux-row-border)",
-                          }}
-                        >
+                        <div className={dialogHintBoxClassName}>
                           {t("vendors.clientVendorModeHint", {
                             defaultValue:
                               "Client mode keeps the vendor outside the company catalog. Enter the name exactly as shared by the client.",
                           })}
                         </div>
-                        <label className="space-y-2">
-                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                        <label className={fieldGroupClassName}>
+                          <span className={fieldLabelClassName}>
                             {t("vendors.companyNameSnapshot", {
                               defaultValue: "Client Vendor Name",
                             })}
@@ -2734,13 +1503,7 @@ const EventDetailsPage = () => {
                       </>
                     )}
 
-                    <div
-                      className="rounded-[18px] border px-4 py-3"
-                      style={{
-                        background: "var(--lux-control-hover)",
-                        borderColor: "var(--lux-row-border)",
-                      }}
-                    >
+                    <div className={dialogInsetBoxClassName}>
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                         {t("vendors.vendorPreview", {
                           defaultValue: "Current Display Name",
@@ -2754,21 +1517,15 @@ const EventDetailsPage = () => {
                 </div>
               </div>
 
-              <div
-                className="space-y-3 rounded-[24px] border p-5"
-                style={{
-                  background: "var(--lux-row-surface)",
-                  borderColor: "var(--lux-row-border)",
-                }}
-              >
+              <div className={dialogSectionClassName}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-[var(--lux-text)]">
+                  <div className={dialogSectionHeaderClassName}>
+                    <p className={dialogSectionTitleClassName}>
                       {t("vendors.selectedSubServices", {
                         defaultValue: "Selected Sub Services",
                       })}
                     </p>
-                    <p className="text-xs text-[var(--lux-text-secondary)]">
+                    <p className={helperTextClassName}>
                       {t("vendors.selectedSubServicesHint", {
                         defaultValue:
                           "Choose the reusable checklist items configured for the selected vendor. Active pricing is matched from that vendor's plan thresholds.",
@@ -2784,26 +1541,14 @@ const EventDetailsPage = () => {
                 </div>
 
               {vendorForm.providedBy !== "company" ? (
-                <div
-                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
-                  style={{
-                    background: "var(--lux-panel-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
+                <div className={dialogHintBoxClassName}>
                   {t("vendors.clientModeNoSubServices", {
                     defaultValue:
                       "Vendor sub-services are available only when a company vendor is selected.",
                   })}
                 </div>
               ) : !vendorForm.vendorId ? (
-                <div
-                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
-                  style={{
-                    background: "var(--lux-panel-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
+                <div className={dialogHintBoxClassName}>
                   {t("vendors.selectVendorForSubServices", {
                     defaultValue:
                       "Select a company vendor to load that vendor's sub-services.",
@@ -2855,7 +1600,7 @@ const EventDetailsPage = () => {
                           <p className="text-sm font-medium text-[var(--lux-text)]">
                             {subService.name}
                           </p>
-                          <p className="text-xs text-[var(--lux-text-secondary)]">
+                          <p className={helperTextClassName}>
                             {subService.description ||
                               subService.code ||
                               t("vendors.noDescription", {
@@ -2888,20 +1633,14 @@ const EventDetailsPage = () => {
               )}
             </div>
 
-              <div
-                className="space-y-4 rounded-[24px] border p-5"
-                style={{
-                  background: "var(--lux-row-surface)",
-                  borderColor: "var(--lux-row-border)",
-                }}
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+              <div className={dialogSectionClassName}>
+                <div className={dialogSectionHeaderClassName}>
+                  <p className={dialogSectionTitleClassName}>
                     {t("vendors.pricingSummary", {
                       defaultValue: "Pricing Summary",
                     })}
                   </p>
-                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                  <p className={helperTextClassName}>
                     {t("vendors.pricingSummaryHint", {
                       defaultValue:
                         "Pricing plans are resolved from the selected vendor and stay visible for reference even if you override the agreed price manually.",
@@ -2910,13 +1649,7 @@ const EventDetailsPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div
-                    className="rounded-[18px] border px-4 py-3"
-                    style={{
-                      background: "var(--lux-panel-surface)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
+                  <div className={dialogInsetBoxClassName}>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                       {t("vendors.pricingPlans.name", {
                         defaultValue: "Pricing Plan",
@@ -2946,13 +1679,7 @@ const EventDetailsPage = () => {
                     </p>
                   </div>
 
-                  <div
-                    className="rounded-[18px] border px-4 py-3"
-                    style={{
-                      background: "var(--lux-panel-surface)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
+                  <div className={dialogInsetBoxClassName}>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                       {t("vendors.selectedSubServicesCount", {
                         defaultValue: "Selected Count",
@@ -2963,13 +1690,7 @@ const EventDetailsPage = () => {
                     </p>
                   </div>
 
-                  <div
-                    className="rounded-[18px] border px-4 py-3"
-                    style={{
-                      background: "var(--lux-panel-surface)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
+                  <div className={dialogInsetBoxClassName}>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                       {t("vendors.calculatedPrice", {
                         defaultValue: "Calculated Price",
@@ -2988,26 +1709,14 @@ const EventDetailsPage = () => {
                 vendorForm.selectedSubServiceIds.length > 0 &&
                 !calculatedVendorPricingPlan &&
                 !vendorPricingPlansLoading ? (
-                  <div
-                    className="rounded-[18px] border border-dashed p-3 text-sm text-[var(--lux-text-secondary)]"
-                    style={{
-                      background: "var(--lux-control-hover)",
-                      borderColor: "var(--lux-row-border)",
-                    }}
-                  >
+                  <div className={dialogHintBoxClassName}>
                     {t("vendors.noMatchingPricingPlan", {
                       defaultValue: "No matching pricing plan",
                     })}
                   </div>
                 ) : null}
 
-                <label
-                  className="flex items-center gap-3 rounded-[18px] border p-4"
-                  style={{
-                    background: "var(--lux-panel-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
+                <label className={dialogCheckboxCardClassName}>
                   <Checkbox
                     checked={vendorForm.isPriceOverride}
                     onCheckedChange={(checked: CheckedState) =>
@@ -3039,8 +1748,8 @@ const EventDetailsPage = () => {
                   </div>
                 </label>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-[var(--lux-text)]">
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
                     {t("vendors.agreedPrice", {
                       defaultValue: "Agreed Price",
                     })}
@@ -3068,27 +1777,21 @@ const EventDetailsPage = () => {
                             "Manual override is active. The matched pricing plan remains linked for reference.",
                         })
                       : t("vendors.agreedPriceAutoHint", {
-                          defaultValue:
-                            "Agreed price follows the matched pricing plan until manual override is enabled.",
+                      defaultValue:
+                          "Agreed price follows the matched pricing plan until manual override is enabled.",
                         })}
                   </p>
                 </label>
               </div>
 
-              <div
-                className="space-y-3 rounded-[24px] border p-5"
-                style={{
-                  background: "var(--lux-row-surface)",
-                  borderColor: "var(--lux-row-border)",
-                }}
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-[var(--lux-text)]">
+              <div className={dialogSectionClassName}>
+                <div className={dialogSectionHeaderClassName}>
+                  <p className={dialogSectionTitleClassName}>
                     {t("vendors.notesAndStatus", {
                       defaultValue: "Notes",
                     })}
                   </p>
-                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                  <p className={helperTextClassName}>
                     {t("vendors.notesAndStatusHint", {
                       defaultValue:
                         "Capture any assignment-specific details that the operations team should see later in Event Details.",
@@ -3096,8 +1799,8 @@ const EventDetailsPage = () => {
                   </p>
                 </div>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-[var(--lux-text)]">
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
                     {t("common.notes", { defaultValue: "Notes" })}
                   </span>
                   <textarea
@@ -3127,7 +1830,7 @@ const EventDetailsPage = () => {
               ) : null}
             </AppDialogBody>
 
-            <AppDialogFooter>
+            <AppDialogFooter className="gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -3167,7 +1870,7 @@ const EventDetailsPage = () => {
             }
           }}
         >
-          <AppDialogShell size="md">
+          <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
             <AppDialogHeader
               title={t("services.editEventService", {
                 defaultValue: "Edit Event Service",
@@ -3189,10 +1892,24 @@ const EventDetailsPage = () => {
               }
             />
 
-            <AppDialogBody>
+            <AppDialogBody className={dialogBodyClassName}>
+            <div className={dialogSectionClassName}>
+              <div className={dialogSectionHeaderClassName}>
+                <p className={dialogSectionTitleClassName}>
+                  {t("services.serviceSetup", {
+                    defaultValue: "Service Setup",
+                  })}
+                </p>
+                <p className={helperTextClassName}>
+                  {t("services.serviceSetupHint", {
+                    defaultValue:
+                      "Set the category, item status, and sort order before confirming the linked service line.",
+                  })}
+                </p>
+              </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
                   {t("services.categoryLabel", {
                     defaultValue: "Service Category",
                   })}
@@ -3221,8 +1938,8 @@ const EventDetailsPage = () => {
                 </Select>
               </label>
 
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
                   {t("services.eventStatusLabel", {
                     defaultValue: "Item Status",
                   })}
@@ -3251,8 +1968,8 @@ const EventDetailsPage = () => {
                 </Select>
               </label>
 
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-[var(--lux-text)]">
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
                   {t("services.sortOrder", { defaultValue: "Sort Order" })}
                 </span>
                 <Input
@@ -3268,9 +1985,11 @@ const EventDetailsPage = () => {
                 />
               </label>
             </div>
+            </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
+            <div className={dialogSectionClassName}>
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
                 {t("services.serviceSelection", {
                   defaultValue: "Catalog Service",
                 })}
@@ -3319,7 +2038,7 @@ const EventDetailsPage = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-[var(--lux-text-secondary)]">
+              <p className={helperTextClassName}>
                 {t("services.serviceSelectionHint", {
                   defaultValue:
                     "Choose a service from the catalog when available, or leave it empty and type the service name manually.",
@@ -3327,8 +2046,8 @@ const EventDetailsPage = () => {
               </p>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
                 {t("services.serviceNameSnapshot", {
                   defaultValue: "Service Name",
                 })}
@@ -3348,8 +2067,8 @@ const EventDetailsPage = () => {
               />
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-[var(--lux-text)]">
+            <label className={fieldGroupClassName}>
+              <span className={fieldLabelClassName}>
                 {t("common.notes", { defaultValue: "Notes" })}
               </span>
               <textarea
@@ -3371,13 +2090,14 @@ const EventDetailsPage = () => {
                 }}
               />
             </label>
+            </div>
 
               {serviceError ? (
                 <p className="text-sm text-[var(--lux-danger)]">{serviceError}</p>
               ) : null}
             </AppDialogBody>
 
-            <AppDialogFooter>
+            <AppDialogFooter className="gap-3">
               <Button
                 type="button"
                 variant="outline"
