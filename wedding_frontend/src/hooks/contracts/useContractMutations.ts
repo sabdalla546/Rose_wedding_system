@@ -41,9 +41,13 @@ const buildCreateContractPayload = (values: ContractFormData) => ({
   notes: normalizeOptionalString(values.notes),
   status: values.status || undefined,
   items: values.items.map((item) => ({
+    itemType: item.itemType,
     quotationItemId: item.quotationItemId ? Number(item.quotationItemId) : null,
     eventServiceId: item.eventServiceId ? Number(item.eventServiceId) : null,
     serviceId: item.serviceId ? Number(item.serviceId) : null,
+    eventVendorId: item.eventVendorId ? Number(item.eventVendorId) : null,
+    vendorId: item.vendorId ? Number(item.vendorId) : null,
+    pricingPlanId: item.pricingPlanId ? Number(item.pricingPlanId) : null,
     itemName: item.itemName.trim(),
     category: normalizeOptionalString(item.category),
     quantity: Number(item.quantity),
@@ -97,6 +101,13 @@ const buildUpdateContractPayload = (values: ContractUpdateFormData) => ({
 const buildUpdateContractItemPayload = (
   item: ContractUpdateFormData["items"][number],
 ) => ({
+  itemType: item.itemType,
+  quotationItemId: item.quotationItemId ? Number(item.quotationItemId) : null,
+  eventServiceId: item.eventServiceId ? Number(item.eventServiceId) : null,
+  serviceId: item.serviceId ? Number(item.serviceId) : null,
+  eventVendorId: item.eventVendorId ? Number(item.eventVendorId) : null,
+  vendorId: item.vendorId ? Number(item.vendorId) : null,
+  pricingPlanId: item.pricingPlanId ? Number(item.pricingPlanId) : null,
   itemName: item.itemName.trim(),
   category: normalizeNullableString(item.category),
   quantity: Number(item.quantity),

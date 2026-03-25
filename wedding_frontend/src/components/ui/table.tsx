@@ -23,7 +23,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-max min-w-full caption-bottom text-sm", className)}
         dir={direction}
         style={{ color: "var(--color-text)" }}
         {...props}
@@ -88,7 +88,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-12 px-4 align-middle text-xs font-semibold",
+        "h-12 whitespace-nowrap px-4 align-middle text-xs font-semibold break-normal",
         direction === "rtl" ? "tracking-normal" : "uppercase tracking-[0.18em]",
         direction === "rtl" ? "text-right" : "text-left",
         className
@@ -109,7 +109,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-4 py-4 align-middle text-sm leading-6",
+        "whitespace-nowrap break-normal px-4 py-4 align-middle text-sm leading-6",
         direction === "rtl" ? "text-right" : "text-left",
         className
       )}

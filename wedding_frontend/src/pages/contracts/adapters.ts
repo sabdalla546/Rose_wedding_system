@@ -4,9 +4,14 @@ import {
   formatQuotationItemCategory,
   toNumberValue,
 } from "@/pages/quotations/adapters";
+import {
+  formatVendorType,
+  getEventVendorDisplayName,
+} from "@/pages/vendors/adapters";
 import type {
   Contract,
   ContractItem,
+  ContractItemType,
   ContractStatus,
   ContractsResponse,
   PaymentSchedule,
@@ -69,12 +74,63 @@ export const getContractPartyDisplay = (
   contract.lead?.fullName ||
   "-";
 
+export const isContractServiceItem = (
+  item?: Pick<ContractItem, "itemType"> | null,
+): item is Pick<ContractItem, "itemType"> & { itemType: "service" } =>
+  (item?.itemType ?? "service") === "service";
+
+export const isContractVendorItem = (
+  item?: Pick<ContractItem, "itemType"> | null,
+): item is Pick<ContractItem, "itemType"> & { itemType: "vendor" } =>
+  item?.itemType === "vendor";
+
 export const getContractItemDisplayName = (item: ContractItem) =>
-  item.itemName ||
-  item.service?.name ||
-  item.eventService?.serviceNameSnapshot ||
-  item.quotationItem?.itemName ||
-  "-";
+  isContractVendorItem(item)
+    ? item.itemName ||
+      item.eventVendor?.resolvedCompanyName ||
+      item.eventVendor?.vendor?.name ||
+      item.vendor?.name ||
+      item.eventVendor?.companyNameSnapshot ||
+      item.quotationItem?.itemName ||
+      "-"
+    : item.itemName ||
+      item.service?.name ||
+      item.eventService?.serviceNameSnapshot ||
+      item.quotationItem?.itemName ||
+      "-";
+
+export const getContractItemTypeLabel = (itemType: ContractItemType) =>
+  itemType === "vendor" ? "Vendor" : "Service";
+
+export const getContractItemOriginLabel = (item: Partial<ContractItem>) => {
+  if (isContractVendorItem(item as Pick<ContractItem, "itemType">)) {
+    const vendorType = item.category
+      ? formatVendorType(item.category as any)
+      : item.eventVendor?.vendorType
+        ? formatVendorType(item.eventVendor.vendorType)
+        : null;
+    const pricingPlanName =
+      item.pricingPlan?.name || item.eventVendor?.pricingPlan?.name || null;
+    const vendorName =
+      item.itemName ||
+      (item.eventVendor ? getEventVendorDisplayName(item.eventVendor) : null) ||
+      item.vendor?.name ||
+      "Vendor";
+
+    return [vendorName, vendorType, pricingPlanName].filter(Boolean).join(" • ");
+  }
+
+  const serviceName =
+    item.itemName ||
+    item.eventService?.serviceNameSnapshot ||
+    item.service?.name ||
+    "Service";
+  const serviceCategory = item.category
+    ? formatQuotationItemCategory(item.category)
+    : null;
+
+  return [serviceName, serviceCategory].filter(Boolean).join(" • ");
+};
 
 export const getPaymentScheduleDisplayName = (
   schedule: Pick<PaymentSchedule, "installmentName">,

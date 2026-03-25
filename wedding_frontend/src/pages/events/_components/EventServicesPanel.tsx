@@ -10,6 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EventServiceStatusBadge } from "@/pages/services/_components/eventServiceStatusBadge";
 import {
   formatServiceCategory,
@@ -21,13 +29,17 @@ import {
   EventInfoBlock,
   EventMetaChip,
   EventPanelCard,
+  EventViewToggle,
+  type EventPanelViewMode,
 } from "./EventDetailsPrimitives";
 
 type Props = {
   serviceItems: EventServiceItem[];
   loading: boolean;
   summary: { itemsCount: number };
+  viewMode: EventPanelViewMode;
   t: TFunction;
+  onViewModeChange: (nextValue: EventPanelViewMode) => void;
   onAdd: () => void;
   onEdit: (serviceItem: EventServiceItem) => void;
   onDelete: (serviceItem: EventServiceItem) => void;
@@ -37,7 +49,9 @@ export function EventServicesPanel({
   serviceItems,
   loading,
   summary,
+  viewMode,
   t,
+  onViewModeChange,
   onAdd,
   onEdit,
   onDelete,
@@ -56,12 +70,20 @@ export function EventServicesPanel({
             })}
           </CardDescription>
         </div>
-        <ProtectedComponent permission="events.update">
-          <Button onClick={onAdd}>
-            <Plus className="h-4 w-4" />
-            {t("services.addEventService", { defaultValue: "Add Event Service" })}
-          </Button>
-        </ProtectedComponent>
+        <div className="flex flex-wrap items-center gap-2">
+          <EventViewToggle
+            value={viewMode}
+            onChange={onViewModeChange}
+            tableLabel={t("events.tableView", { defaultValue: "Table" })}
+            gridLabel={t("events.gridView", { defaultValue: "Grid" })}
+          />
+          <ProtectedComponent permission="events.update">
+            <Button onClick={onAdd}>
+              <Plus className="h-4 w-4" />
+              {t("services.addEventService", { defaultValue: "Add Event Service" })}
+            </Button>
+          </ProtectedComponent>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -82,6 +104,72 @@ export function EventServicesPanel({
             })}
           />
         ) : serviceItems.length ? (
+          viewMode === "table" ? (
+            <div className="overflow-hidden rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)]">
+              <div className="overflow-x-auto">
+                <Table className="min-w-full">
+                  <TableHeader>
+                    <TableRow className="border-[var(--lux-row-border)]">
+                      <TableHead>{t("services.service", { defaultValue: "Service" })}</TableHead>
+                      <TableHead>{t("services.categoryLabel", { defaultValue: "Category" })}</TableHead>
+                      <TableHead>{t("services.eventStatusLabel", { defaultValue: "Status" })}</TableHead>
+                      <TableHead>{t("services.sortOrder", { defaultValue: "Order" })}</TableHead>
+                      <TableHead>{t("common.notes", { defaultValue: "Notes" })}</TableHead>
+                      <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {serviceItems.map((serviceItem) => (
+                      <TableRow key={serviceItem.id} className="border-[var(--lux-row-border)]">
+                        <TableCell className="align-top">
+                          <div className="space-y-1">
+                            <div className="font-medium text-[var(--lux-heading)]">
+                              {getEventServiceDisplayName(serviceItem)}
+                            </div>
+                            {serviceItem.service?.code ? (
+                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                {t("services.code", { defaultValue: "Code" })}: {serviceItem.service.code}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                          {t(`services.category.${serviceItem.category}`, {
+                            defaultValue: formatServiceCategory(
+                              serviceItem.category as ServiceCategory,
+                            ),
+                          })}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <EventServiceStatusBadge status={serviceItem.status} />
+                        </TableCell>
+                        <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                          {serviceItem.sortOrder}
+                        </TableCell>
+                        <TableCell className="max-w-[320px] align-top text-[var(--lux-text-secondary)]">
+                          {serviceItem.notes || "-"}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <ProtectedComponent permission="events.update">
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="outline" size="sm" onClick={() => onEdit(serviceItem)}>
+                                <Pencil className="h-4 w-4" />
+                                {t("common.edit", { defaultValue: "Edit" })}
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => onDelete(serviceItem)}>
+                                <Trash2 className="h-4 w-4" />
+                                {t("common.delete", { defaultValue: "Delete" })}
+                              </Button>
+                            </div>
+                          </ProtectedComponent>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {serviceItems.map((serviceItem) => (
               <EventPanelCard
@@ -163,6 +251,7 @@ export function EventServicesPanel({
               </EventPanelCard>
             ))}
           </div>
+          )
         ) : (
           <EventEmptyState
             title={t("services.noEventServicesTitle", {

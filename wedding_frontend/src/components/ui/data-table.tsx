@@ -81,7 +81,7 @@ export function DataTable<TData, TValue>({
                   {header.isPlaceholder ? null : (
                     <button
                       className={cn(
-                        "flex w-full items-center gap-2",
+                        "flex w-full items-center gap-2 whitespace-nowrap",
                         isRtl ? "flex-row-reverse justify-end" : "justify-start",
                         header.column.getCanSort()
                           ? "cursor-pointer select-none"
@@ -91,7 +91,7 @@ export function DataTable<TData, TValue>({
                       type="button"
                       onClick={header.column.getToggleSortingHandler()}
                   >
-                      <span className="truncate" dir="auto">
+                      <span className="whitespace-nowrap" dir="auto">
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
@@ -147,7 +147,7 @@ export function DataTable<TData, TValue>({
                     <div
                       dir="auto"
                       className={cn(
-                        "w-full min-w-0",
+                        "w-full min-w-max whitespace-nowrap",
                         isRtl ? "text-right" : "text-left"
                       )}
                     >

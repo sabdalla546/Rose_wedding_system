@@ -84,6 +84,7 @@ import type {
 
 import { EVENT_SECTION_TYPE_OPTIONS } from "./adapters";
 import type { EventSection, EventSectionType } from "./types";
+import type { EventPanelViewMode } from "./_components/EventDetailsPrimitives";
 
 type SectionFormState = {
   sectionType: EventSectionType;
@@ -254,6 +255,10 @@ const EventDetailsPage = () => {
   const [serviceForm, setServiceForm] = useState<EventServiceFormState>(
     createDefaultEventServiceState(),
   );
+  const [vendorPanelViewMode, setVendorPanelViewMode] =
+    useState<EventPanelViewMode>("table");
+  const [servicePanelViewMode, setServicePanelViewMode] =
+    useState<EventPanelViewMode>("table");
 
   const createSectionMutation = useCreateEventSection();
   const updateSectionMutation = useUpdateEventSection(Number(id || 0));
@@ -926,7 +931,9 @@ const EventDetailsPage = () => {
                 vendorLinks={sortedEventVendorLinks}
                 loading={eventVendorLinksLoading}
                 expandedVendorIds={expandedVendorIds}
+                viewMode={vendorPanelViewMode}
                 t={t}
+                onViewModeChange={setVendorPanelViewMode}
                 onAdd={() => setVendorDialogOpen(true)}
                 onEdit={(vendorLink) => {
                   setEditingVendorLink(vendorLink);
@@ -946,7 +953,9 @@ const EventDetailsPage = () => {
                 serviceItems={sortedEventServiceItems}
                 loading={eventServiceItemsLoading}
                 summary={eventServiceSummary}
+                viewMode={servicePanelViewMode}
                 t={t}
+                onViewModeChange={setServicePanelViewMode}
                 onAdd={() => setServiceChecklistOpen(true)}
                 onEdit={(serviceItem) => {
                   setEditingServiceItem(serviceItem);

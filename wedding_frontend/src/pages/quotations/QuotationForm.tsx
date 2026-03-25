@@ -885,91 +885,139 @@ const QuotationFormPage = () => {
                   ) : null}
 
                   <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <Select
-                      value={form.watch("eventId") || "none"}
-                      onValueChange={(value) =>
-                        form.setValue("eventId", value === "none" ? "" : value, {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                      disabled={isEditMode}
+                    <FieldBlock
+                      label={t("quotations.event", { defaultValue: "Event" })}
+                      error={form.formState.errors.eventId?.message}
                     >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t("quotations.selectEvent", {
-                            defaultValue: "Select event",
-                          })}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {!isEditMode ? (
-                          <SelectItem value="none">
-                            {t("quotations.selectEvent", {
+                      <Select
+                        value={form.watch("eventId") || "none"}
+                        onValueChange={(value) =>
+                          form.setValue("eventId", value === "none" ? "" : value, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                        disabled={isEditMode}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t("quotations.selectEvent", {
                               defaultValue: "Select event",
                             })}
-                          </SelectItem>
-                        ) : null}
-                        {events.map((event) => (
-                          <SelectItem key={event.id} value={String(event.id)}>
-                            {getEventDisplayTitle(event)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {!isEditMode ? (
+                            <SelectItem value="none">
+                              {t("quotations.selectEvent", {
+                                defaultValue: "Select event",
+                              })}
+                            </SelectItem>
+                          ) : null}
+                          {events.map((event) => (
+                            <SelectItem key={event.id} value={String(event.id)}>
+                              {getEventDisplayTitle(event)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldBlock>
 
-                    <Input
-                      placeholder={t("quotations.quotationNumber", {
+                    <FieldBlock
+                      label={t("quotations.quotationNumber", {
                         defaultValue: "Quotation Number",
                       })}
-                      {...form.register("quotationNumber")}
-                    />
-
-                    <Select
-                      value={form.watch("status")}
-                      onValueChange={(value) =>
-                        form.setValue("status", value as QuotationStatus, {
-                          shouldDirty: true,
-                        })
-                      }
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {QUOTATION_STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {t(`quotations.status.${option.value}`, {
-                              defaultValue: option.label,
-                            })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Input
+                        placeholder={t("quotations.quotationNumber", {
+                          defaultValue: "Quotation Number",
+                        })}
+                        {...form.register("quotationNumber")}
+                      />
+                    </FieldBlock>
 
-                    <Input type="date" {...form.register("issueDate")} />
-                    <Input type="date" {...form.register("validUntil")} />
-                    <Input value={String(totals.subtotal)} readOnly />
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      placeholder={t("quotations.discount", {
+                    <FieldBlock
+                      label={t("quotations.statusLabel", {
+                        defaultValue: "Status",
+                      })}
+                    >
+                      <Select
+                        value={form.watch("status")}
+                        onValueChange={(value) =>
+                          form.setValue("status", value as QuotationStatus, {
+                            shouldDirty: true,
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {QUOTATION_STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {t(`quotations.status.${option.value}`, {
+                                defaultValue: option.label,
+                              })}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldBlock>
+
+                    <FieldBlock
+                      label={t("quotations.issueDate", {
+                        defaultValue: "Issue Date",
+                      })}
+                      error={form.formState.errors.issueDate?.message}
+                    >
+                      <Input type="date" {...form.register("issueDate")} />
+                    </FieldBlock>
+
+                    <FieldBlock
+                      label={t("quotations.validUntil", {
+                        defaultValue: "Valid Until",
+                      })}
+                    >
+                      <Input type="date" {...form.register("validUntil")} />
+                    </FieldBlock>
+
+                    <FieldBlock
+                      label={t("quotations.subtotal", {
+                        defaultValue: "Subtotal",
+                      })}
+                    >
+                      <Input value={String(totals.subtotal)} readOnly />
+                    </FieldBlock>
+
+                    <FieldBlock
+                      label={t("quotations.discount", {
                         defaultValue: "Discount",
                       })}
-                      {...form.register("discountAmount")}
-                    />
+                      error={form.formState.errors.discountAmount?.message}
+                    >
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        placeholder={t("quotations.discount", {
+                          defaultValue: "Discount",
+                        })}
+                        {...form.register("discountAmount")}
+                      />
+                    </FieldBlock>
                   </section>
 
-                  <textarea
-                    {...form.register("notes")}
-                    className={textAreaClass}
-                    placeholder={t("common.notes", { defaultValue: "Notes" })}
-                    style={{
-                      background: "var(--lux-control-surface)",
-                      borderColor: "var(--lux-control-border)",
-                    }}
-                  />
+                  <FieldBlock label={t("common.notes", { defaultValue: "Notes" })}>
+                    <textarea
+                      {...form.register("notes")}
+                      className={textAreaClass}
+                      placeholder={t("common.notes", { defaultValue: "Notes" })}
+                      style={{
+                        background: "var(--lux-control-surface)",
+                        borderColor: "var(--lux-control-border)",
+                      }}
+                    />
+                  </FieldBlock>
 
                   {!isEditMode && watchedCreateMode === "manual" ? (
                     <section className="space-y-6">
@@ -1878,6 +1926,28 @@ function SummaryTile({
         {value}
       </p>
     </div>
+  );
+}
+
+function FieldBlock({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="space-y-2">
+      <span className="text-sm font-medium text-[var(--lux-text)]">{label}</span>
+      {children}
+      {error ? (
+        <p className="text-[0.8rem] font-medium text-[var(--lux-danger)]">
+          {String(error)}
+        </p>
+      ) : null}
+    </label>
   );
 }
 

@@ -11,6 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EventVendorStatusBadge } from "@/pages/vendors/_components/eventVendorStatusBadge";
 import {
   formatMoney,
@@ -23,13 +31,17 @@ import {
   EventInfoBlock,
   EventMetaChip,
   EventPanelCard,
+  EventViewToggle,
+  type EventPanelViewMode,
 } from "./EventDetailsPrimitives";
 
 type Props = {
   vendorLinks: EventVendorLink[];
   loading: boolean;
   expandedVendorIds: number[];
+  viewMode: EventPanelViewMode;
   t: TFunction;
+  onViewModeChange: (nextValue: EventPanelViewMode) => void;
   onAdd: () => void;
   onEdit: (vendorLink: EventVendorLink) => void;
   onDelete: (vendorLink: EventVendorLink) => void;
@@ -50,7 +62,9 @@ export function EventVendorsPanel({
   vendorLinks,
   loading,
   expandedVendorIds,
+  viewMode,
   t,
+  onViewModeChange,
   onAdd,
   onEdit,
   onDelete,
@@ -70,12 +84,20 @@ export function EventVendorsPanel({
             })}
           </CardDescription>
         </div>
-        <ProtectedComponent permission="events.update">
-          <Button onClick={onAdd}>
-            <Plus className="h-4 w-4" />
-            {t("vendors.assignVendor", { defaultValue: "Assign Vendor" })}
-          </Button>
-        </ProtectedComponent>
+        <div className="flex flex-wrap items-center gap-2">
+          <EventViewToggle
+            value={viewMode}
+            onChange={onViewModeChange}
+            tableLabel={t("events.tableView", { defaultValue: "Table" })}
+            gridLabel={t("events.gridView", { defaultValue: "Grid" })}
+          />
+          <ProtectedComponent permission="events.update">
+            <Button onClick={onAdd}>
+              <Plus className="h-4 w-4" />
+              {t("vendors.assignVendor", { defaultValue: "Assign Vendor" })}
+            </Button>
+          </ProtectedComponent>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
@@ -86,6 +108,96 @@ export function EventVendorsPanel({
             })}
           />
         ) : vendorLinks.length ? (
+          viewMode === "table" ? (
+            <div className="overflow-hidden rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)]">
+              <div className="overflow-x-auto">
+                <Table className="min-w-full">
+                  <TableHeader>
+                    <TableRow className="border-[var(--lux-row-border)]">
+                      <TableHead>{t("vendors.resolvedCompanyName", { defaultValue: "Resolved Company / Vendor" })}</TableHead>
+                      <TableHead>{t("vendors.typeLabel", { defaultValue: "Vendor Type" })}</TableHead>
+                      <TableHead>{t("vendors.providedByLabel", { defaultValue: "Provided By" })}</TableHead>
+                      <TableHead>{t("vendors.pricingPlans.name", { defaultValue: "Pricing Plan" })}</TableHead>
+                      <TableHead>{t("vendors.selectedSubServicesCount", { defaultValue: "Selected Count" })}</TableHead>
+                      <TableHead>{t("vendors.agreedPrice", { defaultValue: "Agreed Price" })}</TableHead>
+                      <TableHead>{t("vendors.assignmentStatusLabel", { defaultValue: "Status" })}</TableHead>
+                      <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vendorLinks.map((vendorLink) => {
+                      const displayName =
+                        vendorLink.resolvedCompanyName ||
+                        getEventVendorDisplayName(vendorLink);
+
+                      return (
+                        <TableRow key={vendorLink.id} className="border-[var(--lux-row-border)]">
+                          <TableCell className="align-top">
+                            <div className="space-y-1">
+                              <div className="font-medium text-[var(--lux-heading)]">
+                                {displayName}
+                              </div>
+                              {vendorLink.notes ? (
+                                <div className="max-w-[320px] text-xs text-[var(--lux-text-secondary)]">
+                                  {vendorLink.notes}
+                                </div>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                            {t(`vendors.type.${vendorLink.vendorType}`, {
+                              defaultValue: formatVendorType(vendorLink.vendorType),
+                            })}
+                          </TableCell>
+                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                            {t(`vendors.providedBy.${vendorLink.providedBy}`, {
+                              defaultValue: vendorLink.providedBy,
+                            })}
+                          </TableCell>
+                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                            {vendorLink.resolvedPricingLabel ||
+                              (vendorLink.selectedSubServicesCount > 0
+                                ? t("vendors.noMatchingPricingPlan", {
+                                    defaultValue: "No matching pricing plan",
+                                  })
+                                : t("vendors.noPricingPlan", {
+                                    defaultValue: "No pricing plan selected",
+                                  }))}
+                          </TableCell>
+                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                            {vendorLink.selectedSubServicesCount}
+                          </TableCell>
+                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                            {vendorLink.agreedPrice !== null &&
+                            typeof vendorLink.agreedPrice !== "undefined"
+                              ? formatMoney(vendorLink.agreedPrice)
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <EventVendorStatusBadge status={vendorLink.status} />
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <ProtectedComponent permission="events.update">
+                              <div className="flex flex-wrap gap-2">
+                                <Button variant="outline" size="sm" onClick={() => onEdit(vendorLink)}>
+                                  <Pencil className="h-4 w-4" />
+                                  {t("common.edit", { defaultValue: "Edit" })}
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => onDelete(vendorLink)}>
+                                  <Trash2 className="h-4 w-4" />
+                                  {t("common.delete", { defaultValue: "Delete" })}
+                                </Button>
+                              </div>
+                            </ProtectedComponent>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
           vendorLinks.map((vendorLink) => {
             const displayName =
               vendorLink.resolvedCompanyName ||
@@ -289,6 +401,7 @@ export function EventVendorsPanel({
               </EventPanelCard>
             );
           })
+          )
         ) : (
           <EventEmptyState
             title={t("vendors.noEventVendorsTitle", {

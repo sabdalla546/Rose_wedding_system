@@ -962,11 +962,15 @@ export const resources = {
         searchPlaceholder:
           "Search by title, contract, party names, or venue...",
         create: "Create Event",
+        tableView: "Table",
+        gridView: "Grid",
         createTitle: "Create Event",
         editTitle: "Edit Event",
         createDescription:
           "Create a new event manually or start from an existing source record.",
         editDescription: "Update event details, venue, and linked records.",
+        expandOverview: "Expand",
+        collapseOverview: "Collapse",
         backToEvents: "Back to Events",
         listTitle: "Events List",
         createMode: "Creation Flow",
@@ -2178,11 +2182,15 @@ export const resources = {
         searchPlaceholder:
           "ابحث بالعنوان أو رقم العقد أو أسماء الحفل أو القاعة...",
         create: "إنشاء حفل",
+        tableView: "جدول",
+        gridView: "شبكة",
         createTitle: "إنشاء حفل",
         editTitle: "تعديل الحفل",
         createDescription:
           "أنشئ حفلاً جديدًا يدويًا أو ابدأ من سجل مصدر موجود.",
         editDescription: "حدّث بيانات الحفل والقاعة والروابط المرتبطة.",
+        expandOverview: "توسيع",
+        collapseOverview: "طي",
         backToEvents: "العودة إلى الحفلات",
         listTitle: "قائمة الحفلات",
         createMode: "مسار الإنشاء",

@@ -29,9 +29,14 @@ import { useContract } from "@/hooks/contracts/useContracts";
 import { useEvents } from "@/hooks/events/useEvents";
 import { useQuotation, useQuotations } from "@/hooks/quotations/useQuotations";
 import { useEventServiceItems, useServices } from "@/hooks/services/useServices";
+import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
+import {
+  formatVendorType,
+  getEventVendorDisplayName,
+} from "@/pages/vendors/adapters";
 
 import {
   computeContractItemTotal,
@@ -40,6 +45,9 @@ import {
   formatContractItemCategory,
   formatMoney,
   getContractItemDisplayName,
+  getContractItemOriginLabel,
+  getContractItemTypeLabel,
+  toNumberValue,
   PAYMENT_SCHEDULE_STATUS_OPTIONS,
   PAYMENT_SCHEDULE_TYPE_OPTIONS,
 } from "./adapters";
@@ -47,6 +55,7 @@ import type {
   ContractFormData,
   ContractFromQuotationFormData,
   ContractItemFormData,
+  ContractItemType,
   ContractStatus,
   ContractUpdateFormData,
   PaymentScheduleStatus,
@@ -115,9 +124,13 @@ const createContractFormSchema = (isEditMode: boolean) =>
       items: z.array(
         z.object({
           id: z.number().optional(),
+          itemType: z.enum(["service", "vendor"]),
           quotationItemId: z.string().optional(),
           eventServiceId: z.string().optional(),
           serviceId: z.string().optional(),
+          eventVendorId: z.string().optional(),
+          vendorId: z.string().optional(),
+          pricingPlanId: z.string().optional(),
           itemName: z.string().max(150),
           category: z.string().max(100).optional(),
           quantity: z
@@ -178,6 +191,14 @@ const createContractFormSchema = (isEditMode: boolean) =>
               message: "Item name is required",
             });
           }
+
+          if (item.itemType === "vendor" && !item.eventVendorId?.trim()) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["items", index, "eventVendorId"],
+              message: "Vendor rows must come from an event vendor",
+            });
+          }
         });
       }
 
@@ -194,10 +215,17 @@ const createContractFormSchema = (isEditMode: boolean) =>
 
 type ContractFormValues = z.infer<ReturnType<typeof createContractFormSchema>>;
 
-const createEmptyContractItem = (sortOrder = 0): ContractItemFormData => ({
+const createEmptyContractItem = (
+  sortOrder = 0,
+  itemType: ContractItemType = "service",
+): ContractItemFormData => ({
+  itemType,
   quotationItemId: "",
   eventServiceId: "",
   serviceId: "",
+  eventVendorId: "",
+  vendorId: "",
+  pricingPlanId: "",
   itemName: "",
   category: "",
   quantity: "1",
@@ -338,6 +366,14 @@ const ContractFormPage = () => {
     category: "all",
     status: "all",
   });
+  const { data: eventVendorsResponse } = useEventVendorLinks({
+    currentPage: 1,
+    itemsPerPage: 200,
+    eventId: selectedEventIdNumber || undefined,
+    vendorType: "all",
+    providedBy: "all",
+    status: "all",
+  });
   const existingContracts = useMemo(
     () => contractsResponse?.data ?? [],
     [contractsResponse?.data],
@@ -354,6 +390,10 @@ const ContractFormPage = () => {
   const availableEventServices = useMemo(
     () => eventServicesResponse?.data ?? [],
     [eventServicesResponse?.data],
+  );
+  const availableEventVendors = useMemo(
+    () => eventVendorsResponse?.data ?? [],
+    [eventVendorsResponse?.data],
   );
   const selectedEvent = useMemo(
     () => events.find((event) => String(event.id) === watchedEventId),
@@ -390,11 +430,6 @@ const ContractFormPage = () => {
           watchedItems?.map((item) => ({
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            totalPrice:
-              item.totalPrice ||
-              String(
-                computeContractItemTotal(item.quantity, item.unitPrice) ?? 0,
-              ),
           })) ?? [],
         discountAmount: watchedDiscountAmount,
       }),
@@ -434,9 +469,13 @@ const ContractFormPage = () => {
       status: contract.status,
       items: (contract.items ?? []).map((item) => ({
         id: item.id,
+        itemType: item.itemType ?? "service",
         quotationItemId: item.quotationItemId ? String(item.quotationItemId) : "",
         eventServiceId: item.eventServiceId ? String(item.eventServiceId) : "",
         serviceId: item.serviceId ? String(item.serviceId) : "",
+        eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
+        vendorId: item.vendorId ? String(item.vendorId) : "",
+        pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
         itemName: item.itemName,
         category: item.category ?? "",
         quantity: String(item.quantity),
@@ -451,9 +490,13 @@ const ContractFormPage = () => {
     replaceItems(
       (contract.items ?? []).map((item) => ({
         id: item.id,
+        itemType: item.itemType ?? "service",
         quotationItemId: item.quotationItemId ? String(item.quotationItemId) : "",
         eventServiceId: item.eventServiceId ? String(item.eventServiceId) : "",
         serviceId: item.serviceId ? String(item.serviceId) : "",
+        eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
+        vendorId: item.vendorId ? String(item.vendorId) : "",
+        pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
         itemName: item.itemName,
         category: item.category ?? "",
         quantity: String(item.quantity),
@@ -519,6 +562,38 @@ const ContractFormPage = () => {
     createFromQuotationMutation.isPending ||
     updateMutation.isPending;
 
+  const updateItemValues = (
+    index: number,
+    values: Partial<Omit<ContractItemFormData, "id">>,
+  ) => {
+    Object.entries(values).forEach(([key, value]) => {
+      form.setValue(`items.${index}.${key}` as any, value as any, {
+        shouldDirty: true,
+        shouldValidate: key === "itemType" || key === "eventVendorId",
+      });
+    });
+  };
+
+  const handleItemTypeChange = (index: number, nextItemType: ContractItemType) => {
+    const currentItem = form.getValues(`items.${index}`);
+
+    form.setValue(
+      `items.${index}`,
+      {
+        ...createEmptyContractItem(
+          Number(currentItem.sortOrder || index),
+          nextItemType,
+        ),
+        id: currentItem.id,
+        sortOrder: currentItem.sortOrder || String(index),
+      },
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    );
+  };
+
   const handleQuotationItemSelect = (index: number, nextQuotationItemId: string) => {
     const selectedItem = linkedQuotationItems.find(
       (item) => String(item.id) === nextQuotationItemId,
@@ -532,27 +607,39 @@ const ContractFormPage = () => {
       return;
     }
 
-    form.setValue(
-      `items.${index}.eventServiceId`,
-      selectedItem.eventServiceId ? String(selectedItem.eventServiceId) : "",
-      { shouldDirty: true },
-    );
-    form.setValue(
-      `items.${index}.serviceId`,
-      selectedItem.serviceId ? String(selectedItem.serviceId) : "",
-      { shouldDirty: true },
-    );
-    form.setValue(`items.${index}.itemName`, selectedItem.itemName, {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.category`, selectedItem.category ?? "", {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.quantity`, String(selectedItem.quantity ?? 1), {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.unitPrice`, String(selectedItem.unitPrice ?? 0), {
-      shouldDirty: true,
+    updateItemValues(index, {
+      itemType: selectedItem.itemType ?? "service",
+      itemName: selectedItem.itemName,
+      category: selectedItem.category ?? "",
+      quantity: String(selectedItem.quantity ?? 1),
+      unitPrice: String(selectedItem.unitPrice ?? 0),
+      totalPrice: String(selectedItem.totalPrice ?? 0),
+      notes: selectedItem.notes ?? "",
+      sortOrder: String(selectedItem.sortOrder ?? index),
+      eventServiceId:
+        selectedItem.itemType === "vendor"
+          ? ""
+          : selectedItem.eventServiceId
+            ? String(selectedItem.eventServiceId)
+            : "",
+      serviceId:
+        selectedItem.itemType === "vendor"
+          ? ""
+          : selectedItem.serviceId
+            ? String(selectedItem.serviceId)
+            : "",
+      eventVendorId:
+        selectedItem.itemType === "vendor" && selectedItem.eventVendorId
+          ? String(selectedItem.eventVendorId)
+          : "",
+      vendorId:
+        selectedItem.itemType === "vendor" && selectedItem.vendorId
+          ? String(selectedItem.vendorId)
+          : "",
+      pricingPlanId:
+        selectedItem.itemType === "vendor" && selectedItem.pricingPlanId
+          ? String(selectedItem.pricingPlanId)
+          : "",
     });
   };
 
@@ -565,30 +652,26 @@ const ContractFormPage = () => {
       shouldDirty: true,
     });
 
+    updateItemValues(index, {
+      itemType: "service",
+      eventVendorId: "",
+      vendorId: "",
+      pricingPlanId: "",
+    });
+
     if (!selectedEventService) {
       return;
     }
 
-    form.setValue(
-      `items.${index}.serviceId`,
-      selectedEventService.serviceId ? String(selectedEventService.serviceId) : "",
-      { shouldDirty: true },
-    );
-    form.setValue(
-      `items.${index}.itemName`,
-      selectedEventService.serviceNameSnapshot ||
+    updateItemValues(index, {
+      serviceId: selectedEventService.serviceId
+        ? String(selectedEventService.serviceId)
+        : "",
+      itemName:
+        selectedEventService.serviceNameSnapshot ||
         selectedEventService.service?.name ||
         "",
-      { shouldDirty: true },
-    );
-    form.setValue(`items.${index}.category`, selectedEventService.category, {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.quantity`, String(selectedEventService.quantity ?? 1), {
-      shouldDirty: true,
-    });
-    form.setValue(`items.${index}.unitPrice`, String(selectedEventService.unitPrice ?? 0), {
-      shouldDirty: true,
+      category: selectedEventService.category,
     });
   };
 
@@ -601,15 +684,60 @@ const ContractFormPage = () => {
       shouldDirty: true,
     });
 
+    updateItemValues(index, {
+      itemType: "service",
+      eventServiceId: nextServiceId ? "" : form.getValues(`items.${index}.eventServiceId`),
+      eventVendorId: "",
+      vendorId: "",
+      pricingPlanId: "",
+    });
+
     if (!selectedService) {
       return;
     }
 
-    form.setValue(`items.${index}.itemName`, selectedService.name, {
-      shouldDirty: true,
+    updateItemValues(index, {
+      eventServiceId: "",
+      itemName: selectedService.name,
+      category: selectedService.category,
     });
-    form.setValue(`items.${index}.category`, selectedService.category, {
-      shouldDirty: true,
+  };
+
+  const handleEventVendorSelect = (index: number, nextEventVendorId: string) => {
+    const selectedEventVendor = availableEventVendors.find(
+      (item) => String(item.id) === nextEventVendorId,
+    );
+
+    if (!selectedEventVendor) {
+      updateItemValues(index, {
+        itemType: "vendor",
+        eventVendorId: nextEventVendorId,
+        vendorId: "",
+        pricingPlanId: "",
+      });
+      return;
+    }
+
+    const agreedPrice = toNumberValue(selectedEventVendor.agreedPrice) ?? 0;
+
+    updateItemValues(index, {
+      itemType: "vendor",
+      quotationItemId: "",
+      eventServiceId: "",
+      serviceId: "",
+      eventVendorId: nextEventVendorId,
+      vendorId: selectedEventVendor.vendorId
+        ? String(selectedEventVendor.vendorId)
+        : "",
+      pricingPlanId: selectedEventVendor.pricingPlanId
+        ? String(selectedEventVendor.pricingPlanId)
+        : "",
+      itemName: getEventVendorDisplayName(selectedEventVendor),
+      category: selectedEventVendor.vendorType,
+      quantity: "1",
+      unitPrice: String(agreedPrice),
+      totalPrice: String(agreedPrice),
+      notes: "",
     });
   };
 
@@ -1152,6 +1280,8 @@ const ContractFormPage = () => {
                       <div className="space-y-4">
                         {itemFields.map((field, index) => {
                           const itemValues = watchedItems?.[index];
+                          const itemType = itemValues?.itemType ?? "service";
+                          const isVendorItem = itemType === "vendor";
                           const itemTotal =
                             computeContractItemTotal(
                               itemValues?.quantity,
@@ -1163,19 +1293,24 @@ const ContractFormPage = () => {
                               key={field.id}
                               className="rounded-[22px] border p-4"
                               style={{
-                                background: "var(--lux-row-surface)",
+                                background: isVendorItem
+                                  ? "var(--lux-control-hover)"
+                                  : "var(--lux-row-surface)",
                                 borderColor: "var(--lux-row-border)",
                               }}
                             >
                               <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                   <div>
-                                    <p className="text-sm font-semibold text-[var(--lux-heading)]">
-                                      {t("contracts.itemLabel", {
-                                        defaultValue: "Item",
-                                      })}{" "}
-                                      #{index + 1}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-semibold text-[var(--lux-heading)]">
+                                        {t("contracts.itemLabel", {
+                                          defaultValue: "Item",
+                                        })}{" "}
+                                        #{index + 1}
+                                      </p>
+                                      <TypeBadge type={itemType} t={t} />
+                                    </div>
                                     {isEditMode && itemValues?.id ? (
                                       <p className="text-xs text-[var(--lux-text-secondary)]">
                                         {t("contracts.itemReference", {
@@ -1201,46 +1336,122 @@ const ContractFormPage = () => {
                                   ) : null}
                                 </div>
 
-                                {!isEditMode ? (
-                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <label className="space-y-2">
-                                      <span className="text-sm font-medium text-[var(--lux-text)]">
-                                        {t("contracts.linkedQuotationItem", {
-                                          defaultValue: "Quotation Item",
-                                        })}
-                                      </span>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                  <label className="space-y-2">
+                                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                                      {t("contracts.type", { defaultValue: "Type" })}
+                                    </span>
+                                    <Select
+                                      value={itemType}
+                                      onValueChange={(value) =>
+                                        handleItemTypeChange(
+                                          index,
+                                          value as ContractItemType,
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="service">
+                                          {t("contracts.service", {
+                                            defaultValue: "Service",
+                                          })}
+                                        </SelectItem>
+                                        <SelectItem value="vendor">
+                                          {t("contracts.vendor", {
+                                            defaultValue: "Vendor",
+                                          })}
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </label>
+
+                                  <label className="space-y-2">
+                                    <span className="text-sm font-medium text-[var(--lux-text)]">
+                                      {t("contracts.linkedQuotationItem", {
+                                        defaultValue: "Quotation Item",
+                                      })}
+                                    </span>
+                                    <Select
+                                      value={form.watch(`items.${index}.quotationItemId`) || "none"}
+                                      onValueChange={(value) =>
+                                        handleQuotationItemSelect(
+                                          index,
+                                          value === "none" ? "" : value,
+                                        )
+                                      }
+                                      disabled={!linkedQuotationItems.length}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={t("contracts.selectQuotationItem", {
+                                            defaultValue: "Select quotation item",
+                                          })}
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          {t("contracts.noQuotationItemSelected", {
+                                            defaultValue: "No quotation item selected",
+                                          })}
+                                        </SelectItem>
+                                        {linkedQuotationItems.map((item) => (
+                                          <SelectItem key={item.id} value={String(item.id)}>
+                                            {getContractItemDisplayName(item as any)}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </label>
+
+                                  {isVendorItem ? (
+                                    <FieldInput
+                                      label={t("contracts.linkedEventVendor", {
+                                        defaultValue: "Event Vendor",
+                                      })}
+                                      error={
+                                        form.formState.errors.items?.[index]?.eventVendorId?.message
+                                      }
+                                    >
                                       <Select
-                                        value={form.watch(`items.${index}.quotationItemId`) || "none"}
+                                        value={form.watch(`items.${index}.eventVendorId`) || "none"}
                                         onValueChange={(value) =>
-                                          handleQuotationItemSelect(
+                                          handleEventVendorSelect(
                                             index,
                                             value === "none" ? "" : value,
                                           )
                                         }
-                                        disabled={!linkedQuotationItems.length}
+                                        disabled={!watchedEventId}
                                       >
                                         <SelectTrigger>
                                           <SelectValue
-                                            placeholder={t("contracts.selectQuotationItem", {
-                                              defaultValue: "Select quotation item",
+                                            placeholder={t("contracts.selectEventVendor", {
+                                              defaultValue: "Select event vendor",
                                             })}
                                           />
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="none">
-                                            {t("contracts.noQuotationItemSelected", {
-                                              defaultValue: "No quotation item selected",
+                                            {t("contracts.noEventVendorSelected", {
+                                              defaultValue: "No event vendor selected",
                                             })}
                                           </SelectItem>
-                                          {linkedQuotationItems.map((item) => (
+                                          {availableEventVendors.map((item) => (
                                             <SelectItem key={item.id} value={String(item.id)}>
-                                              {getContractItemDisplayName(item as any)}
+                                              {`${getEventVendorDisplayName(item)} • ${t(
+                                                `vendors.type.${item.vendorType}`,
+                                                {
+                                                  defaultValue: formatVendorType(item.vendorType),
+                                                },
+                                              )} • ${formatMoney(item.agreedPrice ?? 0)}`}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>
                                       </Select>
-                                    </label>
-
+                                    </FieldInput>
+                                  ) : (
                                     <label className="space-y-2">
                                       <span className="text-sm font-medium text-[var(--lux-text)]">
                                         {t("contracts.linkedEventService", {
@@ -1278,7 +1489,34 @@ const ContractFormPage = () => {
                                         </SelectContent>
                                       </Select>
                                     </label>
+                                  )}
 
+                                  {isVendorItem ? (
+                                    <div
+                                      className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+                                      style={{
+                                        background: "var(--lux-panel-surface)",
+                                        borderColor: "var(--lux-row-border)",
+                                      }}
+                                    >
+                                      <p className="font-medium text-[var(--lux-text)]">
+                                        {t("contracts.vendorSnapshotOnly", {
+                                          defaultValue:
+                                            "This changes the contract snapshot only",
+                                        })}
+                                      </p>
+                                      <p className="mt-1 text-xs">
+                                        {itemValues?.pricingPlanId
+                                          ? `${t("contracts.pricingPlan", {
+                                              defaultValue: "Pricing Plan",
+                                            })}: #${itemValues.pricingPlanId}`
+                                          : t("contracts.vendorAgreedPriceHint", {
+                                              defaultValue:
+                                                "Vendor rows use the event vendor agreed price as the default contract amount.",
+                                            })}
+                                      </p>
+                                    </div>
+                                  ) : (
                                     <label className="space-y-2">
                                       <span className="text-sm font-medium text-[var(--lux-text)]">
                                         {t("contracts.linkedService", {
@@ -1315,39 +1553,65 @@ const ContractFormPage = () => {
                                         </SelectContent>
                                       </Select>
                                     </label>
-                                  </div>
-                                ) : (
-                                  <div
-                                    className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
-                                    style={{
-                                      background: "var(--lux-panel-surface)",
-                                      borderColor: "var(--lux-row-border)",
-                                    }}
-                                  >
+                                  )}
+                                </div>
+
+                                <div
+                                  className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+                                  style={{
+                                    background: "var(--lux-panel-surface)",
+                                    borderColor: "var(--lux-row-border)",
+                                  }}
+                                >
+                                  <p className="font-medium text-[var(--lux-text)]">
+                                    {isVendorItem
+                                      ? t("contracts.vendorOrigin", {
+                                          defaultValue: "Vendor-origin row",
+                                        })
+                                      : t("contracts.serviceManualPricing", {
+                                          defaultValue: "Manual service pricing",
+                                        })}
+                                  </p>
+                                  <p className="mt-1">
+                                    {isVendorItem
+                                      ? getContractItemOriginLabel(itemValues as any) || "-"
+                                      : t("contracts.serviceManualPricingHint", {
+                                          defaultValue:
+                                            "Service selection only fills description and references. Enter the contract amount manually in this row.",
+                                        })}
+                                  </p>
+                                  <p className="mt-1 text-xs">
                                     {itemValues?.quotationItemId
                                       ? `${t("contracts.linkedQuotationItem", {
                                           defaultValue: "Quotation Item",
-                                        })}: ${itemValues.quotationItemId}`
+                                        })}: #${itemValues.quotationItemId}`
                                       : null}
-                                    {itemValues?.quotationItemId && itemValues?.eventServiceId
-                                      ? " | "
-                                      : ""}
                                     {itemValues?.eventServiceId
-                                      ? `${t("contracts.linkedEventService", {
-                                          defaultValue: "Event Service",
-                                        })}: ${itemValues.eventServiceId}`
+                                      ? `${itemValues?.quotationItemId ? " • " : ""}${t(
+                                          "contracts.linkedEventService",
+                                          {
+                                            defaultValue: "Event Service",
+                                          },
+                                        )}: #${itemValues.eventServiceId}`
                                       : null}
-                                    {(itemValues?.quotationItemId || itemValues?.eventServiceId) &&
-                                    itemValues?.serviceId
-                                      ? " | "
-                                      : ""}
                                     {itemValues?.serviceId
-                                      ? `${t("contracts.linkedService", {
-                                          defaultValue: "Catalog Service",
-                                        })}: ${itemValues.serviceId}`
+                                      ? `${itemValues?.quotationItemId || itemValues?.eventServiceId ? " • " : ""}${t(
+                                          "contracts.linkedService",
+                                          {
+                                            defaultValue: "Catalog Service",
+                                          },
+                                        )}: #${itemValues.serviceId}`
                                       : null}
-                                  </div>
-                                )}
+                                    {itemValues?.eventVendorId
+                                      ? `${itemValues?.quotationItemId ? " • " : ""}${t(
+                                          "contracts.linkedEventVendor",
+                                          {
+                                            defaultValue: "Event Vendor",
+                                          },
+                                        )}: #${itemValues.eventVendorId}`
+                                      : null}
+                                  </p>
+                                </div>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                                   <FieldInput
@@ -1423,7 +1687,7 @@ const ContractFormPage = () => {
                                       defaultValue: "Total Price",
                                     })}
                                   >
-                                    <Input readOnly disabled value={String(itemTotal)} />
+                                    <Input readOnly value={String(itemTotal)} />
                                   </FieldInput>
                                 </div>
 
@@ -1528,6 +1792,11 @@ const ContractFormPage = () => {
                                   <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
                                     <th className="px-3 py-3 text-start">#</th>
                                     <th className="px-3 py-3 text-start">
+                                      {t("contracts.type", {
+                                        defaultValue: "Type",
+                                      })}
+                                    </th>
+                                    <th className="px-3 py-3 text-start">
                                       {t("contracts.itemName", {
                                         defaultValue: "Item",
                                       })}
@@ -1557,7 +1826,24 @@ const ContractFormPage = () => {
                                     >
                                       <td className="px-3 py-3">{index + 1}</td>
                                       <td className="px-3 py-3">
-                                        {getContractItemDisplayName(item as any)}
+                                        <TypeBadge
+                                          type={(item.itemType ?? "service") as ContractItemType}
+                                          t={t}
+                                        />
+                                      </td>
+                                      <td className="px-3 py-3">
+                                        <div className="font-medium text-[var(--lux-text)]">
+                                          {getContractItemDisplayName(item as any)}
+                                        </div>
+                                        <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
+                                          {item.itemType === "vendor"
+                                            ? `${t("contracts.vendorOrigin", {
+                                                defaultValue: "Vendor-origin row",
+                                              })}: ${getContractItemOriginLabel(item as any)}`
+                                            : `${t("contracts.serviceOrigin", {
+                                                defaultValue: "Service-origin row",
+                                              })}: ${getContractItemOriginLabel(item as any)}`}
+                                        </div>
                                       </td>
                                       <td className="px-3 py-3">
                                         {formatContractItemCategory(item.category)}
@@ -1956,6 +2242,31 @@ function FieldInput({
         </p>
       ) : null}
     </label>
+  );
+}
+
+function TypeBadge({
+  type,
+  t,
+}: {
+  type: ContractItemType;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const isVendor = type === "vendor";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+        isVendor
+          ? "border-[var(--lux-gold-border)] text-[var(--lux-gold)]"
+          : "border-[var(--lux-row-border)] text-[var(--lux-text-secondary)]",
+      )}
+    >
+      {t(`contracts.${type}`, {
+        defaultValue: getContractItemTypeLabel(type),
+      })}
+    </span>
   );
 }
 

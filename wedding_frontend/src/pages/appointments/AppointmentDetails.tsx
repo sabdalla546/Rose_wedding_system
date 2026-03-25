@@ -56,7 +56,7 @@ const AppointmentDetailsPage = () => {
   }
 
   return (
-    <ProtectedComponent permission="appointments.view">
+    <ProtectedComponent permission="appointments.read">
       <PageContainer className="pb-4 pt-4 text-foreground">
         <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
           <button
@@ -92,20 +92,29 @@ const AppointmentDetailsPage = () => {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-                      {appointment.customer?.fullName || `Appointment #${appointment.id}`}
+                      {appointment.customer?.fullName ||
+                        `Appointment #${appointment.id}`}
                     </h1>
                     <AppointmentStatusBadge status={appointment.status} />
                   </div>
                   <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {format(new Date(appointment.appointmentDate), "MMM d, yyyy", {
-                      locale: dateLocale,
-                    })}
+                    {format(
+                      new Date(appointment.appointmentDate),
+                      "MMM d, yyyy",
+                      {
+                        locale: dateLocale,
+                      },
+                    )}
                   </p>
                 </div>
               </div>
 
               <ProtectedComponent permission="appointments.update">
-                <Button onClick={() => navigate(`/appointments/edit/${appointment.id}`)}>
+                <Button
+                  onClick={() =>
+                    navigate(`/appointments/edit/${appointment.id}`)
+                  }
+                >
                   <Edit className="h-4 w-4" />
                   {t("common.edit", { defaultValue: "Edit" })}
                 </Button>
@@ -120,11 +129,15 @@ const AppointmentDetailsPage = () => {
                 value={appointment.customer?.fullName}
               />
               <DetailItem
-                label={t("customers.mobile", { defaultValue: "Primary Mobile" })}
+                label={t("customers.mobile", {
+                  defaultValue: "Primary Mobile",
+                })}
                 value={appointment.customer?.mobile}
               />
               <DetailItem
-                label={t("appointments.startTime", { defaultValue: "Start Time" })}
+                label={t("appointments.startTime", {
+                  defaultValue: "Start Time",
+                })}
                 value={appointment.startTime}
               />
               <DetailItem
@@ -138,7 +151,9 @@ const AppointmentDetailsPage = () => {
                 })}
               />
               <DetailItem
-                label={t("appointments.statusLabel", { defaultValue: "Status" })}
+                label={t("appointments.statusLabel", {
+                  defaultValue: "Status",
+                })}
                 value={t(`appointments.status.${appointment.status}`, {
                   defaultValue: appointment.status,
                 })}

@@ -2,6 +2,8 @@ import type { PropsWithChildren, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+export type EventPanelViewMode = "table" | "grid";
+
 type EventMetaChipProps = {
   label?: ReactNode;
   value: ReactNode;
@@ -28,6 +30,13 @@ type EventEmptyStateProps = {
   description: ReactNode;
   action?: ReactNode;
   className?: string;
+};
+
+type EventViewToggleProps = {
+  value: EventPanelViewMode;
+  onChange: (nextValue: EventPanelViewMode) => void;
+  tableLabel: ReactNode;
+  gridLabel: ReactNode;
 };
 
 export function EventMetaChip({
@@ -150,6 +159,44 @@ export function EventEmptyState({
         </p>
       </div>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+    </div>
+  );
+}
+
+export function EventViewToggle({
+  value,
+  onChange,
+  tableLabel,
+  gridLabel,
+}: EventViewToggleProps) {
+  return (
+    <div
+      className="inline-flex rounded-2xl border p-1"
+      style={{
+        background: "var(--lux-control-surface)",
+        borderColor: "var(--lux-control-border)",
+      }}
+    >
+      {(["table", "grid"] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          className="rounded-xl px-4 py-2 text-sm font-semibold transition"
+          style={
+            value === mode
+              ? {
+                  background: "var(--lux-primary-surface)",
+                  color: "var(--lux-primary-text)",
+                }
+              : {
+                  color: "var(--lux-text-secondary)",
+                }
+          }
+          onClick={() => onChange(mode)}
+        >
+          {mode === "table" ? tableLabel : gridLabel}
+        </button>
+      ))}
     </div>
   );
 }

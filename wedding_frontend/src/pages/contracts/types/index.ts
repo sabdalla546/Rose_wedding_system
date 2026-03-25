@@ -3,6 +3,11 @@ import type { Event } from "@/pages/events/types";
 import type { Lead } from "@/pages/leads/types";
 import type { Quotation, QuotationItem } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
+import type {
+  EventVendorLink,
+  Vendor,
+  VendorPricingPlan,
+} from "@/pages/vendors/types";
 
 export type ContractStatus =
   | "draft"
@@ -20,6 +25,7 @@ export type PaymentScheduleStatus =
   | "overdue";
 
 export type DecimalValue = number | string;
+export type ContractItemType = "service" | "vendor";
 
 export interface ContractUserSummary {
   id: number;
@@ -46,9 +52,13 @@ export interface PaymentSchedule {
 export interface ContractItem {
   id: number;
   contractId: number;
+  itemType: ContractItemType;
   quotationItemId?: number | null;
   eventServiceId?: number | null;
   serviceId?: number | null;
+  eventVendorId?: number | null;
+  vendorId?: number | null;
+  pricingPlanId?: number | null;
   itemName: string;
   category?: string | null;
   quantity: DecimalValue;
@@ -59,6 +69,9 @@ export interface ContractItem {
   quotationItem?: QuotationItem | null;
   eventService?: EventServiceItem | null;
   service?: Service | null;
+  eventVendor?: EventVendorLink | null;
+  vendor?: Vendor | null;
+  pricingPlan?: VendorPricingPlan | null;
   createdByUser?: ContractUserSummary | null;
   updatedByUser?: ContractUserSummary | null;
   createdAt?: string;
@@ -109,9 +122,13 @@ export interface ContractResponse {
 
 export interface ContractItemFormData {
   id?: number;
+  itemType: ContractItemType;
   quotationItemId?: string;
   eventServiceId?: string;
   serviceId?: string;
+  eventVendorId?: string;
+  vendorId?: string;
+  pricingPlanId?: string;
   itemName: string;
   category?: string;
   quantity: string;
