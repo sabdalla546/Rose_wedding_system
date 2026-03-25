@@ -73,7 +73,7 @@ const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
 type CreateMode = "manual" | "from_event";
 const MANUAL_SERVICES_SUMMARY_CATEGORY = "service_summary";
-const MANUAL_SERVICES_SUMMARY_NAME = "Total Services";
+const MANUAL_SERVICES_SUMMARY_NAME = "إجمالي الخدمات";
 
 const getFirstErrorMessage = (value: unknown): string | null => {
   if (!value || typeof value !== "object") {
@@ -187,17 +187,17 @@ const quotationFormSchema = (isEditMode: boolean) =>
         return;
       }
 
-      if (
-        !isEditMode &&
-        values.createMode === "manual" &&
-        values.items.length === 0 &&
-        (Number(values.manualServicesTotal || 0) <= 0)
-      ) {
+      if (!isEditMode && values.createMode === "manual") {
+        const hasManualServicesTotal = Number(values.manualServicesTotal || 0) > 0;
+        const hasVendorRows = values.items.some((item) => item.itemType === "vendor");
+
+        if (!hasManualServicesTotal && !hasVendorRows) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["items"],
           message: "Add a vendor row or enter a total services amount",
         });
+        }
       }
 
       values.items.forEach((item, index) => {
@@ -309,10 +309,10 @@ const getEventVendorDisabledReason = (item: EventVendorLink) => {
 const getManualServicesTotalValue = (value?: string) =>
   Number(Math.max(0, toVendorNumberValue(value) ?? 0).toFixed(3));
 
-const buildManualServicesSummaryItem = (
+function buildManualServiceItem(
   manualServicesTotal?: string,
   sortOrder = 0,
-): QuotationItemFormData => {
+): QuotationItemFormData {
   const amount = getManualServicesTotalValue(manualServicesTotal);
   const amountString = String(amount);
 
@@ -326,7 +326,7 @@ const buildManualServicesSummaryItem = (
     sortOrder: String(sortOrder),
     isTotalManual: true,
   };
-};
+}
 
 const isManualServicesSummaryItem = (item: Partial<QuotationItemFormData>) =>
   item.itemType === "service" && item.category === MANUAL_SERVICES_SUMMARY_CATEGORY;
@@ -337,20 +337,9 @@ const buildManualModePayloadItems = (
 ) => {
   const summaryAmount = getManualServicesTotalValue(manualServicesTotal);
   const vendorItems = items.filter((item) => item.itemType === "vendor");
-  const serviceReferenceItems = items
-    .filter(
-      (item) => item.itemType === "service" && !isManualServicesSummaryItem(item),
-    )
-    .map((item) => ({
-      ...item,
-      unitPrice: "0",
-      totalPrice: "0",
-      isTotalManual: false,
-    }));
 
   const combinedItems = [
-    ...(summaryAmount > 0 ? [buildManualServicesSummaryItem(manualServicesTotal, 0)] : []),
-    ...serviceReferenceItems,
+    ...(summaryAmount > 0 ? [buildManualServiceItem(manualServicesTotal, 0)] : []),
     ...vendorItems,
   ];
 
@@ -384,6 +373,7 @@ const QuotationFormPage = () => {
     searchParams.get("mode") === "from-event" ? "from_event" : "manual";
   const preselectedEventId = searchParams.get("eventId") ?? "";
   const previousEventIdRef = useRef("");
+  const previousAutoSelectSignatureRef = useRef("");
 
   const [selectedEventServiceSourceId, setSelectedEventServiceSourceId] = useState("");
   const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState("");
@@ -500,7 +490,7 @@ const QuotationFormPage = () => {
   const fromEventPreviewItems = useMemo(
     () => [
       ...(getManualServicesTotalValue(watchedManualServicesTotal) > 0
-        ? [buildManualServicesSummaryItem(watchedManualServicesTotal, 0)]
+        ? [buildManualServiceItem(watchedManualServicesTotal, 0)]
         : []),
       ...selectedEventVendors
         .filter((item) => !getEventVendorDisabledReason(item))
@@ -640,6 +630,47 @@ const QuotationFormPage = () => {
 
     previousEventIdRef.current = watchedEventId;
   }, [form, isEditMode, replaceItems, watchedEventId]);
+
+  useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "from_event" || !watchedEventId) {
+      previousAutoSelectSignatureRef.current = "";
+      return;
+    }
+
+    if (!eventServicesResponse || !eventVendorsResponse) {
+      return;
+    }
+
+    const signature = `${watchedCreateMode}:${watchedEventId}`;
+
+    if (previousAutoSelectSignatureRef.current === signature) {
+      return;
+    }
+
+    form.setValue(
+      "eventServiceIds",
+      eventServices.map((item) => String(item.id)),
+      { shouldDirty: true, shouldValidate: true },
+    );
+    form.setValue(
+      "eventVendorIds",
+      eventVendors
+        .filter((item) => !getEventVendorDisabledReason(item))
+        .map((item) => String(item.id)),
+      { shouldDirty: true, shouldValidate: true },
+    );
+
+    previousAutoSelectSignatureRef.current = signature;
+  }, [
+    eventServices,
+    eventServicesResponse,
+    eventVendors,
+    eventVendorsResponse,
+    form,
+    isEditMode,
+    watchedCreateMode,
+    watchedEventId,
+  ]);
 
   const syncComputedTotal = (
     index: number,
@@ -1354,6 +1385,11 @@ const QuotationFormPage = () => {
                         t={t}
                         fields={itemFields}
                         items={watchedItems}
+                        manualServiceSummaryItem={
+                          getManualServicesTotalValue(watchedManualServicesTotal) > 0
+                            ? buildManualServiceItem(watchedManualServicesTotal, 0)
+                            : null
+                        }
                         form={form}
                         isEditMode={false}
                         onRemove={removeItem}
@@ -1768,6 +1804,7 @@ function EditableItemsSection({
   t,
   fields,
   items,
+  manualServiceSummaryItem,
   form,
   isEditMode,
   onRemove,
@@ -1778,6 +1815,7 @@ function EditableItemsSection({
   t: (key: string, options?: Record<string, unknown>) => string;
   fields: Array<{ id: string }>;
   items: QuotationItemFormData[];
+  manualServiceSummaryItem?: QuotationItemFormData | null;
   form: ReturnType<typeof useForm<FormValues>>;
   isEditMode: boolean;
   onRemove: (index: number) => void;
@@ -1825,6 +1863,43 @@ function EditableItemsSection({
           </tr>
         </thead>
         <tbody>
+          {manualServiceSummaryItem ? (
+            <tr
+              className="border-b border-[var(--lux-row-border)] align-top"
+              style={{ background: "var(--lux-panel-surface)" }}
+            >
+              <td className="min-w-[120px] px-3 py-3">
+                <TypeBadge type={manualServiceSummaryItem.itemType} t={t} />
+              </td>
+              <td className="min-w-[220px] px-3 py-3">
+                <div className="font-medium text-[var(--lux-text)]">
+                  {manualServiceSummaryItem.itemName}
+                </div>
+                <div className="mt-2 text-xs text-[var(--lux-text-secondary)]">
+                  {t("quotations.totalServicesAmountHint", {
+                    defaultValue:
+                      "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
+                  })}
+                </div>
+              </td>
+              <td className="min-w-[160px] px-3 py-3 text-[var(--lux-text-secondary)]">
+                {formatQuotationItemCategory(manualServiceSummaryItem.category)}
+              </td>
+              <td className="min-w-[120px] px-3 py-3 text-[var(--lux-text-secondary)]">
+                {manualServiceSummaryItem.quantity}
+              </td>
+              <td className="min-w-[140px] px-3 py-3 text-[var(--lux-text-secondary)]">
+                {safeMoney(manualServiceSummaryItem.unitPrice)}
+              </td>
+              <td className="min-w-[140px] px-3 py-3 text-[var(--lux-text-secondary)]">
+                {safeMoney(manualServiceSummaryItem.totalPrice)}
+              </td>
+              <td className="min-w-[220px] px-3 py-3 text-[var(--lux-text-secondary)]">
+                -
+              </td>
+              {!isEditMode ? <td className="w-[80px] px-3 py-3" /> : null}
+            </tr>
+          ) : null}
           {fields.map((field, index) => {
             const itemValues = items[index];
             const isCreateServiceReference = !isEditMode && itemValues?.itemType === "service";
