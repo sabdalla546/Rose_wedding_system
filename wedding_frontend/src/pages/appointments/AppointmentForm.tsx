@@ -143,7 +143,7 @@ const AppointmentFormPage = () => {
       startTime: "",
       endTime: "",
       status: "scheduled",
-      type: "office_visit",
+      type: "Office Visit",
       notes: "",
     },
   });

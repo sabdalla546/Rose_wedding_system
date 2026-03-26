@@ -1,6 +1,7 @@
 import { Op, type WhereOptions } from "sequelize";
 
 import { Appointment, Customer, Event, User, Venue } from "../../models";
+import { appointmentTypePublicFromDb } from "../../models/appointment.model";
 import type {
   AppointmentCalendarRecord,
   CalendarFeedFilters,
@@ -53,11 +54,16 @@ const buildSearchMatcher = (search?: string) => {
     Boolean(value?.toLowerCase().includes(normalized));
 };
 
-const formatAppointmentType = (value: string) =>
-  value
+const formatAppointmentType = (value: string) => {
+  if (!value) return "";
+  if (!value.includes("_")) {
+    return value;
+  }
+  return value
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+};
 
 const buildEventTitle = (event: EventCalendarRecord) => {
   const partyNames = [event.groomName, event.brideName]
@@ -169,7 +175,7 @@ export const listAppointmentsCalendarRecords = async (
       appointmentDate: appointment.appointmentDate,
       startTime: appointment.startTime,
       endTime: appointment.endTime ?? null,
-      type: appointment.type,
+      type: appointmentTypePublicFromDb(appointment.type),
       notes: appointment.notes ?? null,
       status: appointment.status,
       customerName: appointment.customer?.fullName ?? null,

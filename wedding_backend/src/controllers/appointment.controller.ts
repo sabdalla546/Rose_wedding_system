@@ -5,6 +5,10 @@ import { sequelize } from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Appointment, Customer, User } from "../models";
 import {
+  appointmentTypePublicFromDb,
+  normalizeAppointmentTypeToDb,
+} from "../models/appointment.model";
+import {
   createAppointmentSchema,
   createAppointmentWithCustomerSchema,
   updateAppointmentSchema,
@@ -23,6 +27,17 @@ const appointmentInclude = [
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
 
+const serializeAppointment = (instance: any) => {
+  const plain =
+    typeof instance?.toJSON === "function" ? instance.toJSON() : instance;
+  if (!plain) return plain;
+
+  return {
+    ...plain,
+    type: plain.type ? appointmentTypePublicFromDb(plain.type) : plain.type,
+  };
+};
+
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const data = createAppointmentSchema.parse(req.body);
@@ -37,7 +52,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
       endTime: data.endTime ?? null,
-      type: data.type ?? "office_visit",
+      type: normalizeAppointmentTypeToDb(data.type) ?? "office_visit",
       notes: data.notes ?? null,
       status: data.status ?? "scheduled",
       createdBy: req.user?.id ?? null,
@@ -50,7 +65,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: "Appointment created successfully",
-      data: created,
+      data: created ? serializeAppointment(created) : created,
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -115,7 +130,7 @@ export const createAppointmentWithCustomer = async (
           appointmentDate: data.appointment.appointmentDate,
           startTime: data.appointment.startTime,
           endTime: data.appointment.endTime ?? null,
-          type: data.appointment.type ?? "office_visit",
+          type: normalizeAppointmentTypeToDb(data.appointment.type) ?? "office_visit",
           notes: data.appointment.notes ?? null,
           status: data.appointment.status ?? "scheduled",
           createdBy: req.user?.id ?? null,
@@ -132,7 +147,7 @@ export const createAppointmentWithCustomer = async (
 
       return res.status(201).json({
         message: "Appointment created successfully",
-        data: created,
+        data: created ? serializeAppointment(created) : created,
       });
     } catch (transactionError) {
       await transaction.rollback();
@@ -192,7 +207,7 @@ export const getAppointments = async (req: Request, res: Response) => {
   });
 
   return res.json({
-    data: rows,
+    data: rows.map(serializeAppointment),
     meta: {
       total: count,
       page,
@@ -217,7 +232,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
     return res.status(404).json({ message: req.t("common.not_found") });
   }
 
-  return res.json({ data: appointment });
+  return res.json({ data: serializeAppointment(appointment) });
 };
 
 export const confirmAppointment = async (req: AuthRequest, res: Response) => {
@@ -436,7 +451,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       startTime: data.startTime ?? appointment.startTime,
       endTime:
         typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime,
-      type: data.type ?? appointment.type,
+      type: normalizeAppointmentTypeToDb(data.type) ?? appointment.type,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
       status: data.status ?? appointment.status,
       updatedBy: req.user?.id ?? null,
@@ -448,7 +463,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: req.t("common.updated_successfully"),
-      data: updated,
+      data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
     if (err instanceof ZodError) {

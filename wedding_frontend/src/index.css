@@ -710,6 +710,29 @@
     background: color-mix(in srgb, var(--color-border-strong) 40%, transparent);
   }
 
+  /* Accent-driven colors (set inline as --app-calendar-accent). */
+  .app-calendar-event {
+    border-color: color-mix(
+      in srgb,
+      var(--app-calendar-accent, var(--color-border-strong)) 52%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--app-calendar-accent, transparent)
+        calc(14% + (var(--app-calendar-boost, 0) * 1%)),
+      var(--color-surface)
+    );
+  }
+
+  .app-calendar-event::before {
+    background: color-mix(
+      in srgb,
+      var(--app-calendar-accent, var(--color-border-strong)) 92%,
+      transparent
+    );
+  }
+
   .app-calendar-event--gold::before {
     background: color-mix(in srgb, var(--color-primary) 92%, transparent);
   }
@@ -869,6 +892,7 @@
     padding: 0.42rem 0.5rem 0.46rem;
     border-radius: 0.82rem;
     box-shadow: none;
+    --app-calendar-boost: 12;
   }
 
   .app-calendar-event--appointment .app-calendar-event__time {
@@ -953,6 +977,27 @@
       var(--color-danger) 14%,
       var(--color-surface)
     );
+  }
+
+  /* Stronger status coloring inside appointment calendar cards */
+  .app-calendar-event--appointment.app-calendar-event--gold {
+    border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 24%, var(--color-surface));
+  }
+
+  .app-calendar-event--appointment.app-calendar-event--emerald {
+    border-color: color-mix(in srgb, var(--color-success) 50%, transparent);
+    background: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+  }
+
+  .app-calendar-event--appointment.app-calendar-event--blue {
+    border-color: color-mix(in srgb, var(--color-info) 48%, transparent);
+    background: color-mix(in srgb, var(--color-info) 21%, var(--color-surface));
+  }
+
+  .app-calendar-event--appointment.app-calendar-event--rose {
+    border-color: color-mix(in srgb, var(--color-danger) 54%, transparent);
+    background: color-mix(in srgb, var(--color-danger) 26%, var(--color-surface));
   }
 
   .app-calendar-accent-dot--slate,

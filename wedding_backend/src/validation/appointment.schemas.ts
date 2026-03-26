@@ -16,6 +16,22 @@ export const appointmentTypeEnum = z.enum([
   "venue_visit",
 ]);
 
+export const appointmentTypePublicEnum = z.enum([
+  "New Appointment 1",
+  "New Appointment 2",
+  "New Appointment 3",
+  "Details Appointment 1",
+  "Details Appointment 2",
+  "Details Appointment 3",
+  "Office Visit",
+]);
+
+// Accept both legacy DB codes and new public Arabic values.
+export const appointmentTypeInputSchema = z.union([
+  appointmentTypeEnum,
+  appointmentTypePublicEnum,
+]);
+
 const optionalNullableShortString = z.string().trim().max(30).nullable().optional();
 const optionalNullableEmail = z.string().trim().email().nullable().optional();
 
@@ -24,7 +40,7 @@ export const createAppointmentSchema = z.object({
   appointmentDate: z.string().min(1),
   startTime: z.string().min(1).max(10),
   endTime: z.string().max(10).optional().nullable(),
-  type: appointmentTypeEnum.optional(),
+  type: appointmentTypeInputSchema.optional(),
   notes: z.string().optional().nullable(),
   status: appointmentStatusEnum.optional(),
 });
@@ -34,7 +50,7 @@ export const updateAppointmentSchema = z.object({
   appointmentDate: z.string().optional(),
   startTime: z.string().max(10).optional(),
   endTime: z.string().max(10).optional().nullable(),
-  type: appointmentTypeEnum.optional(),
+  type: appointmentTypeInputSchema.optional(),
   notes: z.string().optional().nullable(),
   status: appointmentStatusEnum.optional(),
 });
@@ -55,7 +71,7 @@ export const createAppointmentWithCustomerSchema = z
       appointmentDate: z.string().min(1),
       startTime: z.string().min(1).max(10),
       endTime: z.string().max(10).optional().nullable(),
-      type: appointmentTypeEnum.optional(),
+      type: appointmentTypeInputSchema.optional(),
       notes: z.string().optional().nullable(),
       status: appointmentStatusEnum.optional(),
     }),

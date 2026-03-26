@@ -52,10 +52,13 @@ export const APPOINTMENT_TYPE_OPTIONS: Array<{
   value: AppointmentType;
   label: string;
 }> = [
-  { value: "office_visit", label: "Office Visit" },
-  { value: "phone_call", label: "Phone Call" },
-  { value: "video_call", label: "Video Call" },
-  { value: "venue_visit", label: "Venue Visit" },
+  { value: "New Appointment 1", label: "New Appointment 1" },
+  { value: "New Appointment 2", label: "New Appointment 2" },
+  { value: "New Appointment 3", label: "New Appointment 3" },
+  { value: "Details Appointment 1", label: "Details Appointment 1" },
+  { value: "Details Appointment 2", label: "Details Appointment 2" },
+  { value: "Details Appointment 3", label: "Details Appointment 3" },
+  { value: "Office Visit", label: "Office Visit" },
 ];
 
 export const formatAppointmentStatus = (status: AppointmentStatus) =>
@@ -65,10 +68,7 @@ export const formatAppointmentStatus = (status: AppointmentStatus) =>
     .join(" ");
 
 export const formatAppointmentType = (value: AppointmentType) =>
-  value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  value;
 
 const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> = {
   scheduled: "Pending",

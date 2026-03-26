@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import FullCalendar from "@fullcalendar/react";
@@ -114,8 +115,17 @@ function renderEventContent(
   variant: "default" | "event" | "appointment",
 ) {
   const extendedProps = content.event.extendedProps as CalendarExtendedProps;
-  const accent =
-    (extendedProps.accent ?? "slate") as string;
+  const accent = (extendedProps.accent ?? "slate") as string;
+  const accentColor =
+    accent === "gold"
+      ? "var(--color-primary)"
+      : accent === "emerald"
+        ? "var(--color-success)"
+        : accent === "blue"
+          ? "var(--color-info)"
+          : accent === "rose"
+            ? "var(--color-danger)"
+            : "var(--color-border-strong)";
   const timeLabel = content.timeText || (content.event.allDay ? "All day" : "");
   const showAppointmentDetails = variant === "appointment";
   const showEventFooter = variant === "event";
@@ -126,6 +136,11 @@ function renderEventContent(
   return (
     <div
       className={`app-calendar-event app-calendar-event--${accent} app-calendar-event--${variant}`}
+      style={
+        {
+          "--app-calendar-accent": accentColor,
+        } as CSSProperties
+      }
     >
       <div className="app-calendar-event__time">{timeLabel}</div>
       <div className="app-calendar-event__title">{content.event.title}</div>

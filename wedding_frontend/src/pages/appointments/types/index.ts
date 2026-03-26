@@ -7,10 +7,13 @@ export type AppointmentStatus =
   | "no_show";
 
 export type AppointmentType =
-  | "office_visit"
-  | "phone_call"
-  | "video_call"
-  | "venue_visit";
+  | "New Appointment 1"
+  | "New Appointment 2"
+  | "New Appointment 3"
+  | "Details Appointment 1"
+  | "Details Appointment 2"
+  | "Details Appointment 3"
+  | "Office Visit";
 
 export interface AppointmentCustomer {
   id: number;
