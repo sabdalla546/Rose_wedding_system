@@ -1,9 +1,9 @@
-import { addDays, format } from "date-fns";
+import { addDays, startOfDay, format } from "date-fns";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
-import { getInitialCalendarRange, matchesCalendarDatePreset } from "@/features/calendar/calendar-range";
+import { getInitialCalendarRange } from "@/features/calendar/calendar-range";
 import { eventCalendarRecordToAppCalendarEvent } from "@/features/events/event-calendar";
 import api from "@/lib/axios";
 import type { EventCalendarRecord, EventsCalendarResponse, EventStatus } from "@/pages/events/types";
@@ -50,11 +50,37 @@ export function useEventsCalendarView() {
     getInitialCalendarRange,
   );
 
+  const effectiveFetchRange = useMemo(() => {
+    if (filters.datePreset === "all") {
+      return calendarRange;
+    }
+
+    const today = startOfDay(new Date());
+    const days = filters.datePreset === "today" ? 1 : filters.datePreset === "7d" ? 7 : 30;
+    const start = today;
+    const endExclusive = addDays(today, days);
+
+    return {
+      ...calendarRange,
+      start,
+      end: endExclusive,
+    };
+  }, [calendarRange, filters.datePreset]);
+
+  const dateFrom = useMemo(
+    () => format(effectiveFetchRange.start, "yyyy-MM-dd"),
+    [effectiveFetchRange.start],
+  );
+  const dateTo = useMemo(
+    () => format(addDays(effectiveFetchRange.end, -1), "yyyy-MM-dd"),
+    [effectiveFetchRange.end],
+  );
+
   const query = useQuery<EventCalendarRecord[]>({
     queryKey: [
       "events-calendar",
-      format(calendarRange.start, "yyyy-MM-dd"),
-      format(addDays(calendarRange.end, -1), "yyyy-MM-dd"),
+      dateFrom,
+      dateTo,
       filters.status,
       filters.venueId,
       filters.customerId,
@@ -62,8 +88,8 @@ export function useEventsCalendarView() {
     queryFn: async () => {
       const response = await api.get<EventsCalendarResponse>("/events/calendar", {
         params: {
-          dateFrom: format(calendarRange.start, "yyyy-MM-dd"),
-          dateTo: format(addDays(calendarRange.end, -1), "yyyy-MM-dd"),
+          dateFrom,
+          dateTo,
           status: filters.status === "all" ? undefined : filters.status,
           venueId: filters.venueId !== "all" ? Number(filters.venueId) : undefined,
           customerId:
@@ -83,9 +109,11 @@ export function useEventsCalendarView() {
         return false;
       }
 
-      return matchesCalendarDatePreset(event.eventDate, filters.datePreset);
+      // datePreset is now backend-driven via effectiveFetchRange;
+      // keep local filtering for search only.
+      return true;
     });
-  }, [filters.datePreset, filters.search, query.data]);
+  }, [filters.search, query.data]);
 
   const calendarEvents = useMemo(
     () => items.map(eventCalendarRecordToAppCalendarEvent),

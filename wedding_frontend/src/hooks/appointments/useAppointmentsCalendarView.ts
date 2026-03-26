@@ -1,8 +1,8 @@
-import { addDays, format } from "date-fns";
+import { addDays, format, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
-import { getInitialCalendarRange, matchesCalendarDatePreset } from "@/features/calendar/calendar-range";
+import { getInitialCalendarRange } from "@/features/calendar/calendar-range";
 import { appointmentToAppCalendarEvent } from "@/features/appointments/appointment-calendar";
 import { useAppointmentsCalendar } from "@/hooks/appointments/useAppointments";
 import type { Appointment } from "@/pages/appointments/types";
@@ -31,6 +31,33 @@ export function useAppointmentsCalendarView() {
     getInitialCalendarRange,
   );
 
+  const effectiveFetchRange = useMemo(() => {
+    if (filters.datePreset === "all") {
+      return calendarRange;
+    }
+
+    const today = startOfDay(new Date());
+    const days =
+      filters.datePreset === "today" ? 1 : filters.datePreset === "7d" ? 7 : 30;
+    const start = today;
+    const endExclusive = addDays(today, days);
+
+    return {
+      ...calendarRange,
+      start,
+      end: endExclusive,
+    };
+  }, [calendarRange, filters.datePreset]);
+
+  const dateFrom = useMemo(
+    () => format(effectiveFetchRange.start, "yyyy-MM-dd"),
+    [effectiveFetchRange.start],
+  );
+  const dateTo = useMemo(
+    () => format(addDays(effectiveFetchRange.end, -1), "yyyy-MM-dd"),
+    [effectiveFetchRange.end],
+  );
+
   useEffect(() => {
     const handle = window.setTimeout(() => {
       setSearchQuery(filters.search.trim());
@@ -40,8 +67,8 @@ export function useAppointmentsCalendarView() {
   }, [filters.search]);
 
   const query = useAppointmentsCalendar({
-    dateFrom: format(calendarRange.start, "yyyy-MM-dd"),
-    dateTo: format(addDays(calendarRange.end, -1), "yyyy-MM-dd"),
+    dateFrom,
+    dateTo,
     status: filters.status,
     assignedUserId:
       filters.assignedUserId !== "all" ? filters.assignedUserId : "",
@@ -50,14 +77,9 @@ export function useAppointmentsCalendarView() {
   });
 
   const items = useMemo(() => {
-    return (query.data ?? []).filter((appointment) =>
-      matchesCalendarDatePreset(
-        `${appointment.appointmentDate}T${appointment.startTime}:00`,
-        filters.datePreset,
-      ),
-    );
+    // datePreset is now backend-driven via `effectiveFetchRange`.
+    return query.data ?? [];
   }, [
-    filters.datePreset,
     query.data,
   ]);
 
