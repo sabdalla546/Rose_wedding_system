@@ -149,7 +149,7 @@ const AppointmentsPage = () => {
             <ProtectedComponent permission="appointments.calendar.read">
               <Button
                 variant="secondary"
-                onClick={() => navigate("/calendar?sourceType=appointment")}
+                onClick={() => navigate("/appointments/calendar")}
               >
                 <CalendarRange className="h-4 w-4" />
                 {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
@@ -247,7 +247,7 @@ const AppointmentsPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigate("/calendar?sourceType=appointment")}
+                  onClick={() => navigate("/appointments/calendar")}
                 >
                   <CalendarRange className="h-3.5 w-3.5" />
                   {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}

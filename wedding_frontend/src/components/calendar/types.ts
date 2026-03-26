@@ -19,6 +19,7 @@ export type AppCalendarEvent = {
   subtitle?: string;
   description?: string;
   location?: string;
+  badgeLabel?: string;
   raw?: unknown;
 };
 

@@ -91,7 +91,7 @@ const EventsPage = () => {
             <ProtectedComponent permission="events.read">
               <Button
                 variant="secondary"
-                onClick={() => navigate("/calendar?sourceType=event")}
+                onClick={() => navigate("/events/calendar")}
               >
                 <CalendarRange className="h-4 w-4" />
                 {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
@@ -212,7 +212,7 @@ const EventsPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigate("/calendar?sourceType=event")}
+                  onClick={() => navigate("/events/calendar")}
                 >
                   <CalendarRange className="h-3.5 w-3.5" />
                   {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}

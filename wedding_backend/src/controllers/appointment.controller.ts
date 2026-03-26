@@ -469,10 +469,12 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
   const dateFrom = String(req.query.dateFrom ?? "").trim();
   const dateTo = String(req.query.dateTo ?? "").trim();
   const status = String(req.query.status ?? "").trim();
+  const assignedUserId = Number(req.query.assignedUserId) || undefined;
 
   const where: any = {};
 
   if (status) where.status = status;
+  if (assignedUserId) where.createdBy = assignedUserId;
 
   if (dateFrom || dateTo) {
     where.appointmentDate = {};
@@ -482,7 +484,7 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
 
   const appointments = await Appointment.findAll({
     where,
-    include: [{ model: Customer, as: "customer" }],
+    include: appointmentInclude,
     order: [
       ["appointmentDate", "ASC"],
       ["startTime", "ASC"],

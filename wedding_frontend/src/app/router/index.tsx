@@ -16,7 +16,8 @@ import { routeAccessByHref } from "@/lib/constants/route-permissions";
 import AppointmentDetailsPage from "@/pages/appointments/AppointmentDetails";
 import AppointmentFormPage from "@/pages/appointments/AppointmentForm";
 import AppointmentsPage from "@/pages/appointments/Appointments";
-import { CalendarPage } from "@/pages/calendar/calendar-page";
+import AppointmentCalendarPage from "@/pages/appointments/AppointmentCalendar";
+import { LegacyCalendarPage } from "@/pages/calendar/calendar-page";
 import CustomerDetailsPage from "@/pages/customers/CustomerDetails";
 import CustomerFormPage from "@/pages/customers/CustomerForm";
 import CustomersPage from "@/pages/customers/Customers";
@@ -26,6 +27,7 @@ import ContractFormPage from "@/pages/contracts/ContractForm";
 import ContractsPage from "@/pages/contracts/Contracts";
 import EventDetailsPage from "@/pages/events/EventDetails";
 import EventFormPage from "@/pages/events/EventForm";
+import EventCalendarPage from "@/pages/events/EventCalendar";
 import EventsPage from "@/pages/events/Events";
 import QuotationDetailsPage from "@/pages/quotations/QuotationDetails";
 import QuotationFormPage from "@/pages/quotations/QuotationForm";
@@ -79,6 +81,7 @@ const explicitModulePaths = new Set([
   "/customers/edit/:id",
   "/customers/:id",
   "/events",
+  "/events/calendar",
   "/events/create",
   "/events/edit/:id",
   "/events/:id",
@@ -91,6 +94,7 @@ const explicitModulePaths = new Set([
   "/contracts/edit/:id",
   "/contracts/:id",
   "/appointments",
+  "/appointments/calendar",
   "/appointments/create",
   "/appointments/edit/:id",
   "/appointments/:id",
@@ -119,7 +123,7 @@ function createModuleRoute(item: NavigationLeaf) {
   if (item.href === "/calendar") {
     return {
       path: "calendar",
-      element: <CalendarPage />,
+      element: <LegacyCalendarPage />,
       handle: {
         titleKey: item.labelKey,
         title: item.label ?? "Calendar",
@@ -331,6 +335,10 @@ export const router = createBrowserRouter([
             element: <EventsPage />,
           },
           {
+            path: "events/calendar",
+            element: <EventCalendarPage />,
+          },
+          {
             path: "events/create",
             element: <EventFormPage />,
           },
@@ -379,12 +387,20 @@ export const router = createBrowserRouter([
             element: <AppointmentsPage />,
           },
           {
+            path: "appointments/calendar",
+            element: <AppointmentCalendarPage />,
+          },
+          {
             path: "appointments/create",
             element: <AppointmentFormPage />,
           },
           {
             path: "appointments/edit/:id",
             element: <AppointmentFormPage />,
+          },
+          {
+            path: "calendar",
+            element: <LegacyCalendarPage />,
           },
           {
             path: "appointments/:id",

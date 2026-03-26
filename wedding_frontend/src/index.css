@@ -722,6 +722,139 @@
     color: var(--color-text-subtle);
   }
 
+  .app-calendar-event__description {
+    margin-top: 0.24rem;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--color-text-subtle);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .app-calendar-event__location {
+    margin-top: 0.32rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-text);
+  }
+
+  .app-calendar-event__footer {
+    margin-top: 0.45rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .app-calendar-event__badge,
+  .app-calendar-event__status {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--color-border-strong) 55%, transparent);
+    border-radius: 999px;
+    padding: 0.18rem 0.46rem;
+    font-size: 0.64rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-subtle);
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  }
+
+  .app-calendar-shell--event {
+    background: color-mix(in srgb, var(--color-surface-2) 70%, var(--color-surface));
+    box-shadow: var(--shadow-sm);
+  }
+
+  .app-calendar-shell--appointment {
+    background: var(--color-surface);
+  }
+
+  .app-calendar-shell--appointment .fc-col-header-cell {
+    background: color-mix(in srgb, var(--color-surface) 90%, var(--color-surface-2));
+    padding-block: 0.28rem;
+  }
+
+  .app-calendar-shell--appointment .fc-daygrid-day-frame,
+  .app-calendar-shell--appointment .fc-timegrid-col-frame {
+    background: var(--color-surface);
+  }
+
+  .app-calendar-shell--appointment .fc-day-today .fc-daygrid-day-frame,
+  .app-calendar-shell--appointment .fc-day-today .fc-timegrid-col-frame {
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 7%,
+      var(--color-surface)
+    );
+  }
+
+  .app-calendar-shell--event .fc-col-header-cell {
+    background: color-mix(in srgb, var(--color-surface) 78%, var(--color-primary) 5%);
+  }
+
+  .app-calendar-shell--event .fc-daygrid-day-frame,
+  .app-calendar-shell--event .fc-timegrid-col-frame {
+    background: color-mix(in srgb, var(--color-surface-2) 84%, var(--color-surface));
+  }
+
+  .app-calendar-shell--event .fc-day-today .fc-daygrid-day-frame,
+  .app-calendar-shell--event .fc-day-today .fc-timegrid-col-frame {
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 11%,
+      var(--color-surface-2)
+    );
+  }
+
+  .app-calendar-event--event {
+    padding: 0.55rem 0.6rem 0.58rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .app-calendar-event--appointment {
+    padding: 0.42rem 0.5rem 0.46rem;
+    border-radius: 0.82rem;
+    box-shadow: none;
+  }
+
+  .app-calendar-event--appointment .app-calendar-event__time {
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+  }
+
+  .app-calendar-event--appointment .app-calendar-event__title {
+    margin-top: 0.14rem;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .app-calendar-event--appointment .app-calendar-event__meta,
+  .app-calendar-event--appointment .app-calendar-event__description {
+    font-size: 0.68rem;
+  }
+
+  .app-calendar-event--appointment .app-calendar-event__footer {
+    margin-top: 0.32rem;
+    gap: 0.22rem;
+  }
+
+  .app-calendar-event--appointment .app-calendar-event__status {
+    padding: 0.14rem 0.42rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+  }
+
+  .app-calendar-event--event .app-calendar-event__title {
+    font-size: 0.85rem;
+    line-height: 1.28;
+  }
+
   .app-calendar-accent-dot--gold,
   .app-calendar-event--gold {
     color: var(--color-primary);

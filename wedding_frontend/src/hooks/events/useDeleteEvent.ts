@@ -20,7 +20,7 @@ export const useDeleteEvent = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["events-calendar"] });
     },
     onError: (error) => {
       toast({

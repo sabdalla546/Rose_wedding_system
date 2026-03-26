@@ -39,6 +39,10 @@ export const resources = {
         showing: "Showing",
         of: "of",
         itemsPerPage: "Items per page",
+        retry: "Retry",
+        close: "Close",
+        error: "Error",
+        success: "Success",
       },
       header: {
         adminUser: "Admin User",
@@ -97,6 +101,8 @@ export const resources = {
           leads: "Leads",
           customers: "Customers",
           events: "Events",
+          appointmentsCalendar: "Appointments Calendar",
+          eventsCalendar: "Events Calendar",
           vendors: "Vendors",
           services: "Services",
           quotations: "Quotations",
@@ -209,6 +215,19 @@ export const resources = {
           "Amber Hall has an overlap between stage rigging and lighting prep on the same evening.",
         noticeTwo:
           "Pearl Ballroom hits a dense load later this month with two premium receptions in one week.",
+        today: "Today",
+        view: {
+          month: "Month",
+          week: "Week",
+          day: "Day",
+          list: "Agenda",
+        },
+        filters: {
+          all: "All dates",
+          today: "Today",
+          "7d": "Next 7 days",
+          "30d": "Next 30 days",
+        },
       },
       venues: {
         title: "Venues",
@@ -956,6 +975,43 @@ export const resources = {
       },
       events: {
         title: "Events",
+        calendarPage: {
+          eyebrow: "Events Calendar",
+          title: "Events Planning Calendar",
+          description:
+            "Dedicated calendar for wedding event dates, venue planning, and production readiness.",
+          currentWindow: "Planning Window",
+          loadingWindow: "Loading current window...",
+          featuredEvent: "Featured Event",
+          featuredEventHint:
+            "Select a wedding event from the calendar to surface its venue, party names, and planning context here.",
+          filtersDescription:
+            "Focus the event calendar by status, venue, search terms, and date presets.",
+          searchPlaceholder:
+            "Search event titles, party names, venues, customers, or notes...",
+          allCustomers: "All customers",
+          quickView: "Event Quick View",
+          selectTitle: "Select an event",
+          selectDescription:
+            "Choose an event from the calendar to review its planning details.",
+          emptyTitle: "No events found",
+          emptyDescription:
+            "Try changing the planning window or clearing one of the active filters.",
+          errorTitle: "Unable to load the events calendar",
+          errorDescription:
+            "The planning feed could not be loaded right now. Try again to refresh the schedule.",
+          summary: {
+            visible: "Visible Range Events",
+            visibleHint: "Events in the active planning window.",
+            upcoming: "Upcoming Events",
+            upcomingHint:
+              "Future weddings and productions still ahead in the timeline.",
+            confirmed: "Confirmed",
+            confirmedHint: "Confirmed event productions ready for execution.",
+            postponed: "Cancelled / Postponed",
+            postponedHint: "{{count}} events are currently in active execution.",
+          },
+        },
         event: "Event",
         eventDetails: "Event Details",
         totalEvents: "total events",
@@ -1005,6 +1061,8 @@ export const resources = {
         allLeads: "All Leads",
         allVenues: "All Venues",
         eventDate: "Event Date",
+        bride: "Bride",
+        groom: "Groom",
         titleField: "Title",
         titlePlaceholder: "Enter event title",
         groomName: "Groom Name",
@@ -1506,6 +1564,48 @@ export const resources = {
       },
       appointments: {
         title: "Appointments",
+        calendarPage: {
+          eyebrow: "Appointments Calendar",
+          title: "Appointments Calendar",
+          description:
+            "Lightweight scheduling calendar for appointments, meetings, and follow-up management.",
+          filtersDescription:
+            "Quick appointment filters for search, status, assignment, customer, and date preset.",
+          visibleRange: "Visible Range",
+          loadingWindow: "Loading schedule window...",
+          searchLabel: "Search",
+          searchPlaceholder:
+            "Search customers, notes, mobile numbers, or assigned users...",
+          allAssignedUsers: "All assigned users",
+          allCustomers: "All customers",
+          datePreset: "Date Preset",
+          quickView: "Appointment Quick View",
+          selectTitle: "Select an appointment",
+          selectDescription:
+            "Choose an appointment from the calendar to inspect timing, follow-up notes, and actions.",
+          emptyTitle: "No appointments in this range",
+          emptyDescription:
+            "Try another visible range or clear one of the active filters.",
+          errorTitle: "Unable to load the appointments calendar",
+          errorDescription:
+            "The appointment schedule could not be loaded right now. Try again to refresh the visible range.",
+          rescheduleDescription:
+            "Adjust the appointment date, time, and any follow-up note.",
+          cancelDescription:
+            "Add a cancellation reason and any note that should stay with the appointment.",
+          summary: {
+            total: "Total Appointments",
+            totalHint: "Appointments in the visible calendar range.",
+            upcoming: "Upcoming Appointments",
+            upcomingHint: "Future appointments that still need follow-up.",
+            confirmed: "Confirmed Appointments",
+            confirmedHint: "Appointments confirmed with the client.",
+            completed: "Completed Appointments",
+            completedHint: "Appointments already completed in this range.",
+            cancelled: "Cancelled Appointments",
+            cancelledHint: "Cancelled appointments in the visible range.",
+          },
+        },
         totalAppointments: "total appointments",
         create: "Create Appointment",
         backToAppointments: "Back to Appointments",
@@ -1557,8 +1657,11 @@ export const resources = {
         scheduleSectionHint:
           "Set the appointment time, assignment, and meeting type.",
         date: "Appointment Date",
+        appointmentDate: "Appointment Date",
+        appointmentTime: "Appointment Time",
         time: "Time",
         assignedTo: "Assigned To",
+        assignedUser: "Assigned User / Coordinator",
         selectUser: "Select user",
         unassigned: "Unassigned",
         startTime: "Start Time",
@@ -1579,6 +1682,7 @@ export const resources = {
         scheduleAction: "Schedule Appointment",
         listTitle: "Appointments List",
         allStatuses: "All Statuses",
+        customer: "Customer",
         allLeads: "All Leads",
         allVenues: "All Venues",
         allUsers: "All Users",
@@ -1601,6 +1705,7 @@ export const resources = {
         cancelDescription:
           "Add a reason and optional note for the cancellation.",
         cancelAction: "Cancel Appointment",
+        cancel: "Cancel",
         cancelReasonPlaceholder: "Enter cancellation reason",
         rescheduleTitle: "Reschedule Appointment",
         rescheduleDescription:
@@ -1609,6 +1714,7 @@ export const resources = {
         viewLead: "View Lead",
         viewCustomer: "View Customer",
         viewAppointment: "View Appointment",
+        editAppointment: "Edit Appointment",
         scheduleInformation: "Schedule Information",
         scheduleInformationHint: "Core schedule details and assignment.",
         leadInformation: "Lead Information",
@@ -1681,6 +1787,10 @@ export const resources = {
         week: "أسبوع",
         day: "يوم",
         agenda: "الأجندة",
+        retry: "إعادة المحاولة",
+        close: "إغلاق",
+        error: "خطأ",
+        success: "نجاح",
       },
       header: {
         adminUser: "المشرف",
@@ -1736,6 +1846,8 @@ export const resources = {
           leads: "العملاء المحتملون",
           customers: "العملاء",
           events: "الحفلات",
+          appointmentsCalendar: "تقويم المواعيد",
+          eventsCalendar: "تقويم الحفلات",
           vendors: "الشركات",
           services: "الخدمات",
           quotations: "عروض الأسعار",
@@ -1846,6 +1958,19 @@ export const resources = {
           "توجد ملاحظة تعارض في قاعة أمبر بين تجهيز المسرح والتحضير للإضاءة في نفس المساء.",
         noticeTwo:
           "قاعة بيرل مزدحمة لاحقًا هذا الشهر مع حفلتي استقبال مميزتين في أسبوع واحد.",
+        today: "اليوم",
+        view: {
+          month: "شهر",
+          week: "أسبوع",
+          day: "يوم",
+          list: "أجندة",
+        },
+        filters: {
+          all: "كل التواريخ",
+          today: "اليوم",
+          "7d": "الأيام السبعة القادمة",
+          "30d": "الثلاثون يوماً القادمة",
+        },
       },
       venues: {
         title: "المواقع",
@@ -2176,6 +2301,42 @@ export const resources = {
       },
       events: {
         title: "الحفلات",
+        calendarPage: {
+          eyebrow: "تقويم الحفلات",
+          title: "تقويم تخطيط الحفلات",
+          description:
+            "تقويم مخصص لتواريخ الحفلات وتخطيط القاعات وجاهزية التنفيذ.",
+          filtersDescription:
+            "ركّز تقويم الحفلات حسب الحالة والقاعة وكلمات البحث ونطاق التاريخ.",
+          searchPlaceholder:
+            "ابحث في عنوان الحفل أو أسماء الأطراف أو القاعة أو العميل أو الملاحظات...",
+          quickView: "عرض سريع للحفل",
+          selectTitle: "اختر حفلاً",
+          selectDescription:
+            "اختر حفلاً من التقويم لمراجعة تفاصيل التخطيط الخاصة به.",
+          emptyTitle: "لا توجد حفلات",
+        emptyDescription:
+          "جرّب تغيير نطاق التخطيط أو إزالة أحد الفلاتر النشطة.",
+          currentWindow: "نافذة التخطيط",
+          loadingWindow: "جارٍ تحميل النافذة الحالية...",
+          featuredEvent: "الحفل البارز",
+          featuredEventHint:
+            "اختر حفلاً من التقويم لعرض القاعة وأسماء الأطراف وسياق التخطيط هنا.",
+          allCustomers: "كل العملاء",
+          errorTitle: "تعذر تحميل تقويم الحفلات",
+          errorDescription:
+            "تعذر تحميل مخطط الحفلات حالياً. حاول مرة أخرى لتحديث الجدول.",
+          summary: {
+            visible: "حفلات النطاق الظاهر",
+            visibleHint: "الحفلات داخل نافذة التخطيط الحالية.",
+            upcoming: "الحفلات القادمة",
+            upcomingHint: "حفلات مستقبلية ما زالت قادمة ضمن الجدول الزمني.",
+            confirmed: "المؤكدة",
+            confirmedHint: "حفلات مؤكدة جاهزة للتنفيذ.",
+            postponed: "الملغاة / المؤجلة",
+            postponedHint: "{{count}} حفلات قيد التنفيذ حالياً.",
+          },
+        },
         event: "الحفل",
         eventDetails: "تفاصيل الحفل",
         totalEvents: "إجمالي الحفلات",
@@ -2223,6 +2384,8 @@ export const resources = {
         allLeads: "كل العملاء المحتملين",
         allVenues: "كل القاعات",
         eventDate: "تاريخ الحفل",
+        bride: "العروس",
+        groom: "العريس",
         titleField: "العنوان",
         titlePlaceholder: "أدخل عنوان الحفل",
         groomName: "اسم العريس",
@@ -2701,6 +2864,48 @@ export const resources = {
       },
       appointments: {
         title: "المواعيد",
+        calendarPage: {
+          eyebrow: "تقويم المواعيد",
+          title: "تقويم المواعيد",
+          description:
+            "تقويم خفيف لجدولة المواعيد والاجتماعات والمتابعة.",
+          filtersDescription:
+            "فلاتر سريعة للبحث والحالة والتكليف والعميل والنطاق الزمني.",
+          visibleRange: "النطاق المعروض",
+          loadingWindow: "جارٍ تحميل نطاق الجدول...",
+          searchLabel: "بحث",
+          searchPlaceholder:
+            "ابحث عن العملاء أو الملاحظات أو أرقام الجوال أو المستخدمين المكلّفين...",
+          allAssignedUsers: "كل المستخدمين المكلّفين",
+          allCustomers: "كل العملاء",
+          datePreset: "نطاق التاريخ",
+          quickView: "عرض سريع للموعد",
+          selectTitle: "اختر موعداً",
+          selectDescription:
+            "اختر موعداً من التقويم لمراجعة الوقت والملاحظات والإجراءات المتاحة.",
+          emptyTitle: "لا توجد مواعيد في هذا النطاق",
+          emptyDescription:
+            "جرّب نطاقاً آخر أو أزل أحد الفلاتر النشطة.",
+          errorTitle: "تعذر تحميل تقويم المواعيد",
+          errorDescription:
+            "لم يمكن تحميل جدول المواعيد حالياً. حاول مرة أخرى لتحديث النطاق المعروض.",
+          rescheduleDescription:
+            "حدّث التاريخ والوقت وأي ملاحظة مرتبطة بالموعد.",
+          cancelDescription:
+            "أضف سبب الإلغاء وأي ملاحظة يجب الاحتفاظ بها مع الموعد.",
+          summary: {
+            total: "إجمالي المواعيد",
+            totalHint: "المواعيد داخل النطاق المعروض.",
+            upcoming: "المواعيد القادمة",
+            upcomingHint: "مواعيد قادمة ما زالت تحتاج إلى متابعة.",
+            confirmed: "المواعيد المؤكدة",
+            confirmedHint: "مواعيد تم تأكيدها مع العميل.",
+            completed: "المواعيد المكتملة",
+            completedHint: "مواعيد تم إنهاؤها داخل هذا النطاق.",
+            cancelled: "المواعيد الملغاة",
+            cancelledHint: "المواعيد الملغاة داخل النطاق المعروض.",
+          },
+        },
         totalAppointments: "إجمالي المواعيد",
         create: "إنشاء موعد",
         backToAppointments: "العودة إلى المواعيد",
@@ -2749,8 +2954,11 @@ export const resources = {
         scheduleSection: "تفاصيل الموعد",
         scheduleSectionHint: "حدّد التاريخ والوقت والتكليف ونوع الاجتماع.",
         date: "تاريخ الموعد",
+        appointmentDate: "تاريخ الموعد",
+        appointmentTime: "وقت الموعد",
         time: "الوقت",
         assignedTo: "مُسند إلى",
+        assignedUser: "المستخدم المسؤول / المنسق",
         selectUser: "اختر المستخدم",
         unassigned: "غير مُسند",
         startTime: "وقت البداية",
@@ -2771,6 +2979,7 @@ export const resources = {
         scheduleAction: "جدولة الموعد",
         listTitle: "قائمة المواعيد",
         allStatuses: "كل الحالات",
+        customer: "العميل",
         allLeads: "كل العملاء المحتملين",
         allVenues: "كل القاعات",
         allUsers: "كل المستخدمين",
@@ -2788,6 +2997,7 @@ export const resources = {
         cancelTitle: "إلغاء الموعد",
         cancelDescription: "أضف سبب الإلغاء وملاحظة اختيارية.",
         cancelAction: "إلغاء الموعد",
+        cancel: "إلغاء",
         cancelReasonPlaceholder: "أدخل سبب الإلغاء",
         rescheduleTitle: "إعادة جدولة الموعد",
         rescheduleDescription:
@@ -2796,6 +3006,7 @@ export const resources = {
         viewLead: "عرض العميل المحتمل",
         viewCustomer: "عرض العميل",
         viewAppointment: "عرض الموعد",
+        editAppointment: "تعديل الموعد",
         scheduleInformation: "معلومات الموعد",
         scheduleInformationHint: "التوقيت الأساسي وتفاصيل التكليف.",
         leadInformation: "معلومات العميل المحتمل",

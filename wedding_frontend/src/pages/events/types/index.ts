@@ -81,6 +81,27 @@ export interface EventResponse {
   data: Event;
 }
 
+export interface EventCalendarRecord {
+  id: number;
+  customerId?: number | null;
+  title?: string | null;
+  eventDate: string;
+  venueId?: number | null;
+  venueName?: string | null;
+  groomName?: string | null;
+  brideName?: string | null;
+  guestCount?: number | null;
+  notes?: string | null;
+  status: EventStatus;
+  customerName?: string | null;
+  assignedUserId?: number | null;
+  assignedUserName?: string | null;
+}
+
+export interface EventsCalendarResponse {
+  data: EventCalendarRecord[];
+}
+
 export interface EventFormData {
   customerId?: string;
   eventDate?: string;

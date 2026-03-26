@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction";
@@ -25,6 +33,13 @@ import type {
   AppCalendarView,
 } from "./types";
 
+export type AppCalendarHandle = {
+  previous: () => void;
+  next: () => void;
+  today: () => void;
+  setView: (view: AppCalendarView) => void;
+};
+
 type AppCalendarProps = {
   events: AppCalendarEvent[];
   initialView?: AppCalendarView;
@@ -37,8 +52,11 @@ type AppCalendarProps = {
   onEventSelect?: (event: AppCalendarEvent) => void;
   onDateSelect?: (date: Date) => void;
   onRangeChange?: (range: AppCalendarRange) => void;
+  onStateChange?: (state: { title: string; view: AppCalendarView }) => void;
   actions?: ReactNode;
   className?: string;
+  hideToolbar?: boolean;
+  variant?: "default" | "event" | "appointment";
 };
 
 type CalendarExtendedProps = Omit<AppCalendarEvent, "id" | "title" | "start" | "end" | "allDay">;
@@ -85,29 +103,69 @@ function toEventInputs(events: AppCalendarEvent[]): EventInput[] {
       subtitle: event.subtitle,
       description: event.description,
       location: event.location,
+      badgeLabel: event.badgeLabel,
       raw: event.raw,
     } satisfies CalendarExtendedProps,
   }));
 }
 
-function renderEventContent(content: EventContentArg) {
+function renderEventContent(
+  content: EventContentArg,
+  variant: "default" | "event" | "appointment",
+) {
+  const extendedProps = content.event.extendedProps as CalendarExtendedProps;
   const accent =
-    ((content.event.extendedProps as CalendarExtendedProps).accent ?? "slate") as string;
+    (extendedProps.accent ?? "slate") as string;
+  const timeLabel = content.timeText || (content.event.allDay ? "All day" : "");
+  const showAppointmentDetails = variant === "appointment";
+  const showEventFooter = variant === "event";
+  const footerLabels = showAppointmentDetails
+    ? [extendedProps.typeLabel, extendedProps.statusLabel].filter(Boolean)
+    : [];
 
   return (
-    <div className={`app-calendar-event app-calendar-event--${accent}`}>
-      <div className="app-calendar-event__time">{content.timeText}</div>
+    <div
+      className={`app-calendar-event app-calendar-event--${accent} app-calendar-event--${variant}`}
+    >
+      <div className="app-calendar-event__time">{timeLabel}</div>
       <div className="app-calendar-event__title">{content.event.title}</div>
-      {(content.event.extendedProps as CalendarExtendedProps).subtitle ? (
+      {extendedProps.subtitle ? (
         <div className="app-calendar-event__meta">
-          {(content.event.extendedProps as CalendarExtendedProps).subtitle}
+          {extendedProps.subtitle}
+        </div>
+      ) : null}
+      {showAppointmentDetails && extendedProps.description ? (
+        <div className="app-calendar-event__description">
+          {extendedProps.description}
+        </div>
+      ) : null}
+      {variant === "event" && extendedProps.location ? (
+        <div className="app-calendar-event__location">{extendedProps.location}</div>
+      ) : null}
+      {showEventFooter && (extendedProps.badgeLabel || extendedProps.statusLabel) ? (
+        <div className="app-calendar-event__footer">
+          {extendedProps.badgeLabel ? (
+            <span className="app-calendar-event__badge">{extendedProps.badgeLabel}</span>
+          ) : null}
+          {extendedProps.statusLabel ? (
+            <span className="app-calendar-event__status">{extendedProps.statusLabel}</span>
+          ) : null}
+        </div>
+      ) : null}
+      {showAppointmentDetails && footerLabels.length ? (
+        <div className="app-calendar-event__footer">
+          {footerLabels.map((label) => (
+            <span key={label} className="app-calendar-event__status">
+              {label}
+            </span>
+          ))}
         </div>
       ) : null}
     </div>
   );
 }
 
-export function AppCalendar({
+export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(function AppCalendar({
   events,
   initialView = "month",
   initialDate = new Date(),
@@ -119,9 +177,12 @@ export function AppCalendar({
   onEventSelect,
   onDateSelect,
   onRangeChange,
+  onStateChange,
   actions,
   className,
-}: AppCalendarProps) {
+  hideToolbar = false,
+  variant = "default",
+}, ref) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [currentView, setCurrentView] = useState<AppCalendarView>(initialView);
   const [currentTitle, setCurrentTitle] = useState("");
@@ -142,10 +203,18 @@ export function AppCalendar({
     }
   }, [currentView]);
 
+  useImperativeHandle(ref, () => ({
+    previous: () => runCalendarAction("prev"),
+    next: () => runCalendarAction("next"),
+    today: () => runCalendarAction("today"),
+    setView: (view) => setCurrentView(view),
+  }));
+
   const handleDatesSet = (arg: DatesSetArg) => {
     const nextView = fullCalendarViewToAppView(arg.view.type);
     setCurrentView(nextView);
     setCurrentTitle(arg.view.title);
+    onStateChange?.({ title: arg.view.title, view: nextView });
     onRangeChange?.({
       view: nextView,
       title: arg.view.title,
@@ -192,15 +261,17 @@ export function AppCalendar({
   return (
     <SectionCard className={className}>
       <div className="space-y-4">
-        <CalendarToolbar
-          title={currentTitle}
-          view={currentView}
-          onPrevious={() => runCalendarAction("prev")}
-          onNext={() => runCalendarAction("next")}
-          onToday={() => runCalendarAction("today")}
-          onViewChange={setCurrentView}
-          actions={actions}
-        />
+        {!hideToolbar ? (
+          <CalendarToolbar
+            title={currentTitle}
+            view={currentView}
+            onPrevious={() => runCalendarAction("prev")}
+            onNext={() => runCalendarAction("next")}
+            onToday={() => runCalendarAction("today")}
+            onViewChange={setCurrentView}
+            actions={actions}
+          />
+        ) : null}
 
         <CalendarLegend items={legends} />
 
@@ -208,7 +279,7 @@ export function AppCalendar({
           <CalendarLoadingState />
         ) : (
           <div className="space-y-4">
-            <div className="app-calendar-shell">
+            <div className={`app-calendar-shell app-calendar-shell--${variant}`}>
               <FullCalendar
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -221,7 +292,7 @@ export function AppCalendar({
                 weekends
                 selectable={Boolean(onDateSelect)}
                 events={eventInputs}
-                eventContent={renderEventContent}
+                eventContent={(content) => renderEventContent(content, variant)}
                 datesSet={handleDatesSet}
                 eventClick={handleEventClick}
                 dateClick={handleDateClick}
@@ -246,4 +317,4 @@ export function AppCalendar({
       </div>
     </SectionCard>
   );
-}
+});

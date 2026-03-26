@@ -68,12 +68,16 @@ export const useAppointment = (id?: string) => {
 export const useAppointmentsCalendar = ({
   dateFrom,
   dateTo,
+  status = "all",
+  assignedUserId = "",
 }: {
   dateFrom: string;
   dateTo: string;
+  status?: "all" | Appointment["status"];
+  assignedUserId?: string;
 }) => {
   return useQuery<Appointment[]>({
-    queryKey: ["appointments-calendar", dateFrom, dateTo],
+    queryKey: ["appointments-calendar", dateFrom, dateTo, status, assignedUserId],
     queryFn: async () => {
       const res = await api.get<AppointmentsCalendarResponse>(
         "/appointments/calendar",
@@ -81,6 +85,8 @@ export const useAppointmentsCalendar = ({
           params: {
             dateFrom,
             dateTo,
+            status: status === "all" ? undefined : status,
+            assignedUserId: assignedUserId ? Number(assignedUserId) : undefined,
           },
         },
       );
