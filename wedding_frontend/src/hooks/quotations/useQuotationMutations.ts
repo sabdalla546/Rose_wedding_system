@@ -67,6 +67,15 @@ const buildCreateFromEventPayload = (values: QuotationFromEventFormData) => ({
   validUntil: normalizeOptionalString(values.validUntil),
   subtotal: normalizeOptionalNumber(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
+  manualServicesTotal:
+    typeof (values as QuotationFromEventFormData & { manualServicesTotal?: number })
+      .manualServicesTotal === "number"
+      ? (
+          values as QuotationFromEventFormData & {
+            manualServicesTotal?: number;
+          }
+        ).manualServicesTotal
+      : undefined,
   notes: normalizeOptionalString(values.notes),
   eventServiceIds: values.eventServiceIds.map((value) => Number(value)),
   eventVendorIds: values.eventVendorIds.map((value) => Number(value)),

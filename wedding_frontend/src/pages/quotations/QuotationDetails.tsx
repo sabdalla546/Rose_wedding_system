@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Edit, FilePlus2, FileText, Trash2 } from "lucide-react";
+import { Download, Edit, FilePlus2, FileText, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,18 +19,36 @@ import {
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { useDeleteQuotation } from "@/hooks/quotations/useDeleteQuotation";
 import { useQuotation } from "@/hooks/quotations/useQuotations";
+import { useToast } from "@/hooks/use-toast";
+import api, { getApiErrorMessage } from "@/lib/axios";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 
 import {
   formatMoney,
   formatQuotationItemCategory,
-  getQuotationCompanyDisplayName,
   getQuotationDisplayNumber,
   getQuotationItemDisplayName,
-  isServiceItem,
-  isVendorItem,
 } from "./adapters";
 import { QuotationStatusBadge } from "./_components/quotationStatusBadge";
+import type { QuotationItem } from "./types";
+
+const isServiceSummaryItem = (item: QuotationItem) =>
+  item.itemType === "service" && item.category === "service_summary";
+
+const getQuotationRowKindLabel = (
+  item: QuotationItem,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) => {
+  if (item.itemType === "vendor") {
+    return t("quotations.vendor", { defaultValue: "شركة" });
+  }
+
+  if (isServiceSummaryItem(item)) {
+    return t("quotations.totalServices", { defaultValue: "إجمالي الخدمات" });
+  }
+
+  return t("quotations.service", { defaultValue: "خدمة" });
+};
 
 function DetailItem({
   label,
@@ -49,17 +67,97 @@ function DetailItem({
   );
 }
 
+function ItemKindBadge({
+  item,
+  t,
+}: {
+  item: QuotationItem;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const isVendor = item.itemType === "vendor";
+  const isSummary = isServiceSummaryItem(item);
+
+  return (
+    <span
+      className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+      style={{
+        borderColor: isVendor || isSummary
+          ? "var(--lux-gold-border)"
+          : "var(--lux-row-border)",
+        color: isVendor || isSummary
+          ? "var(--lux-gold)"
+          : "var(--lux-text-secondary)",
+      }}
+    >
+      {getQuotationRowKindLabel(item, t)}
+    </span>
+  );
+}
+
 const QuotationDetailsPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { id } = useParams();
   const { data: quotation, isLoading } = useQuotation(id);
   const deleteMutation = useDeleteQuotation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const sortedItems = [...(quotation?.items ?? [])].sort(
     (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
   );
+
+  const handleDownloadPdf = async () => {
+    if (!quotation || isDownloadingPdf) {
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const response = await api.get(`/quotations/${quotation.id}/pdf`, {
+        responseType: "blob",
+      });
+
+      const contentDisposition = response.headers["content-disposition"];
+      const fileNameMatch = typeof contentDisposition === "string"
+        ? contentDisposition.match(/filename="?([^"]+)"?/)
+        : null;
+      const fallbackName = `quotation-${quotation.id}.pdf`;
+      const fileName = fileNameMatch?.[1] || fallbackName;
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: t("common.success", { defaultValue: "Success" }),
+        description: t("quotations.pdfDownloadSuccess", {
+          defaultValue: "Quotation PDF downloaded successfully",
+        }),
+      });
+    } catch (error) {
+      toast({
+        variant: "error",
+        title: t("common.error", { defaultValue: "Error" }),
+        description: getApiErrorMessage(
+          error,
+          t("quotations.pdfDownloadFailed", {
+            defaultValue: "Failed to download quotation PDF",
+          }),
+        ),
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -128,6 +226,19 @@ const QuotationDetailsPage = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                >
+                  <Download className="h-4 w-4" />
+                  {isDownloadingPdf
+                    ? t("common.processing", { defaultValue: "Processing..." })
+                    : t("quotations.downloadPdf", {
+                        defaultValue: "Download PDF",
+                      })}
+                </Button>
+
                 <Button
                   variant="secondary"
                   onClick={() =>
@@ -296,21 +407,34 @@ const QuotationDetailsPage = () => {
                   <thead>
                     <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.serviceColumn", {
-                          defaultValue: "Services",
+                        {t("quotations.type", {
+                          defaultValue: "Type",
                         })}
+                      </th>
+                      <th className="px-3 py-3 text-start">
+                        {t("quotations.itemName", { defaultValue: "Item" })}
                       </th>
                       <th className="px-3 py-3 text-start">
                         {t("quotations.category", { defaultValue: "Category" })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.companyColumn", {
-                          defaultValue: "Companies",
+                        {t("quotations.quantity", {
+                          defaultValue: "Quantity",
                         })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.companyPriceColumn", {
-                          defaultValue: "Company Prices",
+                        {t("quotations.unitPrice", {
+                          defaultValue: "Unit Price",
+                        })}
+                      </th>
+                      <th className="px-3 py-3 text-start">
+                        {t("quotations.totalPrice", {
+                          defaultValue: "Total Price",
+                        })}
+                      </th>
+                      <th className="px-3 py-3 text-start">
+                        {t("common.notes", {
+                          defaultValue: "Notes",
                         })}
                       </th>
                     </tr>
@@ -320,32 +444,38 @@ const QuotationDetailsPage = () => {
                       <tr
                         key={item.id}
                         className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
+                        style={{
+                          background: isServiceSummaryItem(item)
+                            ? "var(--lux-control-hover)"
+                            : "transparent",
+                        }}
                       >
                         <td className="px-3 py-3">
-                          {isServiceItem(item) ? (
-                            <div className="font-medium text-[var(--lux-text)]">
-                              {getQuotationItemDisplayName(item)}
-                            </div>
-                          ) : (
-                            <span className="text-[var(--lux-text-secondary)]">-</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {t(`services.category.${item.category}`, {
-                            defaultValue: formatQuotationItemCategory(item.category),
-                          })}
+                          <ItemKindBadge item={item} t={t} />
                         </td>
                         <td className="px-3 py-3">
-                          {isVendorItem(item) ? (
-                            <div className="font-medium text-[var(--lux-text)]">
-                              {getQuotationCompanyDisplayName(item)}
-                            </div>
-                          ) : (
-                            <span className="text-[var(--lux-text-secondary)]">-</span>
-                          )}
+                          <div className="font-medium text-[var(--lux-text)]">
+                            {getQuotationItemDisplayName(item)}
+                          </div>
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {isVendorItem(item) ? formatMoney(item.totalPrice) : "-"}
+                          {item.category
+                            ? t(`services.category.${item.category}`, {
+                                defaultValue: formatQuotationItemCategory(item.category),
+                              })
+                            : "-"}
+                        </td>
+                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                          {item.quantity ?? "-"}
+                        </td>
+                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                          {formatMoney(item.unitPrice)}
+                        </td>
+                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                          {formatMoney(item.totalPrice)}
+                        </td>
+                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                          {item.notes || "-"}
                         </td>
                       </tr>
                     ))}

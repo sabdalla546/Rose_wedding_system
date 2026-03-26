@@ -6,6 +6,7 @@ import {
   createContractFromQuotation,
   getContracts,
   getContractById,
+  downloadContractPdf,
   updateContract,
   deleteContract,
   updateContractItem,
@@ -27,6 +28,12 @@ router.get(
   authMiddleware,
   requirePermissions("contracts.read"),
   getContractById,
+);
+router.get(
+  "/:id/pdf",
+  authMiddleware,
+  requirePermissions("contracts.read"),
+  downloadContractPdf,
 );
 
 router.post(

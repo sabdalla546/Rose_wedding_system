@@ -6,6 +6,7 @@ import {
   createQuotationFromEvent,
   getQuotations,
   getQuotationById,
+  downloadQuotationPdf,
   updateQuotation,
   deleteQuotation,
   updateQuotationItem,
@@ -24,6 +25,12 @@ router.get(
   authMiddleware,
   requirePermissions("quotations.read"),
   getQuotationById,
+);
+router.get(
+  "/:id/pdf",
+  authMiddleware,
+  requirePermissions("quotations.read"),
+  downloadQuotationPdf,
 );
 
 router.post(

@@ -1309,7 +1309,7 @@ const ContractFormPage = () => {
                                         })}{" "}
                                         #{index + 1}
                                       </p>
-                                      <TypeBadge type={itemType} t={t} />
+                                      <TypeBadge item={itemValues} t={t} />
                                     </div>
                                     {isEditMode && itemValues?.id ? (
                                       <p className="text-xs text-[var(--lux-text-secondary)]">
@@ -1827,7 +1827,7 @@ const ContractFormPage = () => {
                                       <td className="px-3 py-3">{index + 1}</td>
                                       <td className="px-3 py-3">
                                         <TypeBadge
-                                          type={(item.itemType ?? "service") as ContractItemType}
+                                          item={item as any}
                                           t={t}
                                         />
                                       </td>
@@ -2246,26 +2246,30 @@ function FieldInput({
 }
 
 function TypeBadge({
-  type,
+  item,
   t,
 }: {
-  type: ContractItemType;
+  item?: Partial<ContractItemFormData> | { itemType?: ContractItemType; category?: string } | null;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
+  const type = item?.itemType ?? "service";
   const isVendor = type === "vendor";
+  const isSummary = type === "service" && item?.category === "service_summary";
 
   return (
     <span
       className={cn(
         "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-        isVendor
+        isVendor || isSummary
           ? "border-[var(--lux-gold-border)] text-[var(--lux-gold)]"
           : "border-[var(--lux-row-border)] text-[var(--lux-text-secondary)]",
       )}
     >
-      {t(`contracts.${type}`, {
-        defaultValue: getContractItemTypeLabel(type),
-      })}
+      {isSummary
+        ? t("contracts.totalServices", { defaultValue: "إجمالي الخدمات" })
+        : t(`contracts.${type}`, {
+            defaultValue: isVendor ? "شركة" : getContractItemTypeLabel(type),
+          })}
     </span>
   );
 }

@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Edit, FileText, Plus, Trash2 } from "lucide-react";
+import { Download, Edit, FileText, Plus, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,6 +40,8 @@ import {
   useDeletePaymentSchedule,
   useUpdatePaymentSchedule,
 } from "@/hooks/contracts/usePaymentScheduleMutations";
+import { useToast } from "@/hooks/use-toast";
+import api, { getApiErrorMessage } from "@/lib/axios";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
 
@@ -56,10 +58,14 @@ import {
 import { ContractStatusBadge } from "./_components/contractStatusBadge";
 import { PaymentScheduleStatusBadge } from "./_components/paymentScheduleStatusBadge";
 import type {
+  ContractItem,
   PaymentSchedule,
   PaymentScheduleStatus,
   PaymentScheduleType,
 } from "./types";
+
+const isServiceSummaryItem = (item: ContractItem) =>
+  item.itemType === "service" && item.category === "service_summary";
 
 type PaymentScheduleFormState = {
   installmentName: string;
@@ -103,9 +109,41 @@ function DetailItem({
   );
 }
 
+function ItemKindBadge({
+  item,
+  t,
+}: {
+  item: ContractItem;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const isVendor = item.itemType === "vendor";
+  const isSummary = isServiceSummaryItem(item);
+
+  return (
+    <span
+      className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+      style={{
+        borderColor: isVendor || isSummary
+          ? "var(--lux-gold-border)"
+          : "var(--lux-row-border)",
+        color: isVendor || isSummary
+          ? "var(--lux-gold)"
+          : "var(--lux-text-secondary)",
+      }}
+    >
+      {isVendor
+        ? t("contracts.vendor", { defaultValue: "شركة" })
+        : isSummary
+          ? t("contracts.totalServices", { defaultValue: "إجمالي الخدمات" })
+          : t("contracts.service", { defaultValue: "خدمة" })}
+    </span>
+  );
+}
+
 const ContractDetailsPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { id } = useParams();
   const { data: contract, isLoading } = useContract(id);
   const deleteMutation = useDeleteContract();
@@ -115,6 +153,7 @@ const ContractDetailsPage = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleDeleteCandidate, setScheduleDeleteCandidate] =
     useState<PaymentSchedule | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<PaymentSchedule | null>(
     null,
   );
@@ -268,6 +307,57 @@ const ContractDetailsPage = () => {
     );
   };
 
+  const handleDownloadPdf = async () => {
+    if (!contract || isDownloadingPdf) {
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const response = await api.get(`/contracts/${contract.id}/pdf`, {
+        responseType: "blob",
+      });
+
+      const contentDisposition = response.headers["content-disposition"];
+      const fileNameMatch = typeof contentDisposition === "string"
+        ? contentDisposition.match(/filename="?([^"]+)"?/)
+        : null;
+      const fallbackName = `contract-${contract.id}.pdf`;
+      const fileName = fileNameMatch?.[1] || fallbackName;
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: t("common.success", { defaultValue: "Success" }),
+        description: t("contracts.pdfDownloadSuccess", {
+          defaultValue: "Contract PDF downloaded successfully",
+        }),
+      });
+    } catch (error) {
+      toast({
+        variant: "error",
+        title: t("common.error", { defaultValue: "Error" }),
+        description: getApiErrorMessage(
+          error,
+          t("contracts.pdfDownloadFailed", {
+            defaultValue: "Failed to download contract PDF",
+          }),
+        ),
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   return (
     <ProtectedComponent permission="contracts.read">
       <PageContainer className="pb-4 pt-4 text-foreground">
@@ -315,6 +405,19 @@ const ContractDetailsPage = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                >
+                  <Download className="h-4 w-4" />
+                  {isDownloadingPdf
+                    ? t("common.processing", { defaultValue: "Processing..." })
+                    : t("contracts.downloadPdf", {
+                        defaultValue: "Download PDF",
+                      })}
+                </Button>
+
                 <ProtectedComponent permission="contracts.update">
                   <Button onClick={() => navigate(`/contracts/edit/${contract.id}`)}>
                     <Edit className="h-4 w-4" />
@@ -480,6 +583,9 @@ const ContractDetailsPage = () => {
                     <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
                       <th className="px-3 py-3 text-start">#</th>
                       <th className="px-3 py-3 text-start">
+                        {t("contracts.type", { defaultValue: "Type" })}
+                      </th>
+                      <th className="px-3 py-3 text-start">
                         {t("contracts.itemName", { defaultValue: "Item" })}
                       </th>
                       <th className="px-3 py-3 text-start">
@@ -505,9 +611,17 @@ const ContractDetailsPage = () => {
                       <tr
                         key={item.id}
                         className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
+                        style={{
+                          background: isServiceSummaryItem(item)
+                            ? "var(--lux-control-hover)"
+                            : "transparent",
+                        }}
                       >
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
                           {index + 1}
+                        </td>
+                        <td className="px-3 py-3">
+                          <ItemKindBadge item={item} t={t} />
                         </td>
                         <td className="px-3 py-3">
                           <div className="font-medium text-[var(--lux-text)]">

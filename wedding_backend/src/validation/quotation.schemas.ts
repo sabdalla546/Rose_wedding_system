@@ -69,6 +69,7 @@ export const createQuotationFromEventSchema = z
     validUntil: z.string().optional(),
     subtotal: z.number().nonnegative().optional(),
     discountAmount: z.number().nonnegative().optional(),
+    manualServicesTotal: z.number().nonnegative().optional(),
     notes: z.string().optional(),
     eventServiceIds: z.array(z.number().int().positive()).optional(),
     eventVendorIds: z.array(z.number().int().positive()).optional(),

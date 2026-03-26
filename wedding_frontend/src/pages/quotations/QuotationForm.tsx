@@ -74,6 +74,9 @@ const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 type CreateMode = "manual" | "from_event";
 const MANUAL_SERVICES_SUMMARY_CATEGORY = "service_summary";
 const MANUAL_SERVICES_SUMMARY_NAME = "إجمالي الخدمات";
+type QuotationFromEventSubmitPayload = QuotationFromEventFormData & {
+  manualServicesTotal: number;
+};
 
 const getFirstErrorMessage = (value: unknown): string | null => {
   if (!value || typeof value !== "object") {
@@ -337,10 +340,69 @@ const buildManualModePayloadItems = (
 ) => {
   const summaryAmount = getManualServicesTotalValue(manualServicesTotal);
   const vendorItems = items.filter((item) => item.itemType === "vendor");
+  const serviceReferenceItems = items
+    .filter(
+      (item) => item.itemType === "service" && !isManualServicesSummaryItem(item),
+    )
+    .map((item) => ({
+      ...item,
+      unitPrice: "0",
+      totalPrice: "0",
+      isTotalManual: false,
+    }));
 
   const combinedItems = [
-    ...(summaryAmount > 0 ? [buildManualServiceItem(manualServicesTotal, 0)] : []),
+    ...serviceReferenceItems,
+    ...(summaryAmount > 0
+      ? [buildManualServiceItem(manualServicesTotal, serviceReferenceItems.length)]
+      : []),
     ...vendorItems,
+  ];
+
+  return combinedItems.map((item, index) => ({
+    ...item,
+    sortOrder: String(index),
+    totalPrice:
+      item.itemType === "vendor"
+        ? item.totalPrice?.trim()
+          || String(computeQuotationItemTotal(item.quantity, item.unitPrice))
+        : isManualServicesSummaryItem(item)
+          ? String(summaryAmount)
+          : "0",
+    unitPrice:
+      item.itemType === "vendor"
+        ? item.unitPrice
+        : isManualServicesSummaryItem(item)
+          ? String(summaryAmount)
+          : "0",
+  }));
+};
+
+const buildEditModePayloadItems = (
+  items: QuotationItemFormData[],
+  manualServicesTotal?: string,
+  serviceSummaryItemId?: number,
+) => {
+  const summaryAmount = getManualServicesTotalValue(manualServicesTotal);
+  const normalizedItems = items
+    .filter((item) => !isManualServicesSummaryItem(item))
+    .map((item) => ({
+      ...item,
+      unitPrice: item.itemType === "vendor" ? item.unitPrice : "0",
+      totalPrice: item.itemType === "vendor" ? item.totalPrice : "0",
+      isTotalManual: item.itemType === "vendor" ? item.isTotalManual : false,
+    }));
+
+  const combinedItems = [
+    ...(summaryAmount > 0 || typeof serviceSummaryItemId === "number"
+      ? [
+          {
+            ...buildManualServiceItem(manualServicesTotal, 0),
+            id: serviceSummaryItemId,
+          },
+        ]
+      : []),
+    ...normalizedItems,
   ];
 
   return combinedItems.map((item, index) => ({
@@ -374,6 +436,7 @@ const QuotationFormPage = () => {
   const preselectedEventId = searchParams.get("eventId") ?? "";
   const previousEventIdRef = useRef("");
   const previousAutoSelectSignatureRef = useRef("");
+  const serviceSummaryItemIdRef = useRef<number | undefined>(undefined);
 
   const [selectedEventServiceSourceId, setSelectedEventServiceSourceId] = useState("");
   const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState("");
@@ -489,23 +552,42 @@ const QuotationFormPage = () => {
 
   const fromEventPreviewItems = useMemo(
     () => [
+      ...selectedEventServices.map((item, index) =>
+        buildServiceItemFromEventService(item, index),
+      ),
       ...(getManualServicesTotalValue(watchedManualServicesTotal) > 0
-        ? [buildManualServiceItem(watchedManualServicesTotal, 0)]
+        ? [
+            buildManualServiceItem(
+              watchedManualServicesTotal,
+              selectedEventServices.length,
+            ),
+          ]
         : []),
       ...selectedEventVendors
         .filter((item) => !getEventVendorDisabledReason(item))
         .map((item, index) =>
           buildVendorItemFromEventVendor(
             item,
-            index + (getManualServicesTotalValue(watchedManualServicesTotal) > 0 ? 1 : 0),
+            index +
+              selectedEventServices.length +
+              (getManualServicesTotalValue(watchedManualServicesTotal) > 0 ? 1 : 0),
           ),
         ),
     ],
-    [selectedEventVendors, watchedManualServicesTotal],
+    [selectedEventServices, selectedEventVendors, watchedManualServicesTotal],
   );
 
   const manualModePayloadItems = useMemo(
     () => buildManualModePayloadItems(watchedItems, watchedManualServicesTotal),
+    [watchedItems, watchedManualServicesTotal],
+  );
+  const editModePayloadItems = useMemo(
+    () =>
+      buildEditModePayloadItems(
+        watchedItems,
+        watchedManualServicesTotal,
+        serviceSummaryItemIdRef.current,
+      ),
     [watchedItems, watchedManualServicesTotal],
   );
 
@@ -513,12 +595,21 @@ const QuotationFormPage = () => {
     () =>
       computeQuotationTotals({
         items:
-          !isEditMode && watchedCreateMode === "manual"
-            ? manualModePayloadItems
-            : watchedItems,
+          isEditMode
+            ? editModePayloadItems
+            : watchedCreateMode === "manual"
+              ? manualModePayloadItems
+              : watchedItems,
         discountAmount: watchedDiscountAmount,
       }),
-    [isEditMode, manualModePayloadItems, watchedCreateMode, watchedDiscountAmount, watchedItems],
+    [
+      editModePayloadItems,
+      isEditMode,
+      manualModePayloadItems,
+      watchedCreateMode,
+      watchedDiscountAmount,
+      watchedItems,
+    ],
   );
   const fromEventTotals = useMemo(
     () =>
@@ -548,10 +639,25 @@ const QuotationFormPage = () => {
       return;
     }
 
-    const mappedItems = (quotation.items ?? []).map((item) => {
+    const serviceSummaryItem = (quotation.items ?? []).find((item) =>
+      item.itemType === "service" &&
+      item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
+    );
+    const editableItems = (quotation.items ?? []).filter(
+      (item) =>
+        !(
+          item.itemType === "service" &&
+          item.category === MANUAL_SERVICES_SUMMARY_CATEGORY
+        ),
+    );
+
+    serviceSummaryItemIdRef.current = serviceSummaryItem?.id;
+
+    const mappedItems = editableItems.map((item) => {
       const quantity = String(item.quantity ?? 1);
-      const unitPrice = String(item.unitPrice ?? 0);
-      const totalPrice = String(item.totalPrice ?? 0);
+      const isVendorItem = item.itemType === "vendor";
+      const unitPrice = isVendorItem ? String(item.unitPrice ?? 0) : "0";
+      const totalPrice = isVendorItem ? String(item.totalPrice ?? 0) : "0";
       const computedTotal = String(
         computeQuotationItemTotal(item.quantity ?? 1, item.unitPrice ?? 0),
       );
@@ -571,7 +677,7 @@ const QuotationFormPage = () => {
         totalPrice,
         notes: item.notes ?? "",
         sortOrder: String(item.sortOrder ?? 0),
-        isTotalManual: totalPrice !== computedTotal,
+        isTotalManual: isVendorItem ? totalPrice !== computedTotal : false,
       } satisfies QuotationItemFormData;
     });
 
@@ -583,12 +689,7 @@ const QuotationFormPage = () => {
       validUntil: quotation.validUntil ?? "",
       discountAmount:
         quotation.discountAmount != null ? String(quotation.discountAmount) : "0",
-      manualServicesTotal: String(
-        (quotation.items ?? []).find((item) =>
-          item.itemType === "service" &&
-          item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
-        )?.totalPrice ?? 0,
-      ),
+      manualServicesTotal: String(serviceSummaryItem?.totalPrice ?? 0),
       notes: quotation.notes ?? "",
       status: quotation.status,
       eventServiceIds: [],
@@ -808,21 +909,25 @@ const QuotationFormPage = () => {
 
   const submit = (values: FormValues) => {
     if (isEditMode) {
+      const editPayloadItems = buildEditModePayloadItems(
+        values.items,
+        values.manualServicesTotal,
+        serviceSummaryItemIdRef.current,
+      );
+      const editTotals = computeQuotationTotals({
+        items: editPayloadItems,
+        discountAmount: values.discountAmount,
+      });
+
       const payload: QuotationUpdateFormData = {
         quotationNumber: values.quotationNumber,
         issueDate: values.issueDate,
         validUntil: values.validUntil,
-        subtotal: String(editorTotals.subtotal),
+        subtotal: String(editTotals.subtotal),
         discountAmount: values.discountAmount,
         notes: values.notes,
         status: values.status,
-        items: values.items.map((item, index) => ({
-          ...item,
-          sortOrder: String(index),
-          totalPrice:
-            item.totalPrice?.trim()
-            || String(computeQuotationItemTotal(item.quantity, item.unitPrice)),
-        })),
+        items: editPayloadItems,
       };
 
       updateMutation.mutate(payload);
@@ -830,13 +935,16 @@ const QuotationFormPage = () => {
     }
 
     if (values.createMode === "from_event") {
-      const payload: QuotationFromEventFormData = {
+      const payload: QuotationFromEventSubmitPayload = {
         eventId: values.eventId,
         quotationNumber: values.quotationNumber,
         issueDate: values.issueDate,
         validUntil: values.validUntil,
         subtotal: String(fromEventTotals.subtotal),
         discountAmount: values.discountAmount,
+        manualServicesTotal: values.manualServicesTotal
+          ? Number(values.manualServicesTotal)
+          : 0,
         notes: values.notes,
         eventServiceIds: values.eventServiceIds,
         eventVendorIds: values.eventVendorIds,
@@ -1146,34 +1254,32 @@ const QuotationFormPage = () => {
                       />
                     </FieldBlock>
 
-                    {!isEditMode ? (
-                      <div className="md:col-span-2 xl:col-span-3">
-                        <FieldBlock
-                          label={t("quotations.totalServicesAmount", {
-                            defaultValue: "Total Services Amount",
-                          })}
-                          error={form.formState.errors.manualServicesTotal?.message}
-                        >
-                          <div className="space-y-2">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.001"
-                              placeholder={t("quotations.totalServicesAmount", {
-                                defaultValue: "Total Services Amount",
-                              })}
-                              {...form.register("manualServicesTotal")}
-                            />
-                            <p className="text-xs text-[var(--lux-text-secondary)]">
-                              {t("quotations.totalServicesAmountHint", {
-                                defaultValue:
-                                  "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
-                              })}
-                            </p>
-                          </div>
-                        </FieldBlock>
-                      </div>
-                    ) : null}
+                    <div className="md:col-span-2 xl:col-span-3">
+                      <FieldBlock
+                        label={t("quotations.totalServicesAmount", {
+                          defaultValue: "Total Services Amount",
+                        })}
+                        error={form.formState.errors.manualServicesTotal?.message}
+                      >
+                        <div className="space-y-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            placeholder={t("quotations.totalServicesAmount", {
+                              defaultValue: "Total Services Amount",
+                            })}
+                            {...form.register("manualServicesTotal")}
+                          />
+                          <p className="text-xs text-[var(--lux-text-secondary)]">
+                            {t("quotations.totalServicesAmountHint", {
+                              defaultValue:
+                                "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
+                            })}
+                          </p>
+                        </div>
+                      </FieldBlock>
+                    </div>
                   </section>
 
                   <FieldBlock label={t("common.notes", { defaultValue: "Notes" })}>
@@ -1588,6 +1694,12 @@ const QuotationFormPage = () => {
                         t={t}
                         fields={itemFields}
                         items={watchedItems}
+                        manualServiceSummaryItem={
+                          getManualServicesTotalValue(watchedManualServicesTotal) > 0 ||
+                          typeof serviceSummaryItemIdRef.current === "number"
+                            ? buildManualServiceItem(watchedManualServicesTotal, 0)
+                            : null
+                        }
                         form={form}
                         isEditMode
                         onRemove={removeItem}
@@ -1835,7 +1947,7 @@ function EditableItemsSection({
     onChange: (...event: any[]) => void,
   ) => void;
 }) {
-  if (fields.length === 0) {
+  if (fields.length === 0 && !manualServiceSummaryItem) {
     return (
       <EmptyHint
         text={t("quotations.noItems", {
@@ -1868,9 +1980,9 @@ function EditableItemsSection({
               className="border-b border-[var(--lux-row-border)] align-top"
               style={{ background: "var(--lux-panel-surface)" }}
             >
-              <td className="min-w-[120px] px-3 py-3">
-                <TypeBadge type={manualServiceSummaryItem.itemType} t={t} />
-              </td>
+                <td className="min-w-[120px] px-3 py-3">
+                  <TypeBadge item={manualServiceSummaryItem} t={t} />
+                </td>
               <td className="min-w-[220px] px-3 py-3">
                 <div className="font-medium text-[var(--lux-text)]">
                   {manualServiceSummaryItem.itemName}
@@ -1902,7 +2014,7 @@ function EditableItemsSection({
           ) : null}
           {fields.map((field, index) => {
             const itemValues = items[index];
-            const isCreateServiceReference = !isEditMode && itemValues?.itemType === "service";
+            const isServiceReferenceItem = itemValues?.itemType === "service";
             const itemNameField = form.register(`items.${index}.itemName`);
             const categoryField = form.register(`items.${index}.category`);
             const quantityField = form.register(`items.${index}.quantity`);
@@ -1922,7 +2034,7 @@ function EditableItemsSection({
                 }}
               >
                 <td className="min-w-[120px] px-3 py-3">
-                  <TypeBadge type={itemValues?.itemType ?? "service"} t={t} />
+                  <TypeBadge item={itemValues} t={t} />
                 </td>
                 <td className="min-w-[220px] px-3 py-3">
                   <Input {...itemNameField} placeholder={t("quotations.itemName", { defaultValue: "Item Name" })} />
@@ -1959,7 +2071,7 @@ function EditableItemsSection({
                               { defaultValue: "Catalog Service" },
                             )}: #${itemValues.serviceId}`
                           : null}
-                        {isCreateServiceReference ? (
+                        {isServiceReferenceItem ? (
                           <div className="mt-1">
                             {t("quotations.serviceReferencePricingHint", {
                               defaultValue:
@@ -1989,9 +2101,9 @@ function EditableItemsSection({
                     min="0"
                     step="0.001"
                     {...unitPriceField}
-                    readOnly={isCreateServiceReference}
+                    readOnly={isServiceReferenceItem}
                     onChange={
-                      isCreateServiceReference
+                      isServiceReferenceItem
                         ? undefined
                         : (event) =>
                             onUnitPriceChange(index, event, unitPriceField.onChange)
@@ -2004,9 +2116,9 @@ function EditableItemsSection({
                     min="0"
                     step="0.001"
                     {...totalPriceField}
-                    readOnly={isCreateServiceReference}
+                    readOnly={isServiceReferenceItem}
                     onChange={
-                      isCreateServiceReference
+                      isServiceReferenceItem
                         ? undefined
                         : (event) =>
                             onTotalPriceChange(index, event, totalPriceField.onChange)
@@ -2077,7 +2189,7 @@ function PreviewTable({
               className="border-b border-[var(--lux-row-border)] last:border-b-0"
             >
               <td className="px-3 py-3">
-                <TypeBadge type={item.itemType} t={t} />
+                <TypeBadge item={item} t={t} />
               </td>
               <td className="px-3 py-3 font-medium text-[var(--lux-text)]">
                 {getQuotationItemLabel({
@@ -2108,26 +2220,30 @@ function PreviewTable({
 }
 
 function TypeBadge({
-  type,
+  item,
   t,
 }: {
-  type: QuotationItemType;
+  item?: Partial<QuotationItemFormData> | null;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
+  const type = item?.itemType ?? "service";
   const isVendor = type === "vendor";
+  const isSummary = isManualServicesSummaryItem(item ?? {});
 
   return (
     <span
       className={cn(
         "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-        isVendor
+        isVendor || isSummary
           ? "border-[var(--lux-gold-border)] text-[var(--lux-gold)]"
           : "border-[var(--lux-row-border)] text-[var(--lux-text-secondary)]",
       )}
     >
       {isVendor
-        ? t("quotations.vendor", { defaultValue: "Vendor" })
-        : t("quotations.service", { defaultValue: "Service" })}
+        ? t("quotations.vendor", { defaultValue: "شركة" })
+        : isSummary
+          ? t("quotations.totalServices", { defaultValue: "إجمالي الخدمات" })
+          : t("quotations.service", { defaultValue: "خدمة" })}
     </span>
   );
 }

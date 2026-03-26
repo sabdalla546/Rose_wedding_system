@@ -28,6 +28,8 @@ import {
   createPaymentScheduleSchema,
   updatePaymentScheduleSchema,
 } from "../validation/contract.schemas";
+import { DocumentServiceError } from "../services/documents/document.types";
+import { generateContractPdfDocument } from "../services/documents/contract/contractPdf.service";
 
 class HttpError extends Error {
   public status: number;
@@ -688,6 +690,33 @@ export const getContractById = async (req: Request, res: Response) => {
   }
 
   return res.json({ data: contract });
+};
+
+export const downloadContractPdf = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({ message: req.t("common.invalid_id") });
+    }
+
+    const document = await generateContractPdfDocument(id);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${document.filename}"`,
+    );
+    res.setHeader("Content-Length", String(document.buffer.length));
+
+    return res.send(document.buffer);
+  } catch (err) {
+    if (err instanceof DocumentServiceError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: req.t("common.unexpected_error") });
+  }
 };
 
 export const updateContract = async (req: AuthRequest, res: Response) => {

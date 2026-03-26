@@ -23,6 +23,8 @@ import {
   createQuotationFromEventSchema,
   updateQuotationItemSchema,
 } from "../validation/quotation.schemas";
+import { DocumentServiceError } from "../services/documents/document.types";
+import { generateQuotationPdfDocument } from "../services/documents/quotation/quotationPdf.service";
 
 class HttpError extends Error {
   public status: number;
@@ -70,6 +72,8 @@ type QuotationRequestItem = {
 };
 
 type QuotationUpdateItem = Partial<QuotationRequestItem>;
+const MANUAL_SERVICES_SUMMARY_NAME = "إجمالي الخدمات";
+const MANUAL_SERVICES_SUMMARY_CATEGORY = "service_summary";
 
 function round3(value: number) {
   return Number(value.toFixed(3));
@@ -390,8 +394,6 @@ function buildQuotationItemFromEventService(
   sortOrder: number,
 ): PreparedQuotationItem {
   const quantity = round3(toNumberValue(eventService.quantity) ?? 1);
-  const unitPrice = round3(toNumberValue(eventService.unitPrice) ?? 0);
-  const eventServiceTotalPrice = toNumberValue(eventService.totalPrice);
 
   return {
     itemType: "service",
@@ -403,8 +405,8 @@ function buildQuotationItemFromEventService(
     itemName: eventService.serviceNameSnapshot,
     category: eventService.category ?? null,
     quantity,
-    unitPrice,
-    totalPrice: computeItemTotal(quantity, unitPrice, eventServiceTotalPrice),
+    unitPrice: 0,
+    totalPrice: 0,
     notes: eventService.notes ?? null,
     sortOrder,
     createdBy: userId,
@@ -437,6 +439,32 @@ function buildQuotationItemFromEventVendor(
     unitPrice: agreedPrice,
     totalPrice: agreedPrice,
     notes: eventVendor.notes ?? null,
+    sortOrder,
+    createdBy: userId,
+    updatedBy: userId,
+  };
+}
+
+function buildManualServiceSummaryItem(
+  manualServicesTotal: number,
+  userId: number | null,
+  sortOrder: number,
+): PreparedQuotationItem {
+  const amount = round3(Math.max(0, manualServicesTotal));
+
+  return {
+    itemType: "service",
+    eventServiceId: null,
+    serviceId: null,
+    eventVendorId: null,
+    vendorId: null,
+    pricingPlanId: null,
+    itemName: MANUAL_SERVICES_SUMMARY_NAME,
+    category: MANUAL_SERVICES_SUMMARY_CATEGORY,
+    quantity: 1,
+    unitPrice: amount,
+    totalPrice: amount,
+    notes: null,
     sortOrder,
     createdBy: userId,
     updatedBy: userId,
@@ -601,6 +629,9 @@ export const createQuotationFromEvent = async (
 
     const eventServiceIds = normalizeIdList(data.eventServiceIds);
     const eventVendorIds = normalizeIdList(data.eventVendorIds);
+    const manualServicesTotal = round3(
+      Math.max(0, toNumberValue(data.manualServicesTotal) ?? 0),
+    );
 
     let eventServices: EventService[] = [];
     let eventVendors: Array<EventVendor & { vendor?: Vendor | null }> = [];
@@ -676,11 +707,20 @@ export const createQuotationFromEvent = async (
       ...eventServices.map((item, index) =>
         buildQuotationItemFromEventService(item, req.user?.id ?? null, index),
       ),
+      ...(manualServicesTotal > 0
+        ? [
+            buildManualServiceSummaryItem(
+              manualServicesTotal,
+              req.user?.id ?? null,
+              eventServices.length,
+            ),
+          ]
+        : []),
       ...eventVendors.map((item, index) =>
         buildQuotationItemFromEventVendor(
           item,
           req.user?.id ?? null,
-          eventServices.length + index,
+          eventServices.length + (manualServicesTotal > 0 ? 1 : 0) + index,
         ),
       ),
     ].map((item, index) => ({
@@ -807,6 +847,33 @@ export const getQuotationById = async (req: Request, res: Response) => {
   }
 
   return res.json({ data: sanitizeQuotationPayload(quotation) });
+};
+
+export const downloadQuotationPdf = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({ message: req.t("common.invalid_id") });
+    }
+
+    const document = await generateQuotationPdfDocument(id);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${document.filename}"`,
+    );
+    res.setHeader("Content-Length", String(document.buffer.length));
+
+    return res.send(document.buffer);
+  } catch (err) {
+    if (err instanceof DocumentServiceError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: req.t("common.unexpected_error") });
+  }
 };
 
 export const updateQuotation = async (req: AuthRequest, res: Response) => {
