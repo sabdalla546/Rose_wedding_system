@@ -108,8 +108,8 @@
     color-scheme: light;
 
     --color-bg: #e6e5e5;
-    --color-shell: #000;
-    --color-shell-elevated: #000;
+    --color-shell: #0f0d0d;
+    --color-shell-elevated: #0f0d0d;
     --color-surface: #ffffff;
     --color-surface-2: #f6f8fb;
     --color-surface-3: rgba(59, 130, 246, 0.08);
@@ -123,14 +123,14 @@
     --color-text-muted: #6b7280;
     --color-text-subtle: #374151;
     --color-heading: #0f172a;
-    --color-primary: #054dc2;
-    --color-primary-hover: #2563eb;
+    --color-primary: #1447e6;
+    --color-primary-hover: #1447e6;
     --color-primary-foreground: #ffffff;
     --color-danger: #dc2626;
     --color-danger-soft: rgba(220, 38, 38, 0.14);
     --color-success: #059669;
     --color-success-soft: rgba(5, 150, 105, 0.14);
-    --color-info: #115bfa;
+    --color-info: #1447e6;
     --color-info-soft: rgba(37, 99, 235, 0.12);
     --color-warning: #d97706;
     --color-warning-soft: rgba(217, 119, 6, 0.12);
@@ -691,12 +691,43 @@
   }
 
   .app-calendar-event {
+    position: relative;
     min-height: 100%;
     border: 1px solid var(--color-border);
     border-radius: 0.9rem;
     padding: 0.45rem 0.55rem;
     background: var(--color-surface);
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .app-calendar-event::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 4px;
+    background: color-mix(in srgb, var(--color-border-strong) 40%, transparent);
+  }
+
+  .app-calendar-event--gold::before {
+    background: color-mix(in srgb, var(--color-primary) 92%, transparent);
+  }
+
+  .app-calendar-event--emerald::before {
+    background: color-mix(in srgb, var(--color-success) 92%, transparent);
+  }
+
+  .app-calendar-event--blue::before {
+    background: color-mix(in srgb, var(--color-info) 92%, transparent);
+  }
+
+  .app-calendar-event--rose::before {
+    background: color-mix(in srgb, var(--color-danger) 92%, transparent);
+  }
+
+  .app-calendar-event--slate::before {
+    background: color-mix(in srgb, var(--color-text-subtle) 65%, transparent);
   }
 
   .app-calendar-event__time {
@@ -878,10 +909,10 @@
   }
 
   .app-calendar-event--gold {
-    border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
     background: color-mix(
       in srgb,
-      var(--color-primary) 10%,
+      var(--color-primary) 18%,
       var(--color-surface)
     );
   }
@@ -892,10 +923,10 @@
   }
 
   .app-calendar-event--emerald {
-    border-color: color-mix(in srgb, var(--color-success) 26%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
     background: color-mix(
       in srgb,
-      var(--color-success) 9%,
+      var(--color-success) 16%,
       var(--color-surface)
     );
   }
@@ -906,8 +937,8 @@
   }
 
   .app-calendar-event--blue {
-    border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
-    background: color-mix(in srgb, var(--color-info) 9%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-info) 38%, transparent);
+    background: color-mix(in srgb, var(--color-info) 15%, var(--color-surface));
   }
 
   .app-calendar-accent-dot--rose,
@@ -916,10 +947,10 @@
   }
 
   .app-calendar-event--rose {
-    border-color: color-mix(in srgb, var(--color-danger) 22%, transparent);
+    border-color: color-mix(in srgb, var(--color-danger) 36%, transparent);
     background: color-mix(
       in srgb,
-      var(--color-danger) 8%,
+      var(--color-danger) 14%,
       var(--color-surface)
     );
   }
@@ -932,6 +963,19 @@
   .app-calendar-event--slate {
     border-color: var(--color-border);
     background: var(--color-surface);
+  }
+
+  .app-calendar-event--gold .app-calendar-event__status,
+  .app-calendar-event--gold .app-calendar-event__badge,
+  .app-calendar-event--emerald .app-calendar-event__status,
+  .app-calendar-event--emerald .app-calendar-event__badge,
+  .app-calendar-event--blue .app-calendar-event__status,
+  .app-calendar-event--blue .app-calendar-event__badge,
+  .app-calendar-event--rose .app-calendar-event__status,
+  .app-calendar-event--rose .app-calendar-event__badge {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 16%, var(--color-surface));
+    color: color-mix(in srgb, currentColor 90%, var(--color-text));
   }
 
   .lux-ring {

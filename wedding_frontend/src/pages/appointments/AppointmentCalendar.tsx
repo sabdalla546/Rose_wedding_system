@@ -28,7 +28,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import type { AppCalendarView } from "@/components/calendar/types";
-import type { CalendarDatePreset } from "@/features/calendar/calendar-range";
 import {
   AppointmentQuickView,
   AppointmentQuickViewDialog,
@@ -49,13 +48,6 @@ import { cn } from "@/lib/utils";
 import { APPOINTMENT_STATUS_OPTIONS } from "@/pages/appointments/adapters";
 import type { Appointment } from "@/pages/appointments/types";
 
-const DATE_PRESET_OPTIONS: Array<{ value: CalendarDatePreset; label: string }> = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "7d", label: "Next 7 days" },
-  { value: "30d", label: "Next 30 days" },
-];
-
 const VIEW_OPTIONS: Array<{
   value: AppCalendarView;
   label: string;
@@ -72,7 +64,8 @@ const INITIAL_FILTERS = {
   status: "all" as const,
   assignedUserId: "all",
   customerId: "all",
-  datePreset: "all" as CalendarDatePreset,
+  dateFrom: "",
+  dateTo: "",
 };
 
 const textareaClassName =
@@ -276,7 +269,7 @@ export default function AppointmentCalendarPage() {
     view: AppCalendarView;
   }>({
     title: "",
-    view: "week",
+    view: "month",
   });
   const [cancelCandidate, setCancelCandidate] = useState<ActionTarget>(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -540,7 +533,7 @@ export default function AppointmentCalendarPage() {
           }
         >
           <div className="space-y-4">
-            <div className="crud-form-grid xl:grid-cols-5">
+            <div className="crud-form-grid xl:grid-cols-6">
               <CrudFilterField
                 label={t("appointments.calendarPage.searchLabel", {
                   defaultValue: "Search",
@@ -642,34 +635,37 @@ export default function AppointmentCalendarPage() {
               </CrudFilterField>
 
               <CrudFilterField
-                label={t("appointments.calendarPage.datePreset", {
-                  defaultValue: "Date Preset",
-                })}
+                label={t("common.from", { defaultValue: "From" })}
               >
-                <select
-                  className="app-native-select h-10 rounded-xl text-[13px]"
-                  value={filters.datePreset}
+                <Input
+                  type="date"
+                  value={filters.dateFrom}
                   onChange={(event) =>
                     setFilters((current) => ({
                       ...current,
-                      datePreset: event.target.value as CalendarDatePreset,
+                      dateFrom: event.target.value,
                     }))
                   }
-                >
-                  {DATE_PRESET_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {t(`calendar.filters.${option.value}`, {
-                        defaultValue: option.label,
-                      })}
-                    </option>
-                  ))}
-                </select>
+                />
+              </CrudFilterField>
+
+              <CrudFilterField label={t("common.to", { defaultValue: "To" })}>
+                <Input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      dateTo: event.target.value,
+                    }))
+                  }
+                />
               </CrudFilterField>
             </div>
           </div>
         </CalendarFilterBar>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.78fr)]">
+        <section className="grid gap-6">
           <div className="space-y-6">
             {isError ? (
               <SectionCard className="space-y-4">
@@ -698,7 +694,7 @@ export default function AppointmentCalendarPage() {
                 ref={calendarRef}
                 locale={i18n.language === "ar" ? "ar" : "en"}
                 events={calendarEvents}
-                initialView="week"
+                initialView="month"
                 loading={isLoading || isFetching}
                 legends={getAppointmentCalendarLegendItems(t)}
                 emptyTitle={t("appointments.calendarPage.emptyTitle", {

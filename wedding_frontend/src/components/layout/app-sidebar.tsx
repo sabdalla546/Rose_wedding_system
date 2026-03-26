@@ -309,7 +309,7 @@ export function AppSidebar({
     const itemHeightClass = depth > 0 ? "h-[40px]" : "h-[46px]";
     const textClass = depth > 0 ? "text-[12px]" : "text-[13px]";
     const activeFillClass =
-      "border-[var(--lux-gold)] text-[var(--lux-shell-surface)] shadow-none";
+      "border-[var(--lux-gold)] text-white shadow-none";
     const parentChildActiveClass = isNested
       ? "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]"
       : "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]";

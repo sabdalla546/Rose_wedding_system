@@ -57,7 +57,7 @@ export function ReportsSectionBar() {
               "inline-flex h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border px-3 text-[12px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-2.5",
               "rounded-none",
               isActive
-                ? "text-[var(--lux-shell-surface)]"
+                ? "text-white"
                 : "text-[var(--lux-shell-chrome-text)]",
             );
 

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { CheckedState } from "@radix-ui/react-checkbox";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
@@ -27,23 +27,6 @@ import { useUser } from "@/hooks/users/useUsers";
 import { useRoles, type RoleOption } from "@/hooks/roles/useRoles";
 import { useCreateUser, useUpdateUser } from "@/hooks/users/useUserMutations";
 
-const baseSchema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  roleIds: z.array(z.number()).min(1, "At least one role is required"),
-  isActive: z.boolean().default(true),
-  password: z.string().optional(),
-});
-
-const createSchema = baseSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-const editSchema = baseSchema;
-
-type FormValues = z.infer<typeof baseSchema>;
-
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
@@ -52,6 +35,52 @@ const UserForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
+
+  const baseSchema = useMemo(
+    () =>
+      z.object({
+        fullName: z
+          .string()
+          .min(
+            1,
+            t("users.validation.fullNameRequired", {
+              defaultValue: "Full name is required",
+            }),
+          ),
+        email: z.string().email(
+          t("users.validation.emailInvalid", {
+            defaultValue: "Invalid email address",
+          }),
+        ),
+        phone: z.string().optional(),
+        roleIds: z.array(z.number()).min(
+          1,
+          t("users.validation.roleRequired", {
+            defaultValue: "At least one role is required",
+          }),
+        ),
+        isActive: z.boolean().default(true),
+        password: z.string().optional(),
+      }),
+    [t],
+  );
+
+  type FormValues = z.infer<typeof baseSchema>;
+
+  const createSchema = useMemo(
+    () =>
+      baseSchema.extend({
+        password: z.string().min(
+          6,
+          t("users.validation.passwordMin", {
+            defaultValue: "Password must be at least 6 characters",
+          }),
+        ),
+      }),
+    [baseSchema, t],
+  );
+
+  const editSchema = baseSchema;
 
   const { data: user, isLoading: userLoading } = useUser(id);
   const { data: rolesRes, isLoading: rolesLoading } = useRoles();
@@ -225,7 +254,9 @@ const UserForm = () => {
                               <Input
                                 type="email"
                                 {...field}
-                                placeholder="user@example.com"
+                                placeholder={t("users.emailPlaceholder", {
+                                  defaultValue: "user@example.com",
+                                })}
                               />
                             </FormControl>
                             <FormMessage />
@@ -269,7 +300,9 @@ const UserForm = () => {
                                 <Input
                                   type="password"
                                   {...field}
-                                  placeholder="********"
+                                  placeholder={t("users.passwordPlaceholder", {
+                                    defaultValue: "********",
+                                  })}
                                 />
                               </FormControl>
                               <FormMessage />

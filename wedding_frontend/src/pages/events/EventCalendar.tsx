@@ -26,7 +26,6 @@ import {
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { CalendarFilterBar } from "@/components/calendar/calendar-filter-bar";
-import type { CalendarDatePreset } from "@/features/calendar/calendar-range";
 import {
   EventCalendarQuickView,
   EventCalendarQuickViewDialog,
@@ -41,13 +40,6 @@ import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
 import { useVenues } from "@/hooks/venues/useVenues";
 import { formatEventStatus, getEventDisplayTitle } from "@/pages/events/adapters";
 import { cn, formatDateLabel } from "@/lib/utils";
-
-const DATE_PRESET_OPTIONS: Array<{ value: CalendarDatePreset; label: string }> = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "7d", label: "Next 7 days" },
-  { value: "30d", label: "Next 30 days" },
-];
 
 const VIEW_OPTIONS: Array<{
   value: AppCalendarView;
@@ -65,7 +57,8 @@ const INITIAL_FILTERS = {
   status: "all" as const,
   venueId: "all",
   customerId: "all",
-  datePreset: "all" as CalendarDatePreset,
+  dateFrom: "",
+  dateTo: "",
 };
 
 export default function EventCalendarPage() {
@@ -406,7 +399,7 @@ export default function EventCalendarPage() {
           }
         >
           <div className="space-y-4">
-            <div className="crud-form-grid xl:grid-cols-5">
+            <div className="crud-form-grid xl:grid-cols-6">
               <CrudFilterField
                 label={t("common.searchAnything", { defaultValue: "Search" })}
               >
@@ -501,26 +494,33 @@ export default function EventCalendarPage() {
               </CrudFilterField>
 
               <CrudFilterField
-                label={t("events.dateRange", { defaultValue: "Date Range" })}
+                label={t("common.from", { defaultValue: "From" })}
               >
-                <select
+                <input
+                  type="date"
                   className="app-native-select h-10 rounded-xl text-[13px]"
-                  value={filters.datePreset}
+                  value={filters.dateFrom}
                   onChange={(event) =>
                     setFilters((current) => ({
                       ...current,
-                      datePreset: event.target.value as CalendarDatePreset,
+                      dateFrom: event.target.value,
                     }))
                   }
-                >
-                  {DATE_PRESET_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {t(`calendar.filters.${option.value}`, {
-                        defaultValue: option.label,
-                      })}
-                    </option>
-                  ))}
-                </select>
+                />
+              </CrudFilterField>
+
+              <CrudFilterField label={t("common.to", { defaultValue: "To" })}>
+                <input
+                  type="date"
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.dateTo}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      dateTo: event.target.value,
+                    }))
+                  }
+                />
               </CrudFilterField>
             </div>
           </div>

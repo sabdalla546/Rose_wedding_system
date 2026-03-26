@@ -145,7 +145,7 @@ export function AppHeader({
             <button
               className={`rounded-[11px] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "en"
-                  ? "text-[var(--lux-shell-surface)]"
+                  ? "text-white"
                   : "text-[var(--lux-shell-chrome-muted)]"
               }`}
               style={
@@ -161,7 +161,7 @@ export function AppHeader({
             <button
               className={`rounded-[11px] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "ar"
-                  ? "text-[var(--lux-shell-surface)]"
+                  ? "text-white"
                   : "text-[var(--lux-shell-chrome-muted)]"
               }`}
               style={

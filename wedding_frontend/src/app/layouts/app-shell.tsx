@@ -97,18 +97,18 @@ export function AppShell() {
 
   const sectionBarFixedStyle = isMobile
     ? {
-        top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
+        top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
         left: `${shellInset}`,
         right: `${shellInset}`,
       }
     : isRtl
       ? {
-          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
+          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
           left: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
           right: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
         }
       : {
-          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
+          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
           left: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
           right: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
         };

@@ -32,7 +32,7 @@ export function SecretarialSectionBar() {
 
   return (
     <section
-      className="flex h-[72px] border-b"
+      className="flex h-[50px] border-b"
       style={{
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
@@ -61,7 +61,7 @@ export function SecretarialSectionBar() {
               "inline-flex h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border px-3 text-[12px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-2.5",
               "rounded-none",
               isActive
-                ? "text-[var(--lux-shell-surface)]"
+                ? "text-white"
                 : "text-[var(--lux-shell-chrome-text)]",
             );
 

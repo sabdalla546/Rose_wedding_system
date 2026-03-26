@@ -1,4 +1,3 @@
-import type { CheckedState } from "@radix-ui/react-checkbox";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -6,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
+import type { CheckedState } from "@radix-ui/react-checkbox";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,14 +27,6 @@ import { usePermissions } from "@/hooks/permissions/usePermissions";
 import { useCreateRole, useUpdateRole } from "@/hooks/roles/useRoleMutations";
 import type { Permission } from "@/pages/roles/types";
 
-const roleSchema = z.object({
-  name: z.string().min(2, "Role name is required"),
-  description: z.string().optional(),
-  permissionIds: z
-    .array(z.number())
-    .min(1, "At least one permission is required"),
-});
-
 type FormValues = z.infer<typeof roleSchema>;
 
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
@@ -46,6 +38,28 @@ const RoleFormPage = () => {
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const [permissionSearch, setPermissionSearch] = useState("");
+
+  const roleSchema = useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .min(
+            2,
+            t("roles.validation.nameRequired", {
+              defaultValue: "Role name is required",
+            }),
+          ),
+        description: z.string().optional(),
+        permissionIds: z.array(z.number()).min(
+          1,
+          t("roles.validation.permissionRequired", {
+            defaultValue: "At least one permission is required",
+          }),
+        ),
+      }),
+    [t],
+  );
 
   const { data: role, isLoading: roleLoading } = useRole(id);
   const { data: permissionsRes, isLoading: permissionsLoading } =

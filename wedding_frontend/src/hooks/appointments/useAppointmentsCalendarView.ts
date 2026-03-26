@@ -1,4 +1,4 @@
-import { addDays, format, startOfDay } from "date-fns";
+import { addDays, format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
@@ -12,7 +12,8 @@ export type AppointmentCalendarFilters = {
   status: "all" | Appointment["status"];
   assignedUserId: string;
   customerId: string;
-  datePreset: "all" | "today" | "7d" | "30d";
+  dateFrom: string;
+  dateTo: string;
 };
 
 const initialFilters: AppointmentCalendarFilters = {
@@ -20,7 +21,8 @@ const initialFilters: AppointmentCalendarFilters = {
   status: "all",
   assignedUserId: "all",
   customerId: "all",
-  datePreset: "all",
+  dateFrom: "",
+  dateTo: "",
 };
 
 export function useAppointmentsCalendarView() {
@@ -31,32 +33,17 @@ export function useAppointmentsCalendarView() {
     getInitialCalendarRange,
   );
 
-  const effectiveFetchRange = useMemo(() => {
-    if (filters.datePreset === "all") {
-      return calendarRange;
-    }
+  const dateFrom = useMemo(() => {
+    return filters.dateFrom.trim()
+      ? filters.dateFrom.trim()
+      : format(calendarRange.start, "yyyy-MM-dd");
+  }, [calendarRange.start, filters.dateFrom]);
 
-    const today = startOfDay(new Date());
-    const days =
-      filters.datePreset === "today" ? 1 : filters.datePreset === "7d" ? 7 : 30;
-    const start = today;
-    const endExclusive = addDays(today, days);
-
-    return {
-      ...calendarRange,
-      start,
-      end: endExclusive,
-    };
-  }, [calendarRange, filters.datePreset]);
-
-  const dateFrom = useMemo(
-    () => format(effectiveFetchRange.start, "yyyy-MM-dd"),
-    [effectiveFetchRange.start],
-  );
-  const dateTo = useMemo(
-    () => format(addDays(effectiveFetchRange.end, -1), "yyyy-MM-dd"),
-    [effectiveFetchRange.end],
-  );
+  const dateTo = useMemo(() => {
+    return filters.dateTo.trim()
+      ? filters.dateTo.trim()
+      : format(addDays(calendarRange.end, -1), "yyyy-MM-dd");
+  }, [calendarRange.end, filters.dateTo]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -77,7 +64,6 @@ export function useAppointmentsCalendarView() {
   });
 
   const items = useMemo(() => {
-    // datePreset is now backend-driven via `effectiveFetchRange`.
     return query.data ?? [];
   }, [
     query.data,
@@ -95,7 +81,8 @@ export function useAppointmentsCalendarView() {
         filters.status !== "all",
         filters.assignedUserId !== "all",
         filters.customerId !== "all",
-        filters.datePreset !== "all",
+        Boolean(filters.dateFrom.trim()),
+        Boolean(filters.dateTo.trim()),
       ].filter(Boolean).length,
     [filters],
   );
