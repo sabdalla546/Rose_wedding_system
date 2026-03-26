@@ -93,6 +93,7 @@ export const useCreateAppointment = () => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       navigate("/appointments");
     },
@@ -133,6 +134,7 @@ export const useCreateAppointmentWithCustomer = () => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       navigate("/appointments");
     },
@@ -170,6 +172,7 @@ export const useUpdateAppointment = (id?: string) => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       queryClient.invalidateQueries({ queryKey: ["appointment", id] });
       navigate("/appointments");
     },

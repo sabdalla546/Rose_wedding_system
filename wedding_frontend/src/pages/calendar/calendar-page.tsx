@@ -1,321 +1,440 @@
-import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
+import { format } from "date-fns";
 import {
   CalendarClock,
-  ChevronDown,
-  ChevronUp,
+  CalendarRange,
   MapPin,
   NotebookText,
-  Plus,
   RotateCcw,
+  UserRound,
   UsersRound,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { AppCalendar } from "@/components/calendar/app-calendar";
 import { CalendarFilterBar } from "@/components/calendar/calendar-filter-bar";
 import { EventDetailsDialog } from "@/components/calendar/event-details-dialog";
 import { EventTypeBadge } from "@/components/calendar/event-type-badge";
-import {
-  EventQuickViewCard,
-  type EventQuickViewData,
-} from "@/components/calendar/event-quick-view-card";
-import { CrudFilterField, CrudFilterPill, CrudPageLayout, CrudPageHeader } from "@/components/shared/crud-layout";
+import { EventQuickViewCard, type EventQuickViewData } from "@/components/calendar/event-quick-view-card";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { CrudFilterField, CrudFilterPill, CrudPageHeader, CrudPageLayout } from "@/components/shared/crud-layout";
 import { Button } from "@/components/ui/button";
-import {
-  SearchableSelect,
-  SearchableSelectEmpty,
-  SearchableSelectItem,
-} from "@/components/ui/searchable-select";
-import { filterCalendarEvents } from "@/features/calendar/calendar-helpers";
-import { toAppCalendarAppointmentEvents } from "@/features/calendar/app-calendar-adapters";
-import { useAppointmentsCalendar } from "@/hooks/appointments/useAppointments";
+import { useCancelAppointment, useConfirmAppointment } from "@/hooks/appointments/useAppointmentActions";
+import { useOperationalCalendar } from "@/hooks/calendar/useOperationalCalendar";
+import { useUsers } from "@/hooks/users/useUsers";
 import { useVenues } from "@/hooks/venues/useVenues";
-import {
-  APPOINTMENT_TYPE_OPTIONS,
-  toCalendarEvents,
-} from "@/pages/appointments/adapters";
+import { formatAppointmentStatus } from "@/pages/appointments/adapters";
+import { formatEventStatus } from "@/pages/events/adapters";
 import { formatDateLabel, formatTimeLabel } from "@/lib/utils";
-import type { AppCalendarRange } from "@/components/calendar/types";
-import type { CalendarEvent } from "@/types/calendar";
+import type { AppCalendarAccent } from "@/components/calendar/types";
+import type {
+  CalendarFeedItem,
+  CalendarSourceFilter,
+  OperationalCalendarFilters,
+} from "@/types/calendar";
 
-type FiltersState = {
-  search: string;
-  dateRange: string;
-  venue: string;
-  status: string;
-  coordinator: string;
-  eventType: string;
-};
+const SOURCE_OPTIONS: Array<{ value: CalendarSourceFilter; label: string }> = [
+  { value: "all", label: "All sources" },
+  { value: "appointment", label: "Appointments" },
+  { value: "event", label: "Events" },
+];
 
-const initialFilters: FiltersState = {
-  search: "",
-  dateRange: "all",
-  venue: "all",
-  status: "all",
-  coordinator: "all",
-  eventType: "all",
-};
+const DATE_RANGE_OPTIONS: Array<{
+  value: "all" | "today" | "7d" | "30d";
+  label: string;
+}> = [
+  { value: "all", label: "All dates" },
+  { value: "today", label: "Today" },
+  { value: "7d", label: "Next 7 days" },
+  { value: "30d", label: "Next 30 days" },
+];
 
-const FILTER_EMPTY_VALUE = "__all__";
+function getSourceFilterFromSearchParams(searchParams: URLSearchParams): CalendarSourceFilter {
+  const sourceType = searchParams.get("sourceType");
 
-function getInitialRange() {
-  const currentDate = new Date();
+  return sourceType === "appointment" || sourceType === "event"
+    ? sourceType
+    : "all";
+}
+
+function formatCalendarStatus(item: CalendarFeedItem) {
+  return item.sourceType === "event"
+    ? formatEventStatus(item.status as Parameters<typeof formatEventStatus>[0])
+    : formatAppointmentStatus(
+        item.status as Parameters<typeof formatAppointmentStatus>[0],
+      );
+}
+
+function formatCalendarStatusValue(
+  status: string,
+  sourceType: CalendarSourceFilter,
+) {
+  if (sourceType === "event") {
+    return formatEventStatus(status as Parameters<typeof formatEventStatus>[0]);
+  }
+
+  if (sourceType === "appointment") {
+    return formatAppointmentStatus(
+      status as Parameters<typeof formatAppointmentStatus>[0],
+    );
+  }
+
+  return status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function statusAccent(item: CalendarFeedItem): AppCalendarAccent {
+  if (item.sourceType === "event") {
+    if (item.status === "confirmed") return "emerald";
+    if (item.status === "completed") return "gold";
+    if (item.status === "in_progress") return "blue";
+    if (item.status === "cancelled") return "rose";
+    return "slate";
+  }
+
+  if (item.status === "confirmed") return "emerald";
+  if (item.status === "completed") return "blue";
+  if (item.status === "cancelled") return "rose";
+  if (item.status === "rescheduled") return "rose";
+  return "gold";
+}
+
+function OperationalStatusBadge({ item }: { item: CalendarFeedItem }) {
+  const accent = statusAccent(item);
+
+  return (
+    <EventTypeBadge
+      label={formatCalendarStatus(item)}
+      accent={accent}
+    />
+  );
+}
+
+function buildSummaryCards(items: CalendarFeedItem[], t: ReturnType<typeof useTranslation>["t"]) {
+  const appointmentCount = items.filter((item) => item.sourceType === "appointment").length;
+  const eventCount = items.filter((item) => item.sourceType === "event").length;
+  const venueCount = new Set(items.map((item) => item.venueName).filter(Boolean)).size;
+  const assignedCount = new Set(
+    items.map((item) => item.assignedUserName).filter(Boolean),
+  ).size;
+
+  return [
+    {
+      id: "total",
+      label: t("calendar.summary.total", { defaultValue: "Visible Items" }),
+      value: String(items.length),
+      hint: t("calendar.summary.totalHint", {
+        defaultValue: "Appointments and events in the current operational window.",
+      }),
+    },
+    {
+      id: "appointments",
+      label: t("calendar.summary.appointments", { defaultValue: "Appointments" }),
+      value: String(appointmentCount),
+      hint: t("calendar.summary.appointmentsHint", {
+        defaultValue: "Client meetings and scheduling touchpoints.",
+      }),
+    },
+    {
+      id: "events",
+      label: t("calendar.summary.events", { defaultValue: "Events" }),
+      value: String(eventCount),
+      hint: t("calendar.summary.eventsHint", {
+        defaultValue: "Wedding and production milestones.",
+      }),
+    },
+    {
+      id: "venues",
+      label: t("calendar.summary.venues", { defaultValue: "Venues" }),
+      value: String(venueCount),
+      hint: t("calendar.summary.venuesHint", {
+        defaultValue: `${assignedCount} active coordinators in the visible feed.`,
+      }),
+    },
+  ];
+}
+
+function buildQuickViewData(
+  item: CalendarFeedItem | null,
+  t: ReturnType<typeof useTranslation>["t"],
+  navigate: ReturnType<typeof useNavigate>,
+  onConfirmAppointment: (item: CalendarFeedItem) => void,
+  onCancelAppointment: (item: CalendarFeedItem) => void,
+): EventQuickViewData | null {
+  if (!item) {
+    return null;
+  }
+
+  const isAppointment = item.sourceType === "appointment";
+  const startDate = new Date(item.startAt);
+  const endDate = item.endAt ? new Date(item.endAt) : null;
+  const guestCount =
+    typeof item.meta?.guestCount === "number" ? String(item.meta.guestCount) : "-";
+  const partyNames =
+    [item.meta?.groomName, item.meta?.brideName]
+      .filter(Boolean)
+      .join(" / ") || "-";
 
   return {
-    view: "month" as const,
-    title: format(currentDate, "MMMM yyyy"),
-    start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
-    end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
-    currentStart: startOfMonth(currentDate),
-    currentEnd: endOfMonth(currentDate),
+    eyebrow: t("calendar.quickView", { defaultValue: "Quick View" }),
+    title: item.title,
+    subtitle:
+      item.subtitle ||
+      item.customerName ||
+      item.assignedUserName ||
+      (isAppointment
+        ? t("calendar.appointmentItem", { defaultValue: "Appointment" })
+        : t("calendar.eventItem", { defaultValue: "Event" })),
+    badges: (
+      <>
+        <OperationalStatusBadge item={item} />
+        <EventTypeBadge
+          label={
+            isAppointment
+              ? t("calendar.appointmentItem", { defaultValue: "Appointment" })
+              : t("calendar.eventItem", { defaultValue: "Event" })
+          }
+          accent={isAppointment ? "gold" : "emerald"}
+        />
+      </>
+    ),
+    infoItems: [
+      {
+        label: t("common.date", { defaultValue: "Date" }),
+        value: formatDateLabel(startDate, "EEEE, dd MMM yyyy"),
+        icon: CalendarClock,
+      },
+      {
+        label: t("common.time", { defaultValue: "Time" }),
+        value: item.allDay
+          ? t("calendar.allDay", { defaultValue: "All day" })
+          : endDate
+            ? `${formatTimeLabel(startDate)} - ${formatTimeLabel(endDate)}`
+            : formatTimeLabel(startDate),
+        icon: CalendarClock,
+      },
+      {
+        label: t("common.venue", { defaultValue: "Venue" }),
+        value: item.venueName || "-",
+        icon: MapPin,
+      },
+      {
+        label: t("appointments.assignedTo", { defaultValue: "Assigned To" }),
+        value: item.assignedUserName || "-",
+        icon: UserRound,
+      },
+      {
+        label: isAppointment
+          ? t("appointments.meetingType", { defaultValue: "Meeting Type" })
+          : t("events.partyNames", { defaultValue: "Party Names" }),
+        value: isAppointment ? item.subtitle || "-" : partyNames,
+        icon: NotebookText,
+      },
+      {
+        label: isAppointment
+          ? t("appointments.customer", { defaultValue: "Customer" })
+          : t("events.guestCount", { defaultValue: "Guest Count" }),
+        value: isAppointment ? item.customerName || "-" : guestCount,
+        icon: UsersRound,
+      },
+    ],
+    notes: item.notes || t("common.noNotes", { defaultValue: "No notes added." }),
+    notesLabel: t("common.notes", { defaultValue: "Notes" }),
+    actions: isAppointment ? (
+      <>
+        <Button type="button" onClick={() => navigate(`/appointments/${item.sourceId}`)}>
+          {t("appointments.viewAppointment", { defaultValue: "View Appointment" })}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => navigate(`/appointments/edit/${item.sourceId}`)}
+        >
+          {t("common.edit", { defaultValue: "Edit" })}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => navigate(`/appointments/edit/${item.sourceId}`)}
+        >
+          {t("appointments.reschedule", { defaultValue: "Reschedule" })}
+        </Button>
+        {["scheduled", "rescheduled"].includes(item.status) ? (
+          <Button type="button" onClick={() => onConfirmAppointment(item)}>
+            {t("appointments.confirm", { defaultValue: "Confirm" })}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onCancelAppointment(item)}
+            disabled={["completed", "cancelled"].includes(item.status)}
+          >
+            {t("appointments.cancelAction", { defaultValue: "Cancel" })}
+          </Button>
+        )}
+      </>
+    ) : (
+      <>
+        <Button type="button" onClick={() => navigate(`/events/${item.sourceId}`)}>
+          {t("events.viewEvent", { defaultValue: "View Event" })}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => navigate(`/events/edit/${item.sourceId}`)}
+        >
+          {t("common.edit", { defaultValue: "Edit" })}
+        </Button>
+      </>
+    ),
   };
 }
 
 export function CalendarPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<FiltersState>(initialFilters);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [venueSearch, setVenueSearch] = useState("");
-  const [coordinatorSearch, setCoordinatorSearch] = useState("");
-  const [eventTypeSearch, setEventTypeSearch] = useState("");
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(getInitialRange);
+  const [searchParams] = useSearchParams();
+  const defaultSourceType = getSourceFilterFromSearchParams(searchParams);
+  const {
+    items,
+    calendarEvents,
+    filters,
+    setCalendarRange,
+    setFilters,
+    activeFiltersCount,
+    isLoading,
+    isFetching,
+  } = useOperationalCalendar(defaultSourceType);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  const { data: appointments = [], isLoading } = useAppointmentsCalendar({
-    dateFrom: format(calendarRange.start, "yyyy-MM-dd"),
-    dateTo: format(addDays(calendarRange.end, -1), "yyyy-MM-dd"),
-  });
+  const confirmAppointment = useConfirmAppointment();
+  const cancelAppointment = useCancelAppointment();
+
   const { data: venuesResponse } = useVenues({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
     isActive: "all",
   });
+  const { data: usersResponse } = useUsers({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+  });
 
-  const calendarEvents = useMemo(() => toCalendarEvents(appointments), [appointments]);
-  const appCalendarEvents = useMemo(
-    () => toAppCalendarAppointmentEvents(filterCalendarEvents(calendarEvents, filters)),
-    [calendarEvents, filters],
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      sourceType: defaultSourceType,
+    }));
+  }, [defaultSourceType, setFilters]);
+
+  useEffect(() => {
+    if (!items.length) {
+      setSelectedItemId(null);
+      return;
+    }
+
+    if (!selectedItemId || !items.some((item) => item.id === selectedItemId)) {
+      setSelectedItemId(items[0].id);
+    }
+  }, [items, selectedItemId]);
+
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedItemId) ?? null,
+    [items, selectedItemId],
   );
-  const filteredEvents = useMemo(
+
+  const statusOptions = useMemo(
     () =>
-      filterCalendarEvents(calendarEvents, filters).sort(
-        (first, second) => first.startAt.getTime() - second.startAt.getTime(),
-      ),
-    [calendarEvents, filters],
+      Array.from(new Set(items.map((item) => item.status)))
+        .sort()
+        .map((status) => ({
+          value: status,
+          label: formatCalendarStatusValue(status, filters.sourceType),
+        })),
+    [filters.sourceType, items],
   );
 
-  const venueNames = useMemo(
-    () => venuesResponse?.data.map((venue) => venue.name) ?? [],
+  const venueOptions = useMemo(
+    () =>
+      (venuesResponse?.data ?? []).map((venue) => ({
+        value: String(venue.id),
+        label: venue.name,
+      })),
     [venuesResponse?.data],
   );
 
-  const selectedEvent =
-    filteredEvents.find((event) => event.id === selectedEventId) ??
-    filteredEvents[0] ??
-    null;
-
-  const dateRangeOptions = useMemo(
-    () => [
-      { label: t("calendar.filters.allDates", { defaultValue: "All dates" }), value: "all" },
-      { label: t("calendar.filters.today", { defaultValue: "Today" }), value: "today" },
-      { label: t("calendar.filters.next7Days", { defaultValue: "Next 7 days" }), value: "7d" },
-      { label: t("calendar.filters.next30Days", { defaultValue: "Next 30 days" }), value: "30d" },
-    ],
-    [t],
-  );
-  const venueOptions = useMemo(
+  const assignedUserOptions = useMemo(
     () =>
-      buildFilterOptions(
-        [...venueNames, ...calendarEvents.map((event) => event.venue)],
-        t("calendar.filters.allVenues", { defaultValue: "All venues" }),
-        false,
-      ),
-    [calendarEvents, t, venueNames],
+      (usersResponse?.data ?? []).map((user) => ({
+        value: String(user.id),
+        label: user.fullName,
+      })),
+    [usersResponse?.data],
   );
-  const statusOptions = useMemo(
+
+  const summaryCards = useMemo(() => buildSummaryCards(items, t), [items, t]);
+  const quickViewData = useMemo(
     () =>
-      buildFilterOptions(
-        calendarEvents.map((event) => event.status),
-        t("calendar.filters.allStatuses", { defaultValue: "All statuses" }),
+      buildQuickViewData(
+        selectedItem,
+        t,
+        navigate,
+        (item) =>
+          confirmAppointment.mutate({ id: Number(item.sourceId), values: {} }),
+        (item) =>
+          cancelAppointment.mutate({
+            id: Number(item.sourceId),
+            values: { reason: "", notes: "" },
+          }),
       ),
-    [calendarEvents, t],
+    [cancelAppointment, confirmAppointment, navigate, selectedItem, t],
   );
-  const coordinatorOptions = useMemo(
-    () =>
-      buildFilterOptions(
-        calendarEvents.map((event) => event.coordinator),
-        t("calendar.filters.allCoordinators", { defaultValue: "All coordinators" }),
-        false,
-      ),
-    [calendarEvents, t],
-  );
-  const eventTypeOptions = useMemo(() => {
-    const baseOptions = APPOINTMENT_TYPE_OPTIONS.map((item) => ({
-      label: t(`appointments.typeOptions.${item.value}`, { defaultValue: item.label }),
-      value: item.label,
-    }));
-    const knownValues = new Set(baseOptions.map((option) => option.value));
-    const extraOptions = buildFilterOptions(
-      calendarEvents.map((event) => event.eventType),
-      t("calendar.filters.allEventTypes", { defaultValue: "All event types" }),
-      false,
-    ).filter((option) => !knownValues.has(option.value));
-
-    return [...baseOptions, ...extraOptions];
-  }, [calendarEvents, t]);
-
-  const filteredVenueOptions = useMemo(
-    () =>
-      venueOptions.filter((option) =>
-        option.label.toLowerCase().includes(venueSearch.trim().toLowerCase()),
-      ),
-    [venueOptions, venueSearch],
-  );
-  const filteredCoordinatorOptions = useMemo(
-    () =>
-      coordinatorOptions.filter((option) =>
-        option.label.toLowerCase().includes(coordinatorSearch.trim().toLowerCase()),
-      ),
-    [coordinatorOptions, coordinatorSearch],
-  );
-  const filteredEventTypeOptions = useMemo(
-    () =>
-      eventTypeOptions.filter((option) =>
-        option.label.toLowerCase().includes(eventTypeSearch.trim().toLowerCase()),
-      ),
-    [eventTypeOptions, eventTypeSearch],
-  );
-
-  const activeFiltersCount = [
-    Boolean(filters.search.trim()),
-    filters.dateRange !== "all",
-    filters.venue !== "all",
-    filters.status !== "all",
-    filters.coordinator !== "all",
-    filters.eventType !== "all",
-  ].filter(Boolean).length;
-
-  const calendarSummaries = useMemo(
-    () => buildCalendarSummaries(calendarEvents, t),
-    [calendarEvents, t],
-  );
-
-  const quickViewData = useMemo<EventQuickViewData | null>(() => {
-    if (!selectedEvent) {
-      return null;
-    }
-
-    return {
-      eyebrow: t("calendar.quickView", { defaultValue: "Quick View" }),
-      title: selectedEvent.title,
-      subtitle: `${selectedEvent.clientName} • ${selectedEvent.bookingNumber}`,
-      badges: (
-        <>
-          <StatusBadge status={selectedEvent.status} />
-          <EventTypeBadge
-            label={selectedEvent.eventType}
-            accent={
-              selectedEvent.status === "Confirmed"
-                ? "emerald"
-                : selectedEvent.status === "Pending"
-                  ? "gold"
-                  : selectedEvent.status === "Completed"
-                    ? "blue"
-                    : "rose"
-            }
-          />
-        </>
-      ),
-      warning: selectedEvent.conflict
-        ? t("calendar.availabilityWarning")
-        : undefined,
-      infoItems: [
-        {
-          label: t("common.date"),
-          value: formatDateLabel(selectedEvent.startAt, "EEEE, dd MMM yyyy"),
-          icon: CalendarClock,
-        },
-        {
-          label: t("common.time"),
-          value: `${formatTimeLabel(selectedEvent.startAt)} - ${formatTimeLabel(selectedEvent.endAt)}`,
-          icon: CalendarClock,
-        },
-        {
-          label: t("common.venue"),
-          value: selectedEvent.venue,
-          icon: MapPin,
-        },
-        {
-          label: t("appointments.assignedTo", { defaultValue: "Assigned To" }),
-          value: selectedEvent.coordinator,
-          icon: UsersRound,
-        },
-        {
-          label: t("appointments.meetingType", { defaultValue: "Meeting Type" }),
-          value: selectedEvent.packageName,
-          icon: NotebookText,
-        },
-        {
-          label: t("appointments.guestCount", { defaultValue: "Guest Count" }),
-          value: selectedEvent.guestCount ? String(selectedEvent.guestCount) : "-",
-          icon: UsersRound,
-        },
-      ],
-      notes: selectedEvent.notes,
-      notesLabel: t("common.notes", { defaultValue: "Notes" }),
-      actions: (
-        <>
-          <Button
-            type="button"
-            onClick={() =>
-              selectedEvent.appointmentId &&
-              navigate(`/appointments/${selectedEvent.appointmentId}`)
-            }
-          >
-            {t("appointments.viewAppointment", { defaultValue: "View Appointment" })}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              selectedEvent.appointmentId &&
-              navigate(`/appointments/edit/${selectedEvent.appointmentId}`)
-            }
-          >
-            {t("common.edit", { defaultValue: "Edit" })}
-          </Button>
-        </>
-      ),
-    };
-  }, [navigate, selectedEvent, t]);
 
   const legendItems = [
-    { id: "confirmed", label: t("status.Confirmed", { defaultValue: "Confirmed" }), accent: "emerald" as const },
-    { id: "pending", label: t("status.Pending", { defaultValue: "Pending" }), accent: "gold" as const },
-    { id: "tentative", label: t("status.Tentative", { defaultValue: "Tentative" }), accent: "rose" as const },
-    { id: "completed", label: t("status.Completed", { defaultValue: "Completed" }), accent: "blue" as const },
+    {
+      id: "appointment",
+      label: t("calendar.legend.appointments", { defaultValue: "Appointments" }),
+      accent: "gold" as const,
+    },
+    {
+      id: "event",
+      label: t("calendar.legend.events", { defaultValue: "Events" }),
+      accent: "emerald" as const,
+    },
+    {
+      id: "completed",
+      label: t("calendar.legend.completed", { defaultValue: "Completed" }),
+      accent: "blue" as const,
+    },
+    {
+      id: "cancelled",
+      label: t("calendar.legend.cancelled", { defaultValue: "Cancelled" }),
+      accent: "rose" as const,
+    },
   ];
 
   return (
-    <ProtectedComponent permission="appointments.calendar.read">
+    <ProtectedComponent anyOf={["appointments.calendar.read", "events.read"]}>
       <CrudPageLayout>
         <CrudPageHeader
-          eyebrow={t("calendar.operations")}
-          title={t("calendar.title")}
-          description={t("calendar.filterToolbarDescription")}
+          eyebrow={t("calendar.operations", { defaultValue: "Daily Operations" })}
+          title={t("calendar.title", { defaultValue: "Operational Calendar" })}
+          description={t("calendar.unifiedDescription", {
+            defaultValue:
+              "Unified operational timeline for appointments and wedding events.",
+          })}
           actions={
             <ProtectedComponent permission="appointments.create">
               <Button onClick={() => navigate("/appointments/create")}>
-                <Plus className="h-4 w-4" />
+                <CalendarRange className="h-4 w-4" />
                 {t("appointments.create", { defaultValue: "Create Appointment" })}
               </Button>
             </ProtectedComponent>
@@ -323,19 +442,22 @@ export function CalendarPage() {
         />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {calendarSummaries.map((summary) => (
+          {summaryCards.map((summary) => (
             <SummaryCard
               key={summary.id}
               label={summary.label}
               value={summary.value}
-              hint={summary.detail}
+              hint={summary.hint}
             />
           ))}
         </section>
 
         <CalendarFilterBar
           title={t("common.filters", { defaultValue: "Filters" })}
-          description={t("calendar.filterToolbarDescription")}
+          description={t("calendar.filterToolbarDescription", {
+            defaultValue:
+              "Refine the unified operational feed by source, status, venue, and coordinator.",
+          })}
           actions={
             <>
               <CrudFilterPill
@@ -352,232 +474,203 @@ export function CalendarPage() {
                 variant="secondary"
                 className="h-9 rounded-xl px-2.5 text-[12px]"
                 disabled={activeFiltersCount === 0}
-                onClick={() => setFilters(initialFilters)}
+                onClick={() =>
+                  setFilters({
+                    search: "",
+                    sourceType: defaultSourceType,
+                    status: "all",
+                    venueId: "all",
+                    assignedUserId: "all",
+                    dateRange: "all",
+                  })
+                }
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 {t("calendar.clearFilters", { defaultValue: "Clear Filters" })}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 rounded-xl px-2.5 text-[12px]"
-                onClick={() => setFiltersOpen((current) => !current)}
-              >
-                {filtersOpen ? (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-                {filtersOpen
-                  ? t("calendar.hideFilters", { defaultValue: "Hide Filters" })
-                  : t("calendar.showFilters", { defaultValue: "Show Filters" })}
               </Button>
             </>
           }
         >
           <div className="space-y-4">
+            <div className="crud-form-grid xl:grid-cols-3">
+              <CrudFilterField
+                label={t("common.searchAnything", { defaultValue: "Search" })}
+              >
+                <input
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  placeholder={t("calendar.searchPlaceholder", {
+                    defaultValue: "Search titles, customers, notes, or venues...",
+                  })}
+                  value={filters.search}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      search: event.target.value,
+                    }))
+                  }
+                />
+              </CrudFilterField>
+
+              <CrudFilterField
+                label={t("calendar.filters.sourceType", { defaultValue: "Source Type" })}
+              >
+                <select
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.sourceType}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      sourceType: event.target.value as CalendarSourceFilter,
+                    }))
+                  }
+                >
+                  {SOURCE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {t(`calendar.source.${option.value}`, { defaultValue: option.label })}
+                    </option>
+                  ))}
+                </select>
+              </CrudFilterField>
+
+              <CrudFilterField
+                label={t("calendar.filters.dateRange", { defaultValue: "Date Range" })}
+              >
+                <select
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.dateRange}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      dateRange: event.target.value as OperationalCalendarFilters["dateRange"],
+                    }))
+                  }
+                >
+                  {DATE_RANGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {t(`calendar.filters.${option.value}`, { defaultValue: option.label })}
+                    </option>
+                  ))}
+                </select>
+              </CrudFilterField>
+
+              <CrudFilterField
+                label={t("calendar.filters.status", { defaultValue: "Status" })}
+              >
+                <select
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.status}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      status: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="all">
+                    {t("calendar.filters.allStatuses", { defaultValue: "All statuses" })}
+                  </option>
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </CrudFilterField>
+
+              <CrudFilterField
+                label={t("calendar.filters.venue", { defaultValue: "Venue" })}
+              >
+                <select
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.venueId}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      venueId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="all">
+                    {t("calendar.filters.allVenues", { defaultValue: "All venues" })}
+                  </option>
+                  {venueOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </CrudFilterField>
+
+              <CrudFilterField
+                label={t("calendar.filters.assignedUser", {
+                  defaultValue: "Assigned User / Coordinator",
+                })}
+              >
+                <select
+                  className="app-native-select h-10 rounded-xl text-[13px]"
+                  value={filters.assignedUserId}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      assignedUserId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="all">
+                    {t("calendar.filters.allAssignedUsers", {
+                      defaultValue: "All assigned users",
+                    })}
+                  </option>
+                  {assignedUserOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </CrudFilterField>
+            </div>
+
             {activeFiltersCount > 0 ? (
               <div
                 className="flex min-h-[28px] flex-wrap items-center gap-1.5 border-t pt-3"
                 style={{ borderColor: "var(--lux-row-border)" }}
               >
                 {filters.search.trim() ? <CrudFilterPill label={filters.search.trim()} /> : null}
-                {filters.dateRange !== "all" ? (
+                {filters.sourceType !== "all" ? (
                   <CrudFilterPill
-                    label={dateRangeOptions.find((option) => option.value === filters.dateRange)?.label || filters.dateRange}
+                    label={t(`calendar.source.${filters.sourceType}`, {
+                      defaultValue: filters.sourceType,
+                    })}
                   />
                 ) : null}
-                {filters.venue !== "all" ? <CrudFilterPill label={filters.venue} /> : null}
                 {filters.status !== "all" ? <CrudFilterPill label={filters.status} /> : null}
-                {filters.coordinator !== "all" ? (
-                  <CrudFilterPill label={filters.coordinator} />
-                ) : null}
-                {filters.eventType !== "all" ? (
+                {filters.venueId !== "all" ? (
                   <CrudFilterPill
-                    label={eventTypeOptions.find((option) => option.value === filters.eventType)?.label || filters.eventType}
+                    label={
+                      venueOptions.find((option) => option.value === filters.venueId)?.label ||
+                      filters.venueId
+                    }
+                  />
+                ) : null}
+                {filters.assignedUserId !== "all" ? (
+                  <CrudFilterPill
+                    label={
+                      assignedUserOptions.find(
+                        (option) => option.value === filters.assignedUserId,
+                      )?.label || filters.assignedUserId
+                    }
+                  />
+                ) : null}
+                {filters.dateRange !== "all" ? (
+                  <CrudFilterPill
+                    label={
+                      DATE_RANGE_OPTIONS.find((option) => option.value === filters.dateRange)
+                        ?.label || filters.dateRange
+                    }
                   />
                 ) : null}
               </div>
             ) : null}
-
-            <AnimatePresence initial={false}>
-              {filtersOpen ? (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div
-                    className="grid gap-3 border-t pt-4 xl:grid-cols-12"
-                    style={{ borderColor: "var(--lux-row-border)" }}
-                  >
-                    <div
-                      className="space-y-3 rounded-2xl border p-3 xl:col-span-8"
-                      style={{
-                        borderColor: "var(--lux-row-border)",
-                        background: "var(--lux-control-hover)",
-                      }}
-                    >
-                      <div className="crud-form-grid md:grid-cols-2">
-                        <CrudFilterField label={t("common.searchAnything", { defaultValue: "Search" })}>
-                          <input
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            placeholder={t("common.searchCustomerOrBooking")}
-                            value={filters.search}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                search: event.target.value,
-                              }))
-                            }
-                          />
-                        </CrudFilterField>
-
-                        <CrudFilterField label={t("calendar.fields.venue")}>
-                          <SearchableFilterSelect
-                            value={filters.venue}
-                            onValueChange={(value) =>
-                              setFilters((current) => ({ ...current, venue: value }))
-                            }
-                            onSearch={setVenueSearch}
-                            placeholder={t("calendar.filters.allVenues", {
-                              defaultValue: "All venues",
-                            })}
-                            searchPlaceholder={t("calendar.searchVenue", {
-                              defaultValue: "Search venues...",
-                            })}
-                          >
-                            {filteredVenueOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
-                                })}
-                              />
-                            ) : (
-                              filteredVenueOptions.map((option) => (
-                                <SearchableSelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableFilterSelect>
-                        </CrudFilterField>
-
-                        <CrudFilterField label={t("calendar.fields.coordinator")}>
-                          <SearchableFilterSelect
-                            value={filters.coordinator}
-                            onValueChange={(value) =>
-                              setFilters((current) => ({ ...current, coordinator: value }))
-                            }
-                            onSearch={setCoordinatorSearch}
-                            placeholder={t("calendar.filters.allCoordinators", {
-                              defaultValue: "All coordinators",
-                            })}
-                            searchPlaceholder={t("calendar.searchCoordinator", {
-                              defaultValue: "Search coordinators...",
-                            })}
-                          >
-                            {filteredCoordinatorOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
-                                })}
-                              />
-                            ) : (
-                              filteredCoordinatorOptions.map((option) => (
-                                <SearchableSelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableFilterSelect>
-                        </CrudFilterField>
-
-                        <CrudFilterField label={t("calendar.fields.eventType")}>
-                          <SearchableFilterSelect
-                            value={filters.eventType}
-                            onValueChange={(value) =>
-                              setFilters((current) => ({ ...current, eventType: value }))
-                            }
-                            onSearch={setEventTypeSearch}
-                            placeholder={t("calendar.filters.allEventTypes", {
-                              defaultValue: "All event types",
-                            })}
-                            searchPlaceholder={t("calendar.searchEventType", {
-                              defaultValue: "Search event types...",
-                            })}
-                          >
-                            {filteredEventTypeOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
-                                })}
-                              />
-                            ) : (
-                              filteredEventTypeOptions.map((option) => (
-                                <SearchableSelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableFilterSelect>
-                        </CrudFilterField>
-                      </div>
-                    </div>
-
-                    <div
-                      className="space-y-3 rounded-2xl border p-3 xl:col-span-4"
-                      style={{
-                        borderColor: "var(--lux-row-border)",
-                        background: "var(--lux-control-hover)",
-                      }}
-                    >
-                      <div className="crud-form-grid">
-                        <CrudFilterField label={t("calendar.fields.dateRange")}>
-                          <select
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            value={filters.dateRange}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                dateRange: event.target.value,
-                              }))
-                            }
-                          >
-                            {dateRangeOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </CrudFilterField>
-
-                        <CrudFilterField label={t("calendar.fields.status")}>
-                          <select
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            value={filters.status}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                status: event.target.value,
-                              }))
-                            }
-                          >
-                            {statusOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </CrudFilterField>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
           </div>
         </CalendarFilterBar>
 
@@ -585,16 +678,19 @@ export function CalendarPage() {
           <div className="space-y-6 2xl:col-span-8">
             <AppCalendar
               locale={i18n.language === "ar" ? "ar" : "en"}
-              events={appCalendarEvents}
-              loading={isLoading}
+              events={calendarEvents}
+              loading={isLoading || isFetching}
               legends={legendItems}
-              emptyTitle={t("calendar.emptyTitle", { defaultValue: "No appointments found" })}
+              emptyTitle={t("calendar.emptyTitle", {
+                defaultValue: "No schedule items found",
+              })}
               emptyDescription={t("calendar.emptyDescription", {
-                defaultValue: "Try another date range or remove some filters.",
+                defaultValue:
+                  "Try changing the current view window or relaxing one of the active filters.",
               })}
               onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
-                setSelectedEventId(event.id);
+                setSelectedItemId(event.id);
                 setDetailsDialogOpen(true);
               }}
               onDateSelect={(date) =>
@@ -606,8 +702,13 @@ export function CalendarPage() {
           <div className="space-y-6 2xl:col-span-4">
             <EventQuickViewCard
               data={quickViewData}
-              emptyTitle={t("calendar.selectBooking")}
-              emptyDescription={t("calendar.selectBookingDescription")}
+              emptyTitle={t("calendar.selectScheduleItem", {
+                defaultValue: "Select a schedule item",
+              })}
+              emptyDescription={t("calendar.selectScheduleItemDescription", {
+                defaultValue:
+                  "Choose an appointment or event from the calendar to inspect its details.",
+              })}
             />
           </div>
         </section>
@@ -616,122 +717,20 @@ export function CalendarPage() {
           open={detailsDialogOpen}
           onOpenChange={setDetailsDialogOpen}
           title={t("calendar.quickView", { defaultValue: "Quick View" })}
-          description={t("calendar.selectBookingDescription")}
+          description={t("calendar.selectScheduleItemDescription", {
+            defaultValue:
+              "Choose an appointment or event from the calendar to inspect its details.",
+          })}
           data={quickViewData}
-          emptyTitle={t("calendar.selectBooking")}
-          emptyDescription={t("calendar.selectBookingDescription")}
+          emptyTitle={t("calendar.selectScheduleItem", {
+            defaultValue: "Select a schedule item",
+          })}
+          emptyDescription={t("calendar.selectScheduleItemDescription", {
+            defaultValue:
+              "Choose an appointment or event from the calendar to inspect its details.",
+          })}
         />
       </CrudPageLayout>
     </ProtectedComponent>
   );
-}
-
-function buildFilterOptions(
-  values: string[],
-  allLabel: string,
-  includeAllOption = true,
-) {
-  const options = Array.from(new Set(values.filter((value) => value && value !== "-")))
-    .map((value) => ({
-      label: value,
-      value,
-    }))
-    .sort((left, right) => left.label.localeCompare(right.label));
-
-  return [
-    ...(includeAllOption ? [{ label: allLabel, value: "all" }] : []),
-    ...options,
-  ];
-}
-
-function SearchableFilterSelect({
-  value,
-  onValueChange,
-  onSearch,
-  placeholder,
-  searchPlaceholder,
-  children,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  onSearch: (value: string) => void;
-  placeholder: string;
-  searchPlaceholder: string;
-  children: ReactNode;
-}) {
-  return (
-    <SearchableSelect
-      value={value || FILTER_EMPTY_VALUE}
-      onValueChange={(nextValue) =>
-        onValueChange(nextValue === FILTER_EMPTY_VALUE ? "all" : nextValue)
-      }
-      onSearch={onSearch}
-      placeholder={placeholder}
-      searchPlaceholder={searchPlaceholder}
-      emptyMessage="No results found"
-      allowClear={value !== "all"}
-      onClear={() => onValueChange("all")}
-      triggerClassName="app-native-select h-10 rounded-xl px-3 text-[13px]"
-      size="default"
-    >
-      <SearchableSelectItem value={FILTER_EMPTY_VALUE}>
-        {placeholder}
-      </SearchableSelectItem>
-      {children}
-    </SearchableSelect>
-  );
-}
-
-function buildCalendarSummaries(
-  events: CalendarEvent[],
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  const today = new Date();
-  const todayKey = format(today, "yyyy-MM-dd");
-  const weekEnd = addDays(today, 6);
-  const confirmedCount = events.filter((event) => event.status === "Confirmed").length;
-  const pendingCount = events.filter((event) =>
-    ["Pending", "Tentative"].includes(event.status),
-  ).length;
-
-  return [
-    {
-      id: "todayAppointments",
-      label: t("calendar.summary.todayBookings", {
-        defaultValue: "Today appointments",
-      }),
-      detail: t("calendar.summary.todayBookingsDetail", {
-        defaultValue: "Appointments scheduled for today.",
-      }),
-      value: String(events.filter((event) => format(event.startAt, "yyyy-MM-dd") === todayKey).length),
-    },
-    {
-      id: "weekAppointments",
-      label: t("calendar.summary.thisWeekEvents", { defaultValue: "This week" }),
-      detail: t("calendar.summary.thisWeekEventsDetail", {
-        defaultValue: "Appointments scheduled over the next seven days.",
-      }),
-      value: String(
-        events.filter((event) => event.startAt >= today && event.startAt <= weekEnd).length,
-      ),
-    },
-    {
-      id: "confirmedAppointments",
-      label: t("calendar.summary.confirmed", { defaultValue: "Confirmed" }),
-      detail: t("calendar.summary.confirmedDetail", {
-        defaultValue: "Appointments already confirmed with clients.",
-      }),
-      value: String(confirmedCount),
-    },
-    {
-      id: "pendingAppointments",
-      label: t("calendar.summary.pendingConfirmations", {
-        defaultValue: "Pending confirmations",
-      }),
-      detail: t("calendar.summary.pendingConfirmationsDetail", {
-        defaultValue: "Scheduled or tentative appointments awaiting follow-up.",
-      }),
-      value: String(pendingCount),
-    },
-  ];
 }

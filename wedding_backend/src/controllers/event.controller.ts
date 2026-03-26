@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Event, EventSection, Customer, Venue, User } from "../models";
+import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
 import {
   createEventSchema,
   updateEventSchema,
@@ -10,6 +11,7 @@ import {
   updateEventSectionSchema,
   createEventFromSourceSchema,
 } from "../validation/event.schemas";
+import { eventCalendarQuerySchema } from "../validation/calendar.schemas";
 
 const eventInclude: any = [
   { model: Customer, as: "customer" },
@@ -209,6 +211,25 @@ export const getEvents = async (req: Request, res: Response) => {
       pages: Math.ceil(count / limit),
     },
   });
+};
+
+export const getEventsCalendar = async (req: Request, res: Response) => {
+  try {
+    const query = eventCalendarQuerySchema.parse(req.query);
+    const data = await listEventsCalendarRecords({
+      ...query,
+      assignedUserId: undefined,
+      search: undefined,
+    });
+
+    return res.json({ data });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ errors: error.errors });
+    }
+
+    return res.status(500).json({ message: req.t("common.unexpected_error") });
+  }
 };
 
 export const getEventById = async (req: Request, res: Response) => {

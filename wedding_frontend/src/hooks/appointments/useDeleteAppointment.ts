@@ -21,6 +21,7 @@ export const useDeleteAppointment = () => {
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
     },
     onError: (error) => {
       toast({

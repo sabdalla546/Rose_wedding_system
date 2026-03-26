@@ -50,6 +50,8 @@ export type NavigationLeaf = NavigationItem & {
   parents: string[];
 };
 
+export const SECRETARIAL_ROOT_ID = "Secretarial";
+
 const navigationTree: NavigationItem[] = [
   {
     id: "dashboard",
@@ -60,9 +62,10 @@ const navigationTree: NavigationItem[] = [
     subtitleAr: "نظرة عامة على الحجوزات وعروض الأسعار والمدفوعات والعمليات.",
   },
   {
-    id: "Secretarial",
+    id: SECRETARIAL_ROOT_ID,
     labelKey: "sidebar.nav.Secretarial",
     icon: CalendarCheck2,
+    href: "/calendar",
     children: [
       {
         id: "calendar-master",
@@ -250,7 +253,7 @@ if (settingsTeamItem) {
 }
 
 const secretarialRootItem = navigationTree.find(
-  (item) => item.id === "Secretarial",
+  (item) => item.id === SECRETARIAL_ROOT_ID,
 );
 
 if (secretarialRootItem?.children) {
@@ -375,6 +378,20 @@ function attachAccessRules(items: NavigationItem[]): NavigationItem[] {
 
 export const navigationItems: NavigationItem[] =
   attachAccessRules(navigationTree);
+
+export const secretarialNavigationLeaves: NavigationLeaf[] = (() => {
+  const secretarialRoot = navigationItems.find(
+    (item) => item.id === SECRETARIAL_ROOT_ID,
+  );
+
+  if (!secretarialRoot?.children?.length) {
+    return [];
+  }
+
+  return flattenNavigationLeaves(secretarialRoot.children, [
+    SECRETARIAL_ROOT_ID,
+  ]);
+})();
 
 export function flattenNavigationLeaves(
   items: NavigationItem[],

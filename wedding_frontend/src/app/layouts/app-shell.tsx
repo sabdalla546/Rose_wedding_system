@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SecretarialSectionBar } from "@/components/layout/secretarial-section-bar";
 import { cn } from "@/lib/utils";
 
 const DESKTOP_SIDEBAR_EXPANDED = 225;
@@ -13,7 +14,7 @@ const HEADER_TOP_OFFSET = 0;
 const SIDEBAR_CONTENT_GAP = 20;
 const CONTENT_GUTTER = 0;
 const CONNECTED_EDGE_GUTTER = 0;
-const HEADER_FIXED_HEIGHT = 96;
+const HEADER_FIXED_HEIGHT = 64;
 const shellInset = "0px";
 
 function getIsMobile() {
@@ -133,7 +134,10 @@ export function AppShell() {
 
         <div
           className="transition-[margin-left,margin-right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={contentOffsetStyle}
+          style={{
+            ...contentOffsetStyle,
+            paddingTop: `${HEADER_FIXED_HEIGHT}px`,
+          }}
         >
           <AppHeader
             fixedStyle={headerFixedStyle}
@@ -141,10 +145,8 @@ export function AppShell() {
             onToggleSidebar={toggleSidebar}
             sidebarOpen={sidebarOpen}
           />
-          <main
-            className="overflow-x-hidden px-3 pb-4 md:px-4 md:pb-6"
-            style={{ paddingTop: `${HEADER_FIXED_HEIGHT}px` }}
-          >
+          <SecretarialSectionBar />
+          <main className="overflow-x-hidden px-3 pb-4 md:px-4 md:pb-6">
             <Outlet />
           </main>
         </div>

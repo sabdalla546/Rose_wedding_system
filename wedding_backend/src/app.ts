@@ -22,6 +22,7 @@ import vendorRoutes from "./routes/vendor.routes";
 import serviceRoutes from "./routes/service.routes";
 import quotationRoutes from "./routes/quotation.routes";
 import contractRoutes from "./routes/contract.routes";
+import calendarRoutes from "./routes/calendar.routes";
 
 export const createApp = async () => {
   const app = express();
@@ -61,6 +62,7 @@ export const createApp = async () => {
   app.use("/api/v1/customers", customerRoutes);
 
   app.use("/api/v1/events", eventRoutes);
+  app.use("/api/v1/calendar", calendarRoutes);
   app.use("/api/v1/vendors", vendorRoutes);
   app.use("/api/v1/services", serviceRoutes);
   app.use("/api/v1/quotations", quotationRoutes);

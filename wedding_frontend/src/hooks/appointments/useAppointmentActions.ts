@@ -42,6 +42,7 @@ function useAppointmentActionMutation<TPayload>(
 
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       queryClient.invalidateQueries({
         queryKey: ["appointment", String(variables.id)],
       });

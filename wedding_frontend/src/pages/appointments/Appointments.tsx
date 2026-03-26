@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { CalendarRange, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/layout/page-container";
@@ -145,12 +145,24 @@ const AppointmentsPage = () => {
             </p>
           </div>
 
-          <ProtectedComponent permission="appointments.create">
-            <Button onClick={() => navigate("/appointments/create")}>
-              <Plus className="h-4 w-4" />
-              {t("appointments.create", { defaultValue: "Create Appointment" })}
-            </Button>
-          </ProtectedComponent>
+          <div className="flex flex-wrap items-center gap-2">
+            <ProtectedComponent permission="appointments.calendar.read">
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/calendar?sourceType=appointment")}
+              >
+                <CalendarRange className="h-4 w-4" />
+                {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
+              </Button>
+            </ProtectedComponent>
+
+            <ProtectedComponent permission="appointments.create">
+              <Button onClick={() => navigate("/appointments/create")}>
+                <Plus className="h-4 w-4" />
+                {t("appointments.create", { defaultValue: "Create Appointment" })}
+              </Button>
+            </ProtectedComponent>
+          </div>
         </div>
 
         <div className="grid gap-4 rounded-[24px] border p-4 md:grid-cols-2 xl:grid-cols-5">
@@ -230,6 +242,18 @@ const AppointmentsPage = () => {
             itemsPerPage={itemsPerPage}
             setItemsPerPage={setItemsPerPage}
             setCurrentPage={setCurrentPage}
+            actions={
+              <ProtectedComponent permission="appointments.calendar.read">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate("/calendar?sourceType=appointment")}
+                >
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
+                </Button>
+              </ProtectedComponent>
+            }
           />
 
           <DataTable

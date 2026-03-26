@@ -6,7 +6,7 @@ export type RouteAccess = {
 };
 
 export const routeAccessByHref: Record<string, RouteAccess> = {
-  "/calendar": { permission: "appointments.calendar.read" },
+  "/calendar": { anyOf: ["appointments.calendar.read", "events.read"] },
   "/settings/team": { anyOf: ["users.read", "roles.read"] },
   "/settings/team/users": { permission: "users.read" },
   "/settings/team/users/create": { permission: "users.create" },

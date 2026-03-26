@@ -79,6 +79,7 @@ export const useCreateEvent = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       navigate("/events");
     },
     onError: (error) => {
@@ -114,6 +115,7 @@ export const useCreateEventFromSource = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       navigate("/events");
     },
     onError: (error) => {
@@ -150,6 +152,7 @@ export const useUpdateEvent = (id?: string) => {
 
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-feed"] });
       navigate("/events");
     },
     onError: (error) => {

@@ -1,112 +1,48 @@
-import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  CalendarClock,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
-  Plus,
-  RotateCcw,
-  UserRound,
-  UsersRound,
-} from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
+import { CalendarRange, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { AppCalendar } from "@/components/calendar/app-calendar";
-import { CalendarFilterBar } from "@/components/calendar/calendar-filter-bar";
-import { EventDetailsDialog } from "@/components/calendar/event-details-dialog";
-import { EventTypeBadge } from "@/components/calendar/event-type-badge";
-import {
-  EventQuickViewCard,
-  type EventQuickViewData,
-} from "@/components/calendar/event-quick-view-card";
-import { CrudFilterField, CrudFilterPill, CrudPageHeader, CrudPageLayout } from "@/components/shared/crud-layout";
-import { DataTableShell } from "@/components/shared/data-table-shell";
-import { SummaryCard } from "@/components/dashboard/summary-card";
+import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
-import {
-  SearchableSelect,
-  SearchableSelectEmpty,
-  SearchableSelectItem,
-} from "@/components/ui/searchable-select";
-import { toAppCalendarEventEntries } from "@/features/calendar/app-calendar-adapters";
+import { Input } from "@/components/ui/input";
+import TableHeader from "@/components/common/TableHeader";
+import Pagination from "@/components/ui/pagination";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
 import { useEvents } from "@/hooks/events/useEvents";
 import { useVenues } from "@/hooks/venues/useVenues";
-import { formatDateLabel } from "@/lib/utils";
 
-import {
-  EVENT_STATUS_OPTIONS,
-  getEventDisplayTitle,
-  toTableEvents,
-  type TableEvent,
-} from "./adapters";
-import { EventStatusBadge } from "./_components/eventStatusBadge";
+import { EVENT_STATUS_OPTIONS, toTableEvents, type TableEvent } from "./adapters";
 import { useEventsColumns } from "./_components/eventsColumns";
-import type { Event, EventStatus } from "./types";
-import type { AppCalendarRange } from "@/components/calendar/types";
-
-type DisplayMode = "calendar" | "table";
-
-type FiltersState = {
-  search: string;
-  dateRange: string;
-  status: "all" | EventStatus;
-  customerId: string;
-  venueId: string;
-};
-
-const initialFilters: FiltersState = {
-  search: "",
-  dateRange: "all",
-  status: "all",
-  customerId: "all",
-  venueId: "all",
-};
-
-const FILTER_EMPTY_VALUE = "__all__";
-
-function getInitialRange() {
-  const currentDate = new Date();
-
-  return {
-    view: "month" as const,
-    title: format(currentDate, "MMMM yyyy"),
-    start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
-    end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
-    currentStart: startOfMonth(currentDate),
-    currentEnd: endOfMonth(currentDate),
-  };
-}
+import type { EventStatus } from "./types";
 
 const EventsPage = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("calendar");
-  const [filters, setFilters] = useState<FiltersState>(initialFilters);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [venueSearch, setVenueSearch] = useState("");
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<Event | null>(null);
-  const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(getInitialRange);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  const { data: raw, isLoading } = useEvents({
-    currentPage: 1,
-    itemsPerPage: 1000,
-    searchQuery: "",
-    status: "all",
-    customerId: "",
-    venueId: "",
-    dateFrom: format(calendarRange.start, "yyyy-MM-dd"),
-    dateTo: format(addDays(calendarRange.end, -1), "yyyy-MM-dd"),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | EventStatus>("all");
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [venueFilter, setVenueFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(null);
+
+  const { data, isLoading } = useEvents({
+    currentPage,
+    itemsPerPage,
+    searchQuery,
+    status: statusFilter,
+    customerId: customerFilter,
+    venueId: venueFilter,
+    dateFrom,
+    dateTo,
   });
   const { data: customersResponse } = useCustomers({
     currentPage: 1,
@@ -124,515 +60,191 @@ const EventsPage = () => {
     isActive: "all",
   });
 
-  const events = raw?.data ?? [];
+  const adapted = useMemo(() => toTableEvents(data), [data]);
   const customers = customersResponse?.data ?? [];
   const venues = venuesResponse?.data ?? [];
 
-  const filteredEvents = useMemo(
-    () => filterEvents(events, filters),
-    [events, filters],
-  );
-  const calendarEvents = useMemo(
-    () => toAppCalendarEventEntries(filteredEvents),
-    [filteredEvents],
-  );
-  const selectedEvent =
-    filteredEvents.find((event) => String(event.id) === selectedEventId) ??
-    filteredEvents[0] ??
-    null;
-  const activeFiltersCount = [
-    Boolean(filters.search.trim()),
-    filters.dateRange !== "all",
-    filters.status !== "all",
-    filters.customerId !== "all",
-    filters.venueId !== "all",
-  ].filter(Boolean).length;
-
-  const tableEvents = useMemo(
-    () => toTableEvents({ data: filteredEvents, meta: raw?.meta ?? { total: filteredEvents.length, page: 1, limit: 1000, pages: 1 } }).data.events,
-    [filteredEvents, raw?.meta],
-  );
-
-  const deleteMutation = useDeleteEvent();
   const columns = useEventsColumns({
-    onDelete: (event: TableEvent) => setDeleteCandidate(event),
+    onDelete: setDeleteCandidate,
     editPermission: "events.update",
     deletePermission: "events.delete",
   });
-
-  const customerOptions = useMemo(
-    () =>
-      customers
-        .filter((item) =>
-          item.fullName.toLowerCase().includes(customerSearch.toLowerCase()),
-        )
-        .map((item) => ({ value: String(item.id), label: item.fullName })),
-    [customerSearch, customers],
-  );
-  const venueOptions = useMemo(
-    () =>
-      venues
-        .filter((item) =>
-          item.name.toLowerCase().includes(venueSearch.toLowerCase()),
-        )
-        .map((item) => ({ value: String(item.id), label: item.name })),
-    [venueSearch, venues],
-  );
-
-  const overviewCards = useMemo(
-    () => [
-      {
-        id: "total",
-        label: t("events.filteredEvents", { defaultValue: "Filtered Events" }),
-        value: String(filteredEvents.length),
-        hint: t("events.filteredEventsCount", {
-          count: filteredEvents.length,
-          defaultValue:
-            filteredEvents.length === 1
-              ? "1 event matches the current filters."
-              : `${filteredEvents.length} events match the current filters.`,
-        }),
-      },
-      {
-        id: "confirmed",
-        label: t("events.status.confirmed", { defaultValue: "Confirmed" }),
-        value: String(filteredEvents.filter((event) => event.status === "confirmed").length),
-        hint: t("events.confirmedHint", {
-          defaultValue: "Confirmed events in the current calendar window.",
-        }),
-      },
-      {
-        id: "designing",
-        label: t("events.status.designing", { defaultValue: "Designing" }),
-        value: String(filteredEvents.filter((event) => event.status === "designing").length),
-        hint: t("events.designingHint", {
-          defaultValue: "Events currently in design preparation.",
-        }),
-      },
-      {
-        id: "completed",
-        label: t("events.status.completed", { defaultValue: "Completed" }),
-        value: String(filteredEvents.filter((event) => event.status === "completed").length),
-        hint: t("events.completedHint", {
-          defaultValue: "Completed events in this visible range.",
-        }),
-      },
-    ],
-    [filteredEvents, t],
-  );
-
-  const quickViewData = useMemo<EventQuickViewData | null>(() => {
-    if (!selectedEvent) {
-      return null;
-    }
-
-    const venueDisplay =
-      selectedEvent.venue?.name ||
-      selectedEvent.venueNameSnapshot ||
-      selectedEvent.venueId?.toString() ||
-      "-";
-
-    return {
-      eyebrow: t("events.quickView", { defaultValue: "Quick View" }),
-      title: getEventDisplayTitle(selectedEvent),
-      subtitle:
-        selectedEvent.customer?.fullName ||
-        [selectedEvent.groomName, selectedEvent.brideName].filter(Boolean).join(" / ") ||
-        "-",
-      badges: (
-        <>
-          <EventStatusBadge status={selectedEvent.status} />
-          <EventTypeBadge
-            label={t("events.calendarType", { defaultValue: "Event" })}
-            accent={
-              selectedEvent.status === "confirmed"
-                ? "emerald"
-                : selectedEvent.status === "completed"
-                  ? "gold"
-                  : selectedEvent.status === "in_progress"
-                    ? "blue"
-                    : selectedEvent.status === "cancelled"
-                      ? "rose"
-                      : "slate"
-            }
-          />
-        </>
-      ),
-      infoItems: [
-        {
-          label: t("events.eventDate", { defaultValue: "Event Date" }),
-          value: formatDateLabel(new Date(selectedEvent.eventDate), "EEEE, dd MMM yyyy"),
-          icon: CalendarClock,
-        },
-        {
-          label: t("common.venue", { defaultValue: "Venue" }),
-          value: venueDisplay,
-          icon: MapPin,
-        },
-        {
-          label: t("events.partyNames", { defaultValue: "Party Names" }),
-          value:
-            [selectedEvent.groomName, selectedEvent.brideName].filter(Boolean).join(" / ") ||
-            "-",
-          icon: UsersRound,
-        },
-        {
-          label: t("events.customer", { defaultValue: "Customer" }),
-          value: selectedEvent.customer?.fullName || "-",
-          icon: UserRound,
-        },
-      ],
-      notes: selectedEvent.notes || t("events.noNotes", { defaultValue: "No notes added." }),
-      notesLabel: t("common.notes", { defaultValue: "Notes" }),
-      actions: (
-        <>
-          <Button type="button" onClick={() => navigate(`/events/${selectedEvent.id}`)}>
-            {t("events.viewEvent", { defaultValue: "View Event" })}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate(`/events/edit/${selectedEvent.id}`)}
-          >
-            {t("common.edit", { defaultValue: "Edit" })}
-          </Button>
-        </>
-      ),
-    };
-  }, [navigate, selectedEvent, t]);
-
-  const legendItems = [
-    { id: "draft", label: t("events.status.draft", { defaultValue: "Draft" }), accent: "slate" as const },
-    { id: "designing", label: t("events.status.designing", { defaultValue: "Designing" }), accent: "rose" as const },
-    { id: "confirmed", label: t("events.status.confirmed", { defaultValue: "Confirmed" }), accent: "emerald" as const },
-    { id: "completed", label: t("events.status.completed", { defaultValue: "Completed" }), accent: "gold" as const },
-  ];
+  const deleteMutation = useDeleteEvent();
 
   return (
     <ProtectedComponent permission="events.read">
-      <CrudPageLayout>
-        <CrudPageHeader
-          eyebrow={t("events.operations", { defaultValue: "Event Planning" })}
-          title={t("events.calendarTitle", { defaultValue: "Events Calendar" })}
-          description={t("events.calendarFiltersHint", {
-            defaultValue:
-              "Track event schedules, review conflicts, and switch between calendar and table views.",
-          })}
-          actions={
-            <>
-              <div
-                className="inline-flex rounded-2xl border p-1"
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
+      <PageContainer className="space-y-6 pb-4 pt-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
+              {t("events.title", { defaultValue: "Events" })}
+            </h1>
+            <p className="text-sm text-[var(--lux-text-secondary)]">
+              {t("events.managementHint", {
+                defaultValue:
+                  "Manage event records here, then use the operational calendar for cross-module scheduling.",
+              })}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <ProtectedComponent permission="events.read">
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/calendar?sourceType=event")}
               >
-                {(["calendar", "table"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className="rounded-xl px-4 py-2 text-sm font-semibold transition"
-                    style={
-                      displayMode === mode
-                        ? {
-                            background: "var(--lux-primary-surface)",
-                            color: "var(--lux-primary-text)",
-                          }
-                        : {
-                            color: "var(--lux-text-secondary)",
-                          }
-                    }
-                    onClick={() => setDisplayMode(mode)}
-                  >
-                    {mode === "calendar"
-                      ? t("events.calendarView", { defaultValue: "Calendar" })
-                      : t("events.tableView", { defaultValue: "Table" })}
-                  </button>
-                ))}
-              </div>
-              <ProtectedComponent permission="events.create">
-                <Button onClick={() => navigate("/events/create")}>
-                  <Plus className="h-4 w-4" />
-                  {t("events.create", { defaultValue: "Create Event" })}
+                <CalendarRange className="h-4 w-4" />
+                {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
+              </Button>
+            </ProtectedComponent>
+
+            <ProtectedComponent permission="events.create">
+              <Button onClick={() => navigate("/events/create")}>
+                <Plus className="h-4 w-4" />
+                {t("events.create", { defaultValue: "Create Event" })}
+              </Button>
+            </ProtectedComponent>
+          </div>
+        </div>
+
+        <div className="grid gap-4 rounded-[24px] border p-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="relative xl:col-span-2">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
+            <Input
+              className="pl-10"
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={t("events.searchPlaceholder", {
+                defaultValue: "Search by title, party names, venue, or customer",
+              })}
+            />
+          </div>
+
+          <select
+            className="h-10 rounded-xl border px-3 text-sm"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value as "all" | EventStatus);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="all">
+              {t("events.allStatuses", { defaultValue: "All Statuses" })}
+            </option>
+            {EVENT_STATUS_OPTIONS.map((status) => (
+              <option key={status.value} value={status.value}>
+                {t(`events.status.${status.value}`, {
+                  defaultValue: status.label,
+                })}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="h-10 rounded-xl border px-3 text-sm"
+            value={customerFilter}
+            onChange={(event) => {
+              setCustomerFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">
+              {t("events.allCustomers", { defaultValue: "All Customers" })}
+            </option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={String(customer.id)}>
+                {customer.fullName}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="h-10 rounded-xl border px-3 text-sm"
+            value={venueFilter}
+            onChange={(event) => {
+              setVenueFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">
+              {t("events.allVenues", { defaultValue: "All Venues" })}
+            </option>
+            {venues.map((venue) => (
+              <option key={venue.id} value={String(venue.id)}>
+                {venue.name}
+              </option>
+            ))}
+          </select>
+
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => {
+              setDateFrom(event.target.value);
+              setCurrentPage(1);
+            }}
+          />
+
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(event) => {
+              setDateTo(event.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <TableHeader
+            title={t("events.listTitle", { defaultValue: "Events List" })}
+            totalItems={adapted.total}
+            currentCount={adapted.data.events.length}
+            entityName={t("events.title", { defaultValue: "Events" })}
+            itemsPerPage={itemsPerPage}
+            setItemsPerPage={setItemsPerPage}
+            setCurrentPage={setCurrentPage}
+            actions={
+              <ProtectedComponent permission="events.read">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate("/calendar?sourceType=event")}
+                >
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
                 </Button>
               </ProtectedComponent>
-            </>
-          }
-        />
+            }
+          />
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {overviewCards.map((card) => (
-            <SummaryCard key={card.id} label={card.label} value={card.value} hint={card.hint} />
-          ))}
-        </section>
+          <DataTable
+            columns={columns}
+            data={adapted.data.events}
+            rowNumberStart={(currentPage - 1) * itemsPerPage + 1}
+            enableRowNumbers
+            fileName="events"
+            isLoading={isLoading}
+          />
 
-        <CalendarFilterBar
-          title={t("common.filters", { defaultValue: "Filters" })}
-          description={t("events.calendarFiltersHint", {
-            defaultValue: "Filter by status, linked records, venue, and date range.",
-          })}
-          actions={
-            <>
-              <CrudFilterPill
-                label={t("events.activeFiltersCount", {
-                  count: activeFiltersCount,
-                  defaultValue:
-                    activeFiltersCount === 1
-                      ? "1 active filter"
-                      : `${activeFiltersCount} active filters`,
-                })}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-9 rounded-xl px-2.5 text-[12px]"
-                disabled={activeFiltersCount === 0}
-                onClick={() => setFilters(initialFilters)}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                {t("events.clearFilters", { defaultValue: "Clear Filters" })}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 rounded-xl px-2.5 text-[12px]"
-                onClick={() => setFiltersOpen((current) => !current)}
-              >
-                {filtersOpen ? (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-                {filtersOpen
-                  ? t("events.hideFilters", { defaultValue: "Hide Filters" })
-                  : t("events.showFilters", { defaultValue: "Show Filters" })}
-              </Button>
-            </>
-          }
-        >
-          <div className="space-y-4">
-            <AnimatePresence initial={false}>
-              {filtersOpen ? (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div
-                    className="grid gap-3 border-t pt-4 xl:grid-cols-12"
-                    style={{ borderColor: "var(--lux-row-border)" }}
-                  >
-                    <div
-                      className="space-y-3 rounded-2xl border p-3 xl:col-span-8"
-                      style={{
-                        borderColor: "var(--lux-row-border)",
-                        background: "var(--lux-control-hover)",
-                      }}
-                    >
-                      <div className="crud-form-grid md:grid-cols-2">
-                        <CrudFilterField
-                          label={t("common.searchAnything", { defaultValue: "Search" })}
-                        >
-                          <input
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            placeholder={t("events.searchPlaceholder", {
-                              defaultValue:
-                                "Search by title, party names, venue, or customer...",
-                            })}
-                            value={filters.search}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                search: event.target.value,
-                              }))
-                            }
-                          />
-                        </CrudFilterField>
-
-                        <CrudFilterField
-                          label={t("events.statusLabel", { defaultValue: "Status" })}
-                        >
-                          <select
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            value={filters.status}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                status: event.target.value as "all" | EventStatus,
-                              }))
-                            }
-                          >
-                            <option value="all">
-                              {t("events.allStatuses", { defaultValue: "All Statuses" })}
-                            </option>
-                            {EVENT_STATUS_OPTIONS.map((status) => (
-                              <option key={status.value} value={status.value}>
-                                {t(`events.status.${status.value}`, {
-                                  defaultValue: status.label,
-                                })}
-                              </option>
-                            ))}
-                          </select>
-                        </CrudFilterField>
-
-                        <CrudFilterField
-                          label={t("events.customer", { defaultValue: "Customer" })}
-                        >
-                          <SearchableFilterSelect
-                            value={filters.customerId}
-                            onValueChange={(value) =>
-                              setFilters((current) => ({ ...current, customerId: value }))
-                            }
-                            onSearch={setCustomerSearch}
-                            placeholder={t("events.allCustomers", { defaultValue: "All Customers" })}
-                            searchPlaceholder={t("events.searchCustomers", {
-                              defaultValue: "Search customers...",
-                            })}
-                          >
-                            {customerOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
-                                })}
-                              />
-                            ) : (
-                              customerOptions.map((option) => (
-                                <SearchableSelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableFilterSelect>
-                        </CrudFilterField>
-
-                        <CrudFilterField
-                          label={t("common.venue", { defaultValue: "Venue" })}
-                        >
-                          <SearchableFilterSelect
-                            value={filters.venueId}
-                            onValueChange={(value) =>
-                              setFilters((current) => ({ ...current, venueId: value }))
-                            }
-                            onSearch={setVenueSearch}
-                            placeholder={t("events.allVenues", { defaultValue: "All Venues" })}
-                            searchPlaceholder={t("events.searchVenues", {
-                              defaultValue: "Search venues...",
-                            })}
-                          >
-                            {venueOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
-                                })}
-                              />
-                            ) : (
-                              venueOptions.map((option) => (
-                                <SearchableSelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableFilterSelect>
-                        </CrudFilterField>
-                      </div>
-                    </div>
-
-                    <div
-                      className="space-y-3 rounded-2xl border p-3 xl:col-span-4"
-                      style={{
-                        borderColor: "var(--lux-row-border)",
-                        background: "var(--lux-control-hover)",
-                      }}
-                    >
-                      <div className="crud-form-grid">
-                        <CrudFilterField
-                          label={t("events.dateRange", { defaultValue: "Date Range" })}
-                        >
-                          <select
-                            className="app-native-select h-10 rounded-xl text-[13px]"
-                            value={filters.dateRange}
-                            onChange={(event) =>
-                              setFilters((current) => ({
-                                ...current,
-                                dateRange: event.target.value,
-                              }))
-                            }
-                          >
-                            <option value="all">{t("events.filters.allDates", { defaultValue: "All dates" })}</option>
-                            <option value="today">{t("events.filters.today", { defaultValue: "Today" })}</option>
-                            <option value="7d">{t("events.filters.next7Days", { defaultValue: "Next 7 days" })}</option>
-                            <option value="30d">{t("events.filters.next30Days", { defaultValue: "Next 30 days" })}</option>
-                          </select>
-                        </CrudFilterField>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
-        </CalendarFilterBar>
-
-        {displayMode === "calendar" ? (
-          <section className="grid gap-6 2xl:grid-cols-12">
-            <div className="space-y-6 2xl:col-span-8">
-              <AppCalendar
-                locale={i18n.language === "ar" ? "ar" : "en"}
-                events={calendarEvents}
-                loading={isLoading}
-                legends={legendItems}
-                emptyTitle={t("events.emptyCalendarTitle", {
-                  defaultValue: "No events found",
-                })}
-                emptyDescription={t("events.emptyCalendarDescription", {
-                  defaultValue:
-                    "Try expanding the date range or clearing the current filters.",
-                })}
-                onRangeChange={setCalendarRange}
-                onEventSelect={(calendarEvent) => {
-                  setSelectedEventId(calendarEvent.id);
-                  setDetailsDialogOpen(true);
+          {adapted.totalPages > 1 ? (
+            <div className="border-t border-border bg-muted/40 px-6 py-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={adapted.totalPages}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(value: number) => {
+                  setItemsPerPage(value);
+                  setCurrentPage(1);
                 }}
-                onDateSelect={(date) =>
-                  navigate(`/events/create?date=${format(date, "yyyy-MM-dd")}`)
-                }
               />
             </div>
-
-            <div className="space-y-6 2xl:col-span-4">
-              <EventQuickViewCard
-                data={quickViewData}
-                emptyTitle={t("events.selectEvent", { defaultValue: "Select an event" })}
-                emptyDescription={t("events.selectEventDescription", {
-                  defaultValue:
-                    "Choose an event from the calendar to review its details.",
-                })}
-              />
-            </div>
-          </section>
-        ) : (
-          <DataTableShell
-            title={t("events.filteredEvents", { defaultValue: "Filtered Events" })}
-            totalItems={tableEvents.length}
-            currentCount={tableEvents.length}
-            entityName={t("events.title", { defaultValue: "Events" })}
-            itemsPerPage={tableEvents.length || 1}
-            setItemsPerPage={() => undefined}
-            setCurrentPage={() => undefined}
-            showMeta
-          >
-            <DataTable
-              columns={columns}
-              data={tableEvents}
-              rowNumberStart={1}
-              enableRowNumbers
-              fileName="events"
-              isLoading={isLoading}
-            />
-          </DataTableShell>
-        )}
+          ) : null}
+        </div>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -651,118 +263,9 @@ const EventsPage = () => {
           }
           isPending={deleteMutation.isPending}
         />
-
-        <EventDetailsDialog
-          open={detailsDialogOpen}
-          onOpenChange={setDetailsDialogOpen}
-          title={t("events.quickView", { defaultValue: "Quick View" })}
-          description={t("events.selectEventDescription", {
-            defaultValue: "Choose an event from the calendar to review its details.",
-          })}
-          data={quickViewData}
-          emptyTitle={t("events.selectEvent", { defaultValue: "Select an event" })}
-          emptyDescription={t("events.selectEventDescription", {
-            defaultValue: "Choose an event from the calendar to review its details.",
-          })}
-        />
-      </CrudPageLayout>
+      </PageContainer>
     </ProtectedComponent>
   );
 };
-
-function SearchableFilterSelect({
-  value,
-  onValueChange,
-  onSearch,
-  placeholder,
-  searchPlaceholder,
-  children,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  onSearch: (value: string) => void;
-  placeholder: string;
-  searchPlaceholder: string;
-  children: ReactNode;
-}) {
-  return (
-    <SearchableSelect
-      value={value === "all" ? FILTER_EMPTY_VALUE : value}
-      onValueChange={(next) =>
-        onValueChange(next === FILTER_EMPTY_VALUE ? "all" : next)
-      }
-      onSearch={onSearch}
-      placeholder={placeholder}
-      searchPlaceholder={searchPlaceholder}
-      emptyMessage="No results found"
-      allowClear={value !== "all"}
-      onClear={() => onValueChange("all")}
-      triggerClassName="app-native-select h-10 rounded-xl px-3 text-[13px]"
-    >
-      <SearchableSelectItem value={FILTER_EMPTY_VALUE}>
-        {placeholder}
-      </SearchableSelectItem>
-      {children}
-    </SearchableSelect>
-  );
-}
-
-function filterEvents(events: Event[], filters: FiltersState) {
-  const search = filters.search.trim().toLowerCase();
-  const today = new Date();
-
-  return events.filter((event) => {
-    const venueDisplay =
-      event.venue?.name || event.venueNameSnapshot || event.venueId?.toString() || "-";
-    const customerDisplay = event.customer?.fullName || "-";
-
-    if (search) {
-      const haystack = [
-        getEventDisplayTitle(event),
-        event.groomName,
-        event.brideName,
-        venueDisplay,
-        customerDisplay,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      if (!haystack.includes(search)) {
-        return false;
-      }
-    }
-
-    if (filters.status !== "all" && event.status !== filters.status) {
-      return false;
-    }
-
-    if (filters.customerId !== "all" && String(event.customerId || "") !== filters.customerId) {
-      return false;
-    }
-
-    if (filters.venueId !== "all" && String(event.venueId || "") !== filters.venueId) {
-      return false;
-    }
-
-    const eventDate = new Date(`${event.eventDate}T12:00:00`);
-
-    if (filters.dateRange === "today") {
-      return format(eventDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
-    }
-
-    if (filters.dateRange === "7d") {
-      const end = addDays(today, 6);
-      return eventDate >= today && eventDate <= end;
-    }
-
-    if (filters.dateRange === "30d") {
-      const end = addDays(today, 29);
-      return eventDate >= today && eventDate <= end;
-    }
-
-    return true;
-  });
-}
 
 export default EventsPage;

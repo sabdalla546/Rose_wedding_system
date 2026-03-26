@@ -5,6 +5,7 @@ import {
   createEvent,
   createEventFromSource,
   getEvents,
+  getEventsCalendar,
   getEventById,
   updateEvent,
   deleteEvent,
@@ -16,6 +17,12 @@ import {
 const router = Router();
 
 router.get("/", authMiddleware, requirePermissions("events.read"), getEvents);
+router.get(
+  "/calendar",
+  authMiddleware,
+  requirePermissions("events.read"),
+  getEventsCalendar,
+);
 router.get(
   "/:id",
   authMiddleware,

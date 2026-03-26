@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import {
+  SECRETARIAL_ROOT_ID,
   collectExpandedNavigationIds,
   navigationItems,
   type NavigationItem,
@@ -16,6 +17,9 @@ import { cn } from "@/lib/utils";
 const SIDEBAR_EXPANDED_WIDTH = 225;
 const SIDEBAR_COLLAPSED_WIDTH = 70;
 const SIDEBAR_HEADER_HEIGHT = 72;
+const matchesItemPath = (pathname: string, href?: string) =>
+  Boolean(href && (pathname === href || pathname.startsWith(`${href}/`)));
+
 const NAVIGATION_LABEL_FALLBACKS: Record<string, { en: string; ar: string }> = {
   "sidebar.nav.users": {
     en: "Users",
@@ -94,7 +98,7 @@ export function AppSidebar({
 
   const hasActiveChild = (item: NavigationItem): boolean =>
     item.children?.some((child) => {
-      if (child.href && location.pathname === child.href) {
+      if (matchesItemPath(location.pathname, child.href)) {
         return true;
       }
 
@@ -103,8 +107,11 @@ export function AppSidebar({
 
   const renderNavItem = (item: NavigationItem, depth = 0) => {
     const routeAccess = item.href ? routeAccessByHref[item.href] : undefined;
-    const hasChildren = Boolean(item.children?.length);
-    const active = item.href ? location.pathname === item.href : false;
+    const collapseChildrenInSidebar =
+      depth === 0 && item.id === SECRETARIAL_ROOT_ID;
+    const visibleChildren = collapseChildrenInSidebar ? undefined : item.children;
+    const hasChildren = Boolean(visibleChildren?.length);
+    const active = matchesItemPath(location.pathname, item.href);
     const childActive = hasActiveChild(item);
     const hasExplicitExpansionState = Object.prototype.hasOwnProperty.call(
       expandedItems,
@@ -279,7 +286,7 @@ export function AppSidebar({
                   isRtl ? "right-4" : "left-4",
                 )}
               />
-              {item.children?.map((child) => renderNavItem(child, depth + 1))}
+              {visibleChildren?.map((child) => renderNavItem(child, depth + 1))}
             </motion.div>
           ) : null}
         </AnimatePresence>
