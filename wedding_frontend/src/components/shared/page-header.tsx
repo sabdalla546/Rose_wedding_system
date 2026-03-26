@@ -60,7 +60,7 @@ export function PageHeader({
         </div>
 
         {search || actions ? (
-          <div className="flex w-full flex-col gap-3 lg:w-auto lg:max-w-[36rem] lg:shrink-0 lg:items-end">
+          <div className="flex w-full flex-col gap-3 lg:flex-1 lg:max-w-none lg:items-end">
             <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-end">
               {search ? (
                 <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">

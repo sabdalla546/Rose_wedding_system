@@ -1,18 +1,27 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import {
+  INVENTORY_ROOT_ID,
+  REPORTS_ROOT_ID,
   SECRETARIAL_ROOT_ID,
+  SETTINGS_ROOT_ID,
   collectExpandedNavigationIds,
   navigationItems,
+  inventoryNavigationLeaves,
+  reportsNavigationLeaves,
+  secretarialNavigationLeaves,
+  settingsNavigationLeaves,
   type NavigationItem,
+  type NavigationLeaf,
 } from "@/lib/constants/navigation";
 import { routeAccessByHref } from "@/lib/constants/route-permissions";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/app/providers/use-auth";
 
 const SIDEBAR_EXPANDED_WIDTH = 225;
 const SIDEBAR_COLLAPSED_WIDTH = 70;
@@ -45,7 +54,9 @@ export function AppSidebar({
   className,
 }: AppSidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { i18n, t } = useTranslation();
+  const { user } = useAuth();
   const isRtl = i18n.resolvedLanguage === "ar";
   const [hoverOpen, setHoverOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
@@ -57,6 +68,162 @@ export function AppSidebar({
     () => collectExpandedNavigationIds(navigationItems, location.pathname),
     [location.pathname],
   );
+
+  const isSecretarialActive = useMemo(() => {
+    return secretarialNavigationLeaves.some((leaf: NavigationLeaf) =>
+      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+    );
+  }, [location.pathname]);
+
+  const isInventoryActive = useMemo(() => {
+    return inventoryNavigationLeaves.some((leaf: NavigationLeaf) =>
+      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+    );
+  }, [location.pathname]);
+
+  const isReportsActive = useMemo(() => {
+    return reportsNavigationLeaves.some((leaf: NavigationLeaf) =>
+      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+    );
+  }, [location.pathname]);
+
+  const isSettingsActive = useMemo(() => {
+    return settingsNavigationLeaves.some((leaf: NavigationLeaf) =>
+      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+    );
+  }, [location.pathname]);
+
+  const getFirstPermittedSecretarialHref = (): string | undefined => {
+    if (!user) return undefined;
+
+    for (const leaf of secretarialNavigationLeaves) {
+      if (!leaf.href) continue;
+
+      let allowed = true;
+
+      if (leaf.permission) {
+        allowed = user.permissions.includes(leaf.permission);
+      }
+
+      if (leaf.anyOf?.length) {
+        allowed =
+          allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.allOf?.length) {
+        allowed =
+          allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.roles?.length) {
+        allowed = allowed && leaf.roles.some((r) => user.roles.includes(r));
+      }
+
+      if (allowed) {
+        return leaf.href;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getFirstPermittedInventoryHref = (): string | undefined => {
+    if (!user) return undefined;
+
+    for (const leaf of inventoryNavigationLeaves) {
+      if (!leaf.href) continue;
+
+      let allowed = true;
+
+      if (leaf.permission) {
+        allowed = user.permissions.includes(leaf.permission);
+      }
+
+      if (leaf.anyOf?.length) {
+        allowed =
+          allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.allOf?.length) {
+        allowed =
+          allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.roles?.length) {
+        allowed = allowed && leaf.roles.some((r) => user.roles.includes(r));
+      }
+
+      if (allowed) {
+        return leaf.href;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getFirstPermittedReportsHref = (): string | undefined => {
+    if (!user) return undefined;
+
+    for (const leaf of reportsNavigationLeaves) {
+      if (!leaf.href) continue;
+
+      let allowed = true;
+
+      if (leaf.permission) {
+        allowed = user.permissions.includes(leaf.permission);
+      }
+
+      if (leaf.anyOf?.length) {
+        allowed = allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.allOf?.length) {
+        allowed = allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.roles?.length) {
+        allowed = allowed && leaf.roles.some((r) => user.roles.includes(r));
+      }
+
+      if (allowed) {
+        return leaf.href;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getFirstPermittedSettingsHref = (): string | undefined => {
+    if (!user) return undefined;
+
+    for (const leaf of settingsNavigationLeaves) {
+      if (!leaf.href) continue;
+
+      let allowed = true;
+
+      if (leaf.permission) {
+        allowed = user.permissions.includes(leaf.permission);
+      }
+
+      if (leaf.anyOf?.length) {
+        allowed = allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.allOf?.length) {
+        allowed = allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+      }
+
+      if (leaf.roles?.length) {
+        allowed = allowed && leaf.roles.some((r) => user.roles.includes(r));
+      }
+
+      if (allowed) {
+        return leaf.href;
+      }
+    }
+
+    return undefined;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -108,10 +275,25 @@ export function AppSidebar({
   const renderNavItem = (item: NavigationItem, depth = 0) => {
     const routeAccess = item.href ? routeAccessByHref[item.href] : undefined;
     const collapseChildrenInSidebar =
-      depth === 0 && item.id === SECRETARIAL_ROOT_ID;
-    const visibleChildren = collapseChildrenInSidebar ? undefined : item.children;
+      depth === 0 &&
+      (item.id === SECRETARIAL_ROOT_ID ||
+        item.id === INVENTORY_ROOT_ID ||
+        item.id === REPORTS_ROOT_ID ||
+        item.id === SETTINGS_ROOT_ID);
+    const visibleChildren = collapseChildrenInSidebar
+      ? undefined
+      : item.children;
     const hasChildren = Boolean(visibleChildren?.length);
-    const active = matchesItemPath(location.pathname, item.href);
+    const active =
+      item.id === SECRETARIAL_ROOT_ID
+        ? isSecretarialActive
+        : item.id === INVENTORY_ROOT_ID
+          ? isInventoryActive
+          : item.id === REPORTS_ROOT_ID
+            ? isReportsActive
+            : item.id === SETTINGS_ROOT_ID
+              ? isSettingsActive
+          : matchesItemPath(location.pathname, item.href);
     const childActive = hasActiveChild(item);
     const hasExplicitExpansionState = Object.prototype.hasOwnProperty.call(
       expandedItems,
@@ -201,12 +383,12 @@ export function AppSidebar({
 
     const chevronSlot =
       hasChildren && showFull ? (
-          <motion.div
-            animate={{ opacity: 1, width: "auto", x: 0 }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-shell-chrome-text)]"
-            exit={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
-            initial={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        <motion.div
+          animate={{ opacity: 1, width: "auto", x: 0 }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--lux-shell-chrome-text)]"
+          exit={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
+          initial={{ opacity: 0, width: 0, x: isRtl ? -8 : 8 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4" />
@@ -225,13 +407,44 @@ export function AppSidebar({
             className={({ isActive }) =>
               cn(baseRowClassName, isActive ? activeFillClass : undefined)
             }
-            style={({ isActive }) => ({
-              background: isActive ? "var(--lux-gold)" : "transparent",
-            })}
+            style={{ background: active ? "var(--lux-gold)" : "transparent" }}
             end
             title={!showFull ? label : ""}
             to={item.href}
-            onClick={() => onNavigate?.()}
+            onClick={(event) => {
+              // Root items can collapse their children in the sidebar; in that case,
+              // we override the default navigation to go to the first permitted
+              // descendant (same behavior as the Secretarial section bar).
+              if (item.id === SECRETARIAL_ROOT_ID) {
+                event.preventDefault();
+                navigate(getFirstPermittedSecretarialHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === INVENTORY_ROOT_ID) {
+                event.preventDefault();
+                navigate(getFirstPermittedInventoryHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === REPORTS_ROOT_ID) {
+                event.preventDefault();
+                navigate(getFirstPermittedReportsHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === SETTINGS_ROOT_ID) {
+                event.preventDefault();
+                navigate(getFirstPermittedSettingsHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              onNavigate?.();
+            }}
           >
             {contentSlot}
           </NavLink>
@@ -241,14 +454,37 @@ export function AppSidebar({
             className={disabled ? disabledRowClassName : baseRowClassName}
             disabled={disabled}
             style={{
-              background: active && !disabled
-                ? "var(--lux-gold)"
-                : "transparent",
+              background:
+                active && !disabled ? "var(--lux-gold)" : "transparent",
             }}
             title={!showFull ? label : ""}
             type="button"
             onClick={() => {
               if (disabled) {
+                return;
+              }
+
+              if (item.id === SECRETARIAL_ROOT_ID) {
+                navigate(getFirstPermittedSecretarialHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === INVENTORY_ROOT_ID) {
+                navigate(getFirstPermittedInventoryHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === REPORTS_ROOT_ID) {
+                navigate(getFirstPermittedReportsHref() ?? "/dashboard");
+                onNavigate?.();
+                return;
+              }
+
+              if (item.id === SETTINGS_ROOT_ID) {
+                navigate(getFirstPermittedSettingsHref() ?? "/dashboard");
+                onNavigate?.();
                 return;
               }
 
@@ -271,10 +507,7 @@ export function AppSidebar({
           {hasChildren && isExpanded && showFull && !disabled ? (
             <motion.div
               animate={{ height: "auto", opacity: 1 }}
-              className={cn(
-                "relative mt-0 space-y-0",
-                isRtl ? "pr-5" : "pl-5",
-              )}
+              className={cn("relative mt-0 space-y-0", isRtl ? "pr-5" : "pl-5")}
               exit={{ height: 0, opacity: 0 }}
               initial={{ height: 0, opacity: 0 }}
               style={{ overflow: "hidden" }}
@@ -342,7 +575,13 @@ export function AppSidebar({
             !showFull && "justify-center",
           )}
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-[0_0_0_1px_rgba(59,130,246,0.08),0_10px_22px_rgba(59,130,246,0.08)]" style={{ borderColor: "var(--lux-shell-chrome-control-border)", background: "var(--lux-shell-chrome-control)" }}>
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-[0_0_0_1px_rgba(59,130,246,0.08),0_10px_22px_rgba(59,130,246,0.08)]"
+            style={{
+              borderColor: "var(--lux-shell-chrome-control-border)",
+              background: "var(--lux-shell-chrome-control)",
+            }}
+          >
             <img
               alt="WeddingPro logo"
               className="h-full w-full object-cover"

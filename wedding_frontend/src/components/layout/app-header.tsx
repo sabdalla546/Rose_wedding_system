@@ -81,14 +81,14 @@ export function AppHeader({
       }}
     >
       <div
-        className="flex w-full items-center gap-2.5 px-3 py-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
+        className="flex w-full items-center gap-2 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
         style={{
           background: "var(--lux-shell-chrome-elevated)",
           color: "var(--lux-shell-chrome-text)",
         }}
       >
         <Button
-          className="h-11 w-11 rounded-[17px]"
+          className="h-9 w-9 rounded-[14px]"
           size="icon"
           type="button"
           variant="secondary"
@@ -111,7 +111,7 @@ export function AppHeader({
           <SearchInput
             className="mx-auto max-w-[640px]"
             iconClassName="h-3.5 w-3.5 text-[var(--lux-shell-chrome-muted)]"
-            inputClassName="h-11 rounded-[20px] border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] pl-10 text-sm text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]"
+            inputClassName="h-9 rounded-[16px] border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] pl-10 text-sm text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]"
           />
         </div>
 
@@ -120,7 +120,7 @@ export function AppHeader({
             aria-label={
               theme === "dark" ? t("common.lightMode") : t("common.darkMode")
             }
-            className="hidden h-11 w-11 items-center justify-center rounded-[17px] border text-[var(--lux-text)] sm:inline-flex"
+            className="hidden h-9 w-9 items-center justify-center rounded-[14px] border text-[var(--lux-text)] sm:inline-flex"
             style={{
               background: "var(--lux-shell-chrome-control)",
               borderColor: "var(--lux-shell-chrome-control-border)",
@@ -136,14 +136,14 @@ export function AppHeader({
             )}
           </button>
           <div
-            className="hidden rounded-[17px] border p-1 sm:flex"
+            className="hidden rounded-[14px] border p-1 sm:flex"
             style={{
               background: "var(--lux-shell-chrome-control)",
               borderColor: "var(--lux-shell-chrome-control-border)",
             }}
           >
             <button
-              className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
+              className={`rounded-[11px] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "en"
                   ? "text-[var(--lux-shell-surface)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
@@ -159,7 +159,7 @@ export function AppHeader({
               EN
             </button>
             <button
-              className={`rounded-[13px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
+              className={`rounded-[11px] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${
                 i18n.resolvedLanguage === "ar"
                   ? "text-[var(--lux-shell-surface)]"
                   : "text-[var(--lux-shell-chrome-muted)]"
@@ -179,7 +179,7 @@ export function AppHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="h-11 gap-3 rounded-[19px] px-3 md:px-3.5"
+                className="h-9 gap-2.5 rounded-[16px] px-2.5 md:px-3"
                 variant="secondary"
                 style={{
                   background: "var(--lux-shell-chrome-control)",
@@ -187,7 +187,7 @@ export function AppHeader({
                   color: "var(--lux-shell-chrome-text)",
                 }}
               >
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-8 w-8">
                   <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left md:block">

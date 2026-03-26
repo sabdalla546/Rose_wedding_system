@@ -4,16 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import {
-  CrudFilterField,
-  CrudFilters,
-  CrudPageHeader,
-  CrudPageLayout,
-} from "@/components/shared/crud-layout";
+import CompactHeader from "@/components/common/CompactHeader";
+import { CrudPageLayout } from "@/components/shared/crud-layout";
 import { DataTableShell } from "@/components/shared/data-table-shell";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDeleteCustomer } from "@/hooks/customers/useDeleteCustomer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 
@@ -61,10 +64,10 @@ const CustomersPage = () => {
 
   return (
     <ProtectedComponent permission="customers.read">
-      <CrudPageLayout>
-        <CrudPageHeader
+      <CrudPageLayout className="bg-[var(--color-bg)] text-[var(--color-text)]  ">
+        <CompactHeader
           title={t("customers.title", { defaultValue: "Customers" })}
-          description={t("customers.basicInformationHint", {
+          subtitle={t("customers.basicInformationHint", {
             defaultValue:
               "Customer master records only. Event details now live under events.",
           })}
@@ -78,51 +81,56 @@ const CustomersPage = () => {
               setCurrentPage(1);
             },
             onSubmit: () => undefined,
-            submitLabel: t("common.search", { defaultValue: "Search" }),
           }}
-          actions={
-            <ProtectedComponent permission="customers.create">
-              <Button onClick={() => navigate("/customers/create")}>
-                <Plus className="h-4 w-4" />
-                {t("customers.create", { defaultValue: "Create Customer" })}
-              </Button>
-            </ProtectedComponent>
+          right={
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+              <div className="w-full sm:w-[220px]">
+                <label className="sr-only" htmlFor="customers-status-filter">
+                  {t("customers.status", { defaultValue: "Status" })}
+                </label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => {
+                    setStatusFilter(value as "all" | TableCustomer["status"]);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-9 rounded-[14px] px-3 text-[13px]"
+                    id="customers-status-filter"
+                  >
+                    <SelectValue
+                      placeholder={t("customers.allStatuses", {
+                        defaultValue: "All Statuses",
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t("customers.allStatuses", {
+                        defaultValue: "All Statuses",
+                      })}
+                    </SelectItem>
+                    {CUSTOMER_STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {t(`customers.status.${status.value}`, {
+                          defaultValue: status.label,
+                        })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <ProtectedComponent permission="customers.create">
+                <Button size="sm" onClick={() => navigate("/customers/create")}>
+                  <Plus className="h-4 w-4" />
+                  {t("customers.create", { defaultValue: "Create Customer" })}
+                </Button>
+              </ProtectedComponent>
+            </div>
           }
         />
-
-        <CrudFilters
-          title={t("common.filters", { defaultValue: "Filters" })}
-          description={t("customers.filterDescription", {
-            defaultValue: "Filter customer records by current lifecycle status.",
-          })}
-          contentClassName="md:grid-cols-[minmax(0,220px)]"
-        >
-          <CrudFilterField
-            label={t("customers.status", { defaultValue: "Status" })}
-          >
-            <select
-              className="app-native-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(
-                  event.target.value as "all" | TableCustomer["status"],
-                );
-                setCurrentPage(1);
-              }}
-            >
-              <option value="all">
-                {t("customers.allStatuses", { defaultValue: "All Statuses" })}
-              </option>
-              {CUSTOMER_STATUS_OPTIONS.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {t(`customers.status.${status.value}`, {
-                    defaultValue: status.label,
-                  })}
-                </option>
-              ))}
-            </select>
-          </CrudFilterField>
-        </CrudFilters>
 
         <DataTableShell
           title={t("customers.listTitle", { defaultValue: "Customers List" })}

@@ -14,7 +14,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-[var(--radius-xl)] border"
+      className="relative w-full overflow-x-auto rounded-[4px] border"
       dir={direction}
       style={{
         borderColor: "var(--color-border)",

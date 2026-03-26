@@ -107,7 +107,7 @@
   :root[data-theme="light"] {
     color-scheme: light;
 
-    --color-bg: #d4d4d4;
+    --color-bg: #e6e5e5;
     --color-shell: #000;
     --color-shell-elevated: #000;
     --color-surface: #ffffff;
@@ -753,7 +753,8 @@
   .app-calendar-event__status {
     display: inline-flex;
     align-items: center;
-    border: 1px solid color-mix(in srgb, var(--color-border-strong) 55%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--color-border-strong) 55%, transparent);
     border-radius: 999px;
     padding: 0.18rem 0.46rem;
     font-size: 0.64rem;
@@ -766,7 +767,11 @@
   }
 
   .app-calendar-shell--event {
-    background: color-mix(in srgb, var(--color-surface-2) 70%, var(--color-surface));
+    background: color-mix(
+      in srgb,
+      var(--color-surface-2) 70%,
+      var(--color-surface)
+    );
     box-shadow: var(--shadow-sm);
   }
 
@@ -775,7 +780,11 @@
   }
 
   .app-calendar-shell--appointment .fc-col-header-cell {
-    background: color-mix(in srgb, var(--color-surface) 90%, var(--color-surface-2));
+    background: color-mix(
+      in srgb,
+      var(--color-surface) 90%,
+      var(--color-surface-2)
+    );
     padding-block: 0.28rem;
   }
 
@@ -794,12 +803,20 @@
   }
 
   .app-calendar-shell--event .fc-col-header-cell {
-    background: color-mix(in srgb, var(--color-surface) 78%, var(--color-primary) 5%);
+    background: color-mix(
+      in srgb,
+      var(--color-surface) 78%,
+      var(--color-primary) 5%
+    );
   }
 
   .app-calendar-shell--event .fc-daygrid-day-frame,
   .app-calendar-shell--event .fc-timegrid-col-frame {
-    background: color-mix(in srgb, var(--color-surface-2) 84%, var(--color-surface));
+    background: color-mix(
+      in srgb,
+      var(--color-surface-2) 84%,
+      var(--color-surface)
+    );
   }
 
   .app-calendar-shell--event .fc-day-today .fc-daygrid-day-frame,

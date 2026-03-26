@@ -135,13 +135,10 @@ const AppointmentsPage = () => {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-              {t("appointments.title", { defaultValue: "Appointments" })}
+              {t("appointments.title")}
             </h1>
             <p className="text-sm text-[var(--lux-text-secondary)]">
-              {t("appointments.coreFlowHint", {
-                defaultValue:
-                  "Appointments now carry only scheduling details and link back to customers.",
-              })}
+              {t("appointments.coreFlowHint")}
             </p>
           </div>
 
@@ -152,14 +149,14 @@ const AppointmentsPage = () => {
                 onClick={() => navigate("/appointments/calendar")}
               >
                 <CalendarRange className="h-4 w-4" />
-                {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
+                {t("calendar.openCalendar")}
               </Button>
             </ProtectedComponent>
 
             <ProtectedComponent permission="appointments.create">
               <Button onClick={() => navigate("/appointments/create")}>
                 <Plus className="h-4 w-4" />
-                {t("appointments.create", { defaultValue: "Create Appointment" })}
+                {t("appointments.create")}
               </Button>
             </ProtectedComponent>
           </div>
@@ -172,9 +169,7 @@ const AppointmentsPage = () => {
               className="pl-10"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t("appointments.searchPlaceholder", {
-                defaultValue: "Search by customer, mobile, or notes",
-              })}
+              placeholder={t("appointments.searchPlaceholder")}
             />
           </div>
           <select
@@ -188,7 +183,7 @@ const AppointmentsPage = () => {
             }}
           >
             <option value="all">
-              {t("appointments.allStatuses", { defaultValue: "All Statuses" })}
+              {t("appointments.allStatuses")}
             </option>
             {APPOINTMENT_STATUS_OPTIONS.map((status) => (
               <option key={status.value} value={status.value}>
@@ -207,9 +202,7 @@ const AppointmentsPage = () => {
             }}
           >
             <option value="">
-              {t("appointments.allCustomers", {
-                defaultValue: "All Customers",
-              })}
+              {t("appointments.allCustomers")}
             </option>
             {customers.map((customer) => (
               <option key={customer.id} value={String(customer.id)}>
@@ -231,14 +224,10 @@ const AppointmentsPage = () => {
 
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <TableHeader
-            title={t("appointments.listTitle", {
-              defaultValue: "Appointments List",
-            })}
+            title={t("appointments.listTitle")}
             totalItems={adapted.total}
             currentCount={appointments.length}
-            entityName={t("appointments.title", {
-              defaultValue: "Appointments",
-            })}
+            entityName={t("appointments.title")}
             itemsPerPage={itemsPerPage}
             setItemsPerPage={setItemsPerPage}
             setCurrentPage={setCurrentPage}
@@ -250,7 +239,7 @@ const AppointmentsPage = () => {
                   onClick={() => navigate("/appointments/calendar")}
                 >
                   <CalendarRange className="h-3.5 w-3.5" />
-                  {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
+                  {t("calendar.openCalendar")}
                 </Button>
               </ProtectedComponent>
             }
@@ -284,14 +273,10 @@ const AppointmentsPage = () => {
         <ConfirmDialog
           open={deleteCandidate !== null}
           onOpenChange={(open) => !open && setDeleteCandidate(null)}
-          title={t("appointments.deleteTitle", {
-            defaultValue: "Delete Appointment",
-          })}
-          message={t("appointments.deleteMessage", {
-            defaultValue: "Are you sure you want to delete this appointment?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+          title={t("appointments.deleteTitle")}
+          message={t("appointments.deleteMessage")}
+          confirmLabel={t("common.delete")}
+          cancelLabel={t("common.cancel")}
           onConfirm={() =>
             deleteCandidate &&
             deleteMutation.mutate(deleteCandidate.id, {
@@ -304,9 +289,7 @@ const AppointmentsPage = () => {
         <ActionDialog
           open={confirmCandidate !== null}
           onOpenChange={(open) => !open && setConfirmCandidate(null)}
-          title={t("appointments.confirmTitle", {
-            defaultValue: "Confirm Appointment",
-          })}
+          title={t("appointments.confirmTitle")}
           value={actionNotes}
           onChange={setActionNotes}
           onConfirm={() =>
@@ -317,15 +300,13 @@ const AppointmentsPage = () => {
             )
           }
           isPending={confirmMutation.isPending}
-          confirmLabel={t("appointments.confirm", { defaultValue: "Confirm" })}
+          confirmLabel={t("appointments.confirm")}
         />
 
         <ActionDialog
           open={completeCandidate !== null}
           onOpenChange={(open) => !open && setCompleteCandidate(null)}
-          title={t("appointments.completeTitle", {
-            defaultValue: "Complete Appointment",
-          })}
+          title={t("appointments.completeTitle")}
           value={actionNotes}
           onChange={setActionNotes}
           onConfirm={() =>
@@ -336,9 +317,7 @@ const AppointmentsPage = () => {
             )
           }
           isPending={completeMutation.isPending}
-          confirmLabel={t("appointments.complete", {
-            defaultValue: "Complete",
-          })}
+          confirmLabel={t("appointments.complete")}
         />
 
         <Dialog
@@ -348,18 +327,14 @@ const AppointmentsPage = () => {
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>
-                {t("appointments.cancelTitle", {
-                  defaultValue: "Cancel Appointment",
-                })}
+                {t("appointments.cancelTitle")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <Input
                 value={cancelReason}
                 onChange={(event) => setCancelReason(event.target.value)}
-                placeholder={t("appointments.cancelReasonPlaceholder", {
-                  defaultValue: "Cancellation reason",
-                })}
+                placeholder={t("appointments.cancelReasonPlaceholder")}
               />
               <textarea
                 className={textareaClassName}
@@ -376,7 +351,7 @@ const AppointmentsPage = () => {
                 variant="outline"
                 onClick={() => setCancelCandidate(null)}
               >
-                {t("common.cancel", { defaultValue: "Cancel" })}
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() =>
@@ -391,7 +366,7 @@ const AppointmentsPage = () => {
                 }
                 disabled={cancelMutation.isPending}
               >
-                {t("appointments.cancelAction", { defaultValue: "Cancel" })}
+                {t("appointments.cancelAction")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -404,9 +379,7 @@ const AppointmentsPage = () => {
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>
-                {t("appointments.rescheduleTitle", {
-                  defaultValue: "Reschedule Appointment",
-                })}
+                {t("appointments.rescheduleTitle")}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -440,7 +413,7 @@ const AppointmentsPage = () => {
                 variant="outline"
                 onClick={() => setRescheduleCandidate(null)}
               >
-                {t("common.cancel", { defaultValue: "Cancel" })}
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() =>
@@ -460,7 +433,7 @@ const AppointmentsPage = () => {
                 }
                 disabled={rescheduleMutation.isPending}
               >
-                {t("appointments.reschedule", { defaultValue: "Reschedule" })}
+                {t("appointments.reschedule")}
               </Button>
             </DialogFooter>
           </DialogContent>

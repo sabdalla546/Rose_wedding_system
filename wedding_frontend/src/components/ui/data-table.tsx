@@ -119,7 +119,7 @@ export function DataTable<TData, TValue>({
             <TableRow>
               <TableCell className="py-12 text-center" colSpan={finalColumns.length}>
                 <div className="table-state">
-                  <div className="app-icon-chip h-12 w-12 rounded-full">
+                  <div className="app-icon-chip h-12 w-12 rounded-[4px]">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
                   <p className="text-sm text-[var(--color-text-muted)]">
@@ -161,7 +161,7 @@ export function DataTable<TData, TValue>({
             <TableRow>
               <TableCell className="py-12 text-center" colSpan={finalColumns.length}>
                 <div className="table-state">
-                  <div className="app-icon-chip h-12 w-12 rounded-full">
+                  <div className="app-icon-chip h-12 w-12 rounded-[4px]">
                     <SearchX className="h-5 w-5" />
                   </div>
                   <p

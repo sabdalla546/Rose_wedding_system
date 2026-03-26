@@ -51,6 +51,9 @@ export type NavigationLeaf = NavigationItem & {
 };
 
 export const SECRETARIAL_ROOT_ID = "Secretarial";
+export const INVENTORY_ROOT_ID = "inventory";
+export const REPORTS_ROOT_ID = "reports";
+export const SETTINGS_ROOT_ID = "settings";
 
 const navigationTree: NavigationItem[] = [
   {
@@ -401,6 +404,42 @@ export const secretarialNavigationLeaves: NavigationLeaf[] = (() => {
   return flattenNavigationLeaves(secretarialRoot.children, [
     SECRETARIAL_ROOT_ID,
   ]);
+})();
+
+export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
+  const inventoryRoot = navigationItems.find(
+    (item) => item.id === INVENTORY_ROOT_ID,
+  );
+
+  if (!inventoryRoot?.children?.length) {
+    return [];
+  }
+
+  return flattenNavigationLeaves(inventoryRoot.children, [
+    INVENTORY_ROOT_ID,
+  ]);
+})();
+
+export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
+  const reportsRoot = navigationItems.find((item) => item.id === REPORTS_ROOT_ID);
+
+  if (!reportsRoot?.children?.length) {
+    return [];
+  }
+
+  return flattenNavigationLeaves(reportsRoot.children, [REPORTS_ROOT_ID]);
+})();
+
+export const settingsNavigationLeaves: NavigationLeaf[] = (() => {
+  const settingsRoot = navigationItems.find((item) => item.id === SETTINGS_ROOT_ID);
+  const teamRoot = settingsRoot?.children?.find((item) => item.id === "settings-team");
+
+  if (!teamRoot?.children?.length) {
+    return [];
+  }
+
+  // Only show Settings > Team leaves (Users, Roles) in the section bar.
+  return flattenNavigationLeaves(teamRoot.children, [SETTINGS_ROOT_ID, teamRoot.id]);
 })();
 
 export function flattenNavigationLeaves(

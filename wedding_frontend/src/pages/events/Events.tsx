@@ -80,10 +80,7 @@ const EventsPage = () => {
               {t("events.title", { defaultValue: "Events" })}
             </h1>
             <p className="text-sm text-[var(--lux-text-secondary)]">
-              {t("events.managementHint", {
-                defaultValue:
-                  "Manage event records here, then use the operational calendar for cross-module scheduling.",
-              })}
+              {t("events.managementHint")}
             </p>
           </div>
 

@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import CompactHeader from "@/components/common/CompactHeader";
 import {
   CrudFilterField,
   CrudFilters,
-  CrudPageHeader,
   CrudPageLayout,
 } from "@/components/shared/crud-layout";
 import { DataTableShell } from "@/components/shared/data-table-shell";
@@ -87,10 +87,10 @@ const VendorsPage = () => {
   return (
     <ProtectedComponent permission={viewPermission}>
       <CrudPageLayout>
-        <CrudPageHeader
+        <CompactHeader
           icon={<Handshake className="h-5 w-5 text-primary" />}
           title={t("vendors.title", { defaultValue: "Vendors" })}
-          meta={
+          totalText={
             <>
               {totalItems}{" "}
               {t("vendors.totalVendors", { defaultValue: "total vendors" })}
@@ -105,15 +105,15 @@ const VendorsPage = () => {
             onChange: setSearchTerm,
             onSubmit: handleSearchSubmit,
           }}
-          actions={
-            <ProtectedComponent permission={createPermission}>
-              <Button
-                onClick={() => navigate("/settings/vendors/create")}
-              >
-                <Plus className="h-4 w-4" />
-                {t("vendors.create", { defaultValue: "Create Vendor" })}
-              </Button>
-            </ProtectedComponent>
+          right={
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              <ProtectedComponent permission={createPermission}>
+                <Button size="sm" onClick={() => navigate("/settings/vendors/create")}>
+                  <Plus className="h-4 w-4" />
+                  {t("vendors.create", { defaultValue: "Create Vendor" })}
+                </Button>
+              </ProtectedComponent>
+            </div>
           }
         />
 

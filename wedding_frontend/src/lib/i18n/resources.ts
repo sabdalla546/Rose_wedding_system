@@ -975,6 +975,8 @@ export const resources = {
       },
       events: {
         title: "Events",
+        managementHint:
+          "Manage event records here, then use the operational calendar for cross-module scheduling.",
         calendarPage: {
           eyebrow: "Events Calendar",
           title: "Events Planning Calendar",
@@ -1564,6 +1566,10 @@ export const resources = {
       },
       appointments: {
         title: "Appointments",
+        coreFlowHint:
+          "Appointments now carry only scheduling details and link back to customers.",
+        searchPlaceholder: "Search by customer, mobile, or notes",
+        allCustomers: "All Customers",
         calendarPage: {
           eyebrow: "Appointments Calendar",
           title: "Appointments Calendar",
@@ -2301,6 +2307,8 @@ export const resources = {
       },
       events: {
         title: "الحفلات",
+        managementHint:
+          "أدر سجلات الحفلات هنا، ثم استخدم التقويم التشغيلي لجدولة العمل عبر الأقسام.",
         calendarPage: {
           eyebrow: "تقويم الحفلات",
           title: "تقويم تخطيط الحفلات",
@@ -2864,6 +2872,10 @@ export const resources = {
       },
       appointments: {
         title: "المواعيد",
+        coreFlowHint:
+          "أصبحت المواعيد تحتوي على تفاصيل الجدولة فقط وترتبط بالعملاء.",
+        searchPlaceholder: "ابحث باسم العميل أو رقم الهاتف أو الملاحظات",
+        allCustomers: "كل العملاء",
         calendarPage: {
           eyebrow: "تقويم المواعيد",
           title: "تقويم المواعيد",
