@@ -9,6 +9,7 @@ import {
   createAppointmentWithCustomerSchema,
   updateAppointmentSchema,
 } from "../validation/appointment.schemas";
+import { calendarFeedQuerySchema } from "../validation/calendar.schemas";
 import {
   cancelAppointmentSchema,
   completeAppointmentSchema,
@@ -153,6 +154,7 @@ export const getAppointments = async (req: Request, res: Response) => {
 
   const status = String(req.query.status ?? "").trim();
   const customerId = Number(req.query.customerId) || undefined;
+  const search = String(req.query.search ?? "").trim();
   const dateFrom = String(req.query.dateFrom ?? "").trim();
   const dateTo = String(req.query.dateTo ?? "").trim();
 
@@ -160,6 +162,15 @@ export const getAppointments = async (req: Request, res: Response) => {
 
   if (status) where.status = status;
   if (customerId) where.customerId = customerId;
+
+  if (search) {
+    const like = `%${search}%`;
+    where[Op.or] = [
+      { notes: { [Op.like]: like } },
+      { "$customer.fullName$": { [Op.like]: like } },
+      { "$customer.mobile$": { [Op.like]: like } },
+    ];
+  }
 
   if (dateFrom || dateTo) {
     where.appointmentDate = {};
@@ -170,6 +181,7 @@ export const getAppointments = async (req: Request, res: Response) => {
   const { count, rows } = await Appointment.findAndCountAll({
     where,
     include: appointmentInclude,
+    distinct: true,
     order: [
       ["appointmentDate", "ASC"],
       ["startTime", "ASC"],
@@ -466,15 +478,28 @@ export const deleteAppointment = async (req: Request, res: Response) => {
 };
 
 export const getAppointmentsCalendar = async (req: Request, res: Response) => {
-  const dateFrom = String(req.query.dateFrom ?? "").trim();
-  const dateTo = String(req.query.dateTo ?? "").trim();
-  const status = String(req.query.status ?? "").trim();
-  const assignedUserId = Number(req.query.assignedUserId) || undefined;
+  const parsed = calendarFeedQuerySchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.errors });
+  }
+
+  const { dateFrom, dateTo, status, assignedUserId, customerId, search } = parsed.data;
 
   const where: any = {};
 
   if (status) where.status = status;
   if (assignedUserId) where.createdBy = assignedUserId;
+  if (customerId) where.customerId = customerId;
+
+  if (search) {
+    const like = `%${search}%`;
+    where[Op.or] = [
+      { notes: { [Op.like]: like } },
+      { "$customer.fullName$": { [Op.like]: like } },
+      { "$customer.mobile$": { [Op.like]: like } },
+    ];
+  }
 
   if (dateFrom || dateTo) {
     where.appointmentDate = {};

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -46,6 +46,7 @@ const AppointmentsPage = () => {
     "all" | TableAppointment["status"]
   >("all");
   const [customerFilter, setCustomerFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -67,11 +68,20 @@ const AppointmentsPage = () => {
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
 
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearchQuery(searchTerm.trim());
+    }, 300);
+
+    return () => window.clearTimeout(handle);
+  }, [searchTerm]);
+
   const { data, isLoading } = useAppointments({
     currentPage,
     itemsPerPage,
     status: statusFilter,
     customerId: customerFilter,
+    search: searchQuery,
     dateFrom,
     dateTo,
   });
@@ -90,18 +100,7 @@ const AppointmentsPage = () => {
 
   const adapted = useMemo(() => toTableAppointments(data), [data]);
   const customers = customersResponse?.data ?? [];
-  const appointments = adapted.data.appointments.filter((appointment) => {
-    if (!searchQuery.trim()) {
-      return true;
-    }
-
-    const search = searchQuery.toLowerCase();
-    return (
-      appointment.customerName.toLowerCase().includes(search) ||
-      appointment.customer?.mobile?.toLowerCase().includes(search) ||
-      appointment.notes?.toLowerCase().includes(search)
-    );
-  });
+  const appointments = adapted.data.appointments;
 
   const columns = useAppointmentsColumns({
     onDelete: setDeleteCandidate,
@@ -167,8 +166,11 @@ const AppointmentsPage = () => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
             <Input
               className="pl-10"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
               placeholder={t("appointments.searchPlaceholder")}
             />
           </div>
@@ -213,12 +215,18 @@ const AppointmentsPage = () => {
           <Input
             type="date"
             value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
+            onChange={(event) => {
+              setDateFrom(event.target.value);
+              setCurrentPage(1);
+            }}
           />
           <Input
             type="date"
             value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
+            onChange={(event) => {
+              setDateTo(event.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
 

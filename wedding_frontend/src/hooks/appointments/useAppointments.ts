@@ -13,6 +13,7 @@ interface UseAppointmentsParams {
   itemsPerPage: number;
   status: "all" | Appointment["status"];
   customerId: string;
+  search?: string;
   venueId?: string;
   assignedToUserId?: string;
   dateFrom: string;
@@ -24,6 +25,7 @@ export const useAppointments = ({
   itemsPerPage,
   status,
   customerId,
+  search,
   dateFrom,
   dateTo,
 }: UseAppointmentsParams) => {
@@ -34,6 +36,7 @@ export const useAppointments = ({
       itemsPerPage,
       status,
       customerId,
+      search ?? "",
       dateFrom,
       dateTo,
     ],
@@ -44,6 +47,7 @@ export const useAppointments = ({
           limit: itemsPerPage,
           status: status === "all" ? undefined : status,
           customerId: customerId ? Number(customerId) : undefined,
+          search: search?.trim() ? search.trim() : undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
         },
@@ -70,14 +74,26 @@ export const useAppointmentsCalendar = ({
   dateTo,
   status = "all",
   assignedUserId = "",
+  customerId = "",
+  search = "",
 }: {
   dateFrom: string;
   dateTo: string;
   status?: "all" | Appointment["status"];
   assignedUserId?: string;
+  customerId?: string;
+  search?: string;
 }) => {
   return useQuery<Appointment[]>({
-    queryKey: ["appointments-calendar", dateFrom, dateTo, status, assignedUserId],
+    queryKey: [
+      "appointments-calendar",
+      dateFrom,
+      dateTo,
+      status,
+      assignedUserId,
+      customerId,
+      search,
+    ],
     queryFn: async () => {
       const res = await api.get<AppointmentsCalendarResponse>(
         "/appointments/calendar",
@@ -87,6 +103,8 @@ export const useAppointmentsCalendar = ({
             dateTo,
             status: status === "all" ? undefined : status,
             assignedUserId: assignedUserId ? Number(assignedUserId) : undefined,
+            customerId: customerId ? Number(customerId) : undefined,
+            search: search?.trim() ? search.trim() : undefined,
           },
         },
       );

@@ -1,5 +1,5 @@
 import { addDays, format } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
 import { getInitialCalendarRange, matchesCalendarDatePreset } from "@/features/calendar/calendar-range";
@@ -23,30 +23,21 @@ const initialFilters: AppointmentCalendarFilters = {
   datePreset: "all",
 };
 
-function matchesAppointmentSearch(appointment: Appointment, searchTerm: string) {
-  if (!searchTerm) {
-    return true;
-  }
-
-  const haystack = [
-    appointment.customer?.fullName,
-    appointment.customer?.mobile,
-    appointment.notes,
-    appointment.createdByUser?.fullName,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(searchTerm);
-}
-
 export function useAppointmentsCalendarView() {
   const [filters, setFilters] =
     useState<AppointmentCalendarFilters>(initialFilters);
+  const [searchQuery, setSearchQuery] = useState("");
   const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(
     getInitialCalendarRange,
   );
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearchQuery(filters.search.trim());
+    }, 300);
+
+    return () => window.clearTimeout(handle);
+  }, [filters.search]);
 
   const query = useAppointmentsCalendar({
     dateFrom: format(calendarRange.start, "yyyy-MM-dd"),
@@ -54,41 +45,19 @@ export function useAppointmentsCalendarView() {
     status: filters.status,
     assignedUserId:
       filters.assignedUserId !== "all" ? filters.assignedUserId : "",
+    customerId: filters.customerId !== "all" ? filters.customerId : "",
+    search: searchQuery,
   });
 
   const items = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-
-    return (query.data ?? []).filter((appointment) => {
-      if (
-        filters.assignedUserId !== "all" &&
-        String(appointment.createdByUser?.id ?? "") !== filters.assignedUserId
-      ) {
-        return false;
-      }
-
-      if (
-        filters.customerId !== "all" &&
-        String(appointment.customer?.id ?? appointment.customerId) !==
-          filters.customerId
-      ) {
-        return false;
-      }
-
-      if (!matchesAppointmentSearch(appointment, search)) {
-        return false;
-      }
-
-      return matchesCalendarDatePreset(
+    return (query.data ?? []).filter((appointment) =>
+      matchesCalendarDatePreset(
         `${appointment.appointmentDate}T${appointment.startTime}:00`,
         filters.datePreset,
-      );
-    });
+      ),
+    );
   }, [
-    filters.assignedUserId,
-    filters.customerId,
     filters.datePreset,
-    filters.search,
     query.data,
   ]);
 
