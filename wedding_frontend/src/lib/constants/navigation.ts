@@ -50,6 +50,41 @@ export type NavigationLeaf = NavigationItem & {
   parents: string[];
 };
 
+function splitNavigationHref(href: string) {
+  const [pathname, search = ""] = href.split("?");
+
+  return {
+    pathname,
+    searchParams: new URLSearchParams(search),
+  };
+}
+
+export function matchesNavigationHref(
+  pathname: string,
+  search: string,
+  href?: string,
+) {
+  if (!href) {
+    return false;
+  }
+
+  const { pathname: hrefPathname, searchParams } = splitNavigationHref(href);
+
+  if (!(pathname === hrefPathname || pathname.startsWith(`${hrefPathname}/`))) {
+    return false;
+  }
+
+  if ([...searchParams].length === 0) {
+    return true;
+  }
+
+  const currentSearchParams = new URLSearchParams(search);
+
+  return [...searchParams.entries()].every(
+    ([key, value]) => currentSearchParams.get(key) === value,
+  );
+}
+
 export const SECRETARIAL_ROOT_ID = "Secretarial";
 export const INVENTORY_ROOT_ID = "inventory";
 export const REPORTS_ROOT_ID = "reports";
@@ -68,14 +103,14 @@ const navigationTree: NavigationItem[] = [
     id: SECRETARIAL_ROOT_ID,
     labelKey: "sidebar.nav.Secretarial",
     icon: CalendarCheck2,
-    href: "/appointments/calendar",
+    href: "/appointments?view=calendar",
     children: [
       {
         id: "appointments-calendar",
         labelKey: "sidebar.nav.appointmentsCalendar",
         label: "Appointments Calendar",
         labelAr: "الموعيد اليوميه",
-        href: "/appointments/calendar",
+        href: "/appointments?view=calendar",
         icon: CalendarDays,
         subtitle:
           "Operational calendar for customer appointments and follow-ups.",
@@ -86,7 +121,7 @@ const navigationTree: NavigationItem[] = [
         labelKey: "sidebar.nav.eventsCalendar",
         label: "Events Calendar",
         labelAr: "تقويم الحفلات",
-        href: "/events/calendar",
+        href: "/events?view=calendar",
         icon: CalendarRange,
         subtitle: "Operational calendar for wedding events and venue planning.",
         subtitleAr: "تقويم تشغيلي للحفلات وتخطيط القاعات.",
@@ -120,17 +155,6 @@ const navigationTree: NavigationItem[] = [
         labelKey: "sidebar.nav.allCustomers",
         label: "All Customers",
         labelAr: "كل العملاء",
-        href: "/customers",
-        icon: UsersRound,
-        subtitle:
-          "Access complete customer profiles, history, and touchpoints.",
-        subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
-      },
-      {
-        id: "customers-all",
-        labelKey: "sidebar.nav.allCustomers",
-        label: "All Customers",
-        labelAr: "تفصيل مصمم",
         href: "/customers",
         icon: UsersRound,
         subtitle:
@@ -480,12 +504,13 @@ export function flattenNavigationLeaves(
 export function collectExpandedNavigationIds(
   items: NavigationItem[],
   pathname: string,
+  search: string = "",
   parents: string[] = [],
 ): string[] {
   for (const item of items) {
     const nextParents = [...parents, item.id];
 
-    if (item.href === pathname) {
+    if (matchesNavigationHref(pathname, search, item.href)) {
       return parents;
     }
 
@@ -493,6 +518,7 @@ export function collectExpandedNavigationIds(
       const childParents = collectExpandedNavigationIds(
         item.children,
         pathname,
+        search,
         nextParents,
       );
 

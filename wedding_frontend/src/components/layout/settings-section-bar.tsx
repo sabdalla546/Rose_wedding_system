@@ -3,11 +3,11 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { settingsNavigationLeaves } from "@/lib/constants/navigation";
+import {
+  matchesNavigationHref,
+  settingsNavigationLeaves,
+} from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
-
-const isPathWithinHref = (pathname: string, href: string) =>
-  pathname === href || pathname.startsWith(`${href}/`);
 
 export function SettingsSectionBar() {
   const location = useLocation();
@@ -16,11 +16,13 @@ export function SettingsSectionBar() {
 
   const activeHref = useMemo(() => {
     const matches = settingsNavigationLeaves
-      .filter((item) => item.href && isPathWithinHref(location.pathname, item.href))
+      .filter((item) =>
+        matchesNavigationHref(location.pathname, location.search, item.href),
+      )
       .sort((left, right) => (right.href?.length ?? 0) - (left.href?.length ?? 0));
 
     return matches[0]?.href;
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   if (!activeHref) {
     return null;
@@ -106,4 +108,3 @@ export function SettingsSectionBar() {
     </section>
   );
 }
-

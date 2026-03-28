@@ -83,7 +83,7 @@ const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> = 
   scheduled: "gold",
   confirmed: "emerald",
   completed: "blue",
-  rescheduled: "rose",
+  rescheduled: "gold",
   cancelled: "rose",
   no_show: "blue",
 };

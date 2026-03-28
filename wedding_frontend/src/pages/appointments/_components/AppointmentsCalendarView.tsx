@@ -1,0 +1,736 @@
+import { format } from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+import { AppCalendar, type AppCalendarHandle } from "@/components/calendar/app-calendar";
+import {
+  CalendarFilterField,
+  CalendarFilterGroup,
+  CalendarFilterPanel,
+  CalendarFilterPill,
+} from "@/components/calendar/calendar-filter-panel";
+import { SummaryCard } from "@/components/dashboard/summary-card";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { AppDialogFooter, AppDialogHeader, AppDialogShell } from "@/components/shared/app-dialog";
+import { SectionCard } from "@/components/shared/section-card";
+import {
+  AppointmentQuickView,
+  AppointmentQuickViewDialog,
+} from "@/features/appointments/appointment-calendar-quick-view";
+import {
+  buildAppointmentCalendarSummary,
+  getAppointmentCalendarLegendItems,
+} from "@/features/appointments/appointment-calendar";
+import {
+  useCancelAppointment,
+  useConfirmAppointment,
+  useRescheduleAppointment,
+} from "@/hooks/appointments/useAppointmentActions";
+import { useAppointmentsCalendarView } from "@/hooks/appointments/useAppointmentsCalendarView";
+import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useUsers } from "@/hooks/users/useUsers";
+import { APPOINTMENT_STATUS_OPTIONS } from "@/pages/appointments/adapters";
+import type { Appointment } from "@/pages/appointments/types";
+
+const filterFieldClassName =
+  "h-11 w-full rounded-xl border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
+
+const fieldStyle = {
+  background: "var(--lux-control-surface)",
+  borderColor: "var(--lux-control-border)",
+} as const;
+
+const textareaClassName =
+  "min-h-[110px] w-full rounded-[18px] border px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
+
+type ActionTarget = Appointment | null;
+
+type AppointmentsCalendarViewProps = {
+  active: boolean;
+};
+
+function RescheduleDialog({
+  open,
+  onOpenChange,
+  appointment,
+  appointmentDate,
+  startTime,
+  endTime,
+  notes,
+  onAppointmentDateChange,
+  onStartTimeChange,
+  onEndTimeChange,
+  onNotesChange,
+  onSubmit,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appointment: ActionTarget;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  notes: string;
+  onAppointmentDateChange: (value: string) => void;
+  onStartTimeChange: (value: string) => void;
+  onEndTimeChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <AppDialogShell size="sm">
+        <AppDialogHeader
+          title={t("appointments.rescheduleTitle", {
+            defaultValue: "Reschedule Appointment",
+          })}
+          description={t("appointments.calendarPage.rescheduleDescription", {
+            defaultValue:
+              "Adjust the appointment date, time, and any follow-up note.",
+          })}
+        />
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              type="date"
+              value={appointmentDate}
+              onChange={(event) => onAppointmentDateChange(event.target.value)}
+              disabled={isPending || !appointment}
+            />
+            <Input
+              type="time"
+              value={startTime}
+              onChange={(event) => onStartTimeChange(event.target.value)}
+              disabled={isPending || !appointment}
+            />
+            <Input
+              type="time"
+              value={endTime}
+              onChange={(event) => onEndTimeChange(event.target.value)}
+              disabled={isPending || !appointment}
+              className="sm:col-span-2"
+            />
+          </div>
+          <textarea
+            className={textareaClassName}
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+            placeholder={t("appointments.notesPlaceholder", {
+              defaultValue: "Add notes...",
+            })}
+            disabled={isPending || !appointment}
+            style={{
+              background: "var(--color-surface-2)",
+              borderColor: "var(--color-border)",
+            }}
+          />
+        </div>
+        <AppDialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            {t("common.cancel", { defaultValue: "Cancel" })}
+          </Button>
+          <Button type="button" onClick={onSubmit} disabled={isPending || !appointment}>
+            {t("appointments.reschedule", { defaultValue: "Reschedule" })}
+          </Button>
+        </AppDialogFooter>
+      </AppDialogShell>
+    </Dialog>
+  );
+}
+
+function CancelDialog({
+  open,
+  onOpenChange,
+  appointment,
+  reason,
+  notes,
+  onReasonChange,
+  onNotesChange,
+  onSubmit,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appointment: ActionTarget;
+  reason: string;
+  notes: string;
+  onReasonChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <AppDialogShell size="sm">
+        <AppDialogHeader
+          title={t("appointments.cancelTitle", {
+            defaultValue: "Cancel Appointment",
+          })}
+          description={t("appointments.calendarPage.cancelDescription", {
+            defaultValue:
+              "Add a cancellation reason and any note that should stay with the appointment.",
+          })}
+        />
+        <div className="space-y-4">
+          <Input
+            value={reason}
+            onChange={(event) => onReasonChange(event.target.value)}
+            placeholder={t("appointments.cancelReasonPlaceholder", {
+              defaultValue: "Enter cancellation reason",
+            })}
+            disabled={isPending || !appointment}
+          />
+          <textarea
+            className={textareaClassName}
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+            placeholder={t("appointments.notesPlaceholder", {
+              defaultValue: "Add notes...",
+            })}
+            disabled={isPending || !appointment}
+            style={{
+              background: "var(--color-surface-2)",
+              borderColor: "var(--color-border)",
+            }}
+          />
+        </div>
+        <AppDialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            {t("common.cancel", { defaultValue: "Cancel" })}
+          </Button>
+          <Button type="button" onClick={onSubmit} disabled={isPending || !appointment}>
+            {t("appointments.cancel", { defaultValue: "Cancel" })}
+          </Button>
+        </AppDialogFooter>
+      </AppDialogShell>
+    </Dialog>
+  );
+}
+
+export function AppointmentsCalendarView({
+  active,
+}: AppointmentsCalendarViewProps) {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const calendarRef = useRef<AppCalendarHandle | null>(null);
+  const {
+    items,
+    calendarEvents,
+    filters,
+    setFilters,
+    resetFilters,
+    setCalendarRange,
+    activeFiltersCount,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useAppointmentsCalendarView();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [cancelCandidate, setCancelCandidate] = useState<ActionTarget>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelNotes, setCancelNotes] = useState("");
+  const [rescheduleCandidate, setRescheduleCandidate] = useState<ActionTarget>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleStartTime, setRescheduleStartTime] = useState("");
+  const [rescheduleEndTime, setRescheduleEndTime] = useState("");
+  const [rescheduleNotes, setRescheduleNotes] = useState("");
+
+  const confirmAppointment = useConfirmAppointment();
+  const cancelAppointment = useCancelAppointment();
+  const rescheduleAppointment = useRescheduleAppointment();
+  const { data: usersResponse } = useUsers({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+  });
+  const { data: customersResponse } = useCustomers({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    status: "all",
+  });
+
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      calendarRef.current?.updateSize();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
+
+  const selectedAppointment = useMemo(
+    () => {
+      if (!items.length) {
+        return null;
+      }
+
+      if (selectedAppointmentId) {
+        const matchedItem =
+          items.find((item) => String(item.id) === selectedAppointmentId) ??
+          null;
+
+        if (matchedItem) {
+          return matchedItem;
+        }
+      }
+
+      return items[0] ?? null;
+    },
+    [items, selectedAppointmentId],
+  );
+
+  const assignedUserOptions = useMemo(
+    () =>
+      (usersResponse?.data ?? []).map((user) => ({
+        value: String(user.id),
+        label: user.fullName,
+      })),
+    [usersResponse?.data],
+  );
+
+  const customerOptions = useMemo(
+    () =>
+      (customersResponse?.data ?? []).map((customer) => ({
+        value: String(customer.id),
+        label: customer.fullName,
+      })),
+    [customersResponse?.data],
+  );
+
+  const openCancelDialog = (appointment: Appointment) => {
+    setDetailsDialogOpen(false);
+    setCancelCandidate(appointment);
+    setCancelReason("");
+    setCancelNotes(appointment.notes ?? "");
+  };
+
+  const openRescheduleDialog = (appointment: Appointment) => {
+    setDetailsDialogOpen(false);
+    setRescheduleCandidate(appointment);
+    setRescheduleDate(appointment.appointmentDate);
+    setRescheduleStartTime(appointment.startTime);
+    setRescheduleEndTime(appointment.endTime ?? "");
+    setRescheduleNotes(appointment.notes ?? "");
+  };
+
+  const summaryItems = useMemo(
+    () => buildAppointmentCalendarSummary(items, t),
+    [items, t],
+  );
+
+  const activeFilterPills = [
+    filters.search.trim() ? (
+      <CalendarFilterPill key="search" label={filters.search.trim()} />
+    ) : null,
+    filters.status !== "all" ? (
+      <CalendarFilterPill
+        key="status"
+        label={t(`appointments.status.${filters.status}`, {
+          defaultValue: filters.status,
+        })}
+      />
+    ) : null,
+    filters.assignedUserId !== "all" ? (
+      <CalendarFilterPill
+        key="assigned"
+        label={
+          assignedUserOptions.find(
+            (option) => option.value === filters.assignedUserId,
+          )?.label ?? filters.assignedUserId
+        }
+      />
+    ) : null,
+    filters.customerId !== "all" ? (
+      <CalendarFilterPill
+        key="customer"
+        label={
+          customerOptions.find((option) => option.value === filters.customerId)
+            ?.label ?? filters.customerId
+        }
+      />
+    ) : null,
+    filters.dateFrom ? (
+      <CalendarFilterPill
+        key="date-from"
+        label={`${t("common.from", { defaultValue: "From" })}: ${filters.dateFrom}`}
+      />
+    ) : null,
+    filters.dateTo ? (
+      <CalendarFilterPill
+        key="date-to"
+        label={`${t("common.to", { defaultValue: "To" })}: ${filters.dateTo}`}
+      />
+    ) : null,
+  ].filter(Boolean);
+
+  return (
+    <>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {summaryItems.map((summary) => (
+          <SummaryCard
+            key={summary.id}
+            label={summary.label}
+            value={summary.value}
+            hint={summary.hint}
+            className="space-y-2 border-[var(--color-border)] shadow-none"
+          />
+        ))}
+      </section>
+
+      <CalendarFilterPanel
+        title={t("common.filters")}
+        description={t("appointments.calendarPage.filtersDescription")}
+        activeFiltersLabel={t("appointments.activeFiltersCount", {
+          count: activeFiltersCount,
+        })}
+        activeFiltersCount={activeFiltersCount}
+        clearLabel={t("appointments.clearFilters")}
+        onClear={resetFilters}
+        showLabel={t("appointments.showFilters")}
+        hideLabel={t("appointments.hideFilters")}
+        pills={activeFilterPills.length ? activeFilterPills : undefined}
+      >
+        <CalendarFilterGroup
+          className="xl:col-span-8"
+          title={t("appointments.primaryFilters")}
+          description={t("appointments.primaryFiltersHint")}
+        >
+          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
+            <CalendarFilterField
+              label={t("appointments.calendarPage.searchLabel")}
+            >
+              <Input
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.search}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    search: event.target.value,
+                  }))
+                }
+                placeholder={t("appointments.calendarPage.searchPlaceholder", {
+                  defaultValue:
+                    "Search customers, notes, mobile numbers, or assigned users...",
+                })}
+              />
+            </CalendarFilterField>
+
+            <CalendarFilterField
+              label={t("appointments.statusLabel")}
+            >
+              <select
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.status}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    status: event.target.value as typeof filters.status,
+                  }))
+                }
+              >
+                <option value="all">
+                  {t("appointments.allStatuses", { defaultValue: "All Statuses" })}
+                </option>
+                {APPOINTMENT_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(`appointments.status.${option.value}`, {
+                      defaultValue: option.label,
+                    })}
+                  </option>
+                ))}
+              </select>
+            </CalendarFilterField>
+
+            <CalendarFilterField
+              label={t("appointments.assignedUser")}
+            >
+              <select
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.assignedUserId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    assignedUserId: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">
+                  {t("appointments.calendarPage.allAssignedUsers", {
+                    defaultValue: "All assigned users",
+                  })}
+                </option>
+                {assignedUserOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </CalendarFilterField>
+
+            <CalendarFilterField
+              label={t("appointments.customer")}
+            >
+              <select
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.customerId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    customerId: event.target.value,
+                  }))
+                }
+              >
+                <option value="all">
+                  {t("appointments.calendarPage.allCustomers", {
+                    defaultValue: "All customers",
+                  })}
+                </option>
+                {customerOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </CalendarFilterField>
+          </div>
+        </CalendarFilterGroup>
+
+        <CalendarFilterGroup
+          className="xl:col-span-4"
+          title={t("appointments.dateFilters")}
+          description={t("appointments.dateFiltersHint")}
+        >
+          <div className="grid grid-cols-1 gap-2.5">
+            <CalendarFilterField
+              label={t("common.from", { defaultValue: "From" })}
+            >
+              <Input
+                type="date"
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.dateFrom}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    dateFrom: event.target.value,
+                  }))
+                }
+              />
+            </CalendarFilterField>
+
+            <CalendarFilterField label={t("common.to", { defaultValue: "To" })}>
+              <Input
+                type="date"
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={filters.dateTo}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    dateTo: event.target.value,
+                  }))
+                }
+              />
+            </CalendarFilterField>
+          </div>
+        </CalendarFilterGroup>
+      </CalendarFilterPanel>
+
+      <section className="grid gap-6">
+        <div className="space-y-6">
+          {isError ? (
+            <SectionCard className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                  {t("common.error", { defaultValue: "Error" })}
+                </p>
+                <h3 className="text-xl font-semibold text-[var(--color-text)]">
+                  {t("appointments.calendarPage.errorTitle", {
+                    defaultValue: "Unable to load the appointments calendar",
+                  })}
+                </h3>
+                <p className="text-sm text-[var(--color-text-subtle)]">
+                  {t("appointments.calendarPage.errorDescription", {
+                    defaultValue:
+                      "The appointment schedule could not be loaded right now. Try again to refresh the visible range.",
+                  })}
+                </p>
+              </div>
+              <Button onClick={() => refetch()}>
+                {t("common.retry", { defaultValue: "Retry" })}
+              </Button>
+            </SectionCard>
+          ) : (
+            <AppCalendar
+              ref={calendarRef}
+              locale={i18n.language === "ar" ? "ar" : "en"}
+              events={calendarEvents}
+              initialView="month"
+              loading={isLoading || isFetching}
+              legends={getAppointmentCalendarLegendItems(t)}
+              emptyTitle={t("appointments.calendarPage.emptyTitle", {
+                defaultValue: "No appointments in this range",
+              })}
+              emptyDescription={t("appointments.calendarPage.emptyDescription", {
+                defaultValue:
+                  "Try another visible range or clear one of the active filters.",
+              })}
+              hideToolbar
+              variant="appointment"
+              onRangeChange={setCalendarRange}
+              onEventSelect={(event) => {
+                setSelectedAppointmentId(event.id);
+                setDetailsDialogOpen(true);
+              }}
+              onDateSelect={(date) =>
+                navigate(`/appointments/create?date=${format(date, "yyyy-MM-dd")}`)
+              }
+            />
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <AppointmentQuickView
+            appointment={selectedAppointment}
+            onView={(appointment) => navigate(`/appointments/${appointment.id}`)}
+            onEdit={(appointment) => navigate(`/appointments/edit/${appointment.id}`)}
+            onReschedule={openRescheduleDialog}
+            onConfirm={(appointment) =>
+              confirmAppointment.mutate({ id: appointment.id, values: {} })
+            }
+            onCancel={openCancelDialog}
+            isConfirmPending={confirmAppointment.isPending}
+            isCancelPending={cancelAppointment.isPending}
+            isReschedulePending={rescheduleAppointment.isPending}
+          />
+        </div>
+      </section>
+
+      <AppointmentQuickViewDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        appointment={selectedAppointment}
+        onView={(appointment) => navigate(`/appointments/${appointment.id}`)}
+        onEdit={(appointment) => navigate(`/appointments/edit/${appointment.id}`)}
+        onReschedule={openRescheduleDialog}
+        onConfirm={(appointment) =>
+          confirmAppointment.mutate({ id: appointment.id, values: {} })
+        }
+        onCancel={openCancelDialog}
+        isConfirmPending={confirmAppointment.isPending}
+        isCancelPending={cancelAppointment.isPending}
+        isReschedulePending={rescheduleAppointment.isPending}
+      />
+
+      <CancelDialog
+        open={cancelCandidate !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelCandidate(null);
+          }
+        }}
+        appointment={cancelCandidate}
+        reason={cancelReason}
+        notes={cancelNotes}
+        onReasonChange={setCancelReason}
+        onNotesChange={setCancelNotes}
+        onSubmit={() => {
+          if (!cancelCandidate) {
+            return;
+          }
+
+          cancelAppointment.mutate(
+            {
+              id: cancelCandidate.id,
+              values: {
+                reason: cancelReason.trim() || undefined,
+                notes: cancelNotes.trim() || undefined,
+              },
+            },
+            {
+              onSuccess: () => {
+                setCancelCandidate(null);
+                setCancelReason("");
+                setCancelNotes("");
+              },
+            },
+          );
+        }}
+        isPending={cancelAppointment.isPending}
+      />
+
+      <RescheduleDialog
+        open={rescheduleCandidate !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRescheduleCandidate(null);
+          }
+        }}
+        appointment={rescheduleCandidate}
+        appointmentDate={rescheduleDate}
+        startTime={rescheduleStartTime}
+        endTime={rescheduleEndTime}
+        notes={rescheduleNotes}
+        onAppointmentDateChange={setRescheduleDate}
+        onStartTimeChange={setRescheduleStartTime}
+        onEndTimeChange={setRescheduleEndTime}
+        onNotesChange={setRescheduleNotes}
+        onSubmit={() => {
+          if (!rescheduleCandidate) {
+            return;
+          }
+
+          rescheduleAppointment.mutateReschedule(
+            {
+              id: rescheduleCandidate.id,
+              values: {
+                appointmentDate: rescheduleDate,
+                startTime: rescheduleStartTime,
+                endTime: rescheduleEndTime,
+                notes: rescheduleNotes,
+              },
+            },
+            {
+              onSuccess: () => {
+                setRescheduleCandidate(null);
+                setRescheduleDate("");
+                setRescheduleStartTime("");
+                setRescheduleEndTime("");
+                setRescheduleNotes("");
+              },
+            },
+          );
+        }}
+        isPending={rescheduleAppointment.isPending}
+      />
+    </>
+  );
+}

@@ -10,6 +10,7 @@ import { ReportsSectionBar } from "@/components/layout/reports-section-bar";
 import { SettingsSectionBar } from "@/components/layout/settings-section-bar";
 import {
   inventoryNavigationLeaves,
+  matchesNavigationHref,
   reportsNavigationLeaves,
   secretarialNavigationLeaves,
   settingsNavigationLeaves,
@@ -118,8 +119,7 @@ export function AppShell() {
     : undefined;
 
   const matchesLeaf = (href?: string) =>
-    Boolean(href && (location.pathname === href || location.pathname.startsWith(`${href}/`)));
-
+    matchesNavigationHref(location.pathname, location.search, href);
   const hasSectionBar =
     secretarialNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||
     inventoryNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||

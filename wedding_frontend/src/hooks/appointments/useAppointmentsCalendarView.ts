@@ -16,18 +16,20 @@ export type AppointmentCalendarFilters = {
   dateTo: string;
 };
 
-const initialFilters: AppointmentCalendarFilters = {
-  search: "",
-  status: "all",
-  assignedUserId: "all",
-  customerId: "all",
-  dateFrom: "",
-  dateTo: "",
-};
+export function getInitialAppointmentCalendarFilters(): AppointmentCalendarFilters {
+  return {
+    search: "",
+    status: "all",
+    assignedUserId: "all",
+    customerId: "all",
+    dateFrom: format(new Date(), "yyyy-MM-dd"),
+    dateTo: "",
+  };
+}
 
 export function useAppointmentsCalendarView() {
   const [filters, setFilters] =
-    useState<AppointmentCalendarFilters>(initialFilters);
+    useState<AppointmentCalendarFilters>(getInitialAppointmentCalendarFilters);
   const [searchQuery, setSearchQuery] = useState("");
   const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(
     getInitialCalendarRange,
@@ -92,6 +94,7 @@ export function useAppointmentsCalendarView() {
     calendarEvents,
     filters,
     setFilters,
+    resetFilters: () => setFilters(getInitialAppointmentCalendarFilters()),
     calendarRange,
     setCalendarRange,
     activeFiltersCount,

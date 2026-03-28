@@ -3,28 +3,48 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { secretarialNavigationLeaves } from "@/lib/constants/navigation";
+import {
+  secretarialNavigationLeaves,
+} from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 
-const isPathWithinHref = (pathname: string, href: string) =>
-  pathname === href || pathname.startsWith(`${href}/`);
+const HIDDEN_SECRETARIAL_IDS = new Set([
+  "events-all",
+  "calendar-appointments",
+]);
+
+const isPathWithinHref = (pathname: string, href?: string) => {
+  if (!href) {
+    return false;
+  }
+
+  const [hrefPathname] = href.split("?");
+  return pathname === hrefPathname || pathname.startsWith(`${hrefPathname}/`);
+};
 
 export function SecretarialSectionBar() {
   const location = useLocation();
   const { i18n, t } = useTranslation();
   const isRtl = i18n.resolvedLanguage === "ar";
+  const visibleNavigationItems = useMemo(
+    () =>
+      secretarialNavigationLeaves.filter(
+        (item) => !HIDDEN_SECRETARIAL_IDS.has(item.id),
+      ),
+    [],
+  );
 
   const activeHref = useMemo(() => {
-    const matches = secretarialNavigationLeaves
+    const matches = visibleNavigationItems
       .filter(
-        (item) => item.href && isPathWithinHref(location.pathname, item.href),
+        (item) => isPathWithinHref(location.pathname, item.href),
       )
       .sort(
         (left, right) => (right.href?.length ?? 0) - (left.href?.length ?? 0),
       );
 
     return matches[0]?.href;
-  }, [location.pathname]);
+  }, [location.pathname, visibleNavigationItems]);
 
   if (!activeHref) {
     return null;
@@ -43,7 +63,7 @@ export function SecretarialSectionBar() {
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="flex min-w-max flex-nowrap items-center gap-0 md:w-full md:min-w-0">
-          {secretarialNavigationLeaves.map((item) => {
+          {visibleNavigationItems.map((item) => {
             if (!item.href) {
               return null;
             }

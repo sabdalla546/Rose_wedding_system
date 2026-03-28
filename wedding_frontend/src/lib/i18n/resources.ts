@@ -44,6 +44,9 @@ export const resources = {
         close: "Close",
         error: "Error",
         success: "Success",
+        switchView: "Switch view",
+        tableView: "Table",
+        calendarView: "Calendar",
         from: "From",
         to: "To",
       },
@@ -1055,7 +1058,7 @@ export const resources = {
       events: {
         title: "Events",
         managementHint:
-          "Manage event records here, then use the operational calendar for cross-module scheduling.",
+          "Manage event records in table or calendar view from one workspace.",
         calendarPage: {
           eyebrow: "Events Calendar",
           title: "Events Planning Calendar",
@@ -1090,7 +1093,8 @@ export const resources = {
             confirmed: "Confirmed",
             confirmedHint: "Confirmed event productions ready for execution.",
             postponed: "Cancelled / Postponed",
-            postponedHint: "{{count}} events are currently in active execution.",
+            postponedHint:
+              "{{count}} events are currently in active execution.",
           },
         },
         event: "Event",
@@ -1646,9 +1650,28 @@ export const resources = {
       appointments: {
         title: "Appointments",
         coreFlowHint:
-          "Appointments now carry only scheduling details and link back to customers.",
+          "Manage appointment scheduling details in table or calendar view.",
         searchPlaceholder: "Search by customer, mobile, or notes",
         allCustomers: "All Customers",
+        activeFiltersCount_one: "1 active filter",
+        activeFiltersCount_other: "{{count}} active filters",
+        clearFilters: "Clear Filters",
+        showFilters: "Show Filters",
+        hideFilters: "Hide Filters",
+        primaryFilters: "Primary Filters",
+        primaryFiltersHint:
+          "Use the main filters to narrow the appointment calendar quickly.",
+        dateFilters: "Date Range",
+        dateFiltersHint:
+          "Limit the appointment calendar to a specific date range.",
+        tablePage: {
+          filtersDescription:
+            "Quick appointment filters for search, status, customer, and date range.",
+          primaryFiltersHint:
+            "Use the main filters to narrow the appointment list quickly.",
+          dateFiltersHint:
+            "Limit the appointment list to a specific date range.",
+        },
         calendarPage: {
           eyebrow: "Appointments Calendar",
           title: "Appointments Calendar",
@@ -1876,6 +1899,9 @@ export const resources = {
         close: "إغلاق",
         error: "خطأ",
         success: "نجاح",
+        switchView: "تبديل طريقة العرض",
+        tableView: "جدول",
+        calendarView: "تقويم",
         from: "من",
         to: "إلى",
         restore: "استعادة",
@@ -1934,8 +1960,8 @@ export const resources = {
           leads: "العملاء المحتملون",
           customers: "العملاء",
           events: "الحفلات",
-          appointmentsCalendar: "تقويم المواعيد",
-          eventsCalendar: "تقويم الحفلات",
+          appointmentsCalendar: "حجز المواعيد",
+          eventsCalendar: "حجز الحفلات",
           vendors: "الشركات",
           services: "الخدمات",
           quotations: "عروض الأسعار",
@@ -2466,7 +2492,7 @@ export const resources = {
       events: {
         title: "الحفلات",
         managementHint:
-          "أدر سجلات الحفلات هنا، ثم استخدم التقويم التشغيلي لجدولة العمل عبر الأقسام.",
+          "أدر سجلات الحفلات من مساحة واحدة بعرض الجدول أو التقويم.",
         calendarPage: {
           eyebrow: "تقويم الحفلات",
           title: "تقويم الحفلات",
@@ -2481,8 +2507,8 @@ export const resources = {
           selectDescription:
             "اختر حفلاً من التقويم لمراجعة تفاصيل التخطيط الخاصة به.",
           emptyTitle: "لا توجد حفلات",
-        emptyDescription:
-          "جرّب تغيير نطاق التخطيط أو إزالة أحد الفلاتر النشطة.",
+          emptyDescription:
+            "جرّب تغيير نطاق التخطيط أو إزالة أحد الفلاتر النشطة.",
           currentWindow: "النطاق المعروض",
           loadingWindow: "جارٍ تحميل النافذة الحالية...",
           featuredEvent: "الحفل البارز",
@@ -2766,7 +2792,8 @@ export const resources = {
         manualMode: "عرض سعر يدوي",
         manualModeHint: "أضف بنود خدمات وموردين داخل عرض سعر واحد مختلط.",
         fromEventMode: "إنشاء من الحفل",
-        fromEventModeHint: "اختر خدمات الحفل وموردي الحفل معًا ثم أنشئ عرض سعر واحد.",
+        fromEventModeHint:
+          "اختر خدمات الحفل وموردي الحفل معًا ثم أنشئ عرض سعر واحد.",
         selectEvent: "اختر الحفل",
         noEventSelected: "لا يوجد حفل محدد",
         selectCustomer: "اختر العميل",
@@ -2785,8 +2812,7 @@ export const resources = {
         mixedQuotationItemsHint:
           "اختر مصادر الخدمات والموردين أولًا، ثم راجعها معًا داخل جدول واحد لبنود عرض السعر.",
         companyServices: "خدمات الشركة",
-        companyServicesHint:
-          "أضف بنودًا من خدمات الحفل أو من كتالوج الخدمات.",
+        companyServicesHint: "أضف بنودًا من خدمات الحفل أو من كتالوج الخدمات.",
         companyVendors: "موردو الشركة",
         companyVendorsHint:
           "تأتي بنود الموردين من موردي الحفل وتستخدم السعر المتفق عليه كلقطة افتراضية.",
@@ -3031,14 +3057,31 @@ export const resources = {
       appointments: {
         title: "المواعيد",
         coreFlowHint:
-          "أصبحت المواعيد تحتوي على تفاصيل الجدولة فقط وترتبط بالعملاء.",
+          "أدر تفاصيل جدولة المواعيد من خلال عرض الجدول أو التقويم.",
         searchPlaceholder: "ابحث باسم العميل أو رقم الهاتف أو الملاحظات",
         allCustomers: "كل العملاء",
+        activeFiltersCount_one: "فلتر نشط واحد",
+        activeFiltersCount_other: "{{count}} فلاتر نشطة",
+        clearFilters: "مسح الفلاتر",
+        showFilters: "عرض الفلاتر",
+        hideFilters: "إخفاء الفلاتر",
+        primaryFilters: "الفلاتر الأساسية",
+        primaryFiltersHint:
+          "استخدم الفلاتر الرئيسية لتضييق تقويم المواعيد بسرعة.",
+        dateFilters: "نطاق التاريخ",
+        dateFiltersHint: "حدّد نطاقًا زمنيًا معيّنًا لتقويم المواعيد.",
+        tablePage: {
+          filtersDescription:
+            "فلاتر سريعة للبحث والحالة والعميل ونطاق التاريخ في قائمة المواعيد.",
+          primaryFiltersHint:
+            "استخدم الفلاتر الرئيسية لتضييق قائمة المواعيد بسرعة.",
+          dateFiltersHint:
+            "حدّد نطاقًا زمنيًا معيّنًا لعرض المواعيد المطابقة في القائمة.",
+        },
         calendarPage: {
           eyebrow: "تقويم المواعيد",
           title: "تقويم المواعيد",
-          description:
-            "تقويم خفيف لجدولة المواعيد والاجتماعات والمتابعة.",
+          description: "تقويم خفيف لجدولة المواعيد والاجتماعات والمتابعة.",
           filtersDescription:
             "فلاتر سريعة للبحث والحالة والتكليف والعميل والنطاق الزمني.",
           visibleRange: "النطاق المعروض",
@@ -3054,8 +3097,7 @@ export const resources = {
           selectDescription:
             "اختر موعداً من التقويم لمراجعة الوقت والملاحظات والإجراءات المتاحة.",
           emptyTitle: "لا توجد مواعيد في هذا النطاق",
-          emptyDescription:
-            "جرّب نطاقاً آخر أو أزل أحد الفلاتر النشطة.",
+          emptyDescription: "جرّب نطاقاً آخر أو أزل أحد الفلاتر النشطة.",
           errorTitle: "تعذر تحميل تقويم المواعيد",
           errorDescription:
             "لم يمكن تحميل جدول المواعيد حالياً. حاول مرة أخرى لتحديث النطاق المعروض.",

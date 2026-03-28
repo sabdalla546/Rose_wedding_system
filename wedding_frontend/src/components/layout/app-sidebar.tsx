@@ -11,6 +11,7 @@ import {
   SECRETARIAL_ROOT_ID,
   SETTINGS_ROOT_ID,
   collectExpandedNavigationIds,
+  matchesNavigationHref,
   navigationItems,
   inventoryNavigationLeaves,
   reportsNavigationLeaves,
@@ -26,8 +27,6 @@ import { useAuth } from "@/app/providers/use-auth";
 const SIDEBAR_EXPANDED_WIDTH = 225;
 const SIDEBAR_COLLAPSED_WIDTH = 70;
 const SIDEBAR_HEADER_HEIGHT = 72;
-const matchesItemPath = (pathname: string, href?: string) =>
-  Boolean(href && (pathname === href || pathname.startsWith(`${href}/`)));
 
 const NAVIGATION_LABEL_FALLBACKS: Record<string, { en: string; ar: string }> = {
   "sidebar.nav.users": {
@@ -65,33 +64,38 @@ export function AppSidebar({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const showFull = isOpen || hoverOpen;
   const autoExpandedIds = useMemo(
-    () => collectExpandedNavigationIds(navigationItems, location.pathname),
-    [location.pathname],
+    () =>
+      collectExpandedNavigationIds(
+        navigationItems,
+        location.pathname,
+        location.search,
+      ),
+    [location.pathname, location.search],
   );
 
   const isSecretarialActive = useMemo(() => {
     return secretarialNavigationLeaves.some((leaf: NavigationLeaf) =>
-      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+      matchesNavigationHref(location.pathname, location.search, leaf.href),
     );
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const isInventoryActive = useMemo(() => {
     return inventoryNavigationLeaves.some((leaf: NavigationLeaf) =>
-      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+      matchesNavigationHref(location.pathname, location.search, leaf.href),
     );
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const isReportsActive = useMemo(() => {
     return reportsNavigationLeaves.some((leaf: NavigationLeaf) =>
-      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+      matchesNavigationHref(location.pathname, location.search, leaf.href),
     );
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const isSettingsActive = useMemo(() => {
     return settingsNavigationLeaves.some((leaf: NavigationLeaf) =>
-      leaf.href ? matchesItemPath(location.pathname, leaf.href) : false,
+      matchesNavigationHref(location.pathname, location.search, leaf.href),
     );
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const getFirstPermittedSecretarialHref = (): string | undefined => {
     if (!user) return undefined;
@@ -265,7 +269,7 @@ export function AppSidebar({
 
   const hasActiveChild = (item: NavigationItem): boolean =>
     item.children?.some((child) => {
-      if (matchesItemPath(location.pathname, child.href)) {
+      if (matchesNavigationHref(location.pathname, location.search, child.href)) {
         return true;
       }
 
@@ -290,10 +294,10 @@ export function AppSidebar({
         : item.id === INVENTORY_ROOT_ID
           ? isInventoryActive
           : item.id === REPORTS_ROOT_ID
-            ? isReportsActive
+          ? isReportsActive
             : item.id === SETTINGS_ROOT_ID
               ? isSettingsActive
-          : matchesItemPath(location.pathname, item.href);
+          : matchesNavigationHref(location.pathname, location.search, item.href);
     const childActive = hasActiveChild(item);
     const hasExplicitExpansionState = Object.prototype.hasOwnProperty.call(
       expandedItems,

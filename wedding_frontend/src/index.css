@@ -107,39 +107,39 @@
   :root[data-theme="light"] {
     color-scheme: light;
 
-    --color-bg: #e6e5e5;
-    --color-shell: #0f0d0d;
-    --color-shell-elevated: #0f0d0d;
+    --color-bg: #f4f6f9;
+    --color-shell: #161b20;
+    --color-shell-elevated: #1f262d;
     --color-surface: #ffffff;
-    --color-surface-2: #f6f8fb;
-    --color-surface-3: rgba(59, 130, 246, 0.08);
-    --color-row: rgba(59, 130, 246, 0.04);
-    --color-control: rgba(245, 247, 250, 0.98);
-    --color-control-hover: rgba(59, 130, 246, 0.08);
-    --color-border: rgba(15, 23, 42, 0.08);
-    --color-border-strong: rgba(59, 130, 246, 0.24);
-    --color-control-border: rgba(15, 23, 42, 0.08);
-    --color-text: #111827;
-    --color-text-muted: #6b7280;
-    --color-text-subtle: #374151;
-    --color-heading: #0f172a;
-    --color-primary: #1447e6;
-    --color-primary-hover: #1447e6;
+    --color-surface-2: #eef2f7;
+    --color-surface-3: rgba(0, 123, 255, 0.12);
+    --color-row: rgba(0, 123, 255, 0.06);
+    --color-control: #ffffff;
+    --color-control-hover: rgba(0, 123, 255, 0.14);
+    --color-border: #cfd6de;
+    --color-border-strong: rgba(0, 123, 255, 0.38);
+    --color-control-border: #bcc6d1;
+    --color-text: #1f2933;
+    --color-text-muted: #5f6b77;
+    --color-text-subtle: #3f4a56;
+    --color-heading: #1b2a3a;
+    --color-primary: #007bff;
+    --color-primary-hover: #0069d9;
     --color-primary-foreground: #ffffff;
-    --color-danger: #dc2626;
-    --color-danger-soft: rgba(220, 38, 38, 0.14);
-    --color-success: #059669;
-    --color-success-soft: rgba(5, 150, 105, 0.14);
-    --color-info: #1447e6;
-    --color-info-soft: rgba(37, 99, 235, 0.12);
-    --color-warning: #d97706;
-    --color-warning-soft: rgba(217, 119, 6, 0.12);
-    --color-overlay: rgba(15, 23, 42, 0.34);
-    --color-overlay-strong: rgba(15, 23, 42, 0.52);
-    --shadow-sm: 0 10px 26px rgba(15, 23, 42, 0.08);
-    --shadow-md: 0 18px 44px rgba(15, 23, 42, 0.1);
-    --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.12);
-    --focus-ring: 0 0 0 2px rgba(59, 130, 246, 0.16);
+    --color-danger: #dc3545;
+    --color-danger-soft: rgba(220, 53, 69, 0.14);
+    --color-success: #28a745;
+    --color-success-soft: rgba(40, 167, 69, 0.14);
+    --color-info: #17a2b8;
+    --color-info-soft: rgba(23, 162, 184, 0.12);
+    --color-warning: #ffc107;
+    --color-warning-soft: rgba(255, 193, 7, 0.16);
+    --color-overlay: rgba(33, 37, 41, 0.34);
+    --color-overlay-strong: rgba(33, 37, 41, 0.52);
+    --shadow-sm: 0 2px 6px rgba(31, 45, 61, 0.08);
+    --shadow-md: 0 10px 24px rgba(31, 45, 61, 0.12);
+    --shadow-lg: 0 18px 38px rgba(31, 45, 61, 0.16);
+    --focus-ring: 0 0 0 0.2rem rgba(0, 123, 255, 0.24);
     --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.88);
 
     --lux-background: var(--color-bg);
@@ -153,21 +153,21 @@
     --lux-gold: var(--color-primary);
     --lux-gold-soft: var(--color-primary-hover);
     --lux-gold-border: var(--color-border-strong);
-    --lux-gold-glow: rgba(59, 130, 246, 0.16);
+    --lux-gold-glow: rgba(0, 123, 255, 0.22);
     --lux-shell-surface: var(--color-shell);
     --lux-shell-chrome-surface: var(--color-shell);
     --lux-shell-chrome-elevated: var(--color-shell-elevated);
-    --lux-shell-chrome-control: rgba(59, 130, 246, 0.08);
-    --lux-shell-chrome-control-border: rgba(59, 130, 246, 0.24);
-    --lux-shell-chrome-control-hover: rgba(59, 130, 246, 0.16);
+    --lux-shell-chrome-control: rgba(255, 255, 255, 0.08);
+    --lux-shell-chrome-control-border: rgba(255, 255, 255, 0.16);
+    --lux-shell-chrome-control-hover: rgba(255, 255, 255, 0.14);
     --lux-shell-chrome-text: #ffffff;
-    --lux-shell-chrome-muted: #c9dbff;
-    --lux-shell-border: rgba(59, 130, 246, 0.2);
+    --lux-shell-chrome-muted: rgba(255, 255, 255, 0.78);
+    --lux-shell-border: rgba(255, 255, 255, 0.1);
     --lux-panel-surface: var(--color-surface);
     --lux-panel-border: var(--color-border);
     --lux-panel-shadow: var(--shadow-md);
     --lux-row-surface: var(--color-surface-2);
-    --lux-row-border: rgba(15, 23, 42, 0.08);
+    --lux-row-border: #cfd6de;
     --lux-control-surface: var(--color-control);
     --lux-control-border: var(--color-control-border);
     --lux-control-hover: var(--color-control-hover);
@@ -239,6 +239,47 @@
 }
 
 @layer components {
+  :root[data-theme="light"] .surface-card,
+  :root[data-theme="light"] .lux-panel,
+  :root[data-theme="light"] .lux-elevated,
+  :root[data-theme="light"] .lux-dashboard-panel,
+  :root[data-theme="light"] .page-header,
+  :root[data-theme="light"] .table-shell,
+  :root[data-theme="light"] .app-calendar-shell,
+  :root[data-theme="light"] .app-calendar-shell .fc-popover {
+    background: #ffffff;
+    border-color: #cfd6de;
+    box-shadow:
+      0 1px 3px rgba(31, 45, 61, 0.08),
+      0 10px 24px rgba(31, 45, 61, 0.1);
+  }
+
+  :root[data-theme="light"] .surface-card-muted,
+  :root[data-theme="light"] .table-shell-footer,
+  :root[data-theme="light"] .app-calendar-shell .fc-col-header-cell,
+  :root[data-theme="light"] .app-calendar-shell .fc-popover-header {
+    background: #f8f9fc;
+    border-color: #d7dee7;
+  }
+
+  :root[data-theme="light"] .app-calendar-shell .fc-daygrid-day-frame,
+  :root[data-theme="light"] .app-calendar-shell .fc-timegrid-col-frame {
+    background: #ffffff;
+  }
+
+  :root[data-theme="light"] .app-control,
+  :root[data-theme="light"] .app-native-select,
+  :root[data-theme="light"] .app-textarea {
+    background: #ffffff;
+    border-color: #bcc6d1;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  :root[data-theme="light"] .app-icon-chip {
+    background: rgba(0, 123, 255, 0.12);
+    border-color: rgba(0, 123, 255, 0.22);
+  }
+
   .app-page {
     width: 100%;
     display: flex;
@@ -684,6 +725,23 @@
     background: var(--color-control-hover);
   }
 
+  .app-calendar-shell .fc-popover {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .app-calendar-shell .fc-popover-header {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+  }
+
+  .app-calendar-shell .fc-popover-body {
+    max-height: min(70vh, 28rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .app-calendar-shell .fc-event {
     border: 0;
     background: transparent;
@@ -982,12 +1040,20 @@
   /* Stronger status coloring inside appointment calendar cards */
   .app-calendar-event--appointment.app-calendar-event--gold {
     border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
-    background: color-mix(in srgb, var(--color-primary) 24%, var(--color-surface));
+    background: color-mix(
+      in srgb,
+      var(--color-primary) 24%,
+      var(--color-surface)
+    );
   }
 
   .app-calendar-event--appointment.app-calendar-event--emerald {
     border-color: color-mix(in srgb, var(--color-success) 50%, transparent);
-    background: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+    background: color-mix(
+      in srgb,
+      var(--color-success) 22%,
+      var(--color-surface)
+    );
   }
 
   .app-calendar-event--appointment.app-calendar-event--blue {
@@ -997,7 +1063,11 @@
 
   .app-calendar-event--appointment.app-calendar-event--rose {
     border-color: color-mix(in srgb, var(--color-danger) 54%, transparent);
-    background: color-mix(in srgb, var(--color-danger) 26%, var(--color-surface));
+    background: color-mix(
+      in srgb,
+      var(--color-danger) 26%,
+      var(--color-surface)
+    );
   }
 
   .app-calendar-accent-dot--slate,

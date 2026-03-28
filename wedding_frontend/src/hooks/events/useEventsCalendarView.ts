@@ -17,14 +17,16 @@ export type EventsCalendarFilters = {
   dateTo: string;
 };
 
-const initialFilters: EventsCalendarFilters = {
-  search: "",
-  status: "all",
-  venueId: "all",
-  customerId: "all",
-  dateFrom: "",
-  dateTo: "",
-};
+export function getInitialEventsCalendarFilters(): EventsCalendarFilters {
+  return {
+    search: "",
+    status: "all",
+    venueId: "all",
+    customerId: "all",
+    dateFrom: format(new Date(), "yyyy-MM-dd"),
+    dateTo: "",
+  };
+}
 
 function matchesEventSearch(event: EventCalendarRecord, searchTerm: string) {
   if (!searchTerm) {
@@ -47,7 +49,9 @@ function matchesEventSearch(event: EventCalendarRecord, searchTerm: string) {
 }
 
 export function useEventsCalendarView() {
-  const [filters, setFilters] = useState<EventsCalendarFilters>(initialFilters);
+  const [filters, setFilters] = useState<EventsCalendarFilters>(
+    getInitialEventsCalendarFilters,
+  );
   const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(
     getInitialCalendarRange,
   );
@@ -126,6 +130,7 @@ export function useEventsCalendarView() {
     calendarEvents,
     filters,
     setFilters,
+    resetFilters: () => setFilters(getInitialEventsCalendarFilters()),
     calendarRange,
     setCalendarRange,
     activeFiltersCount,

@@ -73,7 +73,10 @@ export function AppHeader({
 
   return (
     <header
-      className="fixed z-[120] overflow-hidden backdrop-blur-xl transition-[left,right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,right]"
+      className={cn(
+        "fixed z-[120] overflow-hidden transition-[left,right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,right]",
+        theme === "light" ? "backdrop-blur-0" : "backdrop-blur-xl",
+      )}
       style={{
         ...fixedStyle,
         background: "var(--lux-shell-chrome-surface)",

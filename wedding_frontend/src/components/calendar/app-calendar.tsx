@@ -39,6 +39,7 @@ export type AppCalendarHandle = {
   next: () => void;
   today: () => void;
   setView: (view: AppCalendarView) => void;
+  updateSize: () => void;
 };
 
 type AppCalendarProps = {
@@ -180,6 +181,22 @@ function renderEventContent(
   );
 }
 
+function closeCalendarPopover() {
+  const closeButton = document.querySelector<HTMLButtonElement>(
+    ".fc-popover .fc-popover-close",
+  );
+
+  if (closeButton) {
+    closeButton.click();
+    return;
+  }
+
+  const popover = document.querySelector<HTMLElement>(".fc-popover");
+  if (popover) {
+    popover.remove();
+  }
+}
+
 export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(function AppCalendar({
   events,
   initialView = "month",
@@ -223,6 +240,9 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(funct
     next: () => runCalendarAction("next"),
     today: () => runCalendarAction("today"),
     setView: (view) => setCurrentView(view),
+    updateSize: () => {
+      calendarRef.current?.getApi().updateSize();
+    },
   }));
 
   const handleDatesSet = (arg: DatesSetArg) => {
@@ -256,6 +276,10 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(funct
       description: extendedProps.description,
       location: extendedProps.location,
       raw: extendedProps.raw,
+    });
+
+    window.requestAnimationFrame(() => {
+      closeCalendarPopover();
     });
   };
 

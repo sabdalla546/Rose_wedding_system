@@ -1,75 +1,61 @@
+import { CalendarRange, Plus, Table2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { CalendarRange, Plus, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { ViewModeToggle } from "@/components/shared/view-mode-toggle";
 import { Button } from "@/components/ui/button";
-import ConfirmDialog from "@/components/ui/confirmDialog";
-import { DataTable } from "@/components/ui/data-table";
-import { Input } from "@/components/ui/input";
-import TableHeader from "@/components/common/TableHeader";
-import Pagination from "@/components/ui/pagination";
-import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
-import { useEvents } from "@/hooks/events/useEvents";
-import { useVenues } from "@/hooks/venues/useVenues";
 
-import { EVENT_STATUS_OPTIONS, toTableEvents, type TableEvent } from "./adapters";
-import { useEventsColumns } from "./_components/eventsColumns";
-import type { EventStatus } from "./types";
+import { EventsCalendarView } from "./_components/EventsCalendarView";
+import { EventsTableView } from "./_components/EventsTableView";
 
-const EventsPage = () => {
+type EventsViewMode = "table" | "calendar";
+
+const VIEW_QUERY_PARAM = "view";
+
+export default function EventsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get(VIEW_QUERY_PARAM);
+  const viewMode: EventsViewMode =
+    requestedView === "calendar" ? "calendar" : "table";
+  const [hasVisitedTable, setHasVisitedTable] = useState(viewMode === "table");
+  const [hasVisitedCalendar, setHasVisitedCalendar] = useState(
+    viewMode === "calendar",
+  );
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | EventStatus>("all");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [venueFilter, setVenueFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(null);
+  const viewOptions = useMemo(
+    () => [
+      {
+        value: "table" as const,
+        label: t("common.tableView", { defaultValue: "Table" }),
+        icon: Table2,
+      },
+      {
+        value: "calendar" as const,
+        label: t("common.calendarView", { defaultValue: "Calendar" }),
+        icon: CalendarRange,
+      },
+    ],
+    [t],
+  );
 
-  const { data, isLoading } = useEvents({
-    currentPage,
-    itemsPerPage,
-    searchQuery,
-    status: statusFilter,
-    customerId: customerFilter,
-    venueId: venueFilter,
-    dateFrom,
-    dateTo,
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    venueId: "",
-    weddingDateFrom: "",
-    weddingDateTo: "",
-  });
-  const { data: venuesResponse } = useVenues({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    isActive: "all",
-  });
+  const handleViewChange = (nextView: EventsViewMode) => {
+    const nextParams = new URLSearchParams(searchParams);
 
-  const adapted = useMemo(() => toTableEvents(data), [data]);
-  const customers = customersResponse?.data ?? [];
-  const venues = venuesResponse?.data ?? [];
+    if (nextView === "calendar") {
+      setHasVisitedCalendar(true);
+      nextParams.set(VIEW_QUERY_PARAM, "calendar");
+    } else {
+      setHasVisitedTable(true);
+      nextParams.delete(VIEW_QUERY_PARAM);
+    }
 
-  const columns = useEventsColumns({
-    onDelete: setDeleteCandidate,
-    editPermission: "events.update",
-    deletePermission: "events.delete",
-  });
-  const deleteMutation = useDeleteEvent();
+    setSearchParams(nextParams);
+  };
 
   return (
     <ProtectedComponent permission="events.read">
@@ -85,15 +71,14 @@ const EventsPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <ProtectedComponent permission="events.read">
-              <Button
-                variant="secondary"
-                onClick={() => navigate("/events/calendar")}
-              >
-                <CalendarRange className="h-4 w-4" />
-                {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
-              </Button>
-            </ProtectedComponent>
+            <ViewModeToggle
+              ariaLabel={t("common.switchView", {
+                defaultValue: "Switch view",
+              })}
+              options={viewOptions}
+              value={viewMode}
+              onValueChange={handleViewChange}
+            />
 
             <ProtectedComponent permission="events.create">
               <Button onClick={() => navigate("/events/create")}>
@@ -104,165 +89,18 @@ const EventsPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 rounded-[24px] border p-4 md:grid-cols-2 xl:grid-cols-6">
-          <div className="relative xl:col-span-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
-            <Input
-              className="pl-10"
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder={t("events.searchPlaceholder", {
-                defaultValue: "Search by title, party names, venue, or customer",
-              })}
-            />
+        {hasVisitedTable ? (
+          <div className={viewMode === "table" ? "space-y-6" : "hidden"}>
+            <EventsTableView />
           </div>
+        ) : null}
 
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={statusFilter}
-            onChange={(event) => {
-              setStatusFilter(event.target.value as "all" | EventStatus);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="all">
-              {t("events.allStatuses", { defaultValue: "All Statuses" })}
-            </option>
-            {EVENT_STATUS_OPTIONS.map((status) => (
-              <option key={status.value} value={status.value}>
-                {t(`events.status.${status.value}`, {
-                  defaultValue: status.label,
-                })}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={customerFilter}
-            onChange={(event) => {
-              setCustomerFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">
-              {t("events.allCustomers", { defaultValue: "All Customers" })}
-            </option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={String(customer.id)}>
-                {customer.fullName}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={venueFilter}
-            onChange={(event) => {
-              setVenueFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">
-              {t("events.allVenues", { defaultValue: "All Venues" })}
-            </option>
-            {venues.map((venue) => (
-              <option key={venue.id} value={String(venue.id)}>
-                {venue.name}
-              </option>
-            ))}
-          </select>
-
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => {
-              setDateFrom(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
-
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(event) => {
-              setDateTo(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("events.listTitle", { defaultValue: "Events List" })}
-            totalItems={adapted.total}
-            currentCount={adapted.data.events.length}
-            entityName={t("events.title", { defaultValue: "Events" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
-            actions={
-              <ProtectedComponent permission="events.read">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate("/events/calendar")}
-                >
-                  <CalendarRange className="h-3.5 w-3.5" />
-                  {t("calendar.openCalendar", { defaultValue: "Open Calendar" })}
-                </Button>
-              </ProtectedComponent>
-            }
-          />
-
-          <DataTable
-            columns={columns}
-            data={adapted.data.events}
-            rowNumberStart={(currentPage - 1) * itemsPerPage + 1}
-            enableRowNumbers
-            fileName="events"
-            isLoading={isLoading}
-          />
-
-          {adapted.totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={adapted.totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value: number) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        <ConfirmDialog
-          open={deleteCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteCandidate(null)}
-          title={t("events.deleteTitle", { defaultValue: "Delete Event" })}
-          message={t("events.deleteMessage", {
-            defaultValue: "Are you sure you want to delete this event?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-          onConfirm={() =>
-            deleteCandidate &&
-            deleteMutation.mutate(deleteCandidate.id, {
-              onSettled: () => setDeleteCandidate(null),
-            })
-          }
-          isPending={deleteMutation.isPending}
-        />
+        {hasVisitedCalendar ? (
+          <div className={viewMode === "calendar" ? "space-y-6" : "hidden"}>
+            <EventsCalendarView active={viewMode === "calendar"} />
+          </div>
+        ) : null}
       </PageContainer>
     </ProtectedComponent>
   );
-};
-
-export default EventsPage;
+}

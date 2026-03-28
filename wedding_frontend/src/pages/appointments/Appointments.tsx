@@ -1,132 +1,78 @@
+import { CalendarRange, Plus, Table2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarRange, Plus, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { ViewModeToggle } from "@/components/shared/view-mode-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
-import ConfirmDialog from "@/components/ui/confirmDialog";
-import TableHeader from "@/components/common/TableHeader";
-import Pagination from "@/components/ui/pagination";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useAppointments } from "@/hooks/appointments/useAppointments";
-import {
-  useCancelAppointment,
-  useCompleteAppointment,
-  useConfirmAppointment,
-  useRescheduleAppointment,
-} from "@/hooks/appointments/useAppointmentActions";
-import { useDeleteAppointment } from "@/hooks/appointments/useDeleteAppointment";
-import { useCustomers } from "@/hooks/customers/useCustomers";
-import {
-  APPOINTMENT_STATUS_OPTIONS,
-  toTableAppointments,
-  type TableAppointment,
-} from "./adapters";
-import { useAppointmentsColumns } from "./_components/appointmentsColumns";
+import { useHasPermission } from "@/hooks/useHasPermission";
 
-const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+import { AppointmentsCalendarView } from "./_components/AppointmentsCalendarView";
+import { AppointmentsTableView } from "./_components/AppointmentsTableView";
 
-const AppointmentsPage = () => {
+type AppointmentsViewMode = "table" | "calendar";
+
+const VIEW_QUERY_PARAM = "view";
+
+export default function AppointmentsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | TableAppointment["status"]
-  >("all");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-
-  const [deleteCandidate, setDeleteCandidate] =
-    useState<TableAppointment | null>(null);
-  const [confirmCandidate, setConfirmCandidate] =
-    useState<TableAppointment | null>(null);
-  const [completeCandidate, setCompleteCandidate] =
-    useState<TableAppointment | null>(null);
-  const [cancelCandidate, setCancelCandidate] =
-    useState<TableAppointment | null>(null);
-  const [rescheduleCandidate, setRescheduleCandidate] =
-    useState<TableAppointment | null>(null);
-
-  const [actionNotes, setActionNotes] = useState("");
-  const [cancelReason, setCancelReason] = useState("");
-  const [rescheduleDate, setRescheduleDate] = useState("");
-  const [rescheduleStartTime, setRescheduleStartTime] = useState("");
-  const [rescheduleEndTime, setRescheduleEndTime] = useState("");
+  const hasCalendarAccess = useHasPermission("appointments.calendar.read");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get(VIEW_QUERY_PARAM);
+  const viewMode: AppointmentsViewMode =
+    requestedView === "calendar" && hasCalendarAccess ? "calendar" : "table";
+  const [hasVisitedTable, setHasVisitedTable] = useState(viewMode === "table");
+  const [hasVisitedCalendar, setHasVisitedCalendar] = useState(
+    viewMode === "calendar",
+  );
 
   useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setSearchQuery(searchTerm.trim());
-    }, 300);
+    if (requestedView !== "calendar" || hasCalendarAccess) {
+      return;
+    }
 
-    return () => window.clearTimeout(handle);
-  }, [searchTerm]);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete(VIEW_QUERY_PARAM);
+    setSearchParams(nextParams, { replace: true });
+  }, [hasCalendarAccess, requestedView, searchParams, setSearchParams]);
 
-  const { data, isLoading } = useAppointments({
-    currentPage,
-    itemsPerPage,
-    status: statusFilter,
-    customerId: customerFilter,
-    search: searchQuery,
-    dateFrom,
-    dateTo,
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-  });
+  const viewOptions = useMemo(
+    () => [
+      {
+        value: "table" as const,
+        label: t("common.tableView", { defaultValue: "Table" }),
+        icon: Table2,
+      },
+      {
+        value: "calendar" as const,
+        label: t("common.calendarView", { defaultValue: "Calendar" }),
+        icon: CalendarRange,
+        disabled: !hasCalendarAccess,
+      },
+    ],
+    [hasCalendarAccess, t],
+  );
 
-  const deleteMutation = useDeleteAppointment();
-  const confirmMutation = useConfirmAppointment();
-  const completeMutation = useCompleteAppointment();
-  const cancelMutation = useCancelAppointment();
-  const rescheduleMutation = useRescheduleAppointment();
+  const handleViewChange = (nextView: AppointmentsViewMode) => {
+    const nextParams = new URLSearchParams(searchParams);
 
-  const adapted = useMemo(() => toTableAppointments(data), [data]);
-  const customers = customersResponse?.data ?? [];
-  const appointments = adapted.data.appointments;
+    if (nextView === "calendar") {
+      if (!hasCalendarAccess) {
+        return;
+      }
 
-  const columns = useAppointmentsColumns({
-    onDelete: setDeleteCandidate,
-    onConfirm: (appointment) => {
-      setActionNotes(appointment.notes || "");
-      setConfirmCandidate(appointment);
-    },
-    onComplete: (appointment) => {
-      setActionNotes(appointment.notes || "");
-      setCompleteCandidate(appointment);
-    },
-    onCancel: (appointment) => {
-      setActionNotes(appointment.notes || "");
-      setCancelReason("");
-      setCancelCandidate(appointment);
-    },
-    onReschedule: (appointment) => {
-      setRescheduleDate(appointment.appointmentDate);
-      setRescheduleStartTime(appointment.startTime);
-      setRescheduleEndTime(appointment.endTime || "");
-      setActionNotes(appointment.notes || "");
-      setRescheduleCandidate(appointment);
-    },
-    editPermission: "appointments.update",
-    deletePermission: "appointments.delete",
-  });
+      setHasVisitedCalendar(true);
+      nextParams.set(VIEW_QUERY_PARAM, "calendar");
+    } else {
+      setHasVisitedTable(true);
+      nextParams.delete(VIEW_QUERY_PARAM);
+    }
+
+    setSearchParams(nextParams);
+  };
 
   return (
     <ProtectedComponent permission="appointments.read">
@@ -142,15 +88,14 @@ const AppointmentsPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <ProtectedComponent permission="appointments.calendar.read">
-              <Button
-                variant="secondary"
-                onClick={() => navigate("/appointments/calendar")}
-              >
-                <CalendarRange className="h-4 w-4" />
-                {t("calendar.openCalendar")}
-              </Button>
-            </ProtectedComponent>
+            <ViewModeToggle
+              ariaLabel={t("common.switchView", {
+                defaultValue: "Switch view",
+              })}
+              options={viewOptions}
+              value={viewMode}
+              onValueChange={handleViewChange}
+            />
 
             <ProtectedComponent permission="appointments.create">
               <Button onClick={() => navigate("/appointments/create")}>
@@ -161,343 +106,18 @@ const AppointmentsPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 rounded-[24px] border p-4 md:grid-cols-2 xl:grid-cols-5">
-          <div className="relative xl:col-span-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--lux-text-muted)]" />
-            <Input
-              className="pl-10"
-              value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder={t("appointments.searchPlaceholder")}
-            />
+        {hasVisitedTable ? (
+          <div className={viewMode === "table" ? "space-y-6" : "hidden"}>
+            <AppointmentsTableView />
           </div>
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={statusFilter}
-            onChange={(event) => {
-              setStatusFilter(
-                event.target.value as "all" | TableAppointment["status"],
-              );
-              setCurrentPage(1);
-            }}
-          >
-            <option value="all">
-              {t("appointments.allStatuses")}
-            </option>
-            {APPOINTMENT_STATUS_OPTIONS.map((status) => (
-              <option key={status.value} value={status.value}>
-                {t(`appointments.status.${status.value}`, {
-                  defaultValue: status.label,
-                })}
-              </option>
-            ))}
-          </select>
-          <select
-            className="h-10 rounded-xl border px-3 text-sm"
-            value={customerFilter}
-            onChange={(event) => {
-              setCustomerFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">
-              {t("appointments.allCustomers")}
-            </option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={String(customer.id)}>
-                {customer.fullName}
-              </option>
-            ))}
-          </select>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => {
-              setDateFrom(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(event) => {
-              setDateTo(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
+        ) : null}
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("appointments.listTitle")}
-            totalItems={adapted.total}
-            currentCount={appointments.length}
-            entityName={t("appointments.title")}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
-            actions={
-              <ProtectedComponent permission="appointments.calendar.read">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate("/appointments/calendar")}
-                >
-                  <CalendarRange className="h-3.5 w-3.5" />
-                  {t("calendar.openCalendar")}
-                </Button>
-              </ProtectedComponent>
-            }
-          />
-
-          <DataTable
-            columns={columns}
-            data={appointments}
-            rowNumberStart={(currentPage - 1) * itemsPerPage + 1}
-            enableRowNumbers
-            isLoading={isLoading}
-            fileName="appointments"
-          />
-
-          {adapted.totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={adapted.totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value: number) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        <ConfirmDialog
-          open={deleteCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteCandidate(null)}
-          title={t("appointments.deleteTitle")}
-          message={t("appointments.deleteMessage")}
-          confirmLabel={t("common.delete")}
-          cancelLabel={t("common.cancel")}
-          onConfirm={() =>
-            deleteCandidate &&
-            deleteMutation.mutate(deleteCandidate.id, {
-              onSettled: () => setDeleteCandidate(null),
-            })
-          }
-          isPending={deleteMutation.isPending}
-        />
-
-        <ActionDialog
-          open={confirmCandidate !== null}
-          onOpenChange={(open) => !open && setConfirmCandidate(null)}
-          title={t("appointments.confirmTitle")}
-          value={actionNotes}
-          onChange={setActionNotes}
-          onConfirm={() =>
-            confirmCandidate &&
-            confirmMutation.mutate(
-              { id: confirmCandidate.id, values: { notes: actionNotes } },
-              { onSuccess: () => setConfirmCandidate(null) },
-            )
-          }
-          isPending={confirmMutation.isPending}
-          confirmLabel={t("appointments.confirm")}
-        />
-
-        <ActionDialog
-          open={completeCandidate !== null}
-          onOpenChange={(open) => !open && setCompleteCandidate(null)}
-          title={t("appointments.completeTitle")}
-          value={actionNotes}
-          onChange={setActionNotes}
-          onConfirm={() =>
-            completeCandidate &&
-            completeMutation.mutate(
-              { id: completeCandidate.id, values: { notes: actionNotes } },
-              { onSuccess: () => setCompleteCandidate(null) },
-            )
-          }
-          isPending={completeMutation.isPending}
-          confirmLabel={t("appointments.complete")}
-        />
-
-        <Dialog
-          open={cancelCandidate !== null}
-          onOpenChange={(open) => !open && setCancelCandidate(null)}
-        >
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>
-                {t("appointments.cancelTitle")}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                value={cancelReason}
-                onChange={(event) => setCancelReason(event.target.value)}
-                placeholder={t("appointments.cancelReasonPlaceholder")}
-              />
-              <textarea
-                className={textareaClassName}
-                value={actionNotes}
-                onChange={(event) => setActionNotes(event.target.value)}
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setCancelCandidate(null)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                onClick={() =>
-                  cancelCandidate &&
-                  cancelMutation.mutate(
-                    {
-                      id: cancelCandidate.id,
-                      values: { reason: cancelReason, notes: actionNotes },
-                    },
-                    { onSuccess: () => setCancelCandidate(null) },
-                  )
-                }
-                disabled={cancelMutation.isPending}
-              >
-                {t("appointments.cancelAction")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog
-          open={rescheduleCandidate !== null}
-          onOpenChange={(open) => !open && setRescheduleCandidate(null)}
-        >
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>
-                {t("appointments.rescheduleTitle")}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Input
-                type="date"
-                value={rescheduleDate}
-                onChange={(event) => setRescheduleDate(event.target.value)}
-              />
-              <Input
-                type="time"
-                value={rescheduleStartTime}
-                onChange={(event) => setRescheduleStartTime(event.target.value)}
-              />
-              <Input
-                type="time"
-                value={rescheduleEndTime}
-                onChange={(event) => setRescheduleEndTime(event.target.value)}
-              />
-              <textarea
-                className={`${textareaClassName} md:col-span-2`}
-                value={actionNotes}
-                onChange={(event) => setActionNotes(event.target.value)}
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setRescheduleCandidate(null)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                onClick={() =>
-                  rescheduleCandidate &&
-                  rescheduleMutation.mutateReschedule(
-                    {
-                      id: rescheduleCandidate.id,
-                      values: {
-                        appointmentDate: rescheduleDate,
-                        startTime: rescheduleStartTime,
-                        endTime: rescheduleEndTime,
-                        notes: actionNotes,
-                      },
-                    },
-                    { onSuccess: () => setRescheduleCandidate(null) },
-                  )
-                }
-                disabled={rescheduleMutation.isPending}
-              >
-                {t("appointments.reschedule")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {hasVisitedCalendar && hasCalendarAccess ? (
+          <div className={viewMode === "calendar" ? "space-y-6" : "hidden"}>
+            <AppointmentsCalendarView active={viewMode === "calendar"} />
+          </div>
+        ) : null}
       </PageContainer>
     </ProtectedComponent>
   );
-};
-
-function ActionDialog({
-  open,
-  onOpenChange,
-  title,
-  value,
-  onChange,
-  onConfirm,
-  isPending,
-  confirmLabel,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  value: string;
-  onChange: (value: string) => void;
-  onConfirm: () => void;
-  isPending: boolean;
-  confirmLabel: string;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <textarea
-          className={textareaClassName}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          style={{
-            background: "var(--lux-control-surface)",
-            borderColor: "var(--lux-control-border)",
-          }}
-        />
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.cancel", { defaultValue: "Cancel" })}
-          </Button>
-          <Button onClick={onConfirm} disabled={isPending}>
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 }
-
-export default AppointmentsPage;
