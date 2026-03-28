@@ -77,7 +77,8 @@ const navigationTree: NavigationItem[] = [
         labelAr: "الموعيد اليوميه",
         href: "/appointments/calendar",
         icon: CalendarDays,
-        subtitle: "Operational calendar for customer appointments and follow-ups.",
+        subtitle:
+          "Operational calendar for customer appointments and follow-ups.",
         subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
       },
       {
@@ -119,6 +120,17 @@ const navigationTree: NavigationItem[] = [
         labelKey: "sidebar.nav.allCustomers",
         label: "All Customers",
         labelAr: "كل العملاء",
+        href: "/customers",
+        icon: UsersRound,
+        subtitle:
+          "Access complete customer profiles, history, and touchpoints.",
+        subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
+      },
+      {
+        id: "customers-all",
+        labelKey: "sidebar.nav.allCustomers",
+        label: "All Customers",
+        labelAr: "تفصيل مصمم",
         href: "/customers",
         icon: UsersRound,
         subtitle:
@@ -415,13 +427,13 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
     return [];
   }
 
-  return flattenNavigationLeaves(inventoryRoot.children, [
-    INVENTORY_ROOT_ID,
-  ]);
+  return flattenNavigationLeaves(inventoryRoot.children, [INVENTORY_ROOT_ID]);
 })();
 
 export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
-  const reportsRoot = navigationItems.find((item) => item.id === REPORTS_ROOT_ID);
+  const reportsRoot = navigationItems.find(
+    (item) => item.id === REPORTS_ROOT_ID,
+  );
 
   if (!reportsRoot?.children?.length) {
     return [];
@@ -431,15 +443,22 @@ export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
 })();
 
 export const settingsNavigationLeaves: NavigationLeaf[] = (() => {
-  const settingsRoot = navigationItems.find((item) => item.id === SETTINGS_ROOT_ID);
-  const teamRoot = settingsRoot?.children?.find((item) => item.id === "settings-team");
+  const settingsRoot = navigationItems.find(
+    (item) => item.id === SETTINGS_ROOT_ID,
+  );
+  const teamRoot = settingsRoot?.children?.find(
+    (item) => item.id === "settings-team",
+  );
 
   if (!teamRoot?.children?.length) {
     return [];
   }
 
   // Only show Settings > Team leaves (Users, Roles) in the section bar.
-  return flattenNavigationLeaves(teamRoot.children, [SETTINGS_ROOT_ID, teamRoot.id]);
+  return flattenNavigationLeaves(teamRoot.children, [
+    SETTINGS_ROOT_ID,
+    teamRoot.id,
+  ]);
 })();
 
 export function flattenNavigationLeaves(
