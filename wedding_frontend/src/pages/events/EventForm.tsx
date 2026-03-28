@@ -411,14 +411,16 @@ const EventFormPage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isEditMode = Boolean(id);
-  const [mode, setMode] = useState<EventFormMode>("manual");
   const fromAppointmentId = !isEditMode
     ? searchParams.get("fromAppointmentId") || ""
     : "";
+  const [mode, setMode] = useState<EventFormMode>("manual");
+  const effectiveMode: EventFormMode =
+    !isEditMode && fromAppointmentId ? "source" : mode;
 
   const schema = useMemo(
-    () => eventSchema(t, mode, isEditMode),
-    [isEditMode, mode, t],
+    () => eventSchema(t, effectiveMode, isEditMode),
+    [effectiveMode, isEditMode, t],
   );
 
   const { data: event, isLoading: eventLoading } = useEvent(id);
@@ -455,7 +457,7 @@ const EventFormPage = () => {
 
   useEffect(() => {
     form.clearErrors();
-  }, [form, mode]);
+  }, [effectiveMode, form]);
 
   useEffect(() => {
     if (!isEditMode || !event) {
@@ -539,7 +541,7 @@ const EventFormPage = () => {
       return;
     }
 
-    if (!payload.sourceAppointmentId && mode === "source") {
+    if (effectiveMode === "source" && payload.sourceAppointmentId) {
       createFromSourceMutation.mutate(payload);
       return;
     }
@@ -717,8 +719,8 @@ const EventFormPage = () => {
                         defaultValue: "General Info",
                       })}
                       hint={t("events.generalInfoHint", {
-                        defaultValue:
-                          mode === "source" && !isEditMode
+                      defaultValue:
+                          effectiveMode === "source" && !isEditMode
                             ? "Add any optional overrides before creating the event from the selected source."
                             : "Capture the main event details, party names, venue, and planning status.",
                       })}
@@ -731,9 +733,9 @@ const EventFormPage = () => {
                         label={t("events.eventDate", {
                           defaultValue: "Event Date",
                         })}
-                        required={mode === "manual" && !isEditMode}
+                        required={effectiveMode === "manual" && !isEditMode}
                       />
-                      {mode !== "source" || isEditMode ? (
+                      {effectiveMode !== "source" || isEditMode ? (
                         <SearchableSelectField
                           control={form.control}
                           name="venueId"
@@ -757,7 +759,7 @@ const EventFormPage = () => {
                           options={venueOptions}
                         />
                       ) : null}
-                      {mode !== "source" || isEditMode ? (
+                      {effectiveMode !== "source" || isEditMode ? (
                         <TextField
                           control={form.control}
                           name="venueNameSnapshot"
@@ -803,7 +805,7 @@ const EventFormPage = () => {
                           defaultValue: "Enter bride name",
                         })}
                       />
-                      {mode !== "source" || isEditMode ? (
+                      {effectiveMode !== "source" || isEditMode ? (
                         <TextField
                           control={form.control}
                           name="guestCount"
@@ -817,7 +819,7 @@ const EventFormPage = () => {
                           })}
                         />
                       ) : null}
-                      {mode !== "source" || isEditMode ? (
+                      {effectiveMode !== "source" || isEditMode ? (
                         <SelectField
                           control={form.control}
                           name="status"
@@ -869,7 +871,7 @@ const EventFormPage = () => {
                           })
                         : isEditMode
                           ? t("common.update", { defaultValue: "Update" })
-                          : mode === "source"
+                          : effectiveMode === "source"
                             ? t("events.createFromSource", {
                                 defaultValue: "Create From Source",
                               })

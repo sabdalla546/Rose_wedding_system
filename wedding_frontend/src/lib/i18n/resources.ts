@@ -54,6 +54,9 @@ export const resources = {
         adminUser: "Admin User",
         workspaceSettings: "Workspace Settings",
         billingCenter: "Billing Center",
+        enterFullscreen: "Enter fullscreen",
+        exitFullscreen: "Exit fullscreen",
+        fullscreenUnsupported: "Fullscreen mode is not available in this browser.",
         logout: "Log Out",
       },
       auth: {
@@ -2007,6 +2010,9 @@ export const resources = {
         adminUser: "المشرف",
         workspaceSettings: "إعدادات مساحة العمل",
         billingCenter: "مركز الفوترة",
+        enterFullscreen: "دخول ملء الشاشة",
+        exitFullscreen: "الخروج من ملء الشاشة",
+        fullscreenUnsupported: "وضع ملء الشاشة غير متاح في هذا المتصفح.",
         logout: "تسجيل الخروج",
       },
       auth: {
