@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CalendarClock, Edit } from "lucide-react";
+import { CalendarClock, CalendarPlus, Edit } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
@@ -109,16 +109,31 @@ const AppointmentDetailsPage = () => {
                 </div>
               </div>
 
-              <ProtectedComponent permission="appointments.update">
-                <Button
-                  onClick={() =>
-                    navigate(`/appointments/edit/${appointment.id}`)
-                  }
-                >
-                  <Edit className="h-4 w-4" />
-                  {t("common.edit", { defaultValue: "Edit" })}
-                </Button>
-              </ProtectedComponent>
+              <div className="flex flex-wrap items-center gap-3">
+                <ProtectedComponent permission="events.create">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      navigate(`/events/create?fromAppointmentId=${appointment.id}`)
+                    }
+                  >
+                    <CalendarPlus className="h-4 w-4" />
+                    {t("appointments.createEvent", {
+                      defaultValue: "Create Event",
+                    })}
+                  </Button>
+                </ProtectedComponent>
+                <ProtectedComponent permission="appointments.update">
+                  <Button
+                    onClick={() =>
+                      navigate(`/appointments/edit/${appointment.id}`)
+                    }
+                  >
+                    <Edit className="h-4 w-4" />
+                    {t("common.edit", { defaultValue: "Edit" })}
+                  </Button>
+                </ProtectedComponent>
+              </div>
             </div>
           </div>
 
@@ -149,6 +164,32 @@ const AppointmentDetailsPage = () => {
                 value={t(`appointments.typeOptions.${appointment.type}`, {
                   defaultValue: formatAppointmentType(appointment.type),
                 })}
+              />
+              <DetailItem
+                label={t("appointments.weddingDate", {
+                  defaultValue: "Wedding Date",
+                })}
+                value={
+                  appointment.weddingDate
+                    ? format(new Date(appointment.weddingDate), "MMM d, yyyy", {
+                        locale: dateLocale,
+                      })
+                    : null
+                }
+              />
+              <DetailItem
+                label={t("appointments.guestCount", {
+                  defaultValue: "Guest Count",
+                })}
+                value={
+                  typeof appointment.guestCount === "number"
+                    ? String(appointment.guestCount)
+                    : null
+                }
+              />
+              <DetailItem
+                label={t("appointments.venue", { defaultValue: "Venue" })}
+                value={appointment.venue?.name}
               />
               <DetailItem
                 label={t("appointments.statusLabel", {

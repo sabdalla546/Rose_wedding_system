@@ -55,6 +55,16 @@ Appointment.belongsTo(Customer, {
   as: "customer",
 });
 
+// Venue -> Appointment
+Venue.hasMany(Appointment, {
+  foreignKey: "venueId",
+  as: "appointments",
+});
+Appointment.belongsTo(Venue, {
+  foreignKey: "venueId",
+  as: "venue",
+});
+
 // User -> Appointment (audit)
 User.hasMany(Appointment, {
   foreignKey: "createdBy",
@@ -111,6 +121,16 @@ Venue.hasMany(Event, {
 Event.belongsTo(Venue, {
   foreignKey: "venueId",
   as: "venue",
+});
+
+// Appointment -> Event source
+Appointment.hasMany(Event, {
+  foreignKey: "sourceAppointmentId",
+  as: "sourcedEvents",
+});
+Event.belongsTo(Appointment, {
+  foreignKey: "sourceAppointmentId",
+  as: "sourceAppointment",
 });
 
 // Event -> EventSection

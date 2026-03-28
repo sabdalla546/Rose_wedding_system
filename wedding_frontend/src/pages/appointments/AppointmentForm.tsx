@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +37,7 @@ import {
 } from "@/hooks/appointments/useAppointmentMutations";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
 import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useVenues } from "@/hooks/venues/useVenues";
 import {
   APPOINTMENT_STATUS_OPTIONS,
   APPOINTMENT_TYPE_OPTIONS,
@@ -49,17 +50,64 @@ import type {
 
 type AppointmentMode = "existing" | "new";
 
-const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
+const buildAppointmentSchema = (
+  t: (key: string, options?: Record<string, unknown>) => string,
+  mode: AppointmentMode,
+  isEditMode: boolean,
+) =>
   z
     .object({
       customerId: z.string().optional(),
       customerFullName: z.string().max(150).optional(),
       customerMobile: z.string().max(30).optional(),
       customerMobile2: z.string().max(30).optional(),
-      customerEmail: z.union([z.literal(""), z.string().email("Invalid email address")]),
+      customerEmail: z.union([
+        z.literal(""),
+        z.string().email(
+          t("appointments.validation.emailInvalid", {
+            defaultValue: "Invalid email address",
+          }),
+        ),
+      ]),
+      customerNationalId: z.union([
+        z.literal(""),
+        z.string().trim().regex(
+          /^\d{12}$/,
+          t("appointments.validation.nationalIdInvalid", {
+            defaultValue: "National ID must be exactly 12 digits",
+          }),
+        ),
+      ]),
+      customerAddress: z.string().max(255).optional(),
       customerNotes: z.string().optional(),
-      appointmentDate: z.string().min(1, "Appointment date is required"),
-      startTime: z.string().min(1, "Start time is required").max(10),
+      appointmentDate: z.string().min(
+        1,
+        t("appointments.validation.appointmentDateRequired", {
+          defaultValue: "Appointment date is required",
+        }),
+      ),
+      weddingDate: z.string().optional(),
+      guestCount: z
+        .string()
+        .optional()
+        .refine(
+          (value) =>
+            !value ||
+            (Number.isInteger(Number(value)) && Number(value) >= 0),
+          t("appointments.validation.guestCountInvalid", {
+            defaultValue: "Guest count must be zero or greater",
+          }),
+        ),
+      venueId: z.string().optional(),
+      startTime: z
+        .string()
+        .min(
+          1,
+          t("appointments.validation.startTimeRequired", {
+            defaultValue: "Start time is required",
+          }),
+        )
+        .max(10),
       endTime: z.string().max(10).optional(),
       status: z.enum(
         APPOINTMENT_STATUS_OPTIONS.map((item) => item.value) as [
@@ -81,7 +129,9 @@ const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["customerId"],
-            message: "Customer is required",
+            message: t("appointments.validation.customerRequired", {
+              defaultValue: "Customer is required",
+            }),
           });
         }
         return;
@@ -91,7 +141,9 @@ const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["customerFullName"],
-          message: "Full name is required",
+          message: t("appointments.validation.fullNameRequired", {
+            defaultValue: "Full name is required",
+          }),
         });
       }
 
@@ -99,12 +151,14 @@ const appointmentSchema = (mode: AppointmentMode, isEditMode: boolean) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["customerMobile"],
-          message: "Mobile is required",
+          message: t("appointments.validation.mobileRequired", {
+            defaultValue: "Mobile is required",
+          }),
         });
       }
     });
 
-type AppointmentFormValues = z.infer<ReturnType<typeof appointmentSchema>>;
+type AppointmentFormValues = z.infer<ReturnType<typeof buildAppointmentSchema>>;
 
 const EMPTY_VALUE = "__empty__";
 
@@ -123,23 +177,39 @@ const AppointmentFormPage = () => {
     searchQuery: "",
     status: "all",
   });
+  const { data: venuesResponse } = useVenues({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    isActive: "all",
+  });
   const createMutation = useCreateAppointment();
   const createWithCustomerMutation = useCreateAppointmentWithCustomer();
   const updateMutation = useUpdateAppointment(id);
+  const appointmentSchema = useMemo(
+    () => buildAppointmentSchema(t, mode, isEditMode),
+    [t, mode, isEditMode],
+  );
 
   const customers = customersResponse?.data ?? [];
+  const venues = venuesResponse?.data ?? [];
   const preselectedCustomerId = searchParams.get("customerId") || "";
 
   const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema(mode, isEditMode)) as any,
+    resolver: zodResolver(appointmentSchema),
     defaultValues: {
       customerId: preselectedCustomerId,
       customerFullName: "",
       customerMobile: "",
       customerMobile2: "",
       customerEmail: "",
+      customerNationalId: "",
+      customerAddress: "",
       customerNotes: "",
       appointmentDate: "",
+      weddingDate: "",
+      guestCount: "",
+      venueId: "",
       startTime: "",
       endTime: "",
       status: "scheduled",
@@ -153,15 +223,22 @@ const AppointmentFormPage = () => {
       return;
     }
 
-    setMode("existing");
     form.reset({
       customerId: String(appointment.customerId),
       customerFullName: "",
       customerMobile: "",
       customerMobile2: "",
       customerEmail: "",
+      customerNationalId: "",
+      customerAddress: "",
       customerNotes: "",
       appointmentDate: appointment.appointmentDate,
+      weddingDate: appointment.weddingDate ?? "",
+      guestCount:
+        typeof appointment.guestCount === "number"
+          ? String(appointment.guestCount)
+          : "",
+      venueId: appointment.venueId ? String(appointment.venueId) : "",
       startTime: appointment.startTime,
       endTime: appointment.endTime ?? "",
       status: appointment.status,
@@ -174,6 +251,9 @@ const AppointmentFormPage = () => {
     const payload: AppointmentFormData = {
       customerId: values.customerId || "",
       appointmentDate: values.appointmentDate,
+      weddingDate: values.weddingDate,
+      guestCount: values.guestCount,
+      venueId: values.venueId,
       startTime: values.startTime,
       endTime: values.endTime,
       status: values.status,
@@ -197,10 +277,15 @@ const AppointmentFormPage = () => {
         mobile: values.customerMobile || "",
         mobile2: values.customerMobile2,
         email: values.customerEmail,
+        nationalId: values.customerNationalId,
+        address: values.customerAddress,
         notes: values.customerNotes,
       },
       appointment: {
         appointmentDate: values.appointmentDate,
+        weddingDate: values.weddingDate,
+        guestCount: values.guestCount,
+        venueId: values.venueId,
         startTime: values.startTime,
         endTime: values.endTime,
         type: values.type,
@@ -242,7 +327,7 @@ const AppointmentFormPage = () => {
           </button>
 
           <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
+            className="overflow-hidden rounded-[4px] border p-4 shadow-luxe"
             style={{
               background: "var(--lux-panel-surface)",
               borderColor: "var(--lux-panel-border)",
@@ -250,7 +335,7 @@ const AppointmentFormPage = () => {
           >
             <div className="flex items-start gap-4">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
+                className="flex h-12 w-12 items-center justify-center rounded-[4px] border"
                 style={{
                   background: "var(--lux-control-hover)",
                   borderColor: "var(--lux-control-border)",
@@ -279,7 +364,7 @@ const AppointmentFormPage = () => {
             </div>
           </div>
 
-          <Card className="rounded-[24px] p-6 md:p-8">
+          <Card className="rounded-[4px] p-6 md:p-8">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {!isEditMode ? (
@@ -291,7 +376,7 @@ const AppointmentFormPage = () => {
                         })}
                       </label>
                       <Select value={mode} onValueChange={(value) => setMode(value as AppointmentMode)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="rounded-[4px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -326,6 +411,7 @@ const AppointmentFormPage = () => {
                             onValueChange={(value) =>
                               field.onChange(value === EMPTY_VALUE ? "" : value)
                             }
+                            triggerClassName="rounded-[4px]"
                             placeholder={t("appointments.selectCustomer", {
                               defaultValue: "Select customer",
                             })}
@@ -374,7 +460,7 @@ const AppointmentFormPage = () => {
                             {t("customers.fullName", { defaultValue: "Full Name" })}
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                              <Input {...field} className="rounded-[4px]" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -389,7 +475,7 @@ const AppointmentFormPage = () => {
                             {t("customers.email", { defaultValue: "Email" })}
                           </FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                              <Input type="email" {...field} className="rounded-[4px]" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -404,7 +490,7 @@ const AppointmentFormPage = () => {
                             {t("customers.mobile", { defaultValue: "Primary Mobile" })}
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                              <Input {...field} className="rounded-[4px]" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -419,7 +505,51 @@ const AppointmentFormPage = () => {
                             {t("customers.mobile2", { defaultValue: "Secondary Mobile" })}
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                              <Input {...field} className="rounded-[4px]" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                        )}
+                      />
+                    <FormField
+                      control={form.control}
+                      name="customerNationalId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("customers.nationalId", { defaultValue: "National ID" })}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              className="rounded-[4px]"
+                              inputMode="numeric"
+                              maxLength={12}
+                              placeholder={t("customers.nationalIdPlaceholder", {
+                                defaultValue: "Enter 12-digit national ID",
+                              })}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="customerAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("customers.address", { defaultValue: "Address" })}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              className="rounded-[4px]"
+                              placeholder={t("customers.addressPlaceholder", {
+                                defaultValue: "Enter customer address",
+                              })}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -435,7 +565,7 @@ const AppointmentFormPage = () => {
                             <FormControl>
                               <textarea
                                 {...field}
-                                className="min-h-[120px] w-full rounded-[22px] border px-4 py-3 text-sm"
+                                className="app-textarea min-h-[120px] rounded-[4px]"
                                 style={{
                                   background: "var(--lux-control-surface)",
                                   borderColor: "var(--lux-control-border)",
@@ -458,7 +588,24 @@ const AppointmentFormPage = () => {
                       <FormItem>
                         <FormLabel>{t("appointments.date", { defaultValue: "Date" })}</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} className="rounded-[4px]" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="weddingDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("appointments.weddingDate", {
+                            defaultValue: "Wedding Date",
+                          })}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="rounded-[4px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -474,7 +621,7 @@ const AppointmentFormPage = () => {
                         </FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="rounded-[4px]">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -494,6 +641,34 @@ const AppointmentFormPage = () => {
                   />
                   <FormField
                     control={form.control}
+                    name="guestCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("appointments.guestCount", {
+                            defaultValue: "Guest Count",
+                          })}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            className="rounded-[4px]"
+                            placeholder={t(
+                              "appointments.guestCountPlaceholder",
+                              {
+                                defaultValue: "Enter expected guest count",
+                              },
+                            )}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="startTime"
                     render={({ field }) => (
                       <FormItem>
@@ -501,7 +676,7 @@ const AppointmentFormPage = () => {
                           {t("appointments.startTime", { defaultValue: "Start Time" })}
                         </FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <Input type="time" {...field} className="rounded-[4px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -516,8 +691,48 @@ const AppointmentFormPage = () => {
                           {t("appointments.endTime", { defaultValue: "End Time" })}
                         </FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <Input type="time" {...field} className="rounded-[4px]" />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="venueId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("appointments.venue", { defaultValue: "Venue" })}
+                        </FormLabel>
+                        <Select
+                          value={field.value || EMPTY_VALUE}
+                          onValueChange={(value) =>
+                            field.onChange(value === EMPTY_VALUE ? "" : value)
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-[4px]">
+                              <SelectValue
+                                placeholder={t("appointments.selectVenue", {
+                                  defaultValue: "Select venue",
+                                })}
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value={EMPTY_VALUE}>
+                              {t("appointments.noVenueSelected", {
+                                defaultValue: "No venue selected",
+                              })}
+                            </SelectItem>
+                            {venues.map((venue) => (
+                              <SelectItem key={venue.id} value={String(venue.id)}>
+                                {venue.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -532,7 +747,7 @@ const AppointmentFormPage = () => {
                         </FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="rounded-[4px]">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -561,7 +776,7 @@ const AppointmentFormPage = () => {
                       <FormControl>
                         <textarea
                           {...field}
-                          className="min-h-[140px] w-full rounded-[22px] border px-4 py-3 text-sm"
+                          className="app-textarea min-h-[140px] rounded-[4px]"
                           style={{
                             background: "var(--lux-control-surface)",
                             borderColor: "var(--lux-control-border)",
@@ -586,7 +801,9 @@ const AppointmentFormPage = () => {
                       ? t("common.processing", { defaultValue: "Processing..." })
                       : isEditMode
                         ? t("common.update", { defaultValue: "Update" })
-                        : t("common.create", { defaultValue: "Create" })}
+                        : t("appointments.create", {
+                            defaultValue: "Create Appointment",
+                          })}
                   </Button>
                 </div>
               </form>

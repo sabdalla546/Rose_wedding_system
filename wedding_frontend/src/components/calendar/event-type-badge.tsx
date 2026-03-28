@@ -15,7 +15,7 @@ export function EventTypeBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em] uppercase",
+        "inline-flex items-center rounded-[4px] border px-3 py-1 text-xs font-semibold tracking-[0.12em] uppercase",
         className,
       )}
       style={{

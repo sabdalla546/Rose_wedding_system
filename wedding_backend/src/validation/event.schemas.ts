@@ -27,28 +27,52 @@ export const eventSectionTypeEnum = z.enum([
   "general_notes",
 ]);
 
+const optionalNullablePositiveInt = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return null;
+    }
+
+    return typeof value === "string" ? Number(value) : value;
+  },
+  z.number().int().positive().nullable().optional(),
+);
+
+const optionalNullableNonNegativeInt = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return null;
+    }
+
+    return typeof value === "string" ? Number(value) : value;
+  },
+  z.number().int().min(0).nullable().optional(),
+);
+
 export const createEventSchema = z.object({
-  customerId: z.number().int().positive(),
+  customerId: z.number().int().positive().optional().nullable(),
+  sourceAppointmentId: optionalNullablePositiveInt,
   title: z.string().max(200).optional().nullable(),
-  eventDate: z.string().min(1),
-  venueId: z.number().int().positive().optional().nullable(),
+  eventDate: z.string().min(1).optional(),
+  venueId: optionalNullablePositiveInt,
   venueNameSnapshot: z.string().max(150).optional().nullable(),
   groomName: z.string().max(150).optional().nullable(),
   brideName: z.string().max(150).optional().nullable(),
-  guestCount: z.number().int().positive().optional().nullable(),
+  guestCount: optionalNullableNonNegativeInt,
   notes: z.string().optional().nullable(),
   status: eventStatusEnum.optional(),
 });
 
 export const updateEventSchema = z.object({
   customerId: z.number().int().positive().optional().nullable(),
+  sourceAppointmentId: optionalNullablePositiveInt,
   title: z.string().max(200).optional().nullable(),
   eventDate: z.string().optional(),
-  venueId: z.number().int().positive().optional().nullable(),
+  venueId: optionalNullablePositiveInt,
   venueNameSnapshot: z.string().max(150).optional().nullable(),
   groomName: z.string().max(150).optional().nullable(),
   brideName: z.string().max(150).optional().nullable(),
-  guestCount: z.number().int().positive().optional().nullable(),
+  guestCount: optionalNullableNonNegativeInt,
   notes: z.string().optional().nullable(),
   status: eventStatusEnum.optional(),
 });
@@ -73,14 +97,15 @@ export const updateEventSectionSchema = z.object({
 });
 
 export const createEventFromSourceSchema = z.object({
-  customerId: z.number().int().positive(),
+  customerId: z.number().int().positive().optional().nullable(),
+  sourceAppointmentId: optionalNullablePositiveInt,
   title: z.string().max(200).optional().nullable(),
-  eventDate: z.string().min(1),
-  venueId: z.number().int().positive().optional().nullable(),
+  eventDate: z.string().min(1).optional(),
+  venueId: optionalNullablePositiveInt,
   venueNameSnapshot: z.string().max(150).optional().nullable(),
   groomName: z.string().max(150).optional().nullable(),
   brideName: z.string().max(150).optional().nullable(),
-  guestCount: z.number().int().positive().optional().nullable(),
+  guestCount: optionalNullableNonNegativeInt,
   notes: z.string().optional().nullable(),
   sections: z
     .array(

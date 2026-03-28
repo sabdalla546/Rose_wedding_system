@@ -57,7 +57,7 @@ export function CalendarLegend({ items, className }: CalendarLegendProps) {
       {items.map((item) => (
         <span
           key={item.id}
-          className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold"
+          className="inline-flex items-center gap-2 rounded-[4px] border px-3 py-1.5 text-sm font-semibold"
           style={getLegendAccentStyle(item.accent)}
         >
           <span

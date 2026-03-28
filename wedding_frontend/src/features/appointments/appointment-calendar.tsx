@@ -130,6 +130,63 @@ export function buildAppointmentCalendarSummary(
   ];
 }
 
+export function buildAppointmentsTableSummary(
+  appointments: Appointment[],
+  total: number,
+  activeFiltersCount: number,
+  t: TFunction,
+) {
+  const open = appointments.filter((appointment) =>
+    ["scheduled", "rescheduled"].includes(appointment.status),
+  ).length;
+  const confirmed = appointments.filter(
+    (appointment) => appointment.status === "confirmed",
+  ).length;
+
+  return [
+    {
+      id: "total",
+      label: t("appointments.tablePage.summary.total", {
+        defaultValue: "Total appointments",
+      }),
+      value: String(total),
+      hint: t("appointments.tablePage.summary.totalHint", {
+        defaultValue: "Records matching the current table query.",
+      }),
+    },
+    {
+      id: "visible",
+      label: t("appointments.tablePage.summary.visible", {
+        defaultValue: "Visible on this page",
+      }),
+      value: String(appointments.length),
+      hint: t("appointments.tablePage.summary.visibleHint", {
+        defaultValue: "Appointments currently loaded into the table.",
+      }),
+    },
+    {
+      id: "open",
+      label: t("appointments.tablePage.summary.open", {
+        defaultValue: "Needs follow-up",
+      }),
+      value: String(open),
+      hint: t("appointments.tablePage.summary.openHint", {
+        defaultValue: "Scheduled or rescheduled appointments awaiting closure.",
+      }),
+    },
+    {
+      id: "filters",
+      label: t("appointments.tablePage.summary.filters", {
+        defaultValue: "Active filters",
+      }),
+      value: String(activeFiltersCount),
+      hint: t("appointments.tablePage.summary.filtersHint", {
+        defaultValue: `${confirmed} confirmed appointments on this page.`,
+      }),
+    },
+  ];
+}
+
 export function getAppointmentCalendarLegendItems(
   t: TFunction,
 ): AppCalendarLegendItem[] {

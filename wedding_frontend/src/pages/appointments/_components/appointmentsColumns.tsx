@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   CheckCheck,
   CircleOff,
+  CalendarPlus,
   Edit,
   Eye,
   MoreHorizontal,
@@ -29,6 +30,7 @@ interface Props {
   onComplete: (appointment: TableAppointment) => void;
   onCancel: (appointment: TableAppointment) => void;
   onReschedule: (appointment: TableAppointment) => void;
+  onCreateEvent: (appointment: TableAppointment) => void;
   editPermission: string;
   deletePermission: string;
 }
@@ -39,6 +41,7 @@ export const useAppointmentsColumns = ({
   onComplete,
   onCancel,
   onReschedule,
+  onCreateEvent,
   editPermission,
   deletePermission,
 }: Props): ColumnDef<TableAppointment>[] => {
@@ -75,9 +78,22 @@ export const useAppointmentsColumns = ({
       ),
       cell: ({ row }) => (
         <div className={alignClass}>
-          {format(new Date(row.original.appointmentDate), "MMM d, yyyy", {
-            locale: dateLocale,
-          })}
+          <div>
+            {format(new Date(row.original.appointmentDate), "MMM d, yyyy", {
+              locale: dateLocale,
+            })}
+          </div>
+          <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
+            {t("appointments.weddingDate", {
+              defaultValue: "Wedding Date",
+            })}
+            :{" "}
+            {row.original.weddingDate
+              ? format(new Date(row.original.weddingDate), "MMM d, yyyy", {
+                  locale: dateLocale,
+                })
+              : "-"}
+          </div>
         </div>
       ),
       enableSorting: true,
@@ -127,10 +143,16 @@ export const useAppointmentsColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="secondary"
+            aria-label={t("appointments.viewAppointment", {
+              defaultValue: "View Appointment",
+            })}
+            title={t("appointments.viewAppointment", {
+              defaultValue: "View Appointment",
+            })}
             onClick={() => navigate(`/appointments/${row.original.id}`)}
           >
             <Eye className="h-3.5 w-3.5" />
@@ -138,8 +160,14 @@ export const useAppointmentsColumns = ({
 
           <ProtectedComponent permission={editPermission}>
             <Button
-              size="sm"
+              size="icon"
               variant="outline"
+              aria-label={t("appointments.editAppointment", {
+                defaultValue: "Edit Appointment",
+              })}
+              title={t("appointments.editAppointment", {
+                defaultValue: "Edit Appointment",
+              })}
               onClick={() => navigate(`/appointments/edit/${row.original.id}`)}
             >
               <Edit className="h-3.5 w-3.5" />
@@ -148,7 +176,12 @@ export const useAppointmentsColumns = ({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={t("common.actions", { defaultValue: "Actions" })}
+                title={t("common.actions", { defaultValue: "Actions" })}
+              >
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -187,6 +220,14 @@ export const useAppointmentsColumns = ({
                 >
                   <CircleOff className="me-2 h-4 w-4" />
                   {t("appointments.cancelAction", { defaultValue: "Cancel" })}
+                </DropdownMenuItem>
+              </ProtectedComponent>
+              <ProtectedComponent permission="events.create">
+                <DropdownMenuItem onClick={() => onCreateEvent(row.original)}>
+                  <CalendarPlus className="me-2 h-4 w-4" />
+                  {t("appointments.createEvent", {
+                    defaultValue: "Create Event",
+                  })}
                 </DropdownMenuItem>
               </ProtectedComponent>
               <ProtectedComponent permission={deletePermission}>

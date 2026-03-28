@@ -32,14 +32,16 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <DialogPrimitive.Content
       className={cn(
-        'fixed inset-y-0 z-50 flex h-full w-full max-w-[320px] flex-col p-6 shadow-luxe',
+        'fixed inset-y-0 z-50 flex h-full w-full max-w-[320px] flex-col overflow-hidden border-t-[3px] p-6 shadow-luxe',
         side === 'left'
-          ? 'left-0 border-r border-[var(--lux-gold-border)]'
-          : 'right-0 border-l border-[var(--lux-gold-border)]',
+          ? 'left-0 rounded-r-[6px] border-r border-[var(--lux-gold-border)]'
+          : 'right-0 rounded-l-[6px] border-l border-[var(--lux-gold-border)]',
         className,
       )}
       style={{
-        background: 'var(--lux-shell-chrome-surface)',
+        background:
+          'linear-gradient(180deg, color-mix(in srgb, var(--lux-shell-chrome-surface) 96%, var(--lux-gold) 4%), var(--lux-shell-chrome-surface))',
+        borderTopColor: 'var(--lux-accent-border)',
       }}
       ref={ref}
       {...props}
@@ -47,7 +49,7 @@ const SheetContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         className={cn(
-          'absolute top-4 rounded-full border p-2 text-[var(--lux-text-muted)] transition hover:text-[var(--lux-text)]',
+          'absolute top-4 rounded-[4px] border p-2 text-[var(--lux-text-muted)] transition hover:text-[var(--lux-text)]',
           side === 'left' ? 'right-4' : 'left-4',
         )}
         style={{

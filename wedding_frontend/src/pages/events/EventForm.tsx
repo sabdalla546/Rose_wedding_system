@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, Link2, Sparkles } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Control, type SubmitHandler } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { z } from "zod";
 
 import { PageContainer } from "@/components/layout/page-container";
@@ -33,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useAppointment } from "@/hooks/appointments/useAppointments";
 import {
   useCreateEvent,
   useCreateEventFromSource,
@@ -48,6 +50,7 @@ type EventFormMode = "manual" | "source";
 
 type EventFormValues = {
   customerId: string;
+  sourceAppointmentId: string;
   eventDate: string;
   venueId: string;
   venueNameSnapshot: string;
@@ -72,6 +75,7 @@ const statusValues = EVENT_STATUS_OPTIONS.map((item) => item.value) as [
 
 const defaultValues: EventFormValues = {
   customerId: "",
+  sourceAppointmentId: "",
   eventDate: "",
   venueId: "",
   venueNameSnapshot: "",
@@ -83,7 +87,11 @@ const defaultValues: EventFormValues = {
   status: "",
 };
 
-const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
+const eventSchema = (
+  t: TFunction,
+  mode: EventFormMode,
+  isEditMode: boolean,
+) =>
   z
     .object({
       customerId: z.string().optional(),
@@ -97,8 +105,10 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
         .optional()
         .refine(
           (value) =>
-            !value || (Number.isInteger(Number(value)) && Number(value) > 0),
-          "Guest count must be a positive number",
+            !value || (Number.isInteger(Number(value)) && Number(value) >= 0),
+          t("events.validation.guestCountInvalid", {
+            defaultValue: "Guest count must be zero or greater",
+          }),
         ),
       title: z.string().max(200).optional(),
       notes: z.string().optional(),
@@ -109,7 +119,9 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["customerId"],
-          message: "Customer is required",
+          message: t("events.validation.customerRequired", {
+            defaultValue: "Customer is required",
+          }),
         });
       }
 
@@ -117,7 +129,9 @@ const eventSchema = (mode: EventFormMode, isEditMode: boolean) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["eventDate"],
-          message: "Event date is required",
+          message: t("events.validation.eventDateRequired", {
+            defaultValue: "Event date is required",
+          }),
         });
       }
     });
@@ -395,15 +409,21 @@ const EventFormPage = () => {
   const navigate = useNavigate();
   const isArabic = i18n.language === "ar";
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditMode = Boolean(id);
   const [mode, setMode] = useState<EventFormMode>("manual");
+  const fromAppointmentId = !isEditMode
+    ? searchParams.get("fromAppointmentId") || ""
+    : "";
 
   const schema = useMemo(
-    () => eventSchema(mode, isEditMode),
-    [isEditMode, mode],
+    () => eventSchema(t, mode, isEditMode),
+    [isEditMode, mode, t],
   );
 
   const { data: event, isLoading: eventLoading } = useEvent(id);
+  const { data: sourceAppointment, isLoading: sourceAppointmentLoading } =
+    useAppointment(fromAppointmentId || undefined);
   const { data: customersResponse, isLoading: customersLoading } = useCustomers(
     {
       currentPage: 1,
@@ -446,20 +466,46 @@ const EventFormPage = () => {
     setMode("manual");
     form.reset({
       customerId: event.customerId ? String(event.customerId) : "",
+      sourceAppointmentId: event.sourceAppointmentId
+        ? String(event.sourceAppointmentId)
+        : "",
       eventDate: event.eventDate ?? "",
       venueId: event.venueId ? String(event.venueId) : "",
       venueNameSnapshot: event.venueNameSnapshot ?? "",
       groomName: event.groomName ?? "",
       brideName: event.brideName ?? "",
-      guestCount: event.guestCount ? String(event.guestCount) : "",
+      guestCount:
+        typeof event.guestCount === "number" ? String(event.guestCount) : "",
       title: event.title ?? "",
       notes: event.notes ?? "",
       status: event.status,
     });
   }, [event, form, isEditMode]);
 
+  useEffect(() => {
+    if (isEditMode || !sourceAppointment) {
+      return;
+    }
+
+    form.reset({
+      ...form.getValues(),
+      customerId: String(sourceAppointment.customerId),
+      sourceAppointmentId: String(sourceAppointment.id),
+      eventDate:
+        sourceAppointment.weddingDate ?? sourceAppointment.appointmentDate ?? "",
+      venueId: sourceAppointment.venueId ? String(sourceAppointment.venueId) : "",
+      venueNameSnapshot:
+        sourceAppointment.venue?.name ?? form.getValues("venueNameSnapshot"),
+      guestCount:
+        typeof sourceAppointment.guestCount === "number"
+          ? String(sourceAppointment.guestCount)
+          : "",
+    });
+  }, [form, isEditMode, sourceAppointment]);
+
   const isBusy =
     eventLoading ||
+    sourceAppointmentLoading ||
     customersLoading ||
     venuesLoading ||
     createMutation.isPending ||
@@ -482,6 +528,8 @@ const EventFormPage = () => {
 
     const payload: EventFormData = {
       ...values,
+      sourceAppointmentId:
+        values.sourceAppointmentId || fromAppointmentId || undefined,
       venueNameSnapshot:
         values.venueNameSnapshot.trim() || selectedVenue?.name || "",
     };
@@ -491,7 +539,7 @@ const EventFormPage = () => {
       return;
     }
 
-    if (mode === "source") {
+    if (!payload.sourceAppointmentId && mode === "source") {
       createFromSourceMutation.mutate(payload);
       return;
     }
@@ -499,7 +547,7 @@ const EventFormPage = () => {
     createMutation.mutate(payload);
   };
 
-  if (eventLoading || customersLoading || venuesLoading) {
+  if (eventLoading || sourceAppointmentLoading || customersLoading || venuesLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-sm text-[var(--lux-text-secondary)]">
@@ -564,7 +612,7 @@ const EventFormPage = () => {
             </div>
           </div>
 
-          {!isEditMode ? (
+          {!isEditMode && !fromAppointmentId ? (
             <Card className="overflow-hidden rounded-[24px]">
               <div className="p-6 md:p-8">
                 <div className="space-y-4">
@@ -615,6 +663,14 @@ const EventFormPage = () => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-8"
                 >
+                  {fromAppointmentId ? (
+                    <div className="rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] px-4 py-3 text-sm text-[var(--lux-text-secondary)]">
+                      {t("events.sourceAppointmentPrefillHint", {
+                        defaultValue:
+                          "This event was prefilled from the selected appointment. Customer, event date, guest count, and venue came from that exact appointment and can still be edited.",
+                      })}
+                    </div>
+                  ) : null}
                   <section className="space-y-4">
                     <SectionIntro
                       title={t("events.linkedRecords", {
@@ -752,7 +808,7 @@ const EventFormPage = () => {
                           control={form.control}
                           name="guestCount"
                           type="number"
-                          min="1"
+                          min="0"
                           label={t("events.guestCount", {
                             defaultValue: "Guest Count",
                           })}
@@ -817,7 +873,9 @@ const EventFormPage = () => {
                             ? t("events.createFromSource", {
                                 defaultValue: "Create From Source",
                               })
-                            : t("common.create", { defaultValue: "Create" })}
+                            : t("events.create", {
+                                defaultValue: "Create Event",
+                              })}
                     </Button>
                   </div>
                 </form>

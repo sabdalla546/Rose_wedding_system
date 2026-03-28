@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { CalendarDays, Filter, Search, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  CalendarFilterField,
-  CalendarFilterGroup,
-  CalendarFilterPanel,
-  CalendarFilterPill,
-} from "@/components/calendar/calendar-filter-panel";
+import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import {
+  WorkspaceFilterBar,
+  WorkspaceFilterField,
+  WorkspaceFilterPill,
+} from "@/components/shared/workspace-filter-bar";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
+import { buildEventsTableSummary } from "@/features/events/event-calendar";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
 import { useEvents } from "@/hooks/events/useEvents";
@@ -22,7 +23,7 @@ import { EVENT_STATUS_OPTIONS, toTableEvents, type TableEvent } from "../adapter
 import type { EventStatus } from "../types";
 
 const filterFieldClassName =
-  "h-11 w-full rounded-xl border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
+  "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
 
 const fieldStyle = {
   background: "var(--lux-control-surface)",
@@ -71,6 +72,7 @@ export function EventsTableView() {
   const adapted = useMemo(() => toTableEvents(data), [data]);
   const customers = customersResponse?.data ?? [];
   const venues = venuesResponse?.data ?? [];
+  const tableEvents = adapted.data.events;
   const activeFiltersCount = [
     Boolean(searchQuery.trim()),
     statusFilter !== "all",
@@ -79,12 +81,22 @@ export function EventsTableView() {
     Boolean(dateFrom),
     Boolean(dateTo),
   ].filter(Boolean).length;
+  const summaryItems = useMemo(
+    () =>
+      buildEventsTableSummary(
+        tableEvents,
+        adapted.total,
+        activeFiltersCount,
+        t,
+      ),
+    [activeFiltersCount, adapted.total, t, tableEvents],
+  );
   const activeFilterPills = [
     searchQuery.trim() ? (
-      <CalendarFilterPill key="search" label={searchQuery.trim()} />
+      <WorkspaceFilterPill key="search" label={searchQuery.trim()} />
     ) : null,
     statusFilter !== "all" ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="status"
         label={t(`events.status.${statusFilter}`, {
           defaultValue: statusFilter,
@@ -92,7 +104,7 @@ export function EventsTableView() {
       />
     ) : null,
     customerFilter ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="customer"
         label={
           customers.find((customer) => String(customer.id) === customerFilter)
@@ -101,7 +113,7 @@ export function EventsTableView() {
       />
     ) : null,
     venueFilter ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="venue"
         label={
           venues.find((venue) => String(venue.id) === venueFilter)?.name ??
@@ -110,13 +122,13 @@ export function EventsTableView() {
       />
     ) : null,
     dateFrom ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-from"
         label={`${t("common.from", { defaultValue: "From" })}: ${dateFrom}`}
       />
     ) : null,
     dateTo ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-to"
         label={`${t("common.to", { defaultValue: "To" })}: ${dateTo}`}
       />
@@ -141,7 +153,28 @@ export function EventsTableView() {
 
   return (
     <>
-      <CalendarFilterPanel
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryItems.map((summary) => (
+          <SummaryCard
+            key={summary.id}
+            label={summary.label}
+            value={summary.value}
+            hint={summary.hint}
+            accent={
+              summary.id === "total" ? (
+                <CalendarDays className="h-4 w-4" />
+              ) : summary.id === "execution" ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <Filter className="h-4 w-4" />
+              )
+            }
+            className="workspace-summary-card"
+          />
+        ))}
+      </section>
+
+      <WorkspaceFilterBar
         title={t("common.filters", { defaultValue: "Filters" })}
         description={t("events.primaryFiltersHint", {
           defaultValue: "Use the main filters to narrow the event list quickly.",
@@ -156,19 +189,12 @@ export function EventsTableView() {
         activeFiltersCount={activeFiltersCount}
         clearLabel={t("events.clearFilters", { defaultValue: "Clear Filters" })}
         onClear={resetFilters}
-        showLabel={t("events.showFilters", { defaultValue: "Show Filters" })}
-        hideLabel={t("events.hideFilters", { defaultValue: "Hide Filters" })}
+        showFiltersLabel={t("events.showFilters", { defaultValue: "Show Filters" })}
+        hideFiltersLabel={t("events.hideFilters", { defaultValue: "Hide Filters" })}
         pills={activeFilterPills.length ? activeFilterPills : undefined}
-      >
-        <CalendarFilterGroup
-          className="xl:col-span-8"
-          title={t("events.primaryFilters", { defaultValue: "Primary Filters" })}
-          description={t("events.primaryFiltersHint", {
-            defaultValue: "Use the main filters to narrow the event list quickly.",
-          })}
-        >
-          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
-            <CalendarFilterField
+        quickFilters={
+          <>
+            <WorkspaceFilterField
               label={t("common.searchAnything", { defaultValue: "Search" })}
             >
               <div className="relative">
@@ -187,9 +213,9 @@ export function EventsTableView() {
                   })}
                 />
               </div>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
+            <WorkspaceFilterField
               label={t("events.statusLabel", { defaultValue: "Status" })}
             >
               <select
@@ -212,9 +238,32 @@ export function EventsTableView() {
                   </option>
                 ))}
               </select>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
+            <WorkspaceFilterField
+              label={t("common.venue", { defaultValue: "Venue" })}
+            >
+              <select
+                className={filterFieldClassName}
+                style={fieldStyle}
+                value={venueFilter}
+                onChange={(event) => {
+                  setVenueFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">
+                  {t("events.allVenues", { defaultValue: "All Venues" })}
+                </option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={String(venue.id)}>
+                    {venue.name}
+                  </option>
+                  ))}
+              </select>
+            </WorkspaceFilterField>
+
+            <WorkspaceFilterField
               label={t("events.customer", { defaultValue: "Customer" })}
             >
               <select
@@ -235,42 +284,9 @@ export function EventsTableView() {
                   </option>
                 ))}
               </select>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("common.venue", { defaultValue: "Venue" })}
-            >
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
-                value={venueFilter}
-                onChange={(event) => {
-                  setVenueFilter(event.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">
-                  {t("events.allVenues", { defaultValue: "All Venues" })}
-                </option>
-                {venues.map((venue) => (
-                  <option key={venue.id} value={String(venue.id)}>
-                    {venue.name}
-                  </option>
-                ))}
-              </select>
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
-
-        <CalendarFilterGroup
-          className="xl:col-span-4"
-          title={t("events.dateFilters", { defaultValue: "Date Range" })}
-          description={t("events.dateFiltersHint", {
-            defaultValue: "Limit the event list to a specific date range.",
-          })}
-        >
-          <div className="grid grid-cols-1 gap-2.5">
-            <CalendarFilterField
+            <WorkspaceFilterField
               label={t("common.from", { defaultValue: "From" })}
             >
               <Input
@@ -283,9 +299,11 @@ export function EventsTableView() {
                   setCurrentPage(1);
                 }}
               />
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField label={t("common.to", { defaultValue: "To" })}>
+            <WorkspaceFilterField
+              label={t("common.to", { defaultValue: "To" })}
+            >
               <Input
                 type="date"
                 className={filterFieldClassName}
@@ -296,15 +314,15 @@ export function EventsTableView() {
                   setCurrentPage(1);
                 }}
               />
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
-      </CalendarFilterPanel>
+            </WorkspaceFilterField>
+          </>
+        }
+      />
 
       <DataTableShell
         title={t("events.listTitle", { defaultValue: "Events List" })}
         totalItems={adapted.total}
-        currentCount={adapted.data.events.length}
+        currentCount={tableEvents.length}
         entityName={t("events.title", { defaultValue: "Events" })}
         itemsPerPage={itemsPerPage}
         setItemsPerPage={setItemsPerPage}
@@ -316,14 +334,22 @@ export function EventsTableView() {
           setItemsPerPage(value);
           setCurrentPage(1);
         }}
+        className="operations-table-shell"
       >
         <DataTable
           columns={columns}
-          data={adapted.data.events}
+          data={tableEvents}
           rowNumberStart={(currentPage - 1) * itemsPerPage + 1}
           enableRowNumbers
           fileName="events"
           isLoading={isLoading}
+          emptyTitle={t("events.tablePage.emptyTitle", {
+            defaultValue: "No events match these filters",
+          })}
+          emptyDescription={t("events.tablePage.emptyDescription", {
+            defaultValue:
+              "Try clearing the venue or date filters to bring more records back into view.",
+          })}
         />
       </DataTableShell>
 

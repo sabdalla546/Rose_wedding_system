@@ -102,6 +102,9 @@ export interface AppointmentAttributes {
   startTime: string;
   endTime?: string | null;
   type: AppointmentTypeDb;
+  weddingDate?: string | null;
+  guestCount?: number | null;
+  venueId?: number | null;
   notes?: string | null;
   status: AppointmentStatus;
   createdBy?: number | null;
@@ -113,6 +116,9 @@ type AppointmentCreationAttributes = Optional<
   | "id"
   | "endTime"
   | "type"
+  | "weddingDate"
+  | "guestCount"
+  | "venueId"
   | "notes"
   | "status"
   | "createdBy"
@@ -129,6 +135,9 @@ export class Appointment
   public startTime!: string;
   public endTime?: string | null;
   public type!: AppointmentTypeDb;
+  public weddingDate?: string | null;
+  public guestCount?: number | null;
+  public venueId?: number | null;
   public notes?: string | null;
   public status!: AppointmentStatus;
   public createdBy?: number | null;
@@ -171,6 +180,18 @@ Appointment.init(
       defaultValue: "office_visit",
       field: "meetingType",
     },
+    weddingDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    guestCount: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+    venueId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -204,6 +225,7 @@ Appointment.init(
     indexes: [
       { fields: ["customerId"] },
       { fields: ["appointmentDate"] },
+      { fields: ["venueId"] },
       { fields: ["status"] },
     ],
   },

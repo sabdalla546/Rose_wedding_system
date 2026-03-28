@@ -3,7 +3,7 @@ import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { sequelize } from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { Appointment, Customer, User } from "../models";
+import { Appointment, Customer, User, Venue } from "../models";
 import {
   appointmentTypePublicFromDb,
   normalizeAppointmentTypeToDb,
@@ -23,6 +23,7 @@ import {
 
 const appointmentInclude = [
   { model: Customer, as: "customer" },
+  { model: Venue, as: "venue" },
   { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
@@ -47,12 +48,22 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
+    if (data.venueId) {
+      const venue = await Venue.findByPk(data.venueId);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+    }
+
     const appointment = await Appointment.create({
       customerId: data.customerId,
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
       endTime: data.endTime ?? null,
       type: normalizeAppointmentTypeToDb(data.type) ?? "office_visit",
+      weddingDate: data.weddingDate ?? null,
+      guestCount: data.guestCount ?? null,
+      venueId: data.venueId ?? null,
       notes: data.notes ?? null,
       status: data.status ?? "scheduled",
       createdBy: req.user?.id ?? null,
@@ -107,6 +118,8 @@ export const createAppointmentWithCustomer = async (
               mobile,
               mobile2: data.customer.mobile2?.trim() || null,
               email: data.customer.email?.trim() || null,
+              nationalId: data.customer.nationalId?.trim() || null,
+              address: data.customer.address?.trim() || null,
               notes: data.customer.notes ?? null,
               status: "active",
               createdBy: req.user?.id ?? null,
@@ -124,6 +137,16 @@ export const createAppointmentWithCustomer = async (
           .json({ message: "Either customerId or customer is required" });
       }
 
+      if (data.appointment.venueId) {
+        const venue = await Venue.findByPk(data.appointment.venueId, {
+          transaction,
+        });
+        if (!venue) {
+          await transaction.rollback();
+          return res.status(404).json({ message: "Venue not found" });
+        }
+      }
+
       const appointment = await Appointment.create(
         {
           customerId: customer.id,
@@ -131,6 +154,9 @@ export const createAppointmentWithCustomer = async (
           startTime: data.appointment.startTime,
           endTime: data.appointment.endTime ?? null,
           type: normalizeAppointmentTypeToDb(data.appointment.type) ?? "office_visit",
+          weddingDate: data.appointment.weddingDate ?? null,
+          guestCount: data.appointment.guestCount ?? null,
+          venueId: data.appointment.venueId ?? null,
           notes: data.appointment.notes ?? null,
           status: data.appointment.status ?? "scheduled",
           createdBy: req.user?.id ?? null,
@@ -442,6 +468,13 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    if (typeof data.venueId !== "undefined" && data.venueId !== null) {
+      const venue = await Venue.findByPk(data.venueId);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+    }
+
     await appointment.update({
       customerId:
         typeof data.customerId !== "undefined"
@@ -452,6 +485,16 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       endTime:
         typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime,
       type: normalizeAppointmentTypeToDb(data.type) ?? appointment.type,
+      weddingDate:
+        typeof data.weddingDate !== "undefined"
+          ? data.weddingDate
+          : appointment.weddingDate,
+      guestCount:
+        typeof data.guestCount !== "undefined"
+          ? data.guestCount
+          : appointment.guestCount,
+      venueId:
+        typeof data.venueId !== "undefined" ? data.venueId : appointment.venueId,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
       status: data.status ?? appointment.status,
       updatedBy: req.user?.id ?? null,
@@ -531,5 +574,5 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
     ],
   });
 
-  return res.json({ data: appointments });
+  return res.json({ data: appointments.map(serializeAppointment) });
 };

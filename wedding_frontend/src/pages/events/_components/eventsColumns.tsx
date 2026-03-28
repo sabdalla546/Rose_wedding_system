@@ -135,10 +135,12 @@ export const useEventsColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="secondary"
+            aria-label={t("events.viewEvent", { defaultValue: "View Event" })}
+            title={t("events.viewEvent", { defaultValue: "View Event" })}
             onClick={() => navigate(`/events/${row.original.id}`)}
           >
             <Eye className="h-3.5 w-3.5" />
@@ -146,8 +148,10 @@ export const useEventsColumns = ({
 
           <ProtectedComponent permission={editPermission}>
             <Button
-              size="sm"
+              size="icon"
               variant="outline"
+              aria-label={t("common.edit", { defaultValue: "Edit" })}
+              title={t("common.edit", { defaultValue: "Edit" })}
               onClick={() => navigate(`/events/edit/${row.original.id}`)}
             >
               <Edit className="h-3.5 w-3.5" />
@@ -156,8 +160,10 @@ export const useEventsColumns = ({
 
           <ProtectedComponent permission={deletePermission}>
             <Button
-              size="sm"
+              size="icon"
               variant="destructive"
+              aria-label={t("common.delete", { defaultValue: "Delete" })}
+              title={t("common.delete", { defaultValue: "Delete" })}
               onClick={() => onDelete(row.original)}
             >
               <Trash2 className="h-3.5 w-3.5" />

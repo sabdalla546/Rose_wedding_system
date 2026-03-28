@@ -1,6 +1,19 @@
 import type { Customer } from "@/pages/customers/types";
 import type { Venue } from "@/pages/venues/types";
 
+export interface EventSourceAppointmentSummary {
+  id: number;
+  customerId: number;
+  appointmentDate: string;
+  startTime: string;
+  endTime?: string | null;
+  weddingDate?: string | null;
+  guestCount?: number | null;
+  venueId?: number | null;
+  customer?: Customer | null;
+  venue?: Venue | null;
+}
+
 export type EventStatus =
   | "draft"
   | "designing"
@@ -48,6 +61,7 @@ export interface EventSection {
 export interface Event {
   id: number;
   customerId?: number | null;
+  sourceAppointmentId?: number | null;
   eventDate: string;
   venueId?: number | null;
   venueNameSnapshot?: string | null;
@@ -59,6 +73,7 @@ export interface Event {
   status: EventStatus;
   customer?: Customer | null;
   venue?: Venue | null;
+  sourceAppointment?: EventSourceAppointmentSummary | null;
   sections?: EventSection[];
   createdByUser?: EventUserSummary | null;
   updatedByUser?: EventUserSummary | null;
@@ -104,6 +119,7 @@ export interface EventsCalendarResponse {
 
 export interface EventFormData {
   customerId?: string;
+  sourceAppointmentId?: string;
   eventDate?: string;
   venueId?: string;
   venueNameSnapshot?: string;

@@ -34,6 +34,64 @@ export const appointmentTypeInputSchema = z.union([
 
 const optionalNullableShortString = z.string().trim().max(30).nullable().optional();
 const optionalNullableEmail = z.string().trim().email().nullable().optional();
+const optionalNullableDate = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+  },
+  z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date")
+    .nullable()
+    .optional(),
+);
+const optionalNullableNonNegativeInt = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return null;
+    }
+
+    return typeof value === "string" ? Number(value) : value;
+  },
+  z.number().int().min(0).nullable().optional(),
+);
+const optionalNullablePositiveInt = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return null;
+    }
+
+    return typeof value === "string" ? Number(value) : value;
+  },
+  z.number().int().positive().nullable().optional(),
+);
+const optionalNullableNationalId = z
+  .preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed;
+    },
+    z.string().regex(/^\d{12}$/).nullable().optional(),
+  );
+const optionalNullableAddress = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+  },
+  z.string().max(255).nullable().optional(),
+);
 
 export const createAppointmentSchema = z.object({
   customerId: z.number().int().positive(),
@@ -41,6 +99,9 @@ export const createAppointmentSchema = z.object({
   startTime: z.string().min(1).max(10),
   endTime: z.string().max(10).optional().nullable(),
   type: appointmentTypeInputSchema.optional(),
+  weddingDate: optionalNullableDate,
+  guestCount: optionalNullableNonNegativeInt,
+  venueId: optionalNullablePositiveInt,
   notes: z.string().optional().nullable(),
   status: appointmentStatusEnum.optional(),
 });
@@ -51,6 +112,9 @@ export const updateAppointmentSchema = z.object({
   startTime: z.string().max(10).optional(),
   endTime: z.string().max(10).optional().nullable(),
   type: appointmentTypeInputSchema.optional(),
+  weddingDate: optionalNullableDate,
+  guestCount: optionalNullableNonNegativeInt,
+  venueId: optionalNullablePositiveInt,
   notes: z.string().optional().nullable(),
   status: appointmentStatusEnum.optional(),
 });
@@ -60,6 +124,8 @@ const appointmentCustomerPayloadSchema = z.object({
   mobile: z.string().trim().min(3).max(30),
   mobile2: optionalNullableShortString,
   email: optionalNullableEmail,
+  nationalId: optionalNullableNationalId,
+  address: optionalNullableAddress,
   notes: z.string().optional().nullable(),
 });
 
@@ -72,6 +138,9 @@ export const createAppointmentWithCustomerSchema = z
       startTime: z.string().min(1).max(10),
       endTime: z.string().max(10).optional().nullable(),
       type: appointmentTypeInputSchema.optional(),
+      weddingDate: optionalNullableDate,
+      guestCount: optionalNullableNonNegativeInt,
+      venueId: optionalNullablePositiveInt,
       notes: z.string().optional().nullable(),
       status: appointmentStatusEnum.optional(),
     }),

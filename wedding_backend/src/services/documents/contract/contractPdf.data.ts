@@ -229,8 +229,8 @@ export async function buildContractPdfData(contractId: number): Promise<Contract
       fullName: customer?.fullName ?? null,
       mobile1: customer?.mobile ?? null,
       mobile2: customer?.mobile2 ?? null,
-      address: null,
-      civilId: null,
+      address: customer?.address ?? null,
+      civilId: customer?.nationalId ?? null,
     },
     event: {
       title: buildEventTitle(event),

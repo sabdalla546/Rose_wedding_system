@@ -22,6 +22,8 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       mobile: data.mobile.trim(),
       mobile2: data.mobile2?.trim() || null,
       email: data.email?.trim() || null,
+      nationalId: data.nationalId?.trim() || null,
+      address: data.address?.trim() || null,
       notes: data.notes ?? null,
       status: data.status ?? "active",
       createdBy: req.user?.id ?? null,
@@ -60,6 +62,8 @@ export const getCustomers = async (req: Request, res: Response) => {
       { mobile: { [Op.like]: `%${search}%` } },
       { mobile2: { [Op.like]: `%${search}%` } },
       { email: { [Op.like]: `%${search}%` } },
+      { nationalId: { [Op.like]: `%${search}%` } },
+      { address: { [Op.like]: `%${search}%` } },
       { notes: { [Op.like]: `%${search}%` } },
     ];
   }
@@ -137,6 +141,14 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
         typeof data.email !== "undefined"
           ? data.email?.trim() || null
           : customer.email,
+      nationalId:
+        typeof data.nationalId !== "undefined"
+          ? data.nationalId?.trim() || null
+          : customer.nationalId,
+      address:
+        typeof data.address !== "undefined"
+          ? data.address?.trim() || null
+          : customer.address,
       notes: typeof data.notes !== "undefined" ? data.notes : customer.notes,
       status: data.status ?? customer.status,
       updatedBy: req.user?.id ?? null,

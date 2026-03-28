@@ -1,3 +1,5 @@
+import type { Venue } from "@/pages/venues/types";
+
 export type AppointmentStatus =
   | "scheduled"
   | "confirmed"
@@ -21,6 +23,8 @@ export interface AppointmentCustomer {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
+  nationalId?: string | null;
+  address?: string | null;
   notes?: string | null;
   status?: string;
 }
@@ -38,9 +42,13 @@ export interface Appointment {
   startTime: string;
   endTime?: string | null;
   type: AppointmentType;
+  weddingDate?: string | null;
+  guestCount?: number | null;
+  venueId?: number | null;
   notes?: string | null;
   status: AppointmentStatus;
   customer?: AppointmentCustomer | null;
+  venue?: Venue | null;
   createdByUser?: AppointmentUserSummary | null;
   updatedByUser?: AppointmentUserSummary | null;
   createdAt?: string;
@@ -71,6 +79,9 @@ export interface AppointmentFormData {
   appointmentDate: string;
   startTime: string;
   endTime?: string;
+  weddingDate?: string;
+  guestCount?: string;
+  venueId?: string;
   status: AppointmentStatus;
   type: AppointmentType;
   notes?: string;

@@ -12,6 +12,7 @@ export type EventStatus =
 export interface EventAttributes {
   id: number;
   customerId?: number | null;
+  sourceAppointmentId?: number | null;
   title?: string | null;
   eventDate: string;
   venueId?: number | null;
@@ -29,6 +30,7 @@ type EventCreationAttributes = Optional<
   EventAttributes,
   | "id"
   | "customerId"
+  | "sourceAppointmentId"
   | "title"
   | "venueId"
   | "venueNameSnapshot"
@@ -47,6 +49,7 @@ export class Event
 {
   public id!: number;
   public customerId?: number | null;
+  public sourceAppointmentId?: number | null;
   public title?: string | null;
   public eventDate!: string;
   public venueId?: number | null;
@@ -68,6 +71,10 @@ Event.init(
       primaryKey: true,
     },
     customerId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+    sourceAppointmentId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -142,6 +149,7 @@ Event.init(
     paranoid: true,
     indexes: [
       { fields: ["customerId"] },
+      { fields: ["sourceAppointmentId"] },
       { fields: ["eventDate"] },
       { fields: ["venueId"] },
       { fields: ["status"] },

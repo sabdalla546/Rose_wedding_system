@@ -104,6 +104,61 @@ export function buildEventsCalendarSummary(
   ];
 }
 
+export function buildEventsTableSummary(
+  events: Array<{ status: EventCalendarRecord["status"] }>,
+  total: number,
+  activeFiltersCount: number,
+  t: TFunction,
+) {
+  const confirmed = events.filter((event) => event.status === "confirmed").length;
+  const inProgress = events.filter(
+    (event) => event.status === "in_progress",
+  ).length;
+
+  return [
+    {
+      id: "total",
+      label: t("events.tablePage.summary.total", {
+        defaultValue: "Total events",
+      }),
+      value: String(total),
+      hint: t("events.tablePage.summary.totalHint", {
+        defaultValue: "Records matching the current planning query.",
+      }),
+    },
+    {
+      id: "visible",
+      label: t("events.tablePage.summary.visible", {
+        defaultValue: "Visible on this page",
+      }),
+      value: String(events.length),
+      hint: t("events.tablePage.summary.visibleHint", {
+        defaultValue: "Events currently loaded into the table.",
+      }),
+    },
+    {
+      id: "execution",
+      label: t("events.tablePage.summary.execution", {
+        defaultValue: "Execution-ready",
+      }),
+      value: String(confirmed + inProgress),
+      hint: t("events.tablePage.summary.executionHint", {
+        defaultValue: "Confirmed and in-progress events on this page.",
+      }),
+    },
+    {
+      id: "filters",
+      label: t("events.tablePage.summary.filters", {
+        defaultValue: "Active filters",
+      }),
+      value: String(activeFiltersCount),
+      hint: t("events.tablePage.summary.filtersHint", {
+        defaultValue: "Narrow the workspace without changing the route.",
+      }),
+    },
+  ];
+}
+
 export function getEventsCalendarLegendItems(
   t: TFunction,
 ): AppCalendarLegendItem[] {

@@ -47,7 +47,7 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
       actions={right}
       className={cn(
         // Make the shared `PageHeader` visually more compact in dense pages.
-        "!rounded-[var(--radius-xl)] !p-3 md:!p-4",
+        "compact-header-shell !rounded-[6px] !p-3 md:!p-4",
         // Normalize control heights inside the header (search, selects, buttons).
         "[&_input]:!h-10",
         "[&_button]:!h-10",
@@ -61,17 +61,17 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
         "[&_.lg\\:shrink-0]:lg:!shrink",
         "[&_.lg\\:items-end]:lg:!items-stretch",
         // Keep a compact but modern radius language across header surfaces.
-        "[&_.app-icon-chip]:h-9 [&_.app-icon-chip]:w-9 [&_.app-icon-chip]:!rounded-[var(--radius-md)]",
+        "[&_.app-icon-chip]:h-9 [&_.app-icon-chip]:w-9 [&_.app-icon-chip]:!rounded-[4px]",
         "[&_.app-icon-chip]:!border [&_.app-icon-chip]:!border-[var(--color-control-border)]",
         "[&_.app-icon-chip]:!bg-[var(--color-control-hover)]",
         "[&_.app-icon-chip]:!text-[var(--color-primary)]",
         "[&_.app-icon-chip]:!shadow-none",
         // Search input (SearchInput -> Input)
-        "[&_input]:!rounded-[var(--radius-lg)]",
+        "[&_input]:!rounded-[6px]",
         // Buttons used inside headers (shadcn Button base uses rounded-2xl/rounded-xl)
-        "[&_.rounded-2xl]:!rounded-[var(--radius-lg)]",
-        "[&_.rounded-xl]:!rounded-[var(--radius-lg)]",
-        "[&_.rounded-lg]:!rounded-[var(--radius-md)]",
+        "[&_.rounded-2xl]:!rounded-[6px]",
+        "[&_.rounded-xl]:!rounded-[6px]",
+        "[&_.rounded-lg]:!rounded-[4px]",
         "[&_.page-eyebrow]:text-[0.68rem] [&_.page-eyebrow]:tracking-[0.22em]",
         "[&_.page-title]:text-[1rem] md:[&_.page-title]:text-[1.14rem]",
         "[&_.page-subtitle]:text-[0.78rem]",

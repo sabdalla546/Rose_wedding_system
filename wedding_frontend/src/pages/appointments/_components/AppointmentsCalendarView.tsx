@@ -1,21 +1,21 @@
 import { format } from "date-fns";
+import { CalendarClock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { AppCalendar, type AppCalendarHandle } from "@/components/calendar/app-calendar";
-import {
-  CalendarFilterField,
-  CalendarFilterGroup,
-  CalendarFilterPanel,
-  CalendarFilterPill,
-} from "@/components/calendar/calendar-filter-panel";
 import { SummaryCard } from "@/components/dashboard/summary-card";
+import { AppDialogFooter, AppDialogHeader, AppDialogShell } from "@/components/shared/app-dialog";
+import { SectionCard } from "@/components/shared/section-card";
+import {
+  WorkspaceFilterBar,
+  WorkspaceFilterField,
+  WorkspaceFilterPill,
+} from "@/components/shared/workspace-filter-bar";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { AppDialogFooter, AppDialogHeader, AppDialogShell } from "@/components/shared/app-dialog";
-import { SectionCard } from "@/components/shared/section-card";
 import {
   AppointmentQuickView,
   AppointmentQuickViewDialog,
@@ -36,7 +36,7 @@ import { APPOINTMENT_STATUS_OPTIONS } from "@/pages/appointments/adapters";
 import type { Appointment } from "@/pages/appointments/types";
 
 const filterFieldClassName =
-  "h-11 w-full rounded-xl border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
+  "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
 
 const fieldStyle = {
   background: "var(--lux-control-surface)",
@@ -44,7 +44,7 @@ const fieldStyle = {
 } as const;
 
 const textareaClassName =
-  "min-h-[110px] w-full rounded-[18px] border px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
+  "min-h-[110px] w-full rounded-[6px] border px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
 
 type ActionTarget = Appointment | null;
 
@@ -140,7 +140,11 @@ function RescheduleDialog({
           >
             {t("common.cancel", { defaultValue: "Cancel" })}
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={isPending || !appointment}>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || !appointment}
+          >
             {t("appointments.reschedule", { defaultValue: "Reschedule" })}
           </Button>
         </AppDialogFooter>
@@ -216,7 +220,11 @@ function CancelDialog({
           >
             {t("common.cancel", { defaultValue: "Cancel" })}
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={isPending || !appointment}>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || !appointment}
+          >
             {t("appointments.cancel", { defaultValue: "Cancel" })}
           </Button>
         </AppDialogFooter>
@@ -282,26 +290,22 @@ export function AppointmentsCalendarView({
     return () => window.cancelAnimationFrame(frame);
   }, [active]);
 
-  const selectedAppointment = useMemo(
-    () => {
-      if (!items.length) {
-        return null;
+  const selectedAppointment = useMemo(() => {
+    if (!items.length) {
+      return null;
+    }
+
+    if (selectedAppointmentId) {
+      const matchedItem =
+        items.find((item) => String(item.id) === selectedAppointmentId) ?? null;
+
+      if (matchedItem) {
+        return matchedItem;
       }
+    }
 
-      if (selectedAppointmentId) {
-        const matchedItem =
-          items.find((item) => String(item.id) === selectedAppointmentId) ??
-          null;
-
-        if (matchedItem) {
-          return matchedItem;
-        }
-      }
-
-      return items[0] ?? null;
-    },
-    [items, selectedAppointmentId],
-  );
+    return items[0] ?? null;
+  }, [items, selectedAppointmentId]);
 
   const assignedUserOptions = useMemo(
     () =>
@@ -344,10 +348,10 @@ export function AppointmentsCalendarView({
 
   const activeFilterPills = [
     filters.search.trim() ? (
-      <CalendarFilterPill key="search" label={filters.search.trim()} />
+      <WorkspaceFilterPill key="search" label={filters.search.trim()} />
     ) : null,
     filters.status !== "all" ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="status"
         label={t(`appointments.status.${filters.status}`, {
           defaultValue: filters.status,
@@ -355,7 +359,7 @@ export function AppointmentsCalendarView({
       />
     ) : null,
     filters.assignedUserId !== "all" ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="assigned"
         label={
           assignedUserOptions.find(
@@ -365,7 +369,7 @@ export function AppointmentsCalendarView({
       />
     ) : null,
     filters.customerId !== "all" ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="customer"
         label={
           customerOptions.find((option) => option.value === filters.customerId)
@@ -374,13 +378,13 @@ export function AppointmentsCalendarView({
       />
     ) : null,
     filters.dateFrom ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-from"
         label={`${t("common.from", { defaultValue: "From" })}: ${filters.dateFrom}`}
       />
     ) : null,
     filters.dateTo ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-to"
         label={`${t("common.to", { defaultValue: "To" })}: ${filters.dateTo}`}
       />
@@ -396,12 +400,13 @@ export function AppointmentsCalendarView({
             label={summary.label}
             value={summary.value}
             hint={summary.hint}
-            className="space-y-2 border-[var(--color-border)] shadow-none"
+            accent={<CalendarClock className="h-4 w-4" />}
+            className="workspace-summary-card"
           />
         ))}
       </section>
 
-      <CalendarFilterPanel
+      <WorkspaceFilterBar
         title={t("common.filters")}
         description={t("appointments.calendarPage.filtersDescription")}
         activeFiltersLabel={t("appointments.activeFiltersCount", {
@@ -410,17 +415,12 @@ export function AppointmentsCalendarView({
         activeFiltersCount={activeFiltersCount}
         clearLabel={t("appointments.clearFilters")}
         onClear={resetFilters}
-        showLabel={t("appointments.showFilters")}
-        hideLabel={t("appointments.hideFilters")}
+        showFiltersLabel={t("appointments.showFilters")}
+        hideFiltersLabel={t("appointments.hideFilters")}
         pills={activeFilterPills.length ? activeFilterPills : undefined}
-      >
-        <CalendarFilterGroup
-          className="xl:col-span-8"
-          title={t("appointments.primaryFilters")}
-          description={t("appointments.primaryFiltersHint")}
-        >
-          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
-            <CalendarFilterField
+        quickFilters={
+          <>
+            <WorkspaceFilterField
               label={t("appointments.calendarPage.searchLabel")}
             >
               <Input
@@ -438,11 +438,9 @@ export function AppointmentsCalendarView({
                     "Search customers, notes, mobile numbers, or assigned users...",
                 })}
               />
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("appointments.statusLabel")}
-            >
+            <WorkspaceFilterField label={t("appointments.statusLabel")}>
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
@@ -465,11 +463,9 @@ export function AppointmentsCalendarView({
                   </option>
                 ))}
               </select>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("appointments.assignedUser")}
-            >
+            <WorkspaceFilterField label={t("appointments.assignedUser")}>
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
@@ -490,13 +486,11 @@ export function AppointmentsCalendarView({
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
-                ))}
+                  ))}
               </select>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("appointments.customer")}
-            >
+            <WorkspaceFilterField label={t("appointments.customer")}>
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
@@ -519,17 +513,9 @@ export function AppointmentsCalendarView({
                   </option>
                 ))}
               </select>
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
+            </WorkspaceFilterField>
 
-        <CalendarFilterGroup
-          className="xl:col-span-4"
-          title={t("appointments.dateFilters")}
-          description={t("appointments.dateFiltersHint")}
-        >
-          <div className="grid grid-cols-1 gap-2.5">
-            <CalendarFilterField
+            <WorkspaceFilterField
               label={t("common.from", { defaultValue: "From" })}
             >
               <Input
@@ -544,9 +530,11 @@ export function AppointmentsCalendarView({
                   }))
                 }
               />
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField label={t("common.to", { defaultValue: "To" })}>
+            <WorkspaceFilterField
+              label={t("common.to", { defaultValue: "To" })}
+            >
               <Input
                 type="date"
                 className={filterFieldClassName}
@@ -559,13 +547,13 @@ export function AppointmentsCalendarView({
                   }))
                 }
               />
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
-      </CalendarFilterPanel>
+            </WorkspaceFilterField>
+          </>
+        }
+      />
 
-      <section className="grid gap-6">
-        <div className="space-y-6">
+      <section className="grid gap-6 2xl:grid-cols-12">
+        <div className="space-y-6 2xl:col-span-8">
           {isError ? (
             <SectionCard className="space-y-4">
               <div className="space-y-2">
@@ -591,6 +579,7 @@ export function AppointmentsCalendarView({
           ) : (
             <AppCalendar
               ref={calendarRef}
+              className="operations-calendar-panel"
               locale={i18n.language === "ar" ? "ar" : "en"}
               events={calendarEvents}
               initialView="month"
@@ -603,7 +592,6 @@ export function AppointmentsCalendarView({
                 defaultValue:
                   "Try another visible range or clear one of the active filters.",
               })}
-              hideToolbar
               variant="appointment"
               onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
@@ -617,7 +605,7 @@ export function AppointmentsCalendarView({
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 2xl:col-span-4">
           <AppointmentQuickView
             appointment={selectedAppointment}
             onView={(appointment) => navigate(`/appointments/${appointment.id}`)}
@@ -630,6 +618,7 @@ export function AppointmentsCalendarView({
             isConfirmPending={confirmAppointment.isPending}
             isCancelPending={cancelAppointment.isPending}
             isReschedulePending={rescheduleAppointment.isPending}
+            className="operations-side-panel 2xl:sticky 2xl:top-4"
           />
         </div>
       </section>

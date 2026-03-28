@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { UsersRound } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,21 +39,78 @@ import { useCustomer } from "@/hooks/customers/useCustomers";
 import { CUSTOMER_STATUS_OPTIONS } from "./adapters";
 import type { CustomerFormData, CustomerStatus } from "./types";
 
-const customerSchema = z.object({
-  fullName: z.string().min(2, "Full name is required").max(150),
-  mobile: z.string().min(3, "Primary mobile is required").max(30),
-  mobile2: z.string().max(30).optional(),
-  email: z.union([z.literal(""), z.string().email("Invalid email address")]),
-  notes: z.string().optional(),
-  status: z.enum(
-    CUSTOMER_STATUS_OPTIONS.map((status) => status.value) as [
-      CustomerStatus,
-      ...CustomerStatus[],
-    ],
-  ),
-});
+const optionalTrimmedString = (max: number) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
 
-type CustomerFormValues = z.infer<typeof customerSchema>;
+      const trimmed = value.trim();
+      return trimmed === "" ? "" : trimmed;
+    },
+    z.union([z.literal(""), z.string().max(max)]),
+  );
+
+const buildCustomerSchema = (
+  t: (key: string, options?: Record<string, unknown>) => string,
+) =>
+  z.object({
+    fullName: z
+      .string()
+      .trim()
+      .min(
+        2,
+        t("customers.validation.fullNameRequired", {
+          defaultValue: "Full name is required",
+        }),
+      )
+      .max(150),
+    mobile: z
+      .string()
+      .trim()
+      .min(
+        3,
+        t("customers.validation.mobileRequired", {
+          defaultValue: "Primary mobile is required",
+        }),
+      )
+      .max(30),
+    mobile2: optionalTrimmedString(30).optional(),
+    email: z.union([
+      z.literal(""),
+      z
+        .string()
+        .trim()
+        .email(
+          t("customers.validation.emailInvalid", {
+            defaultValue: "Invalid email address",
+          }),
+        ),
+    ]),
+    nationalId: z.union([
+      z.literal(""),
+      z
+        .string()
+        .trim()
+        .regex(
+          /^\d{12}$/,
+          t("customers.validation.nationalIdInvalid", {
+            defaultValue: "National ID must be exactly 12 digits",
+          }),
+        ),
+    ]),
+    address: optionalTrimmedString(255).optional(),
+    notes: z.string().optional(),
+    status: z.enum(
+      CUSTOMER_STATUS_OPTIONS.map((status) => status.value) as [
+        CustomerStatus,
+        ...CustomerStatus[],
+      ],
+    ),
+  });
+
+type CustomerFormValues = z.infer<ReturnType<typeof buildCustomerSchema>>;
 
 const CustomerFormPage = () => {
   const { t, i18n } = useTranslation();
@@ -64,14 +121,17 @@ const CustomerFormPage = () => {
   const { data: customer, isLoading } = useCustomer(id);
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer(id);
+  const customerSchema = useMemo(() => buildCustomerSchema(t), [t]);
 
   const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerSchema) as any,
+    resolver: zodResolver(customerSchema),
     defaultValues: {
       fullName: "",
       mobile: "",
       mobile2: "",
       email: "",
+      nationalId: "",
+      address: "",
       notes: "",
       status: "active",
     },
@@ -87,6 +147,8 @@ const CustomerFormPage = () => {
       mobile: customer.mobile ?? "",
       mobile2: customer.mobile2 ?? "",
       email: customer.email ?? "",
+      nationalId: customer.nationalId ?? "",
+      address: customer.address ?? "",
       notes: customer.notes ?? "",
       status: customer.status,
     });
@@ -240,6 +302,31 @@ const CustomerFormPage = () => {
 
                       <FormField
                         control={form.control}
+                        name="nationalId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("customers.nationalId", {
+                                defaultValue: "National ID",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                inputMode="numeric"
+                                maxLength={12}
+                                placeholder={t("customers.nationalIdPlaceholder", {
+                                  defaultValue: "Enter 12-digit national ID",
+                                })}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="status"
                         render={({ field }) => (
                           <FormItem>
@@ -269,6 +356,27 @@ const CustomerFormPage = () => {
                         )}
                       />
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("customers.address", { defaultValue: "Address" })}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder={t("customers.addressPlaceholder", {
+                                defaultValue: "Enter customer address",
+                              })}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}

@@ -21,6 +21,9 @@ const buildCreateAppointmentPayload = (values: AppointmentFormData) => ({
   startTime: values.startTime,
   endTime: normalizeOptionalString(values.endTime),
   type: values.type,
+  weddingDate: normalizeOptionalString(values.weddingDate),
+  guestCount: values.guestCount?.trim() ? Number(values.guestCount) : undefined,
+  venueId: values.venueId?.trim() ? Number(values.venueId) : undefined,
   notes: normalizeOptionalString(values.notes),
 });
 
@@ -30,6 +33,9 @@ const buildUpdateAppointmentPayload = (values: AppointmentFormData) => ({
   startTime: values.startTime,
   endTime: normalizeNullableString(values.endTime),
   type: values.type,
+  weddingDate: normalizeNullableString(values.weddingDate),
+  guestCount: values.guestCount?.trim() ? Number(values.guestCount) : null,
+  venueId: values.venueId?.trim() ? Number(values.venueId) : null,
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });
@@ -40,6 +46,8 @@ type CreateAppointmentWithCustomerValues = {
     mobile: string;
     mobile2?: string;
     email?: string;
+    nationalId?: string;
+    address?: string;
     notes?: string;
   };
   customerId?: string;
@@ -48,6 +56,9 @@ type CreateAppointmentWithCustomerValues = {
     startTime: string;
     endTime?: string;
     type: AppointmentType;
+    weddingDate?: string;
+    guestCount?: string;
+    venueId?: string;
     notes?: string;
   };
 };
@@ -56,12 +67,14 @@ const buildCreateAppointmentWithCustomerPayload = (
   values: CreateAppointmentWithCustomerValues,
 ) => ({
   customerId: values.customerId?.trim() ? Number(values.customerId) : undefined,
-  customer: values.customer
+      customer: values.customer
     ? {
         fullName: values.customer.fullName.trim(),
         mobile: values.customer.mobile.trim(),
         mobile2: normalizeOptionalString(values.customer.mobile2),
         email: normalizeOptionalString(values.customer.email),
+        nationalId: normalizeOptionalString(values.customer.nationalId),
+        address: normalizeOptionalString(values.customer.address),
         notes: normalizeOptionalString(values.customer.notes),
       }
     : undefined,
@@ -70,6 +83,13 @@ const buildCreateAppointmentWithCustomerPayload = (
     startTime: values.appointment.startTime,
     endTime: normalizeOptionalString(values.appointment.endTime),
     type: values.appointment.type,
+    weddingDate: normalizeOptionalString(values.appointment.weddingDate),
+    guestCount: values.appointment.guestCount?.trim()
+      ? Number(values.appointment.guestCount)
+      : undefined,
+    venueId: values.appointment.venueId?.trim()
+      ? Number(values.appointment.venueId)
+      : undefined,
     notes: normalizeOptionalString(values.appointment.notes),
   },
 });

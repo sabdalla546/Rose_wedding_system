@@ -2,7 +2,14 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { Event, EventSection, Customer, Venue, User } from "../models";
+import {
+  Appointment,
+  Event,
+  EventSection,
+  Customer,
+  Venue,
+  User,
+} from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
 import {
   createEventSchema,
@@ -16,6 +23,14 @@ import { eventCalendarQuerySchema } from "../validation/calendar.schemas";
 const eventInclude: any = [
   { model: Customer, as: "customer" },
   { model: Venue, as: "venue" },
+  {
+    model: Appointment,
+    as: "sourceAppointment",
+    include: [
+      { model: Customer, as: "customer" },
+      { model: Venue, as: "venue" },
+    ],
+  },
   {
     model: EventSection,
     as: "sections",
@@ -34,31 +49,105 @@ const normalizeNullableString = (value?: string | null) => {
   return trimmed ? trimmed : null;
 };
 
+const ACTIVE_EVENT_STATUSES = [
+  "draft",
+  "designing",
+  "confirmed",
+  "in_progress",
+  "completed",
+] as const;
+
+const getSourceAppointmentDefaults = async (
+  sourceAppointmentId?: number | null,
+) => {
+  if (!sourceAppointmentId) {
+    return null;
+  }
+
+  return Appointment.findByPk(sourceAppointmentId, {
+    include: [
+      { model: Customer, as: "customer" },
+      { model: Venue, as: "venue" },
+    ],
+  });
+};
+
 export const createEvent = async (req: AuthRequest, res: Response) => {
   try {
     const data = createEventSchema.parse(req.body);
 
-    const customer = await Customer.findByPk(data.customerId);
+    const sourceAppointment = await getSourceAppointmentDefaults(
+      data.sourceAppointmentId ?? null,
+    );
+    if (data.sourceAppointmentId && !sourceAppointment) {
+      return res.status(404).json({ message: "Source appointment not found" });
+    }
+
+    if (data.sourceAppointmentId) {
+      const existingEvent = await Event.findOne({
+        where: {
+          sourceAppointmentId: data.sourceAppointmentId,
+          status: {
+            [Op.in]: ACTIVE_EVENT_STATUSES,
+          },
+        },
+      });
+
+      if (existingEvent) {
+        return res.status(409).json({
+          message: "An event has already been created from this appointment",
+        });
+      }
+    }
+
+    const resolvedCustomerId =
+      typeof data.customerId !== "undefined" && data.customerId !== null
+        ? data.customerId
+        : (sourceAppointment?.customerId ?? null);
+    const resolvedEventDate =
+      data.eventDate ||
+      sourceAppointment?.weddingDate ||
+      sourceAppointment?.appointmentDate ||
+      null;
+    const resolvedVenueId =
+      typeof data.venueId !== "undefined"
+        ? data.venueId
+        : (sourceAppointment?.venueId ?? null);
+    const resolvedGuestCount =
+      typeof data.guestCount !== "undefined"
+        ? data.guestCount
+        : (sourceAppointment?.guestCount ?? null);
+
+    if (!resolvedCustomerId) {
+      return res.status(400).json({ message: "Customer is required" });
+    }
+
+    if (!resolvedEventDate) {
+      return res.status(400).json({ message: "Event date is required" });
+    }
+
+    const customer = await Customer.findByPk(resolvedCustomerId);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (data.venueId) {
-      const venue = await Venue.findByPk(data.venueId);
+    if (resolvedVenueId) {
+      const venue = await Venue.findByPk(resolvedVenueId);
       if (!venue) {
         return res.status(404).json({ message: "Venue not found" });
       }
     }
 
     const event = await Event.create({
-      customerId: data.customerId,
+      customerId: resolvedCustomerId,
+      sourceAppointmentId: data.sourceAppointmentId ?? null,
       title: normalizeNullableString(data.title),
-      eventDate: data.eventDate,
-      venueId: data.venueId ?? null,
+      eventDate: resolvedEventDate,
+      venueId: resolvedVenueId,
       venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
       groomName: normalizeNullableString(data.groomName),
       brideName: normalizeNullableString(data.brideName),
-      guestCount: data.guestCount ?? null,
+      guestCount: resolvedGuestCount,
       notes: data.notes ?? null,
       status: data.status ?? "draft",
       createdBy: req.user?.id ?? null,
@@ -88,13 +177,63 @@ export const createEventFromSource = async (
   try {
     const data = createEventFromSourceSchema.parse(req.body);
 
-    const customer = await Customer.findByPk(data.customerId);
+    const sourceAppointment = await getSourceAppointmentDefaults(
+      data.sourceAppointmentId ?? null,
+    );
+    if (data.sourceAppointmentId && !sourceAppointment) {
+      return res.status(404).json({ message: "Source appointment not found" });
+    }
+
+    if (data.sourceAppointmentId) {
+      const existingEvent = await Event.findOne({
+        where: {
+          sourceAppointmentId: data.sourceAppointmentId,
+          status: {
+            [Op.in]: ACTIVE_EVENT_STATUSES,
+          },
+        },
+      });
+
+      if (existingEvent) {
+        return res.status(409).json({
+          message: "An event has already been created from this appointment",
+        });
+      }
+    }
+
+    const resolvedCustomerId =
+      typeof data.customerId !== "undefined" && data.customerId !== null
+        ? data.customerId
+        : sourceAppointment?.customerId ?? null;
+    const resolvedEventDate =
+      data.eventDate ||
+      sourceAppointment?.weddingDate ||
+      sourceAppointment?.appointmentDate ||
+      null;
+    const resolvedVenueId =
+      typeof data.venueId !== "undefined"
+        ? data.venueId
+        : sourceAppointment?.venueId ?? null;
+    const resolvedGuestCount =
+      typeof data.guestCount !== "undefined"
+        ? data.guestCount
+        : sourceAppointment?.guestCount ?? null;
+
+    if (!resolvedCustomerId) {
+      return res.status(400).json({ message: "Customer is required" });
+    }
+
+    if (!resolvedEventDate) {
+      return res.status(400).json({ message: "Event date is required" });
+    }
+
+    const customer = await Customer.findByPk(resolvedCustomerId);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (data.venueId) {
-      const venue = await Venue.findByPk(data.venueId);
+    if (resolvedVenueId) {
+      const venue = await Venue.findByPk(resolvedVenueId);
       if (!venue) {
         return res.status(404).json({ message: "Venue not found" });
       }
@@ -102,15 +241,16 @@ export const createEventFromSource = async (
 
     const event = await Event.create({
       customerId: customer.id,
+      sourceAppointmentId: data.sourceAppointmentId ?? null,
       title:
         normalizeNullableString(data.title) ||
         `Wedding Event - ${customer.fullName}`,
-      eventDate: data.eventDate,
-      venueId: data.venueId ?? null,
+      eventDate: resolvedEventDate,
+      venueId: resolvedVenueId,
       venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
       groomName: normalizeNullableString(data.groomName),
       brideName: normalizeNullableString(data.brideName),
-      guestCount: data.guestCount ?? null,
+      guestCount: resolvedGuestCount,
       notes: data.notes ?? null,
       status: "draft",
       createdBy: req.user?.id ?? null,
@@ -272,6 +412,37 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    if (typeof data.sourceAppointmentId !== "undefined") {
+      if (data.sourceAppointmentId) {
+        const sourceAppointment = await Appointment.findByPk(
+          data.sourceAppointmentId,
+        );
+        if (!sourceAppointment) {
+          return res
+            .status(404)
+            .json({ message: "Source appointment not found" });
+        }
+
+        const duplicateEvent = await Event.findOne({
+          where: {
+            sourceAppointmentId: data.sourceAppointmentId,
+            id: {
+              [Op.ne]: event.id,
+            },
+            status: {
+              [Op.in]: ACTIVE_EVENT_STATUSES,
+            },
+          },
+        });
+
+        if (duplicateEvent) {
+          return res.status(409).json({
+            message: "An event has already been created from this appointment",
+          });
+        }
+      }
+    }
+
     if (typeof data.venueId !== "undefined" && data.venueId !== null) {
       const venue = await Venue.findByPk(data.venueId);
       if (!venue) {
@@ -284,6 +455,10 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
         typeof data.customerId !== "undefined"
           ? data.customerId
           : event.customerId,
+      sourceAppointmentId:
+        typeof data.sourceAppointmentId !== "undefined"
+          ? data.sourceAppointmentId
+          : event.sourceAppointmentId,
       title:
         typeof data.title !== "undefined"
           ? normalizeNullableString(data.title)

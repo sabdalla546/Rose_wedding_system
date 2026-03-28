@@ -132,6 +132,10 @@ const CustomerDetailsPage = () => {
                 value={customer.email}
               />
               <DetailItem
+                label={t("customers.nationalId", { defaultValue: "National ID" })}
+                value={customer.nationalId}
+              />
+              <DetailItem
                 label={t("customers.statusLabel", { defaultValue: "Status" })}
                 value={t(`customers.status.${customer.status}`, {
                   defaultValue: customer.status,
@@ -141,6 +145,12 @@ const CustomerDetailsPage = () => {
                 label={t("customers.createdBy", { defaultValue: "Created By" })}
                 value={customer.createdByUser?.fullName}
               />
+              <div className="md:col-span-2">
+                <DetailItem
+                  label={t("customers.address", { defaultValue: "Address" })}
+                  value={customer.address}
+                />
+              </div>
               <div className="md:col-span-2">
                 <DetailItem
                   label={t("common.notes", { defaultValue: "Notes" })}

@@ -9,6 +9,7 @@ import type {
 export type TableAppointment = Appointment & {
   customerName: string;
   timeDisplay: string;
+  weddingDateDisplay: string;
 };
 
 export type TableAppointmentsResponse = {
@@ -27,6 +28,7 @@ export function toTableAppointments(
     timeDisplay: appointment.endTime
       ? `${appointment.startTime} - ${appointment.endTime}`
       : appointment.startTime,
+    weddingDateDisplay: appointment.weddingDate || "-",
   }));
 
   return {

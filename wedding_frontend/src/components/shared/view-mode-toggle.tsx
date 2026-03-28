@@ -28,7 +28,7 @@ export function ViewModeToggle<T extends string>({
     <div
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center gap-1 rounded-2xl border p-1",
+        "inline-flex items-center gap-1 rounded-[6px] border p-1",
         className,
       )}
       role="tablist"
@@ -46,7 +46,7 @@ export function ViewModeToggle<T extends string>({
             key={option.value}
             aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition",
+              "inline-flex items-center gap-2 rounded-[4px] px-3 py-2 text-sm font-medium transition",
               active
                 ? "text-[var(--lux-primary-text)]"
                 : "text-[var(--lux-text-secondary)] hover:text-[var(--lux-text)]",

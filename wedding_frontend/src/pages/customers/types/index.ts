@@ -11,6 +11,8 @@ export interface Customer {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
+  nationalId?: string | null;
+  address?: string | null;
   notes?: string | null;
   status: CustomerStatus;
   createdByUser?: CustomerUserSummary | null;
@@ -39,6 +41,8 @@ export interface CustomerFormData {
   mobile: string;
   mobile2?: string;
   email?: string;
+  nationalId?: string;
+  address?: string;
   notes?: string;
   status: CustomerStatus;
 }

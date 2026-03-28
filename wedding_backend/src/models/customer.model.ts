@@ -9,6 +9,8 @@ export interface CustomerAttributes {
   mobile: string;
   mobile2?: string | null;
   email?: string | null;
+  nationalId?: string | null;
+  address?: string | null;
   notes?: string | null;
   status: CustomerStatus;
   createdBy?: number | null;
@@ -20,6 +22,8 @@ type CustomerCreationAttributes = Optional<
   | "id"
   | "mobile2"
   | "email"
+  | "nationalId"
+  | "address"
   | "notes"
   | "status"
   | "createdBy"
@@ -35,6 +39,8 @@ export class Customer
   public mobile!: string;
   public mobile2?: string | null;
   public email?: string | null;
+  public nationalId?: string | null;
+  public address?: string | null;
   public notes?: string | null;
   public status!: CustomerStatus;
   public createdBy?: number | null;
@@ -67,6 +73,14 @@ Customer.init(
         isEmail: true,
       },
     },
+    nationalId: {
+      type: DataTypes.STRING(12),
+      allowNull: true,
+    },
+    address: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -90,6 +104,10 @@ Customer.init(
     tableName: "customers",
     timestamps: true,
     paranoid: true,
-    indexes: [{ fields: ["mobile"] }, { fields: ["status"] }],
+    indexes: [
+      { fields: ["mobile"] },
+      { fields: ["nationalId"] },
+      { fields: ["status"] },
+    ],
   },
 );

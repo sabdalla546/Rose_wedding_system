@@ -44,7 +44,10 @@ function QuickFact({
   icon: typeof CalendarClock;
 }) {
   return (
-    <div className="rounded-[18px] border px-3.5 py-3" style={{ borderColor: "var(--color-border)", background: "var(--color-surface-2)" }}>
+    <div
+      className="appointment-quick-view__fact rounded-[18px] border px-3.5 py-3"
+      style={{ borderColor: "var(--color-border)", background: "var(--color-surface-2)" }}
+    >
       <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-control-hover)] text-[var(--color-primary)]">
         <Icon className="h-4 w-4" />
       </div>
@@ -104,7 +107,7 @@ export function AppointmentQuickView({
     appointment.customer?.fullName || `Customer #${appointment.customerId}`;
 
   return (
-    <SectionCard className={cn("overflow-hidden p-0", className)}>
+    <SectionCard className={cn("appointment-quick-view overflow-hidden p-0", className)}>
       <div
         className="border-b px-5 py-4"
         style={{
@@ -187,7 +190,7 @@ export function AppointmentQuickView({
             {t("common.notes", { defaultValue: "Notes" })}
           </p>
           <div
-            className="rounded-[18px] border px-4 py-3 text-sm leading-6 text-[var(--color-text-subtle)]"
+            className="appointment-quick-view__notes rounded-[18px] border px-4 py-3 text-sm leading-6 text-[var(--color-text-subtle)]"
             style={{
               borderColor: "var(--color-border)",
               background: "var(--color-surface-2)",
@@ -208,7 +211,12 @@ export function AppointmentQuickView({
           ) : null}
 
           {canUpdate ? (
-            <Button type="button" variant="secondary" onClick={() => onEdit(appointment)}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="appointment-quick-view__secondary-action"
+              onClick={() => onEdit(appointment)}
+            >
               {t("appointments.editAppointment", {
                 defaultValue: "Edit Appointment",
               })}
@@ -219,6 +227,7 @@ export function AppointmentQuickView({
             <Button
               type="button"
               variant="secondary"
+              className="appointment-quick-view__secondary-action"
               onClick={() => onReschedule(appointment)}
               disabled={isReschedulePending}
             >
@@ -240,6 +249,7 @@ export function AppointmentQuickView({
             <Button
               type="button"
               variant="outline"
+              className="appointment-quick-view__secondary-action"
               onClick={() => onCancel(appointment)}
               disabled={isCancelPending}
             >
@@ -292,7 +302,12 @@ export function AppointmentQuickViewDialog({
           className="border-0 bg-transparent p-0 shadow-none"
         />
         <AppDialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="appointment-quick-view__secondary-action"
+            onClick={() => onOpenChange(false)}
+          >
             {t("common.close", { defaultValue: "Close" })}
           </Button>
         </AppDialogFooter>

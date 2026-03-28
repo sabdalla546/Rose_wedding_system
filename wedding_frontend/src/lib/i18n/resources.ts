@@ -357,7 +357,8 @@ export const resources = {
       leads: {
         title: "Leads",
         totalLeads: "total leads",
-        searchPlaceholder: "Search by name, mobile, email, or venue...",
+        searchPlaceholder:
+          "Search by name, mobile, email, national ID, or address...",
         create: "Create Lead",
         createTitle: "Create Lead",
         editTitle: "Edit Lead",
@@ -377,6 +378,10 @@ export const resources = {
         mobilePlaceholder: "Enter primary mobile number",
         mobile2: "Secondary Mobile",
         mobile2Placeholder: "Enter secondary mobile number",
+        nationalId: "National ID",
+        nationalIdPlaceholder: "Enter 12-digit national ID",
+        address: "Address",
+        addressPlaceholder: "Enter customer address",
         weddingDetails: "Wedding Details",
         weddingDate: "Wedding Date",
         weddingDateFrom: "Wedding Date From",
@@ -449,7 +454,8 @@ export const resources = {
       customers: {
         title: "Customers",
         totalCustomers: "total customers",
-        searchPlaceholder: "Search by name, mobile, email, or venue...",
+        searchPlaceholder:
+          "Search by name, mobile, email, national ID, or address...",
         create: "Create Customer",
         createTitle: "Create Customer",
         editTitle: "Edit Customer",
@@ -469,6 +475,10 @@ export const resources = {
         mobilePlaceholder: "Enter primary mobile number",
         mobile2: "Secondary Mobile",
         mobile2Placeholder: "Enter secondary mobile number",
+        nationalId: "National ID",
+        nationalIdPlaceholder: "Enter 12-digit national ID",
+        address: "Address",
+        addressPlaceholder: "Enter customer address",
         eventDetails: "Event Details",
         eventProfile: "Event Profile",
         eventProfileHint: "Wedding date, venue, and guest volume.",
@@ -511,6 +521,12 @@ export const resources = {
         updatedAt: "Updated At",
         noNotes: "No notes added yet.",
         customerStatus: "Customer Status",
+        validation: {
+          fullNameRequired: "Full name is required",
+          mobileRequired: "Primary mobile is required",
+          emailInvalid: "Invalid email address",
+          nationalIdInvalid: "National ID must be exactly 12 digits",
+        },
         status: {
           active: "Active",
           inactive: "Inactive",
@@ -1123,6 +1139,10 @@ export const resources = {
         createFromSource: "Create From Source",
         createFromSourceHint:
           "Start from an existing customer or lead and inherit the source context.",
+        sourceAppointment: "Source Appointment",
+        viewSourceAppointment: "View Source Appointment",
+        sourceAppointmentPrefillHint:
+          "This event was prefilled from the selected appointment. Customer, event date, guest count, and venue came from that exact appointment and can still be edited.",
         linkedRecords: "Linked Records",
         linkedRecordsHint:
           "Link the event to a customer, a lead, or both when available.",
@@ -1181,6 +1201,25 @@ export const resources = {
         dateFilters: "Date Range",
         dateFiltersHint:
           "Limit the list to events within a specific event date range.",
+        tablePage: {
+          workspaceDescription:
+            "Review event records, planning readiness, and venue context from a calmer operations workspace.",
+          emptyTitle: "No events match these filters",
+          emptyDescription:
+            "Try clearing the venue or date filters to bring more records back into view.",
+          summary: {
+            total: "Total Events",
+            totalHint: "Records matching the current planning query.",
+            visible: "Visible On This Page",
+            visibleHint: "Events currently loaded into the table.",
+            execution: "Execution-ready",
+            executionHint:
+              "Confirmed and in-progress events on this page.",
+            filters: "Active Filters",
+            filtersHint:
+              "Narrow the workspace without changing the route.",
+          },
+        },
         dateFrom: "Date From",
         dateTo: "Date To",
         allStatuses: "All Statuses",
@@ -1193,6 +1232,11 @@ export const resources = {
         createdAt: "Created At",
         updatedAt: "Updated At",
         noNotes: "No notes added yet.",
+        validation: {
+          customerRequired: "Customer is required",
+          eventDateRequired: "Event date is required",
+          guestCountInvalid: "Guest count must be zero or greater",
+        },
         sectionsTitle: "Event Sections",
         sectionsHint: "Manage the ordered planning sections for this event.",
         addSection: "Add Section",
@@ -1665,12 +1709,28 @@ export const resources = {
         dateFiltersHint:
           "Limit the appointment calendar to a specific date range.",
         tablePage: {
+          workspaceDescription:
+            "Track scheduled follow-ups, customer conversations, and next actions from one premium workspace.",
           filtersDescription:
             "Quick appointment filters for search, status, customer, and date range.",
           primaryFiltersHint:
             "Use the main filters to narrow the appointment list quickly.",
           dateFiltersHint:
             "Limit the appointment list to a specific date range.",
+          emptyTitle: "No appointments match these filters",
+          emptyDescription:
+            "Try broadening the date window or clearing one of the filters.",
+          summary: {
+            total: "Total Appointments",
+            totalHint: "Records matching the current table query.",
+            visible: "Visible On This Page",
+            visibleHint: "Appointments currently loaded into the table.",
+            open: "Needs Follow-up",
+            openHint:
+              "Scheduled or rescheduled appointments awaiting closure.",
+            filters: "Active Filters",
+            filtersHint: "Confirmed appointments on this page.",
+          },
         },
         calendarPage: {
           eyebrow: "Appointments Calendar",
@@ -1717,6 +1777,9 @@ export const resources = {
         totalAppointments: "total appointments",
         create: "Create Appointment",
         backToAppointments: "Back to Appointments",
+        customerMode: "Customer Selection",
+        useExistingCustomer: "Use Existing Customer",
+        createNewCustomer: "Create New Customer",
         scheduleTitle: "Schedule Appointment",
         scheduleDescription:
           "Create an appointment for a new prospect or assign one to an existing lead.",
@@ -1766,15 +1829,18 @@ export const resources = {
           "Set the appointment time, assignment, and meeting type.",
         date: "Appointment Date",
         appointmentDate: "Appointment Date",
+        weddingDate: "Wedding Date",
         appointmentTime: "Appointment Time",
         time: "Time",
         assignedTo: "Assigned To",
         assignedUser: "Assigned User / Coordinator",
         selectUser: "Select user",
         unassigned: "Unassigned",
+        type: "Type",
         startTime: "Start Time",
         endTime: "End Time",
         meetingType: "Meeting Type",
+        venue: "Venue",
         selectMeetingType: "Select meeting type",
         statusLabel: "Status",
         selectStatus: "Select status",
@@ -1813,6 +1879,16 @@ export const resources = {
         cancelDescription:
           "Add a reason and optional note for the cancellation.",
         cancelAction: "Cancel Appointment",
+        validation: {
+          emailInvalid: "Invalid email address",
+          nationalIdInvalid: "National ID must be exactly 12 digits",
+          guestCountInvalid: "Guest count must be zero or greater",
+          appointmentDateRequired: "Appointment date is required",
+          startTimeRequired: "Start time is required",
+          customerRequired: "Customer is required",
+          fullNameRequired: "Full name is required",
+          mobileRequired: "Mobile is required",
+        },
         cancel: "Cancel",
         cancelReasonPlaceholder: "Enter cancellation reason",
         rescheduleTitle: "Reschedule Appointment",
@@ -1832,7 +1908,17 @@ export const resources = {
         outcome: "Outcome",
         outcomeHint: "Meeting result, notes, and follow-up.",
         guestCount: "Guest Count",
+        createEvent: "Create Event",
         noNotes: "No notes added.",
+        typeOptions: {
+          "New Appointment 1": "New Appointment 1",
+          "New Appointment 2": "New Appointment 2",
+          "New Appointment 3": "New Appointment 3",
+          "Details Appointment 1": "Details Appointment 1",
+          "Details Appointment 2": "Details Appointment 2",
+          "Details Appointment 3": "Details Appointment 3",
+          "Office Visit": "Office Visit",
+        },
         meetingTypeOptions: {
           office_visit: "Office Visit",
           phone_call: "Phone Call",
@@ -1895,6 +1981,14 @@ export const resources = {
         week: "أسبوع",
         day: "يوم",
         agenda: "الأجندة",
+        loading: "جارٍ التحميل...",
+        noResultsTitle: "لا توجد نتائج",
+        cancel: "إلغاء",
+        create: "إنشاء",
+        update: "تحديث",
+        delete: "حذف",
+        processing: "جارٍ التنفيذ...",
+        actions: "الإجراءات",
         retry: "إعادة المحاولة",
         close: "إغلاق",
         error: "خطأ",
@@ -1902,6 +1996,9 @@ export const resources = {
         switchView: "تبديل طريقة العرض",
         tableView: "جدول",
         calendarView: "تقويم",
+        showing: "عرض",
+        of: "من",
+        itemsPerPage: "عدد العناصر في الصفحة",
         from: "من",
         to: "إلى",
         restore: "استعادة",
@@ -2208,7 +2305,8 @@ export const resources = {
       leads: {
         title: "العملاء المحتملون",
         totalLeads: "إجمالي العملاء المحتملين",
-        searchPlaceholder: "ابحث بالاسم أو الجوال أو البريد أو القاعة...",
+        searchPlaceholder:
+          "ابحث بالاسم أو الجوال أو البريد أو الرقم المدني أو العنوان...",
         create: "إضافة عميل محتمل",
         createTitle: "إضافة عميل محتمل",
         editTitle: "تعديل العميل المحتمل",
@@ -2300,7 +2398,8 @@ export const resources = {
       customers: {
         title: "العملاء",
         totalCustomers: "إجمالي العملاء",
-        searchPlaceholder: "ابحث بالاسم أو الجوال أو البريد أو القاعة...",
+        searchPlaceholder:
+          "ابحث بالاسم أو الجوال أو البريد أو الرقم المدني أو العنوان...",
         create: "إضافة عميل",
         createTitle: "إضافة عميل",
         editTitle: "تعديل العميل",
@@ -2319,6 +2418,10 @@ export const resources = {
         mobilePlaceholder: "أدخل رقم الجوال الأساسي",
         mobile2: "الجوال الاحتياطي",
         mobile2Placeholder: "أدخل رقم الجوال الاحتياطي",
+        nationalId: "الرقم المدني",
+        nationalIdPlaceholder: "أدخل رقماً مدنياً من 12 رقماً",
+        address: "العنوان",
+        addressPlaceholder: "أدخل عنوان العميل",
         eventDetails: "تفاصيل المناسبة",
         eventProfile: "ملف المناسبة",
         eventProfileHint: "تاريخ الزفاف والقاعة وعدد الضيوف.",
@@ -2361,6 +2464,12 @@ export const resources = {
         updatedAt: "تاريخ التحديث",
         noNotes: "لا توجد ملاحظات حتى الآن.",
         customerStatus: "حالة العميل",
+        validation: {
+          fullNameRequired: "الاسم الكامل مطلوب",
+          mobileRequired: "رقم الجوال الأساسي مطلوب",
+          emailInvalid: "البريد الإلكتروني غير صحيح",
+          nationalIdInvalid: "يجب أن يكون الرقم المدني 12 رقماً بالضبط",
+        },
         status: {
           active: "نشط",
           inactive: "غير نشط",
@@ -2555,6 +2664,10 @@ export const resources = {
         createFromSource: "إنشاء من مصدر موجود",
         createFromSourceHint:
           "ابدأ من عميل أو عميل محتمل موجود وورّث بيانات المصدر.",
+        sourceAppointment: "الموعد المصدر",
+        viewSourceAppointment: "عرض الموعد المصدر",
+        sourceAppointmentPrefillHint:
+          "تم تعبئة هذا الحفل مسبقًا من الموعد المحدد. تم جلب العميل وتاريخ الحفل وعدد الضيوف والقاعة من هذا الموعد مع إمكانية تعديلها.",
         linkedRecords: "الروابط المرتبطة",
         linkedRecordsHint:
           "اربط الحفل بعميل أو عميل محتمل أو بكليهما عند الحاجة.",
@@ -2610,6 +2723,24 @@ export const resources = {
         primaryFiltersHint: "استخدم الفلاتر الرئيسية لتضييق القائمة بسرعة.",
         dateFilters: "نطاق التاريخ",
         dateFiltersHint: "حدّد نطاق تاريخ الحفل لعرض الحفلات المطابقة.",
+        tablePage: {
+          workspaceDescription:
+            "راجع سجلات الحفلات وجهوزية التخطيط وسياق القاعة من مساحة تشغيل أكثر هدوءًا.",
+          emptyTitle: "لا توجد حفلات مطابقة لهذه الفلاتر",
+          emptyDescription:
+            "جرّب إزالة فلتر القاعة أو التاريخ لإظهار مزيد من السجلات.",
+          summary: {
+            total: "إجمالي الحفلات",
+            totalHint: "السجلات المطابقة لاستعلام التخطيط الحالي.",
+            visible: "الظاهرة في هذه الصفحة",
+            visibleHint: "الحفلات المحمّلة حاليًا داخل الجدول.",
+            execution: "جاهزة للتنفيذ",
+            executionHint:
+              "الحفلات المؤكدة والجارية في هذه الصفحة.",
+            filters: "الفلاتر النشطة",
+            filtersHint: "ضيّق مساحة العمل دون تغيير المسار.",
+          },
+        },
         dateFrom: "التاريخ من",
         dateTo: "التاريخ إلى",
         allStatuses: "كل الحالات",
@@ -2622,6 +2753,11 @@ export const resources = {
         createdAt: "تاريخ الإنشاء",
         updatedAt: "تاريخ التحديث",
         noNotes: "لا توجد ملاحظات حتى الآن.",
+        validation: {
+          customerRequired: "العميل مطلوب",
+          eventDateRequired: "تاريخ الحفل مطلوب",
+          guestCountInvalid: "يجب أن يكون عدد الضيوف صفراً أو أكثر",
+        },
         sectionsTitle: "أقسام الحفل",
         sectionsHint: "أدر أقسام التخطيط المرتبة لهذا الحفل.",
         addSection: "إضافة قسم",
@@ -3071,12 +3207,28 @@ export const resources = {
         dateFilters: "نطاق التاريخ",
         dateFiltersHint: "حدّد نطاقًا زمنيًا معيّنًا لتقويم المواعيد.",
         tablePage: {
+          workspaceDescription:
+            "أدر المتابعات المجدولة ومحادثات العملاء والخطوات التالية من مساحة عمل واحدة أنيقة.",
           filtersDescription:
             "فلاتر سريعة للبحث والحالة والعميل ونطاق التاريخ في قائمة المواعيد.",
           primaryFiltersHint:
             "استخدم الفلاتر الرئيسية لتضييق قائمة المواعيد بسرعة.",
           dateFiltersHint:
             "حدّد نطاقًا زمنيًا معيّنًا لعرض المواعيد المطابقة في القائمة.",
+          emptyTitle: "لا توجد مواعيد مطابقة لهذه الفلاتر",
+          emptyDescription:
+            "جرّب توسيع النطاق الزمني أو إزالة أحد الفلاتر.",
+          summary: {
+            total: "إجمالي المواعيد",
+            totalHint: "السجلات المطابقة للاستعلام الحالي في الجدول.",
+            visible: "الظاهرة في هذه الصفحة",
+            visibleHint: "المواعيد المعروضة حاليًا داخل الجدول.",
+            open: "تحتاج متابعة",
+            openHint:
+              "مواعيد مجدولة أو معاد جدولتها وما زالت تحتاج إلى إغلاق.",
+            filters: "الفلاتر النشطة",
+            filtersHint: "المواعيد المؤكدة في هذه الصفحة.",
+          },
         },
         calendarPage: {
           eyebrow: "تقويم المواعيد",
@@ -3121,6 +3273,9 @@ export const resources = {
         totalAppointments: "إجمالي المواعيد",
         create: "إنشاء موعد",
         backToAppointments: "العودة إلى المواعيد",
+        customerMode: "اختيار العميل",
+        useExistingCustomer: "استخدام عميل موجود",
+        createNewCustomer: "إنشاء عميل جديد",
         scheduleTitle: "جدولة موعد",
         scheduleDescription:
           "أنشئ موعدًا لعميل محتمل جديد أو اربطه بعميل محتمل موجود.",
@@ -3167,15 +3322,18 @@ export const resources = {
         scheduleSectionHint: "حدّد التاريخ والوقت والتكليف ونوع الاجتماع.",
         date: "تاريخ الموعد",
         appointmentDate: "تاريخ الموعد",
+        weddingDate: "تاريخ الزفاف",
         appointmentTime: "وقت الموعد",
         time: "الوقت",
         assignedTo: "مُسند إلى",
         assignedUser: "المستخدم المسؤول / المنسق",
         selectUser: "اختر المستخدم",
         unassigned: "غير مُسند",
+        type: "النوع",
         startTime: "وقت البداية",
         endTime: "وقت النهاية",
         meetingType: "نوع الاجتماع",
+        venue: "القاعة",
         selectMeetingType: "اختر نوع الاجتماع",
         statusLabel: "الحالة",
         selectStatus: "اختر الحالة",
@@ -3209,6 +3367,16 @@ export const resources = {
         cancelTitle: "إلغاء الموعد",
         cancelDescription: "أضف سبب الإلغاء وملاحظة اختيارية.",
         cancelAction: "إلغاء الموعد",
+        validation: {
+          emailInvalid: "البريد الإلكتروني غير صحيح",
+          nationalIdInvalid: "يجب أن يكون الرقم المدني 12 رقماً بالضبط",
+          guestCountInvalid: "يجب أن يكون عدد الضيوف صفراً أو أكثر",
+          appointmentDateRequired: "تاريخ الموعد مطلوب",
+          startTimeRequired: "وقت البداية مطلوب",
+          customerRequired: "العميل مطلوب",
+          fullNameRequired: "الاسم الكامل مطلوب",
+          mobileRequired: "رقم الجوال مطلوب",
+        },
         cancel: "إلغاء",
         cancelReasonPlaceholder: "أدخل سبب الإلغاء",
         rescheduleTitle: "إعادة جدولة الموعد",
@@ -3229,7 +3397,17 @@ export const resources = {
         outcome: "النتيجة",
         outcomeHint: "نتيجة الاجتماع والملاحظات والخطوة التالية.",
         guestCount: "عدد الضيوف",
+        createEvent: "إنشاء حفل",
         noNotes: "لا توجد ملاحظات مضافة.",
+        typeOptions: {
+          "New Appointment 1": "موعد جديد 1",
+          "New Appointment 2": "موعد جديد 2",
+          "New Appointment 3": "موعد جديد 3",
+          "Details Appointment 1": "موعد تفاصيل 1",
+          "Details Appointment 2": "موعد تفاصيل 2",
+          "Details Appointment 3": "موعد تفاصيل 3",
+          "Office Visit": "زيارة للمكتب",
+        },
         meetingTypeOptions: {
           office_visit: "زيارة للمكتب",
           phone_call: "اتصال هاتفي",

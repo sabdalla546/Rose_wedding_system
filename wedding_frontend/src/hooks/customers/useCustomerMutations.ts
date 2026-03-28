@@ -21,6 +21,8 @@ const buildCreateCustomerPayload = (values: CustomerFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeOptionalString(values.mobile2),
   email: normalizeOptionalString(values.email),
+  nationalId: normalizeOptionalString(values.nationalId),
+  address: normalizeOptionalString(values.address),
   notes: normalizeOptionalString(values.notes),
   status: values.status,
 });
@@ -30,6 +32,8 @@ const buildUpdateCustomerPayload = (values: CustomerFormData) => ({
   mobile: values.mobile.trim(),
   mobile2: normalizeNullableString(values.mobile2),
   email: normalizeNullableString(values.email),
+  nationalId: normalizeNullableString(values.nationalId),
+  address: normalizeNullableString(values.address),
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });

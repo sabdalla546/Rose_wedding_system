@@ -28,6 +28,9 @@ const normalizeGuestCountForUpdate = (value?: string) => {
 
 const buildCreateEventPayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
+  sourceAppointmentId: values.sourceAppointmentId
+    ? Number(values.sourceAppointmentId)
+    : null,
   eventDate: values.eventDate,
   venueId: values.venueId ? Number(values.venueId) : null,
   venueNameSnapshot: normalizeOptionalString(values.venueNameSnapshot),
@@ -41,15 +44,24 @@ const buildCreateEventPayload = (values: EventFormData) => ({
 
 const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
+  sourceAppointmentId: values.sourceAppointmentId
+    ? Number(values.sourceAppointmentId)
+    : null,
   eventDate: normalizeOptionalString(values.eventDate),
+  venueId: values.venueId ? Number(values.venueId) : null,
+  venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
+  guestCount: normalizeGuestCountForCreate(values.guestCount),
   title: normalizeNullableString(values.title),
   notes: normalizeNullableString(values.notes),
 });
 
 const buildUpdateEventPayload = (values: EventFormData) => ({
   customerId: values.customerId ? Number(values.customerId) : null,
+  sourceAppointmentId: values.sourceAppointmentId
+    ? Number(values.sourceAppointmentId)
+    : null,
   eventDate: normalizeOptionalString(values.eventDate),
   venueId: values.venueId ? Number(values.venueId) : null,
   venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
@@ -83,6 +95,7 @@ export const useCreateEvent = () => {
       navigate("/events");
     },
     onError: (error) => {
+      console.log(error);
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),
@@ -105,7 +118,10 @@ export const useCreateEventFromSource = () => {
 
   return useMutation({
     mutationFn: async (values: EventFormData) =>
-      api.post("/events/create-from-source", buildCreateEventFromSourcePayload(values)),
+      api.post(
+        "/events/create-from-source",
+        buildCreateEventFromSourcePayload(values),
+      ),
     onSuccess: () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
@@ -119,6 +135,7 @@ export const useCreateEventFromSource = () => {
       navigate("/events");
     },
     onError: (error) => {
+      console.log(error);
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),

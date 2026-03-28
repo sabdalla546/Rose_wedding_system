@@ -59,8 +59,8 @@ export default function EventsPage() {
 
   return (
     <ProtectedComponent permission="events.read">
-      <PageContainer className="space-y-6 pb-4 pt-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <PageContainer className="space-y-4 pb-4 pt-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
               {t("events.title", { defaultValue: "Events" })}
@@ -90,13 +90,13 @@ export default function EventsPage() {
         </div>
 
         {hasVisitedTable ? (
-          <div className={viewMode === "table" ? "space-y-6" : "hidden"}>
+          <div className={viewMode === "table" ? "space-y-4" : "hidden"}>
             <EventsTableView />
           </div>
         ) : null}
 
         {hasVisitedCalendar ? (
-          <div className={viewMode === "calendar" ? "space-y-6" : "hidden"}>
+          <div className={viewMode === "calendar" ? "space-y-4" : "hidden"}>
             <EventsCalendarView active={viewMode === "calendar"} />
           </div>
         ) : null}

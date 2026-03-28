@@ -59,12 +59,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-[170] grid w-full max-h-[calc(100dvh-1rem)] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-hidden rounded-[var(--radius-xl)] border p-6 shadow-luxe duration-200 sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-[170] grid w-full max-h-[calc(100dvh-1rem)] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-hidden rounded-[6px] border p-6 shadow-luxe duration-200 sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg",
           className,
         )}
         style={{
-          background: "var(--lux-panel-surface)",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--lux-panel-surface) 96%, var(--lux-gold) 4%), var(--lux-panel-surface))",
           borderColor: "var(--lux-panel-border)",
+          borderTop: "3px solid var(--lux-accent-border)",
           color: "var(--lux-text)",
         }}
         {...props}
@@ -73,7 +75,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] opacity-80 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--lux-gold-glow)] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-[4px] opacity-80 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--lux-gold-glow)] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0"
             style={{
               background: "var(--lux-control-surface)",
               border: "1px solid var(--lux-control-border)",

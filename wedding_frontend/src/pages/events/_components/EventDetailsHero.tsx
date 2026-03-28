@@ -21,6 +21,7 @@ type Props = {
   onBack: () => void;
   onEdit: () => void;
   onViewCustomer?: () => void;
+  onViewSourceAppointment?: () => void;
 };
 
 export function EventDetailsHero({
@@ -30,6 +31,7 @@ export function EventDetailsHero({
   onBack,
   onEdit,
   onViewCustomer,
+  onViewSourceAppointment,
 }: Props) {
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(true);
 
@@ -64,6 +66,16 @@ export function EventDetailsHero({
   const statusLabel = t(`events.status.${event.status}`, {
     defaultValue: event.status,
   });
+  const sourceAppointmentDateLabel = event.sourceAppointment?.appointmentDate
+    ? format(new Date(event.sourceAppointment.appointmentDate), "PPP", {
+        locale: dateLocale,
+      })
+    : "-";
+  const sourceWeddingDateLabel = event.sourceAppointment?.weddingDate
+    ? format(new Date(event.sourceAppointment.weddingDate), "PPP", {
+        locale: dateLocale,
+      })
+    : "-";
 
   return (
     <div className="space-y-5">
@@ -91,6 +103,16 @@ export function EventDetailsHero({
                 <Button variant="outline" onClick={onViewCustomer}>
                   <Link2 className="h-4 w-4" />
                   {t("events.viewCustomer", { defaultValue: "View Customer" })}
+                </Button>
+              </ProtectedComponent>
+            ) : null}
+            {event.sourceAppointmentId && onViewSourceAppointment ? (
+              <ProtectedComponent permission="appointments.read">
+                <Button variant="outline" onClick={onViewSourceAppointment}>
+                  <Link2 className="h-4 w-4" />
+                  {t("events.viewSourceAppointment", {
+                    defaultValue: "View Source Appointment",
+                  })}
                 </Button>
               </ProtectedComponent>
             ) : null}
@@ -249,6 +271,46 @@ export function EventDetailsHero({
                         />
                       </div>
                     </div>
+
+                    {event.sourceAppointmentId ? (
+                      <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4 xl:col-span-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                          {t("events.sourceAppointment", {
+                            defaultValue: "Source Appointment",
+                          })}
+                        </p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          <EventInfoBlock
+                            label={t("events.sourceAppointment", {
+                              defaultValue: "Source Appointment",
+                            })}
+                            value={`#${event.sourceAppointmentId}`}
+                            compact
+                          />
+                          <EventInfoBlock
+                            label={t("appointments.customer", {
+                              defaultValue: "Customer",
+                            })}
+                            value={event.sourceAppointment?.customer?.fullName}
+                            compact
+                          />
+                          <EventInfoBlock
+                            label={t("appointments.appointmentDate", {
+                              defaultValue: "Appointment Date",
+                            })}
+                            value={sourceAppointmentDateLabel}
+                            compact
+                          />
+                          <EventInfoBlock
+                            label={t("appointments.weddingDate", {
+                              defaultValue: "Wedding Date",
+                            })}
+                            value={sourceWeddingDateLabel}
+                            compact
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   {event.notes ? (

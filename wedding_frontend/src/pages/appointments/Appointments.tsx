@@ -76,8 +76,8 @@ export default function AppointmentsPage() {
 
   return (
     <ProtectedComponent permission="appointments.read">
-      <PageContainer className="space-y-6 pb-4 pt-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <PageContainer className="space-y-4 pb-4 pt-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
               {t("appointments.title")}
@@ -107,13 +107,13 @@ export default function AppointmentsPage() {
         </div>
 
         {hasVisitedTable ? (
-          <div className={viewMode === "table" ? "space-y-6" : "hidden"}>
+          <div className={viewMode === "table" ? "space-y-4" : "hidden"}>
             <AppointmentsTableView />
           </div>
         ) : null}
 
         {hasVisitedCalendar && hasCalendarAccess ? (
-          <div className={viewMode === "calendar" ? "space-y-6" : "hidden"}>
+          <div className={viewMode === "calendar" ? "space-y-4" : "hidden"}>
             <AppointmentsCalendarView active={viewMode === "calendar"} />
           </div>
         ) : null}

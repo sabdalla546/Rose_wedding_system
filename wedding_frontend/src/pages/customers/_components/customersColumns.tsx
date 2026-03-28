@@ -54,6 +54,19 @@ export const useCustomersColumns = ({
       ),
     },
     {
+      accessorKey: "nationalIdDisplay",
+      header: () => (
+        <div className={alignClass}>
+          {t("customers.nationalId", { defaultValue: "National ID" })}
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className={`${alignClass} font-medium`}>
+          {row.original.nationalIdDisplay}
+        </div>
+      ),
+    },
+    {
       accessorKey: "notesPreview",
       header: () => (
         <div className={alignClass}>
@@ -61,7 +74,7 @@ export const useCustomersColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className={`${alignClass} max-w-[280px] truncate`}>
+        <div className={`${alignClass} max-w-[240px] truncate`}>
           {row.original.notesPreview}
         </div>
       ),

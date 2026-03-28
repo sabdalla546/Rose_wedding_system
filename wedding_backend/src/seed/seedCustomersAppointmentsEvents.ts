@@ -101,6 +101,12 @@ const buildCustomerEmail = (index: number) =>
 const buildCustomerMobile = (index: number) =>
   `500${String(10000 + index).padStart(5, "0")}`;
 
+const buildCustomerNationalId = (index: number) =>
+  `2810${String(10000000 + index).slice(-8)}`;
+
+const buildCustomerAddress = (index: number) =>
+  `Block ${String((index % 12) + 1)}, Street ${String((index % 20) + 1)}, Building ${String((index % 30) + 1)}`;
+
 const buildCustomerName = (index: number) => {
   const familyName = familyNames[index % familyNames.length];
   return `عميل روز ${String(index + 1).padStart(2, "0")} ${familyName}`;
@@ -161,6 +167,8 @@ const seedCustomersAppointmentsEvents = async () => {
           mobile: buildCustomerMobile(index),
           mobile2: null,
           email: buildCustomerEmail(index),
+          nationalId: buildCustomerNationalId(index),
+          address: buildCustomerAddress(index),
           notes: `${SEED_NOTE_TAG} Generated customer ${index + 1}`,
           status: index % 8 === 0 ? "inactive" : "active",
           createdBy: null,

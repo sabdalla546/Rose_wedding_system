@@ -914,6 +914,11 @@ const EventDetailsPage = () => {
                     ? () => navigate(`/customers/${event.customerId}`)
                     : undefined
                 }
+                onViewSourceAppointment={
+                  event.sourceAppointmentId
+                    ? () => navigate(`/appointments/${event.sourceAppointmentId}`)
+                    : undefined
+                }
               />
 
               <EventSectionsPanel

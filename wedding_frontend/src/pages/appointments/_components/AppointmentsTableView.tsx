@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { CalendarClock, CheckCheck, Filter, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
-import {
-  CalendarFilterField,
-  CalendarFilterGroup,
-  CalendarFilterPanel,
-  CalendarFilterPill,
-} from "@/components/calendar/calendar-filter-panel";
+import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import {
+  WorkspaceFilterBar,
+  WorkspaceFilterField,
+  WorkspaceFilterPill,
+} from "@/components/shared/workspace-filter-bar";
+import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -19,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { buildAppointmentsTableSummary } from "@/features/appointments/appointment-calendar";
 import {
   useCancelAppointment,
   useCompleteAppointment,
@@ -38,10 +40,10 @@ import {
 } from "../adapters";
 
 const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[6px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 
 const filterFieldClassName =
-  "h-11 w-full rounded-xl border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
+  "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
 
 const fieldStyle = {
   background: "var(--lux-control-surface)",
@@ -50,6 +52,7 @@ const fieldStyle = {
 
 export function AppointmentsTableView() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -119,12 +122,22 @@ export function AppointmentsTableView() {
     Boolean(dateFrom),
     Boolean(dateTo),
   ].filter(Boolean).length;
+  const summaryItems = useMemo(
+    () =>
+      buildAppointmentsTableSummary(
+        appointments,
+        adapted.total,
+        activeFiltersCount,
+        t,
+      ),
+    [activeFiltersCount, adapted.total, appointments, t],
+  );
   const activeFilterPills = [
     searchTerm.trim() ? (
-      <CalendarFilterPill key="search" label={searchTerm.trim()} />
+      <WorkspaceFilterPill key="search" label={searchTerm.trim()} />
     ) : null,
     statusFilter !== "all" ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="status"
         label={t(`appointments.status.${statusFilter}`, {
           defaultValue: statusFilter,
@@ -132,7 +145,7 @@ export function AppointmentsTableView() {
       />
     ) : null,
     customerFilter ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="customer"
         label={
           customers.find((customer) => String(customer.id) === customerFilter)
@@ -141,13 +154,13 @@ export function AppointmentsTableView() {
       />
     ) : null,
     dateFrom ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-from"
         label={`${t("common.from", { defaultValue: "From" })}: ${dateFrom}`}
       />
     ) : null,
     dateTo ? (
-      <CalendarFilterPill
+      <WorkspaceFilterPill
         key="date-to"
         label={`${t("common.to", { defaultValue: "To" })}: ${dateTo}`}
       />
@@ -176,6 +189,8 @@ export function AppointmentsTableView() {
       setActionNotes(appointment.notes || "");
       setRescheduleCandidate(appointment);
     },
+    onCreateEvent: (appointment) =>
+      navigate(`/events/create?fromAppointmentId=${appointment.id}`),
     editPermission: "appointments.update",
     deletePermission: "appointments.delete",
   });
@@ -191,7 +206,28 @@ export function AppointmentsTableView() {
 
   return (
     <>
-      <CalendarFilterPanel
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryItems.map((summary) => (
+          <SummaryCard
+            key={summary.id}
+            label={summary.label}
+            value={summary.value}
+            hint={summary.hint}
+            accent={
+              summary.id === "total" ? (
+                <CalendarClock className="h-4 w-4" />
+              ) : summary.id === "open" ? (
+                <CheckCheck className="h-4 w-4" />
+              ) : (
+                <Filter className="h-4 w-4" />
+              )
+            }
+            className="workspace-summary-card"
+          />
+        ))}
+      </section>
+
+      <WorkspaceFilterBar
         title={t("common.filters")}
         description={t("appointments.tablePage.filtersDescription")}
         activeFiltersLabel={t("appointments.activeFiltersCount", {
@@ -200,17 +236,12 @@ export function AppointmentsTableView() {
         activeFiltersCount={activeFiltersCount}
         clearLabel={t("appointments.clearFilters")}
         onClear={resetFilters}
-        showLabel={t("appointments.showFilters")}
-        hideLabel={t("appointments.hideFilters")}
+        showFiltersLabel={t("appointments.showFilters")}
+        hideFiltersLabel={t("appointments.hideFilters")}
         pills={activeFilterPills.length ? activeFilterPills : undefined}
-      >
-        <CalendarFilterGroup
-          className="xl:col-span-8"
-          title={t("appointments.primaryFilters")}
-          description={t("appointments.tablePage.primaryFiltersHint")}
-        >
-          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
-            <CalendarFilterField
+        quickFilters={
+          <>
+            <WorkspaceFilterField
               label={t("appointments.calendarPage.searchLabel")}
             >
               <div className="relative">
@@ -226,11 +257,9 @@ export function AppointmentsTableView() {
                   placeholder={t("appointments.searchPlaceholder")}
                 />
               </div>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("appointments.statusLabel")}
-            >
+            <WorkspaceFilterField label={t("appointments.statusLabel")}>
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
@@ -251,11 +280,9 @@ export function AppointmentsTableView() {
                   </option>
                 ))}
               </select>
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField
-              label={t("appointments.customer")}
-            >
+            <WorkspaceFilterField label={t("appointments.customer")}>
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
@@ -270,19 +297,11 @@ export function AppointmentsTableView() {
                   <option key={customer.id} value={String(customer.id)}>
                     {customer.fullName}
                   </option>
-                ))}
+                  ))}
               </select>
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
+            </WorkspaceFilterField>
 
-        <CalendarFilterGroup
-          className="xl:col-span-4"
-          title={t("appointments.dateFilters")}
-          description={t("appointments.tablePage.dateFiltersHint")}
-        >
-          <div className="grid grid-cols-1 gap-2.5">
-            <CalendarFilterField
+            <WorkspaceFilterField
               label={t("common.from", { defaultValue: "From" })}
             >
               <Input
@@ -295,9 +314,11 @@ export function AppointmentsTableView() {
                   setCurrentPage(1);
                 }}
               />
-            </CalendarFilterField>
+            </WorkspaceFilterField>
 
-            <CalendarFilterField label={t("common.to", { defaultValue: "To" })}>
+            <WorkspaceFilterField
+              label={t("common.to", { defaultValue: "To" })}
+            >
               <Input
                 type="date"
                 className={filterFieldClassName}
@@ -308,10 +329,10 @@ export function AppointmentsTableView() {
                   setCurrentPage(1);
                 }}
               />
-            </CalendarFilterField>
-          </div>
-        </CalendarFilterGroup>
-      </CalendarFilterPanel>
+            </WorkspaceFilterField>
+          </>
+        }
+      />
 
       <DataTableShell
         title={t("appointments.listTitle")}
@@ -328,6 +349,7 @@ export function AppointmentsTableView() {
           setItemsPerPage(value);
           setCurrentPage(1);
         }}
+        className="operations-table-shell"
       >
         <DataTable
           columns={columns}
@@ -336,6 +358,13 @@ export function AppointmentsTableView() {
           enableRowNumbers
           isLoading={isLoading}
           fileName="appointments"
+          emptyTitle={t("appointments.tablePage.emptyTitle", {
+            defaultValue: "No appointments match these filters",
+          })}
+          emptyDescription={t("appointments.tablePage.emptyDescription", {
+            defaultValue:
+              "Try broadening the date window or clearing one of the filters.",
+          })}
         />
       </DataTableShell>
 
