@@ -14,10 +14,10 @@ const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[18px] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--color-text-muted)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+    <SelectPrimitive.Trigger
+      ref={ref}
+      className={cn(
+      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[var(--radius-lg)] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--color-text-muted)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     style={{
@@ -90,7 +90,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-[190] max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-[20px] border shadow-luxe backdrop-blur-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
+        "relative z-[190] max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-[var(--radius-xl)] border shadow-luxe data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className,
@@ -136,10 +136,10 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-[14px] py-2.5 pl-3 pr-8 text-sm outline-none transition-colors data-[highlighted]:bg-[var(--color-control-hover)] data-[highlighted]:text-[var(--color-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[state=checked]:bg-[color-mix(in_srgb,var(--color-primary)_12%,var(--color-surface))] data-[state=checked]:text-[var(--color-heading)]",
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-[var(--radius-md)] py-2.5 pl-3 pr-8 text-sm outline-none transition-colors data-[highlighted]:bg-[var(--color-control-hover)] data-[highlighted]:text-[var(--color-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[state=checked]:bg-[color-mix(in_srgb,var(--color-primary)_12%,var(--color-surface))] data-[state=checked]:text-[var(--color-heading)]",
       className,
     )}
     style={{ color: "var(--color-text-subtle)" }}

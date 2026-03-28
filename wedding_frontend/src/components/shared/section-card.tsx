@@ -18,7 +18,7 @@ export function SectionCard({
     <section
       className={cn(
         elevated ? 'surface-card-muted' : 'surface-card',
-        'animate-fade-in p-card md:p-6',
+        'animate-fade-in overflow-hidden p-card transition-shadow duration-200 md:p-6',
         className,
       )}
       {...props}

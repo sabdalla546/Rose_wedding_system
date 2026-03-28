@@ -147,7 +147,6 @@ const Users = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-auto px-3 py-2 text-xs"
                 onClick={handleExport}
               >
                 {t("users.export", { defaultValue: "Export" })}
@@ -156,7 +155,6 @@ const Users = () => {
               <ProtectedComponent permission={createPermission}>
                 <Button
                   size="sm"
-                  className="h-auto px-3 py-2 text-xs"
                   onClick={() => navigate("/settings/team/users/create")}
                 >
                   <FaPlus className="mr-1.5 h-3.5 w-3.5" />

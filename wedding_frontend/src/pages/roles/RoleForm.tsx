@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,17 +19,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { PageContainer } from "@/components/layout/page-container";
+import {
+  CrudActionsBar,
+  CrudFormLayout,
+  CrudFormSection,
+  CrudPageLayout,
+} from "@/components/shared/crud-layout";
 
 import { useRole } from "@/hooks/roles/useRoles";
 import { usePermissions } from "@/hooks/permissions/usePermissions";
 import { useCreateRole, useUpdateRole } from "@/hooks/roles/useRoleMutations";
 import type { Permission } from "@/pages/roles/types";
 
-type FormValues = z.infer<typeof roleSchema>;
-
-const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
-const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
+type FormValues = {
+  name: string;
+  description?: string;
+  permissionIds: number[];
+};
 
 const RoleFormPage = () => {
   const { t, i18n } = useTranslation();
@@ -64,7 +69,10 @@ const RoleFormPage = () => {
   const { data: role, isLoading: roleLoading } = useRole(id);
   const { data: permissionsRes, isLoading: permissionsLoading } =
     usePermissions();
-  const permissions = permissionsRes?.data ?? [];
+  const permissions = useMemo(
+    () => permissionsRes?.data ?? [],
+    [permissionsRes?.data],
+  );
 
   const createMutation = useCreateRole();
   const updateMutation = useUpdateRole(id);
@@ -134,80 +142,51 @@ const RoleFormPage = () => {
     <ProtectedComponent
       permission={isEditMode ? "roles.update" : "roles.create"}
     >
-      <PageContainer className="pb-4 pt-4 text-foreground">
-        <div dir={i18n.dir()} className="mx-auto w-full max-w-5xl space-y-6">
-          <button
-            type="button"
-            onClick={() => navigate("/settings/team/roles")}
-            className="inline-flex items-center gap-2 text-sm text-[var(--lux-text-secondary)] transition-colors hover:text-[var(--lux-gold)]"
-          >
-            {"<-"} {t("roles.backToRoles", { defaultValue: "Back to Roles" })}
-          </button>
-
-          <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
-            style={{
-              background: "var(--lux-panel-surface)",
-              borderColor: "var(--lux-panel-border)",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
-                style={{
-                  background: "var(--lux-control-hover)",
-                  borderColor: "var(--lux-control-border)",
-                  color: "var(--lux-gold)",
-                }}
+      <CrudPageLayout>
+        <div dir={i18n.dir()}>
+          <CrudFormLayout
+            icon={<ShieldCheck className="h-5 w-5 text-primary" />}
+            title={
+              isEditMode
+                ? t("roles.editTitle", { defaultValue: "Edit Role" })
+                : t("roles.createTitle", { defaultValue: "Create Role" })
+            }
+            description={
+              isEditMode
+                ? t("roles.editDescription", {
+                    defaultValue:
+                      "Update role details and assigned permissions.",
+                  })
+                : t("roles.createDescription", {
+                    defaultValue:
+                      "Create a new role and assign permissions.",
+                  })
+            }
+            backAction={
+              <button
+                type="button"
+                onClick={() => navigate("/settings/team/roles")}
+                className="crud-header-back"
               >
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-
-              <div className="space-y-1">
-                <h1 className="text-xl font-bold text-[var(--lux-heading)]">
-                  {isEditMode
-                    ? t("roles.editTitle", { defaultValue: "Edit Role" })
-                    : t("roles.createTitle", { defaultValue: "Create Role" })}
-                </h1>
-                <p className="text-sm text-[var(--lux-text-secondary)]">
-                  {isEditMode
-                    ? t("roles.editDescription", {
-                        defaultValue:
-                          "Update role details and assigned permissions.",
-                      })
-                    : t("roles.createDescription", {
-                        defaultValue:
-                          "Create a new role and assign permissions.",
-                      })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Card className="overflow-hidden rounded-[24px]">
+                <span aria-hidden="true">{"<-"}</span>
+                {t("roles.backToRoles", { defaultValue: "Back to Roles" })}
+              </button>
+            }
+          >
             <div className="p-6 md:p-8">
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-8"
                 >
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("roles.basicInformation", {
-                          defaultValue: "Basic Information",
-                        })}
-                      </h2>
-                      <p className={sectionHintClass}>
-                        {t("roles.basicInformationHint", {
-                          defaultValue: "Enter the main role information.",
-                        })}
-                      </p>
-                    </div>
-
+                  <CrudFormSection
+                    title={t("roles.basicInformation", {
+                      defaultValue: "Basic Information",
+                    })}
+                    description={t("roles.basicInformationHint", {
+                      defaultValue: "Enter the main role information.",
+                    })}
+                  >
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -253,26 +232,17 @@ const RoleFormPage = () => {
                         )}
                       />
                     </div>
-                  </section>
+                  </CrudFormSection>
 
-                  <section className="space-y-4">
-                    <div
-                      className="border-b pb-3"
-                      style={{ borderColor: "var(--lux-row-border)" }}
-                    >
-                      <h2 className={sectionTitleClass}>
-                        {t("roles.permissions", {
-                          defaultValue: "Permissions",
-                        })}
-                      </h2>
-                      <p className={sectionHintClass}>
-                        {t("roles.permissionsHint", {
-                          defaultValue:
-                            "Assign one or more permissions to this role.",
-                        })}
-                      </p>
-                    </div>
-
+                  <CrudFormSection
+                    title={t("roles.permissions", {
+                      defaultValue: "Permissions",
+                    })}
+                    description={t("roles.permissionsHint", {
+                      defaultValue:
+                        "Assign one or more permissions to this role.",
+                    })}
+                  >
                     <FormField
                       control={form.control}
                       name="permissionIds"
@@ -308,23 +278,13 @@ const RoleFormPage = () => {
                                 )}
                               />
 
-                              <div
-                                className="space-y-3 rounded-[20px] border p-4"
-                                style={{
-                                  background: "var(--lux-control-hover)",
-                                  borderColor: "var(--lux-row-border)",
-                                }}
-                              >
+                              <div className="form-selection-panel">
                                 {filteredPermissions.length ? (
                                   filteredPermissions.map(
                                     (permission: Permission) => (
                                       <label
                                         key={permission.id}
-                                        className="flex cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-3 transition-colors"
-                                        style={{
-                                          background: "var(--lux-row-surface)",
-                                          borderColor: "var(--lux-row-border)",
-                                        }}
+                                        className="form-selection-item"
                                       >
                                         <Checkbox
                                           checked={selected.includes(
@@ -367,12 +327,9 @@ const RoleFormPage = () => {
                         );
                       }}
                     />
-                  </section>
+                  </CrudFormSection>
 
-                  <div
-                    className="flex flex-col justify-end gap-3 pt-6 sm:flex-row"
-                    style={{ borderTop: "1px solid var(--lux-row-border)" }}
-                  >
+                  <CrudActionsBar>
                     <Button
                       type="button"
                       variant="outline"
@@ -391,13 +348,13 @@ const RoleFormPage = () => {
                           ? t("common.update", { defaultValue: "Update" })
                           : t("common.create", { defaultValue: "Create" })}
                     </Button>
-                  </div>
+                  </CrudActionsBar>
                 </form>
               </Form>
             </div>
-          </Card>
+          </CrudFormLayout>
         </div>
-      </PageContainer>
+      </CrudPageLayout>
     </ProtectedComponent>
   );
 };

@@ -14,12 +14,8 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-[4px] border"
+      className="relative w-full overflow-x-auto"
       dir={direction}
-      style={{
-        borderColor: "var(--color-border)",
-        background: "var(--color-surface)",
-      }}
     >
       <table
         data-slot="table"
@@ -36,10 +32,9 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn("table-grid__header [&_tr]:border-b", className)}
       style={{
         borderColor: "var(--color-border)",
-        background: "var(--color-surface-2)",
       }}
       {...props}
     />
@@ -88,14 +83,13 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-12 whitespace-nowrap px-4 align-middle text-xs font-semibold break-normal",
+        "h-12 whitespace-nowrap px-4 py-3 align-middle text-xs font-semibold break-normal",
         direction === "rtl" ? "tracking-normal" : "uppercase tracking-[0.18em]",
         direction === "rtl" ? "text-right" : "text-left",
         className
       )}
       style={{
         color: "var(--color-text-muted)",
-        background: "var(--color-surface-2)",
       }}
       {...props}
     />

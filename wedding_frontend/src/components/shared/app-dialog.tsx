@@ -83,7 +83,7 @@ export function AppDialogBody({
   children,
   className,
 }: AppDialogSectionProps) {
-  return <div className={cn("dialog-body", className)}>{children}</div>;
+  return <div className={cn("dialog-body dialog-form-grid", className)}>{children}</div>;
 }
 
 export function AppDialogFooter({
@@ -113,7 +113,7 @@ export function ConfirmActionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogShell size="sm">
         <AppDialogHeader title={title} description={description} />
-        {children ? <AppDialogBody>{children}</AppDialogBody> : null}
+        {children ? <AppDialogBody className="pb-0">{children}</AppDialogBody> : null}
         <AppDialogFooter>
           <Button
             type="button"

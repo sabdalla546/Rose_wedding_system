@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { PackageOpen } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -67,7 +67,7 @@ const ServiceFormPage = () => {
   const updateMutation = useUpdateService(id);
 
   const form = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceSchema) as any,
+    resolver: zodResolver(serviceSchema),
     defaultValues: {
       name: "",
       code: "",
@@ -104,6 +104,7 @@ const ServiceFormPage = () => {
 
   const isBusy =
     serviceLoading || createMutation.isPending || updateMutation.isPending;
+  const isActive = useWatch({ control: form.control, name: "isActive" });
 
   if (serviceLoading) {
     return (
@@ -275,14 +276,10 @@ const ServiceFormPage = () => {
                     })}
                   >
                     <label
-                      className="flex items-center gap-3 rounded-[20px] border p-4"
-                      style={{
-                        background: "var(--lux-control-hover)",
-                        borderColor: "var(--lux-row-border)",
-                      }}
+                      className="form-status-card"
                     >
                       <Checkbox
-                        checked={form.watch("isActive")}
+                        checked={isActive}
                         onCheckedChange={(checked: CheckedState) =>
                           form.setValue("isActive", Boolean(checked), {
                             shouldDirty: true,

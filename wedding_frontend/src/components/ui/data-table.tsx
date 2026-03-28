@@ -69,22 +69,22 @@ export function DataTable<TData, TValue>({
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className="w-full overflow-x-auto">
-      <Table className="min-w-full">
+      <Table className="table-grid min-w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead
-                  className="group px-4 py-3"
+                  className="group border-b border-[var(--color-border)] px-4 py-3"
                   key={header.id}
                 >
                   {header.isPlaceholder ? null : (
                     <button
                       className={cn(
-                        "flex w-full items-center gap-2 whitespace-nowrap",
+                        "flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-1 py-0.5 transition-colors",
                         isRtl ? "flex-row-reverse justify-end" : "justify-start",
                         header.column.getCanSort()
-                          ? "cursor-pointer select-none"
+                          ? "cursor-pointer select-none hover:text-[var(--color-heading)]"
                           : "cursor-default"
                       )}
                       disabled={!header.column.getCanSort()}
@@ -102,7 +102,7 @@ export function DataTable<TData, TValue>({
                           className={cn(
                             "h-4 w-4 transition-opacity",
                             header.column.getIsSorted()
-                              ? "opacity-100 text-[var(--lux-gold)]"
+                              ? "opacity-100 text-[var(--color-primary)]"
                               : "opacity-45 group-hover:opacity-100"
                           )}
                         />
@@ -132,15 +132,10 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row, index) => (
               <TableRow
                 key={row.id}
-                className="hover:bg-[var(--color-surface-2)]"
-                style={
-                  index % 2 === 0
-                    ? undefined
-                    : {
-                        background:
-                          "color-mix(in srgb, var(--color-surface-2) 72%, transparent)",
-                      }
-                }
+                className={cn(
+                  "table-grid__row",
+                  index % 2 !== 0 && "table-grid__row--alt",
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>

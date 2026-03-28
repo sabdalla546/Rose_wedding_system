@@ -20,7 +20,7 @@ export function SummaryCard({
   children,
 }: SummaryCardProps) {
   return (
-    <SectionCard className={cn("space-y-3", className)} elevated>
+    <SectionCard className={cn("dashboard-summary-card space-y-3", className)} elevated>
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">

@@ -1,25 +1,21 @@
-import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Filter,
-  Plus,
-  RotateCcw,
-} from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { FileText, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import {
+  CalendarFilterField,
+  CalendarFilterGroup,
+  CalendarFilterPanel,
+  CalendarFilterPill,
+} from "@/components/calendar/calendar-filter-panel";
 import CompactHeader from "@/components/common/CompactHeader";
-import TableHeader from "@/components/common/TableHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
-import Pagination from "@/components/ui/pagination";
 import {
   SearchableSelect,
   SearchableSelectEmpty,
@@ -58,7 +54,6 @@ const ContractsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [quotationSearch, setQuotationSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
   const [quotationFilter, setQuotationFilter] = useState("");
@@ -144,6 +139,7 @@ const ContractsPage = () => {
     editPermission,
     deletePermission,
   });
+
   const activeFiltersCount = [
     Boolean(quotationFilter),
     Boolean(eventFilter),
@@ -151,6 +147,59 @@ const ContractsPage = () => {
     Boolean(signedDateFrom),
     Boolean(signedDateTo),
   ].filter(Boolean).length;
+
+  const activeFilterPills = [
+    quotationFilter ? (
+      <CalendarFilterPill
+        key="quotation"
+        label={
+          quotations.find((quotation) => String(quotation.id) === quotationFilter)
+            ? getQuotationDisplayNumber(
+                quotations.find(
+                  (quotation) => String(quotation.id) === quotationFilter,
+                )!,
+              )
+            : quotationFilter
+        }
+      />
+    ) : null,
+    eventFilter ? (
+      <CalendarFilterPill
+        key="event"
+        label={
+          events.find((event) => String(event.id) === eventFilter)
+            ? getEventDisplayTitle(
+                events.find((event) => String(event.id) === eventFilter)!,
+              )
+            : eventFilter
+        }
+      />
+    ) : null,
+    statusFilter !== "all" ? (
+      <CalendarFilterPill
+        key="status"
+        label={t(`contracts.status.${statusFilter}`, {
+          defaultValue: statusFilter,
+        })}
+      />
+    ) : null,
+    signedDateFrom ? (
+      <CalendarFilterPill
+        key="signed-date-from"
+        label={`${t("contracts.signedDateFrom", {
+          defaultValue: "Signed Date From",
+        })}: ${signedDateFrom}`}
+      />
+    ) : null,
+    signedDateTo ? (
+      <CalendarFilterPill
+        key="signed-date-to"
+        label={`${t("contracts.signedDateTo", {
+          defaultValue: "Signed Date To",
+        })}: ${signedDateTo}`}
+      />
+    ) : null,
+  ].filter(Boolean);
 
   const handleSearchSubmit = () => {
     setSearchQuery(searchTerm.trim());
@@ -218,376 +267,233 @@ const ContractsPage = () => {
           }
         />
 
-        <SectionCard className="overflow-hidden">
-          <div className="space-y-3">
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-[var(--lux-gold)]">
-                    <Filter className="h-3.5 w-3.5" />
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">
-                      {t("common.filters", { defaultValue: "Filters" })}
-                    </p>
-                  </div>
-                  <p className="max-w-2xl text-xs leading-5 text-[var(--lux-text-secondary)]">
-                    {t("contracts.filtersHint", {
-                      defaultValue: isArabic
-                        ? "صفِّ قائمة العقود حسب عرض السعر والحفل والعميل والعميل المحتمل والحالة وتاريخ التوقيع."
-                        : "Refine the contracts list by quotation, event, status, and signed date.",
-                    })}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                  <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] px-2.5 py-1 text-[11px] font-semibold text-[var(--lux-text)]">
-                    {t("contracts.activeFiltersCount", {
-                      count: activeFiltersCount,
-                      defaultValue:
-                        activeFiltersCount === 1
-                          ? isArabic
-                            ? "فلتر نشط واحد"
-                            : "1 active filter"
-                          : isArabic
-                            ? `${activeFiltersCount} فلاتر نشطة`
-                            : `${activeFiltersCount} active filters`,
-                    })}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-9 rounded-xl px-2.5 text-[12px]"
-                    disabled={activeFiltersCount === 0}
-                    onClick={resetFilters}
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    {t("contracts.clearFilters", {
-                      defaultValue: isArabic ? "مسح الفلاتر" : "Clear Filters",
-                    })}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 rounded-xl px-2.5 text-[12px]"
-                    onClick={() => setFiltersOpen((current) => !current)}
-                  >
-                    {filtersOpen ? (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    )}
-                    {filtersOpen
-                      ? t("contracts.hideFilters", {
-                          defaultValue: isArabic ? "إخفاء الفلاتر" : "Hide Filters",
-                        })
-                      : t("contracts.showFilters", {
-                          defaultValue: isArabic ? "عرض الفلاتر" : "Show Filters",
-                        })}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {activeFiltersCount > 0 ? (
-              <div
-                className="flex min-h-[28px] flex-wrap items-center gap-1.5 border-t pt-3"
-                style={{ borderColor: "var(--lux-row-border)" }}
-              >
-                {quotationFilter ? (
-                  <FilterPill
-                    label={
-                      quotations.find(
-                        (quotation) => String(quotation.id) === quotationFilter,
-                      )
-                        ? getQuotationDisplayNumber(
-                            quotations.find(
-                              (quotation) =>
-                                String(quotation.id) === quotationFilter,
-                            )!,
-                          )
-                        : quotationFilter
-                    }
-                  />
-                ) : null}
-                {eventFilter ? (
-                  <FilterPill
-                    label={
-                      events.find((event) => String(event.id) === eventFilter)
-                        ? getEventDisplayTitle(
-                            events.find((event) => String(event.id) === eventFilter)!,
-                          )
-                        : eventFilter
-                    }
-                  />
-                ) : null}
-                {statusFilter !== "all" ? (
-                  <FilterPill
-                    label={t(`contracts.status.${statusFilter}`, {
-                      defaultValue: statusFilter,
-                    })}
-                  />
-                ) : null}
-                {signedDateFrom ? (
-                  <FilterPill
-                    label={`${t("contracts.signedDateFrom", {
-                      defaultValue: "Signed Date From",
-                    })}: ${signedDateFrom}`}
-                  />
-                ) : null}
-                {signedDateTo ? (
-                  <FilterPill
-                    label={`${t("contracts.signedDateTo", {
-                      defaultValue: "Signed Date To",
-                    })}: ${signedDateTo}`}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <AnimatePresence initial={false}>
-            {filtersOpen ? (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <div
-                  className="mt-4 grid gap-3 border-t pt-4 xl:grid-cols-12"
-                  style={{ borderColor: "var(--lux-row-border)" }}
-                >
-                  <div
-                    className="space-y-3 rounded-2xl border p-3 xl:col-span-8"
-                    style={{
-                      borderColor: "var(--lux-row-border)",
-                      background: "var(--lux-control-hover)",
-                    }}
-                  >
-                    <FilterGroupTitle
-                      title={t("contracts.primaryFilters", {
-                        defaultValue: isArabic ? "الفلاتر الأساسية" : "Primary Filters",
-                      })}
-                      description={t("contracts.primaryFiltersHint", {
-                        defaultValue: isArabic
-                          ? "استخدم الفلاتر الأساسية للوصول السريع إلى العقود المطلوبة."
-                          : "Use the main filters to narrow the contracts list quickly.",
-                      })}
-                    />
-                    <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
-                      <FilterField
-                        label={t("contracts.quotation", {
-                          defaultValue: "Quotation",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={quotationFilter}
-                          onValueChange={(value) => {
-                            setQuotationFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setQuotationSearch}
-                          placeholder={t("contracts.allQuotations", {
-                            defaultValue: "All Quotations",
-                          })}
-                          searchPlaceholder={t("contracts.searchQuotations", {
-                            defaultValue: isArabic
-                              ? "ابحث عن عرض سعر..."
-                              : "Search quotations...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredQuotations.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredQuotations.map((quotation) => (
-                              <SearchableSelectItem
-                                key={quotation.id}
-                                value={String(quotation.id)}
-                              >
-                                {getQuotationDisplayNumber(quotation)}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("contracts.event", {
-                          defaultValue: "Event",
-                        })}
-                      >
-                        <SearchableFilterSelect
-                          value={eventFilter}
-                          onValueChange={(value) => {
-                            setEventFilter(value);
-                            setCurrentPage(1);
-                          }}
-                          onSearch={setEventSearch}
-                          placeholder={t("contracts.allEvents", {
-                            defaultValue: "All Events",
-                          })}
-                          searchPlaceholder={t("contracts.searchEvents", {
-                            defaultValue: isArabic ? "ابحث عن حفل..." : "Search events...",
-                          })}
-                          emptyMessage={t("common.noResultsTitle", {
-                            defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                          })}
-                        >
-                          {filteredEvents.length === 0 ? (
-                            <SearchableSelectEmpty
-                              message={t("common.noResultsTitle", {
-                                defaultValue: isArabic ? "لا توجد نتائج" : "No results found",
-                              })}
-                            />
-                          ) : (
-                            filteredEvents.map((event) => (
-                              <SearchableSelectItem
-                                key={event.id}
-                                value={String(event.id)}
-                              >
-                                {getEventDisplayTitle(event)}
-                              </SearchableSelectItem>
-                            ))
-                          )}
-                        </SearchableFilterSelect>
-                      </FilterField>
-
-                      <FilterField
-                        label={t("contracts.statusLabel", {
-                          defaultValue: "Status",
-                        })}
-                      >
-                        <select
-                          className={filterFieldClassName}
-                          style={fieldStyle}
-                          value={statusFilter}
-                          onChange={(event) => {
-                            setStatusFilter(
-                              event.target.value as "all" | ContractStatus,
-                            );
-                            setCurrentPage(1);
-                          }}
-                        >
-                          <option value="all">
-                            {t("contracts.allStatuses", {
-                              defaultValue: "All Statuses",
-                            })}
-                          </option>
-                          {CONTRACT_STATUS_OPTIONS.map((status) => (
-                            <option key={status.value} value={status.value}>
-                              {t(`contracts.status.${status.value}`, {
-                                defaultValue: status.label,
-                              })}
-                            </option>
-                          ))}
-                        </select>
-                      </FilterField>
-                    </div>
-                  </div>
-
-                  <div
-                    className="space-y-3 rounded-2xl border p-3 xl:col-span-4"
-                    style={{
-                      borderColor: "var(--lux-row-border)",
-                      background: "var(--lux-control-hover)",
-                    }}
-                  >
-                    <FilterGroupTitle
-                      title={t("contracts.dateFilters", {
-                        defaultValue: isArabic ? "نطاق التاريخ" : "Date Range",
-                      })}
-                      description={t("contracts.dateFiltersHint", {
-                        defaultValue: isArabic
-                          ? "حدّد نطاق تاريخ التوقيع لعرض العقود المطابقة."
-                          : "Limit the list to contracts within a signed date range.",
-                      })}
-                    />
-                    <div className="grid grid-cols-1 gap-2.5">
-                      <FilterField
-                        label={t("contracts.signedDateFrom", {
-                          defaultValue: "Signed Date From",
-                        })}
-                      >
-                        <Input
-                          type="date"
-                          className="h-10 rounded-xl text-[13px]"
-                          value={signedDateFrom}
-                          onChange={(event) => {
-                            setSignedDateFrom(event.target.value);
-                            setCurrentPage(1);
-                          }}
-                        />
-                      </FilterField>
-
-                      <FilterField
-                        label={t("contracts.signedDateTo", {
-                          defaultValue: "Signed Date To",
-                        })}
-                      >
-                        <Input
-                          type="date"
-                          className="h-10 rounded-xl text-[13px]"
-                          value={signedDateTo}
-                          onChange={(event) => {
-                            setSignedDateTo(event.target.value);
-                            setCurrentPage(1);
-                          }}
-                        />
-                      </FilterField>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </SectionCard>
-
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <TableHeader
-            title={t("contracts.listTitle", {
-              defaultValue: "Contracts List",
+        <CalendarFilterPanel
+          title={t("common.filters", { defaultValue: "Filters" })}
+          description={t("contracts.filtersHint", {
+            defaultValue: isArabic
+              ? "ØµÙÙ‘Ù Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¹Ù‚ÙˆØ¯ Ø­Ø³Ø¨ Ø¹Ø±Ø¶ Ø§Ù„Ø³Ø¹Ø± ÙˆØ§Ù„Ø­ÙÙ„ ÙˆØ§Ù„Ø­Ø§Ù„Ø© ÙˆØªØ§Ø±ÙŠØ® Ø§Ù„ØªÙˆÙ‚ÙŠØ¹."
+              : "Refine the contracts list by quotation, event, status, and signed date.",
+          })}
+          activeFiltersLabel={t("contracts.activeFiltersCount", {
+            count: activeFiltersCount,
+            defaultValue:
+              activeFiltersCount === 1
+                ? "1 active filter"
+                : `${activeFiltersCount} active filters`,
+          })}
+          activeFiltersCount={activeFiltersCount}
+          clearLabel={t("contracts.clearFilters", {
+            defaultValue: "Clear Filters",
+          })}
+          onClear={resetFilters}
+          showLabel={t("contracts.showFilters", {
+            defaultValue: "Show Filters",
+          })}
+          hideLabel={t("contracts.hideFilters", {
+            defaultValue: "Hide Filters",
+          })}
+          pills={activeFilterPills.length ? activeFilterPills : undefined}
+        >
+          <CalendarFilterGroup
+            className="xl:col-span-8"
+            title={t("contracts.primaryFilters", {
+              defaultValue: "Primary Filters",
             })}
-            totalItems={totalItems}
-            currentCount={contracts.length}
-            entityName={t("contracts.title", { defaultValue: "Contracts" })}
-            itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
-            setCurrentPage={setCurrentPage}
-          />
+            description={t("contracts.primaryFiltersHint", {
+              defaultValue:
+                "Use the main filters to narrow the contracts list quickly.",
+            })}
+          >
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-2">
+              <CalendarFilterField
+                label={t("contracts.quotation", {
+                  defaultValue: "Quotation",
+                })}
+              >
+                <SearchableFilterSelect
+                  value={quotationFilter}
+                  onValueChange={(value) => {
+                    setQuotationFilter(value);
+                    setCurrentPage(1);
+                  }}
+                  onSearch={setQuotationSearch}
+                  placeholder={t("contracts.allQuotations", {
+                    defaultValue: "All Quotations",
+                  })}
+                  searchPlaceholder={t("contracts.searchQuotations", {
+                    defaultValue: isArabic
+                      ? "Ø§Ø¨Ø­Ø« Ø¹Ù† Ø¹Ø±Ø¶ Ø³Ø¹Ø±..."
+                      : "Search quotations...",
+                  })}
+                  emptyMessage={t("common.noResultsTitle", {
+                    defaultValue: "No results found",
+                  })}
+                >
+                  {filteredQuotations.length === 0 ? (
+                    <SearchableSelectEmpty
+                      message={t("common.noResultsTitle", {
+                        defaultValue: "No results found",
+                      })}
+                    />
+                  ) : (
+                    filteredQuotations.map((quotation) => (
+                      <SearchableSelectItem
+                        key={quotation.id}
+                        value={String(quotation.id)}
+                      >
+                        {getQuotationDisplayNumber(quotation)}
+                      </SearchableSelectItem>
+                    ))
+                  )}
+                </SearchableFilterSelect>
+              </CalendarFilterField>
 
-          <div className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={contracts}
-              rowNumberStart={rowNumberStart}
-              enableRowNumbers
-              fileName="contracts"
-              isLoading={isLoading}
-            />
-          </div>
+              <CalendarFilterField
+                label={t("contracts.event", {
+                  defaultValue: "Event",
+                })}
+              >
+                <SearchableFilterSelect
+                  value={eventFilter}
+                  onValueChange={(value) => {
+                    setEventFilter(value);
+                    setCurrentPage(1);
+                  }}
+                  onSearch={setEventSearch}
+                  placeholder={t("contracts.allEvents", {
+                    defaultValue: "All Events",
+                  })}
+                  searchPlaceholder={t("contracts.searchEvents", {
+                    defaultValue: isArabic
+                      ? "Ø§Ø¨Ø­Ø« Ø¹Ù† Ø­ÙÙ„..."
+                      : "Search events...",
+                  })}
+                  emptyMessage={t("common.noResultsTitle", {
+                    defaultValue: "No results found",
+                  })}
+                >
+                  {filteredEvents.length === 0 ? (
+                    <SearchableSelectEmpty
+                      message={t("common.noResultsTitle", {
+                        defaultValue: "No results found",
+                      })}
+                    />
+                  ) : (
+                    filteredEvents.map((event) => (
+                      <SearchableSelectItem key={event.id} value={String(event.id)}>
+                        {getEventDisplayTitle(event)}
+                      </SearchableSelectItem>
+                    ))
+                  )}
+                </SearchableFilterSelect>
+              </CalendarFilterField>
 
-          {totalPages > 1 ? (
-            <div className="border-t border-border bg-muted/40 px-6 py-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
+              <CalendarFilterField
+                label={t("contracts.statusLabel", {
+                  defaultValue: "Status",
+                })}
+              >
+                <select
+                  className={filterFieldClassName}
+                  style={fieldStyle}
+                  value={statusFilter}
+                  onChange={(event) => {
+                    setStatusFilter(
+                      event.target.value as "all" | ContractStatus,
+                    );
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="all">
+                    {t("contracts.allStatuses", {
+                      defaultValue: "All Statuses",
+                    })}
+                  </option>
+                  {CONTRACT_STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {t(`contracts.status.${status.value}`, {
+                        defaultValue: status.label,
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </CalendarFilterField>
             </div>
-          ) : null}
-        </div>
+          </CalendarFilterGroup>
+
+          <CalendarFilterGroup
+            className="xl:col-span-4"
+            title={t("contracts.dateFilters", {
+              defaultValue: "Date Range",
+            })}
+            description={t("contracts.dateFiltersHint", {
+              defaultValue:
+                "Limit the list to contracts within a signed date range.",
+            })}
+          >
+            <div className="grid grid-cols-1 gap-2.5">
+              <CalendarFilterField
+                label={t("contracts.signedDateFrom", {
+                  defaultValue: "Signed Date From",
+                })}
+              >
+                <Input
+                  type="date"
+                  className="h-10 rounded-xl text-[13px]"
+                  value={signedDateFrom}
+                  onChange={(event) => {
+                    setSignedDateFrom(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </CalendarFilterField>
+
+              <CalendarFilterField
+                label={t("contracts.signedDateTo", {
+                  defaultValue: "Signed Date To",
+                })}
+              >
+                <Input
+                  type="date"
+                  className="h-10 rounded-xl text-[13px]"
+                  value={signedDateTo}
+                  onChange={(event) => {
+                    setSignedDateTo(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </CalendarFilterField>
+            </div>
+          </CalendarFilterGroup>
+        </CalendarFilterPanel>
+
+        <DataTableShell
+          title={t("contracts.listTitle", {
+            defaultValue: "Contracts List",
+          })}
+          totalItems={totalItems}
+          currentCount={contracts.length}
+          entityName={t("contracts.title", { defaultValue: "Contracts" })}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+        >
+          <DataTable
+            columns={columns}
+            data={contracts}
+            rowNumberStart={rowNumberStart}
+            enableRowNumbers
+            fileName="contracts"
+            isLoading={isLoading}
+          />
+        </DataTableShell>
 
         <ConfirmDialog
           open={deleteCandidate !== null}
@@ -608,50 +514,6 @@ const ContractsPage = () => {
   );
 };
 
-function FilterGroupTitle({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-gold)]">
-        {title}
-      </p>
-      <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="space-y-2">
-      <span className="text-[11px] font-medium text-[var(--lux-text-muted)]">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function FilterPill({ label }: { label: string }) {
-  return (
-    <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel)] px-2.5 py-1 text-[11px] text-[var(--lux-text-secondary)]">
-      {label}
-    </span>
-  );
-}
-
 function SearchableFilterSelect({
   value,
   onValueChange,
@@ -667,7 +529,7 @@ function SearchableFilterSelect({
   placeholder: string;
   searchPlaceholder: string;
   emptyMessage: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <SearchableSelect

@@ -51,7 +51,7 @@ export function DataTableShell({
   );
 
   return (
-    <div className={cn("table-shell", className)} style={{ borderRadius: "4px" }}>
+    <div className={cn("table-shell", className)}>
       <TableHeader
         title={title}
         totalItems={totalItems}

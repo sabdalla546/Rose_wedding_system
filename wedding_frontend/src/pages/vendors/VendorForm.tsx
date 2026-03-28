@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Handshake } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -71,7 +71,7 @@ const VendorFormPage = () => {
   const updateMutation = useUpdateVendor(id);
 
   const form = useForm<VendorFormValues>({
-    resolver: zodResolver(vendorSchema) as any,
+    resolver: zodResolver(vendorSchema),
     defaultValues: {
       name: "",
       type: "other",
@@ -116,6 +116,7 @@ const VendorFormPage = () => {
 
   const isBusy =
     vendorLoading || createMutation.isPending || updateMutation.isPending;
+  const isActive = useWatch({ control: form.control, name: "isActive" });
 
   if (vendorLoading) {
     return (
@@ -361,14 +362,10 @@ const VendorFormPage = () => {
                     })}
                   >
                     <label
-                      className="flex items-center gap-3 rounded-[20px] border p-4"
-                      style={{
-                        background: "var(--lux-control-hover)",
-                        borderColor: "var(--lux-row-border)",
-                      }}
+                      className="form-status-card"
                     >
                       <Checkbox
-                        checked={form.watch("isActive")}
+                        checked={isActive}
                         onCheckedChange={(checked: CheckedState) =>
                           form.setValue("isActive", Boolean(checked), {
                             shouldDirty: true,

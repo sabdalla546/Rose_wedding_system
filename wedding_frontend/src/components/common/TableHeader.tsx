@@ -29,7 +29,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 
   return (
     <div
-      className="border-b px-6 py-4"
+      className="table-shell__header border-b px-6 py-4"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-panel-border)",

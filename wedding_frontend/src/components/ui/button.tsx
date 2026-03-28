@@ -5,7 +5,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lux-gold-glow)] disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -63,12 +63,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               background: 'var(--lux-control-surface)',
               borderColor: 'var(--lux-control-border)',
               color: 'var(--lux-text)',
+              boxShadow: 'var(--lux-inset-highlight)',
             }
           : resolvedVariant === 'outline'
             ? {
-                background: 'var(--lux-control-hover)',
-                borderColor: 'var(--lux-gold-border)',
+                background: 'var(--lux-panel-surface)',
+                borderColor: 'var(--lux-control-border)',
                 color: 'var(--lux-text)',
+                boxShadow: 'var(--lux-inset-highlight)',
               }
             : resolvedVariant === 'link'
               ? {

@@ -111,7 +111,6 @@ const RolesPage = () => {
             <ProtectedComponent permission={createPermission}>
               <Button
                 size="sm"
-                className="h-auto px-3 py-2 text-xs"
                 onClick={() => navigate("/settings/team/roles/create")}
               >
                 <FaPlus className="mr-1.5 h-3.5 w-3.5" />

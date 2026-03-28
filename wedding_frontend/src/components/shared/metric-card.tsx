@@ -31,7 +31,10 @@ export function MetricCard({
   loading = false,
 }: MetricCardProps) {
   return (
-    <SectionCard className={cn("overflow-hidden", className)} elevated>
+    <SectionCard
+      className={cn("dashboard-metric-card overflow-hidden", className)}
+      elevated
+    >
       {loading ? (
         <div className="flex min-h-[144px] items-center justify-center">
           <div className="app-icon-chip h-12 w-12 rounded-full">

@@ -74,7 +74,7 @@ export function AppHeader({
   return (
     <header
       className={cn(
-        "fixed z-[120] overflow-hidden transition-[left,right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,right]",
+        "app-shell-header fixed z-[120] overflow-hidden transition-[left,right] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,right]",
         theme === "light" ? "backdrop-blur-0" : "backdrop-blur-xl",
       )}
       style={{
@@ -84,7 +84,12 @@ export function AppHeader({
       }}
     >
       <div
-        className="flex w-full items-center gap-2 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.08)] md:px-4"
+        className={cn(
+          "app-shell-header__bar flex w-full items-center gap-2 px-3 py-2 md:px-4",
+          theme === "light"
+            ? "shadow-[0_8px_24px_rgba(31,45,61,0.08)]"
+            : "shadow-[0_12px_30px_rgba(0,0,0,0.08)]",
+        )}
         style={{
           background: "var(--lux-shell-chrome-elevated)",
           color: "var(--lux-shell-chrome-text)",
@@ -114,7 +119,10 @@ export function AppHeader({
           <SearchInput
             className="mx-auto max-w-[640px]"
             iconClassName="h-3.5 w-3.5 text-[var(--lux-shell-chrome-muted)]"
-            inputClassName="h-9 rounded-[16px] border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] pl-10 text-sm text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]"
+            inputClassName={cn(
+              "h-9 rounded-[16px] border-[var(--lux-shell-chrome-control-border)] bg-[var(--lux-shell-chrome-control)] pl-10 text-sm text-[var(--lux-shell-chrome-text)] placeholder:text-[var(--lux-shell-chrome-muted)]",
+              theme === "light" && "shadow-none",
+            )}
           />
         </div>
 

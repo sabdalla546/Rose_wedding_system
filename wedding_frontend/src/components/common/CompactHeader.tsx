@@ -47,12 +47,12 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
       actions={right}
       className={cn(
         // Make the shared `PageHeader` visually more compact in dense pages.
-        "!rounded-[4px] !p-2 md:!p-2.5",
+        "!rounded-[var(--radius-xl)] !p-3 md:!p-4",
         // Normalize control heights inside the header (search, selects, buttons).
-        "[&_input]:!h-9",
-        "[&_button]:!h-9",
+        "[&_input]:!h-10",
+        "[&_button]:!h-10",
         "[&_button]:!items-center [&_button]:!justify-center",
-        "[&_button]:!px-3 [&_button]:!text-[13px]",
+        "[&_button]:!px-4 [&_button]:!text-[13px]",
         // Let the header search area breathe on wide screens.
         // PageHeader wraps (search/actions) in `lg:w-auto lg:max-w-[36rem] lg:shrink-0`.
         // We override it so the search row can grow and take more horizontal space.
@@ -60,21 +60,21 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
         "[&_.lg\\:w-auto]:lg:!w-full",
         "[&_.lg\\:shrink-0]:lg:!shrink",
         "[&_.lg\\:items-end]:lg:!items-stretch",
-        // Force 4px radius across the header's common interactive surfaces.
-        "[&_.app-icon-chip]:h-8 [&_.app-icon-chip]:w-8 [&_.app-icon-chip]:!rounded-[4px]",
+        // Keep a compact but modern radius language across header surfaces.
+        "[&_.app-icon-chip]:h-9 [&_.app-icon-chip]:w-9 [&_.app-icon-chip]:!rounded-[var(--radius-md)]",
         "[&_.app-icon-chip]:!border [&_.app-icon-chip]:!border-[var(--color-control-border)]",
         "[&_.app-icon-chip]:!bg-[var(--color-control-hover)]",
         "[&_.app-icon-chip]:!text-[var(--color-primary)]",
         "[&_.app-icon-chip]:!shadow-none",
         // Search input (SearchInput -> Input)
-        "[&_input]:!rounded-[4px]",
+        "[&_input]:!rounded-[var(--radius-lg)]",
         // Buttons used inside headers (shadcn Button base uses rounded-2xl/rounded-xl)
-        "[&_.rounded-2xl]:!rounded-[4px]",
-        "[&_.rounded-xl]:!rounded-[4px]",
-        "[&_.rounded-lg]:!rounded-[4px]",
+        "[&_.rounded-2xl]:!rounded-[var(--radius-lg)]",
+        "[&_.rounded-xl]:!rounded-[var(--radius-lg)]",
+        "[&_.rounded-lg]:!rounded-[var(--radius-md)]",
         "[&_.page-eyebrow]:text-[0.68rem] [&_.page-eyebrow]:tracking-[0.22em]",
-        "[&_.page-title]:text-[0.94rem] md:[&_.page-title]:text-[1.06rem]",
-        "[&_.page-subtitle]:text-[0.74rem]",
+        "[&_.page-title]:text-[1rem] md:[&_.page-title]:text-[1.14rem]",
+        "[&_.page-subtitle]:text-[0.78rem]",
         className,
       )}
     />

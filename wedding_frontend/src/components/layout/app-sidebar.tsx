@@ -313,7 +313,7 @@ export function AppSidebar({
     const itemHeightClass = depth > 0 ? "h-[40px]" : "h-[46px]";
     const textClass = depth > 0 ? "text-[12px]" : "text-[13px]";
     const activeFillClass =
-      "border-[var(--lux-gold)] text-white shadow-none";
+      "border-[var(--lux-sidebar-active-bg)] text-[var(--lux-sidebar-active-text)] shadow-none";
     const parentChildActiveClass = isNested
       ? "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]"
       : "border-transparent bg-transparent text-[var(--lux-shell-chrome-text)]";
@@ -411,7 +411,9 @@ export function AppSidebar({
             className={({ isActive }) =>
               cn(baseRowClassName, isActive ? activeFillClass : undefined)
             }
-            style={{ background: active ? "var(--lux-gold)" : "transparent" }}
+            style={{
+              background: active ? "var(--lux-sidebar-active-bg)" : "transparent",
+            }}
             end
             title={!showFull ? label : ""}
             to={item.href}
@@ -459,7 +461,9 @@ export function AppSidebar({
             disabled={disabled}
             style={{
               background:
-                active && !disabled ? "var(--lux-gold)" : "transparent",
+                active && !disabled
+                  ? "var(--lux-sidebar-active-bg)"
+                  : "transparent",
             }}
             title={!showFull ? label : ""}
             type="button"
@@ -548,7 +552,7 @@ export function AppSidebar({
     <aside
       ref={sidebarRef}
       className={cn(
-        "relative z-50 flex h-full min-h-0 flex-col overflow-hidden ",
+        "app-shell-sidebar relative z-50 flex h-full min-h-0 flex-col overflow-hidden ",
         "text-foreground transition-[width,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width]",
         showFull
           ? isRtl
@@ -567,7 +571,7 @@ export function AppSidebar({
       onMouseLeave={() => !isOpen && setHoverOpen(false)}
     >
       <div
-        className={cn("px-4", !showFull && "px-3")}
+        className={cn("app-shell-sidebar__brand px-4", !showFull && "px-3")}
         style={{
           background: "var(--lux-shell-chrome-elevated)",
           height: `${SIDEBAR_HEADER_HEIGHT}px`,
@@ -617,7 +621,7 @@ export function AppSidebar({
       </div>
 
       <div
-        className="subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[var(--lux-shell-border)]"
+        className="app-shell-sidebar__nav subtle-scrollbar flex-1 min-h-0 overflow-y-auto border-t border-[var(--lux-shell-border)]"
         style={{
           background: "var(--lux-shell-chrome-surface)",
         }}

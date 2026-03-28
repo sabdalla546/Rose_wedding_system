@@ -22,8 +22,8 @@ export function ChartCard({
   children,
 }: ChartCardProps) {
   return (
-    <SectionCard className={cn("space-y-5", className)}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <SectionCard className={cn("dashboard-panel space-y-5", className)}>
+      <div className="dashboard-panel__header flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1.5">
           <h2 className="section-title">{title}</h2>
           {description ? <p className="section-description">{description}</p> : null}

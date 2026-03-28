@@ -8,7 +8,7 @@ import {
   CalendarFilterPanel,
   CalendarFilterPill,
 } from "@/components/calendar/calendar-filter-panel";
-import TableHeader from "@/components/common/TableHeader";
+import { DataTableShell } from "@/components/shared/data-table-shell";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -19,7 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import Pagination from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import {
   useCancelAppointment,
@@ -314,17 +313,22 @@ export function AppointmentsTableView() {
         </CalendarFilterGroup>
       </CalendarFilterPanel>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <TableHeader
-          title={t("appointments.listTitle")}
-          totalItems={adapted.total}
-          currentCount={appointments.length}
-          entityName={t("appointments.title")}
-          itemsPerPage={itemsPerPage}
-          setItemsPerPage={setItemsPerPage}
-          setCurrentPage={setCurrentPage}
-        />
-
+      <DataTableShell
+        title={t("appointments.listTitle")}
+        totalItems={adapted.total}
+        currentCount={appointments.length}
+        entityName={t("appointments.title")}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
+        setCurrentPage={setCurrentPage}
+        currentPage={currentPage}
+        totalPages={adapted.totalPages}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(value: number) => {
+          setItemsPerPage(value);
+          setCurrentPage(1);
+        }}
+      >
         <DataTable
           columns={columns}
           data={appointments}
@@ -333,22 +337,7 @@ export function AppointmentsTableView() {
           isLoading={isLoading}
           fileName="appointments"
         />
-
-        {adapted.totalPages > 1 ? (
-          <div className="border-t border-border bg-muted/40 px-6 py-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={adapted.totalPages}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={(value: number) => {
-                setItemsPerPage(value);
-                setCurrentPage(1);
-              }}
-            />
-          </div>
-        ) : null}
-      </div>
+      </DataTableShell>
 
       <ConfirmDialog
         open={deleteCandidate !== null}

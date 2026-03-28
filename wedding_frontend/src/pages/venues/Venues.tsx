@@ -98,7 +98,6 @@ const VenuesPage = () => {
             <ProtectedComponent permission={createPermission}>
               <Button
                 size="sm"
-                className="h-auto px-3 py-2 text-xs"
                 onClick={() => navigate("/settings/venues/create")}
               >
                 <Plus className="h-3.5 w-3.5" />

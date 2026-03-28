@@ -39,26 +39,26 @@ export function CalendarFilterPanel({
   const [open, setOpen] = useState(false);
 
   return (
-    <SectionCard className="overflow-hidden">
+    <SectionCard className="filter-panel overflow-hidden">
       <div className="space-y-3">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-[var(--lux-gold)]">
                 <Filter className="h-3.5 w-3.5" />
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                <p className="filter-panel__eyebrow">
                   {title}
                 </p>
               </div>
               {description ? (
-                <p className="max-w-2xl text-sm leading-6 text-[var(--lux-text-secondary)]">
+                <p className="filter-panel__description max-w-2xl">
                   {description}
                 </p>
               ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--lux-text)]">
+              <span className="filter-panel__count">
                 {activeFiltersLabel}
               </span>
               <Button
@@ -90,8 +90,7 @@ export function CalendarFilterPanel({
 
         {pills ? (
           <div
-            className="flex min-h-[28px] flex-wrap items-center gap-1.5 border-t pt-3"
-            style={{ borderColor: "var(--lux-row-border)" }}
+            className="filter-panel__pills flex min-h-[28px] flex-wrap items-center gap-1.5 border-t pt-3"
           >
             {pills}
           </div>
@@ -107,10 +106,7 @@ export function CalendarFilterPanel({
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div
-              className="mt-4 grid gap-3 border-t pt-4 xl:grid-cols-12"
-              style={{ borderColor: "var(--lux-row-border)" }}
-            >
+            <div className="filter-panel__body mt-4 grid gap-3 border-t pt-4 xl:grid-cols-12">
               {children}
             </div>
           </motion.div>
@@ -133,11 +129,7 @@ export function CalendarFilterGroup({
 }) {
   return (
     <div
-      className={`space-y-3 rounded-2xl border p-3 ${className}`}
-      style={{
-        borderColor: "var(--lux-row-border)",
-        background: "var(--lux-control-hover)",
-      }}
+      className={`filter-panel-group space-y-3 rounded-2xl p-3 ${className}`}
     >
       <div className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-gold)]">
@@ -163,7 +155,7 @@ export function CalendarFilterField({
 }) {
   return (
     <label className="flex w-full flex-col gap-2">
-      <span className="text-xs font-medium text-[var(--lux-text-muted)]">
+      <span className="filter-panel-label">
         {label}
       </span>
       {children}
@@ -173,7 +165,7 @@ export function CalendarFilterField({
 
 export function CalendarFilterPill({ label }: { label: ReactNode }) {
   return (
-    <span className="rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel)] px-3 py-1.5 text-xs text-[var(--lux-text-secondary)]">
+    <span className="filter-panel-pill rounded-full border px-3 py-1.5 text-xs">
       {label}
     </span>
   );

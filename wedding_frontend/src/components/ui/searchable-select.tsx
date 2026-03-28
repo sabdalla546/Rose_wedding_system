@@ -82,7 +82,7 @@ function SearchableSelect({
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
           className={cn(
-            "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[20px] border shadow-luxe backdrop-blur-xl",
+            "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--radius-xl)] border shadow-luxe",
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             className,
@@ -113,7 +113,7 @@ function SearchableSelect({
                 placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full rounded-[14px] border py-2 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[var(--lux-text-muted)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
+                className="w-full rounded-[var(--radius-lg)] border py-2 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[var(--lux-text-muted)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
                 style={{
                   background: "var(--lux-control-surface)",
                   borderColor: "var(--lux-control-border)",
@@ -174,7 +174,7 @@ function SearchableSelectTrigger({
       type="button"
       className={cn(
         // Base styles
-        "flex w-full items-center justify-between gap-2 rounded-[18px] border px-3 py-2 text-sm",
+        "flex w-full items-center justify-between gap-2 rounded-[var(--radius-lg)] border px-3 py-2 text-sm",
         "transition-all duration-200 outline-none",
 
         // Border and focus states
@@ -234,7 +234,7 @@ function SearchableSelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex w-full cursor-pointer items-center gap-3 rounded-md py-2.5 px-3 text-sm",
+        "relative flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm",
         "hover:text-[var(--lux-text)] focus:text-[var(--lux-text)] focus:outline-none",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         "transition-colors duration-150",

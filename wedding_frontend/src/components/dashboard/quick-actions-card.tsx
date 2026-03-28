@@ -35,7 +35,7 @@ export function QuickActionsCard({
               type="button"
               onClick={action.onClick}
               className={cn(
-                "flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition",
+                "dashboard-quick-action flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition",
                 action.tone === "primary"
                   ? "text-[var(--lux-primary-text)]"
                   : "text-[var(--lux-text)] hover:text-[var(--lux-heading)]",
