@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -36,8 +36,9 @@ import {
   useUpdateAppointment,
 } from "@/hooks/appointments/useAppointmentMutations";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
-import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useVenues } from "@/hooks/venues/useVenues";
+import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
+import { useVenue, useVenues } from "@/hooks/venues/useVenues";
+import { mergeSelectedOption } from "@/lib/select-options";
 import {
   APPOINTMENT_STATUS_OPTIONS,
   APPOINTMENT_TYPE_OPTIONS,
@@ -217,6 +218,28 @@ const AppointmentFormPage = () => {
       notes: "",
     },
   });
+  const selectedCustomerId =
+    useWatch({ control: form.control, name: "customerId" })?.trim() || "";
+  const selectedVenueId =
+    useWatch({ control: form.control, name: "venueId" })?.trim() || "";
+  const selectedCustomerInList = customers.some(
+    (customer) => String(customer.id) === selectedCustomerId,
+  );
+  const selectedVenueInList = venues.some(
+    (venue) => String(venue.id) === selectedVenueId,
+  );
+  const appointmentCustomerLabel = appointment?.customer?.fullName ?? "";
+  const appointmentVenueLabel = appointment?.venue?.name ?? "";
+  const { data: selectedCustomer } = useCustomer(
+    selectedCustomerId && !selectedCustomerInList && !appointmentCustomerLabel
+      ? selectedCustomerId
+      : undefined,
+  );
+  const { data: selectedVenue } = useVenue(
+    selectedVenueId && !selectedVenueInList && !appointmentVenueLabel
+      ? selectedVenueId
+      : undefined,
+  );
 
   useEffect(() => {
     if (!isEditMode || !appointment) {
@@ -308,6 +331,36 @@ const AppointmentFormPage = () => {
     createMutation.isPending ||
     createWithCustomerMutation.isPending ||
     updateMutation.isPending;
+  const customerOptions = mergeSelectedOption(
+    customers.map((customer) => ({
+      value: String(customer.id),
+      label: customer.fullName,
+    })),
+    selectedCustomerId,
+    selectedCustomer?.fullName ||
+      appointmentCustomerLabel ||
+      (selectedCustomerId
+        ? t("appointments.customerFallbackOption", {
+            defaultValue: "Customer #{{id}}",
+            id: selectedCustomerId,
+          })
+        : ""),
+  );
+  const venueOptions = mergeSelectedOption(
+    venues.map((venue) => ({
+      value: String(venue.id),
+      label: venue.name,
+    })),
+    selectedVenueId,
+    selectedVenue?.name ||
+      appointmentVenueLabel ||
+      (selectedVenueId
+        ? t("appointments.venueFallbackOption", {
+            defaultValue: "Venue #{{id}}",
+            id: selectedVenueId,
+          })
+        : ""),
+  );
 
   return (
     <ProtectedComponent
@@ -427,19 +480,19 @@ const AppointmentFormPage = () => {
                                 defaultValue: "Select customer",
                               })}
                             </SearchableSelectItem>
-                            {customers.length === 0 ? (
+                            {customerOptions.length === 0 ? (
                               <SearchableSelectEmpty
                                 message={t("common.noResultsTitle", {
                                   defaultValue: "No results found",
                                 })}
                               />
                             ) : (
-                              customers.map((customer) => (
+                              customerOptions.map((customer) => (
                                 <SearchableSelectItem
-                                  key={customer.id}
-                                  value={String(customer.id)}
+                                  key={customer.value}
+                                  value={customer.value}
                                 >
-                                  {customer.fullName}
+                                  {customer.label}
                                 </SearchableSelectItem>
                               ))
                             )}
@@ -726,9 +779,9 @@ const AppointmentFormPage = () => {
                                 defaultValue: "No venue selected",
                               })}
                             </SelectItem>
-                            {venues.map((venue) => (
-                              <SelectItem key={venue.id} value={String(venue.id)}>
-                                {venue.name}
+                            {venueOptions.map((venue) => (
+                              <SelectItem key={venue.value} value={venue.value}>
+                                {venue.label}
                               </SelectItem>
                             ))}
                           </SelectContent>

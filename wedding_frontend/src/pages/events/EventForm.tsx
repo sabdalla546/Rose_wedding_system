@@ -2,7 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, Link2, Sparkles } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type Control, type SubmitHandler } from "react-hook-form";
+import {
+  useForm,
+  useWatch,
+  type Control,
+  type SubmitHandler,
+} from "react-hook-form";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -33,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
 import {
   useCreateEvent,
@@ -41,7 +46,8 @@ import {
   useUpdateEvent,
 } from "@/hooks/events/useEventMutations";
 import { useEvent } from "@/hooks/events/useEvents";
-import { useVenues } from "@/hooks/venues/useVenues";
+import { useVenue, useVenues } from "@/hooks/venues/useVenues";
+import { mergeSelectedOption } from "@/lib/select-options";
 
 import { EVENT_STATUS_OPTIONS, getEventDisplayTitle } from "./adapters";
 import type { EventFormData, EventStatus } from "./types";
@@ -450,6 +456,33 @@ const EventFormPage = () => {
     resolver: zodResolver(schema) as any,
     defaultValues,
   });
+  const selectedCustomerId =
+    useWatch({ control: form.control, name: "customerId" })?.trim() || "";
+  const selectedVenueId =
+    useWatch({ control: form.control, name: "venueId" })?.trim() || "";
+  const selectedCustomerInList = customers.some(
+    (customer) => String(customer.id) === selectedCustomerId,
+  );
+  const selectedVenueInList = venues.some(
+    (venue) => String(venue.id) === selectedVenueId,
+  );
+  const eventCustomerLabel =
+    event?.customer?.fullName || sourceAppointment?.customer?.fullName || "";
+  const eventVenueLabel =
+    event?.venue?.name ||
+    event?.venueNameSnapshot ||
+    sourceAppointment?.venue?.name ||
+    "";
+  const { data: selectedCustomer } = useCustomer(
+    selectedCustomerId && !selectedCustomerInList && !eventCustomerLabel
+      ? selectedCustomerId
+      : undefined,
+  );
+  const { data: selectedVenue } = useVenue(
+    selectedVenueId && !selectedVenueInList && !eventVenueLabel
+      ? selectedVenueId
+      : undefined,
+  );
 
   useEffect(() => {
     form.clearErrors();
@@ -514,18 +547,40 @@ const EventFormPage = () => {
     createFromSourceMutation.isPending ||
     updateMutation.isPending;
 
-  const customerOptions = customers.map((customer) => ({
-    value: String(customer.id),
-    label: customer.fullName,
-  }));
-  const venueOptions = venues.map((venue) => ({
-    value: String(venue.id),
-    label: venue.name,
-  }));
+  const customerOptions = mergeSelectedOption(
+    customers.map((customer) => ({
+      value: String(customer.id),
+      label: customer.fullName,
+    })),
+    selectedCustomerId,
+    selectedCustomer?.fullName ||
+      eventCustomerLabel ||
+      (selectedCustomerId
+        ? t("events.customerFallbackOption", {
+            defaultValue: "Customer #{{id}}",
+            id: selectedCustomerId,
+          })
+        : ""),
+  );
+  const venueOptions = mergeSelectedOption(
+    venues.map((venue) => ({
+      value: String(venue.id),
+      label: venue.name,
+    })),
+    selectedVenueId,
+    selectedVenue?.name ||
+      eventVenueLabel ||
+      (selectedVenueId
+        ? t("events.venueFallbackOption", {
+            defaultValue: "Venue #{{id}}",
+            id: selectedVenueId,
+          })
+        : ""),
+  );
 
   const onSubmit: SubmitHandler<EventFormValues> = (values) => {
-    const selectedVenue = venues.find(
-      (venue) => String(venue.id) === values.venueId,
+    const selectedVenueOption = venueOptions.find(
+      (venue) => venue.value === values.venueId,
     );
 
     const payload: EventFormData = {
@@ -533,7 +588,7 @@ const EventFormPage = () => {
       sourceAppointmentId:
         values.sourceAppointmentId || fromAppointmentId || undefined,
       venueNameSnapshot:
-        values.venueNameSnapshot.trim() || selectedVenue?.name || "",
+        values.venueNameSnapshot.trim() || selectedVenueOption?.label || "",
     };
 
     if (isEditMode) {
