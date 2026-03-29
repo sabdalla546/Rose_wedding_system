@@ -14,10 +14,10 @@ const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
-    <SelectPrimitive.Trigger
-      ref={ref}
-      className={cn(
-      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[var(--radius-lg)] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--color-text-muted)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+  <SelectPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-11 w-full items-center justify-between whitespace-nowrap rounded-[4px] border px-4 py-2 text-sm outline-none transition-all data-[placeholder]:text-[var(--color-text-muted)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     style={{
@@ -41,20 +41,20 @@ const SelectScrollUpButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
 >(({ className, ...props }, ref) => (
-    <SelectPrimitive.ScrollUpButton
-      ref={ref}
-      className={cn(
-        "flex cursor-default items-center justify-center border-b py-2",
-        className,
-      )}
-      style={{
-        background: "var(--color-surface-2)",
-        borderColor: "var(--color-border)",
-        color: "var(--color-text-muted)",
-      }}
-      {...props}
-    >
-      <ChevronUp className="h-4 w-4" />
+  <SelectPrimitive.ScrollUpButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center border-b py-2",
+      className,
+    )}
+    style={{
+      background: "var(--color-surface-2)",
+      borderColor: "var(--color-border)",
+      color: "var(--color-text-muted)",
+    }}
+    {...props}
+  >
+    <ChevronUp className="h-4 w-4" />
   </SelectPrimitive.ScrollUpButton>
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
@@ -63,20 +63,20 @@ const SelectScrollDownButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
 >(({ className, ...props }, ref) => (
-    <SelectPrimitive.ScrollDownButton
-      ref={ref}
-      className={cn(
-        "flex cursor-default items-center justify-center border-t py-2",
-        className,
-      )}
-      style={{
-        background: "var(--color-surface-2)",
-        borderColor: "var(--color-border)",
-        color: "var(--color-text-muted)",
-      }}
-      {...props}
-    >
-      <ChevronDown className="h-4 w-4" />
+  <SelectPrimitive.ScrollDownButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center border-t py-2",
+      className,
+    )}
+    style={{
+      background: "var(--color-surface-2)",
+      borderColor: "var(--color-border)",
+      color: "var(--color-text-muted)",
+    }}
+    {...props}
+  >
+    <ChevronDown className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
 ));
 SelectScrollDownButton.displayName =
@@ -125,7 +125,10 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em]", className)}
+    className={cn(
+      "px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em]",
+      className,
+    )}
     style={{ color: "var(--color-text-muted)" }}
     {...props}
   />
@@ -136,9 +139,9 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => (
-    <SelectPrimitive.Item
-      ref={ref}
-      className={cn(
+  <SelectPrimitive.Item
+    ref={ref}
+    className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-[var(--radius-md)] py-2.5 pl-3 pr-8 text-sm outline-none transition-colors data-[highlighted]:bg-[var(--color-control-hover)] data-[highlighted]:text-[var(--color-text)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[state=checked]:bg-[color-mix(in_srgb,var(--color-primary)_12%,var(--color-surface))] data-[state=checked]:text-[var(--color-heading)]",
       className,
     )}

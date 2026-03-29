@@ -66,7 +66,7 @@ const EMPTY_VALUE = "__empty__";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 const textareaClassName =
-  "min-h-[130px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 
 const statusValues = EVENT_STATUS_OPTIONS.map((item) => item.value) as [
   EventStatus,
@@ -87,11 +87,7 @@ const defaultValues: EventFormValues = {
   status: "",
 };
 
-const eventSchema = (
-  t: TFunction,
-  mode: EventFormMode,
-  isEditMode: boolean,
-) =>
+const eventSchema = (t: TFunction, mode: EventFormMode, isEditMode: boolean) =>
   z
     .object({
       customerId: z.string().optional(),
@@ -379,7 +375,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[22px] border p-4 text-left transition"
+      className="rounded-[4px] border p-4 text-left transition"
       style={{
         background: active
           ? "color-mix(in srgb, var(--lux-gold) 8%, var(--lux-panel-surface))"
@@ -494,8 +490,12 @@ const EventFormPage = () => {
       customerId: String(sourceAppointment.customerId),
       sourceAppointmentId: String(sourceAppointment.id),
       eventDate:
-        sourceAppointment.weddingDate ?? sourceAppointment.appointmentDate ?? "",
-      venueId: sourceAppointment.venueId ? String(sourceAppointment.venueId) : "",
+        sourceAppointment.weddingDate ??
+        sourceAppointment.appointmentDate ??
+        "",
+      venueId: sourceAppointment.venueId
+        ? String(sourceAppointment.venueId)
+        : "",
       venueNameSnapshot:
         sourceAppointment.venue?.name ?? form.getValues("venueNameSnapshot"),
       guestCount:
@@ -549,7 +549,12 @@ const EventFormPage = () => {
     createMutation.mutate(payload);
   };
 
-  if (eventLoading || sourceAppointmentLoading || customersLoading || venuesLoading) {
+  if (
+    eventLoading ||
+    sourceAppointmentLoading ||
+    customersLoading ||
+    venuesLoading
+  ) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-sm text-[var(--lux-text-secondary)]">
@@ -575,7 +580,7 @@ const EventFormPage = () => {
           </button>
 
           <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
+            className="overflow-hidden rounded-[4px] border p-4 shadow-luxe"
             style={{
               background: "var(--lux-panel-surface)",
               borderColor: "var(--lux-panel-border)",
@@ -583,7 +588,7 @@ const EventFormPage = () => {
           >
             <div className="flex items-start gap-4">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
+                className="flex h-12 w-12 items-center justify-center rounded-[4px] border"
                 style={{
                   background: "var(--lux-control-hover)",
                   borderColor: "var(--lux-control-border)",
@@ -615,7 +620,7 @@ const EventFormPage = () => {
           </div>
 
           {!isEditMode && !fromAppointmentId ? (
-            <Card className="overflow-hidden rounded-[24px]">
+            <Card className="overflow-hidden rounded-[4px]">
               <div className="p-6 md:p-8">
                 <div className="space-y-4">
                   <SectionIntro
@@ -658,7 +663,7 @@ const EventFormPage = () => {
             </Card>
           ) : null}
 
-          <Card className="overflow-hidden rounded-[24px]">
+          <Card className="overflow-hidden rounded-[4px]">
             <div className="p-6 md:p-8">
               <Form {...form}>
                 <form
@@ -666,7 +671,7 @@ const EventFormPage = () => {
                   className="space-y-8"
                 >
                   {fromAppointmentId ? (
-                    <div className="rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] px-4 py-3 text-sm text-[var(--lux-text-secondary)]">
+                    <div className="rounded-[4px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] px-4 py-3 text-sm text-[var(--lux-text-secondary)]">
                       {t("events.sourceAppointmentPrefillHint", {
                         defaultValue:
                           "This event was prefilled from the selected appointment. Customer, event date, guest count, and venue came from that exact appointment and can still be edited.",
@@ -709,7 +714,6 @@ const EventFormPage = () => {
                         options={customerOptions}
                         required={!isEditMode}
                       />
-
                     </div>
                   </section>
 
@@ -719,7 +723,7 @@ const EventFormPage = () => {
                         defaultValue: "General Info",
                       })}
                       hint={t("events.generalInfoHint", {
-                      defaultValue:
+                        defaultValue:
                           effectiveMode === "source" && !isEditMode
                             ? "Add any optional overrides before creating the event from the selected source."
                             : "Capture the main event details, party names, venue, and planning status.",

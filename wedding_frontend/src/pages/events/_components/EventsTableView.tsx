@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { CalendarDays, Filter, Search, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -20,6 +20,7 @@ import { useVenues } from "@/hooks/venues/useVenues";
 
 import { useEventsColumns } from "../_components/eventsColumns";
 import { EVENT_STATUS_OPTIONS, toTableEvents, type TableEvent } from "../adapters";
+import type { EventsBusinessFilters } from "@/pages/events/event-query-params";
 import type { EventStatus } from "../types";
 
 const filterFieldClassName =
@@ -30,28 +31,22 @@ const fieldStyle = {
   borderColor: "var(--lux-control-border)",
 } as const;
 
-export function EventsTableView() {
+type EventsTableViewProps = {
+  filters: EventsBusinessFilters;
+  onFiltersChange: Dispatch<SetStateAction<EventsBusinessFilters>>;
+};
+
+export function EventsTableView({ filters, onFiltersChange }: EventsTableViewProps) {
   const { t } = useTranslation();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | EventStatus>("all");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [venueFilter, setVenueFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(null);
 
   const { data, isLoading } = useEvents({
     currentPage,
     itemsPerPage,
-    searchQuery,
-    status: statusFilter,
-    customerId: customerFilter,
-    venueId: venueFilter,
-    dateFrom,
-    dateTo,
+    filters,
   });
   const { data: customersResponse } = useCustomers({
     currentPage: 1,
@@ -74,12 +69,12 @@ export function EventsTableView() {
   const venues = venuesResponse?.data ?? [];
   const tableEvents = adapted.data.events;
   const activeFiltersCount = [
-    Boolean(searchQuery.trim()),
-    statusFilter !== "all",
-    Boolean(customerFilter),
-    Boolean(venueFilter),
-    Boolean(dateFrom),
-    Boolean(dateTo),
+    Boolean(filters.search.trim()),
+    filters.status !== "all",
+    Boolean(filters.customerId),
+    Boolean(filters.venueId),
+    Boolean(filters.dateFrom),
+    Boolean(filters.dateTo),
   ].filter(Boolean).length;
   const summaryItems = useMemo(
     () =>
@@ -92,45 +87,45 @@ export function EventsTableView() {
     [activeFiltersCount, adapted.total, t, tableEvents],
   );
   const activeFilterPills = [
-    searchQuery.trim() ? (
-      <WorkspaceFilterPill key="search" label={searchQuery.trim()} />
+    filters.search.trim() ? (
+      <WorkspaceFilterPill key="search" label={filters.search.trim()} />
     ) : null,
-    statusFilter !== "all" ? (
+    filters.status !== "all" ? (
       <WorkspaceFilterPill
         key="status"
-        label={t(`events.status.${statusFilter}`, {
-          defaultValue: statusFilter,
+        label={t(`events.status.${filters.status}`, {
+          defaultValue: filters.status,
         })}
       />
     ) : null,
-    customerFilter ? (
+    filters.customerId ? (
       <WorkspaceFilterPill
         key="customer"
         label={
-          customers.find((customer) => String(customer.id) === customerFilter)
-            ?.fullName ?? customerFilter
+          customers.find((customer) => String(customer.id) === filters.customerId)
+            ?.fullName ?? filters.customerId
         }
       />
     ) : null,
-    venueFilter ? (
+    filters.venueId ? (
       <WorkspaceFilterPill
         key="venue"
         label={
-          venues.find((venue) => String(venue.id) === venueFilter)?.name ??
-          venueFilter
+          venues.find((venue) => String(venue.id) === filters.venueId)?.name ??
+          filters.venueId
         }
       />
     ) : null,
-    dateFrom ? (
+    filters.dateFrom ? (
       <WorkspaceFilterPill
         key="date-from"
-        label={`${t("common.from", { defaultValue: "From" })}: ${dateFrom}`}
+        label={`${t("common.from", { defaultValue: "From" })}: ${filters.dateFrom}`}
       />
     ) : null,
-    dateTo ? (
+    filters.dateTo ? (
       <WorkspaceFilterPill
         key="date-to"
-        label={`${t("common.to", { defaultValue: "To" })}: ${dateTo}`}
+        label={`${t("common.to", { defaultValue: "To" })}: ${filters.dateTo}`}
       />
     ) : null,
   ].filter(Boolean);
@@ -142,12 +137,14 @@ export function EventsTableView() {
   });
   const deleteMutation = useDeleteEvent();
   const resetFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("all");
-    setCustomerFilter("");
-    setVenueFilter("");
-    setDateFrom("");
-    setDateTo("");
+    onFiltersChange({
+      search: "",
+      status: "all",
+      customerId: "",
+      venueId: "",
+      dateFrom: "",
+      dateTo: "",
+    });
     setCurrentPage(1);
   };
 
@@ -202,9 +199,12 @@ export function EventsTableView() {
                 <Input
                   className={`${filterFieldClassName} pl-10`}
                   style={fieldStyle}
-                  value={searchQuery}
+                  value={filters.search}
                   onChange={(event) => {
-                    setSearchQuery(event.target.value);
+                    onFiltersChange((current) => ({
+                      ...current,
+                      search: event.target.value,
+                    }));
                     setCurrentPage(1);
                   }}
                   placeholder={t("events.searchPlaceholder", {
@@ -221,9 +221,12 @@ export function EventsTableView() {
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
-                value={statusFilter}
+                value={filters.status}
                 onChange={(event) => {
-                  setStatusFilter(event.target.value as "all" | EventStatus);
+                  onFiltersChange((current) => ({
+                    ...current,
+                    status: event.target.value as "all" | EventStatus,
+                  }));
                   setCurrentPage(1);
                 }}
               >
@@ -246,9 +249,12 @@ export function EventsTableView() {
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
-                value={venueFilter}
+                value={filters.venueId}
                 onChange={(event) => {
-                  setVenueFilter(event.target.value);
+                  onFiltersChange((current) => ({
+                    ...current,
+                    venueId: event.target.value,
+                  }));
                   setCurrentPage(1);
                 }}
               >
@@ -269,9 +275,12 @@ export function EventsTableView() {
               <select
                 className={filterFieldClassName}
                 style={fieldStyle}
-                value={customerFilter}
+                value={filters.customerId}
                 onChange={(event) => {
-                  setCustomerFilter(event.target.value);
+                  onFiltersChange((current) => ({
+                    ...current,
+                    customerId: event.target.value,
+                  }));
                   setCurrentPage(1);
                 }}
               >
@@ -293,9 +302,12 @@ export function EventsTableView() {
                 type="date"
                 className={filterFieldClassName}
                 style={fieldStyle}
-                value={dateFrom}
+                value={filters.dateFrom}
                 onChange={(event) => {
-                  setDateFrom(event.target.value);
+                  onFiltersChange((current) => ({
+                    ...current,
+                    dateFrom: event.target.value,
+                  }));
                   setCurrentPage(1);
                 }}
               />
@@ -308,9 +320,12 @@ export function EventsTableView() {
                 type="date"
                 className={filterFieldClassName}
                 style={fieldStyle}
-                value={dateTo}
+                value={filters.dateTo}
                 onChange={(event) => {
-                  setDateTo(event.target.value);
+                  onFiltersChange((current) => ({
+                    ...current,
+                    dateTo: event.target.value,
+                  }));
                   setCurrentPage(1);
                 }}
               />

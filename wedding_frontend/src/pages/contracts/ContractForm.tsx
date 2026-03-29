@@ -27,6 +27,7 @@ import {
 } from "@/hooks/contracts/useContractMutations";
 import { useContract } from "@/hooks/contracts/useContracts";
 import { useEvents } from "@/hooks/events/useEvents";
+import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useQuotation, useQuotations } from "@/hooks/quotations/useQuotations";
 import { useEventServiceItems, useServices } from "@/hooks/services/useServices";
 import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
@@ -63,7 +64,7 @@ import type {
 } from "./types";
 
 const textareaClassName =
-  "min-h-[130px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
@@ -284,12 +285,7 @@ const ContractFormPage = () => {
   const { data: eventsResponse } = useEvents({
     currentPage: 1,
     itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    customerId: "",
-    venueId: "",
-    dateFrom: "",
-    dateTo: "",
+    filters: getInitialEventsBusinessFilters(),
   });
   const { data: servicesResponse } = useServices({
     currentPage: 1,
@@ -832,7 +828,7 @@ const ContractFormPage = () => {
           </button>
 
           <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
+            className="overflow-hidden rounded-[4px] border p-4 shadow-luxe"
             style={{
               background: "var(--lux-panel-surface)",
               borderColor: "var(--lux-panel-border)",
@@ -840,7 +836,7 @@ const ContractFormPage = () => {
           >
             <div className="flex items-start gap-4">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
+                className="flex h-12 w-12 items-center justify-center rounded-[4px] border"
                 style={{
                   background: "var(--lux-control-hover)",
                   borderColor: "var(--lux-control-border)",
@@ -875,7 +871,7 @@ const ContractFormPage = () => {
             </div>
           </div>
 
-          <Card className="overflow-hidden rounded-[24px]">
+          <Card className="overflow-hidden rounded-[4px]">
             <div className="p-6 md:p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -902,7 +898,7 @@ const ContractFormPage = () => {
                         <button
                           type="button"
                           className={cn(
-                            "rounded-[20px] border p-4 text-left transition-all",
+                            "rounded-[4px] border p-4 text-left transition-all",
                             watchedCreateMode === "manual"
                               ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
@@ -925,7 +921,7 @@ const ContractFormPage = () => {
                         <button
                           type="button"
                           className={cn(
-                            "rounded-[20px] border p-4 text-left transition-all",
+                            "rounded-[4px] border p-4 text-left transition-all",
                             watchedCreateMode === "from_quotation"
                               ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
@@ -1291,7 +1287,7 @@ const ContractFormPage = () => {
                           return (
                             <div
                               key={field.id}
-                              className="rounded-[22px] border p-4"
+                              className="rounded-[4px] border p-4"
                               style={{
                                 background: isVendorItem
                                   ? "var(--lux-control-hover)"
@@ -1493,7 +1489,7 @@ const ContractFormPage = () => {
 
                                   {isVendorItem ? (
                                     <div
-                                      className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+                                      className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
                                       style={{
                                         background: "var(--lux-panel-surface)",
                                         borderColor: "var(--lux-row-border)",
@@ -1557,7 +1553,7 @@ const ContractFormPage = () => {
                                 </div>
 
                                 <div
-                                  className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+                                  className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
                                   style={{
                                     background: "var(--lux-panel-surface)",
                                     borderColor: "var(--lux-row-border)",
@@ -1722,7 +1718,7 @@ const ContractFormPage = () => {
 
                       {isEditMode ? (
                         <div
-                          className="rounded-[20px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+                          className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
                           style={{
                             background: "var(--lux-control-hover)",
                             borderColor: "var(--lux-row-border)",
@@ -1785,7 +1781,7 @@ const ContractFormPage = () => {
                             />
                           </div>
 
-                          <div className="rounded-[22px] border p-4">
+                          <div className="rounded-[4px] border p-4">
                             <div className="overflow-x-auto">
                               <table className="min-w-full text-sm">
                                 <thead>
@@ -1913,7 +1909,7 @@ const ContractFormPage = () => {
                           paymentScheduleFields.map((field, index) => (
                             <div
                               key={field.id}
-                              className="rounded-[22px] border p-4"
+                              className="rounded-[4px] border p-4"
                               style={{
                                 background: "var(--lux-row-surface)",
                                 borderColor: "var(--lux-row-border)",
@@ -2209,7 +2205,7 @@ function ReadonlyInfo({
 }) {
   return (
     <div
-      className="rounded-[20px] border px-4 py-3"
+      className="rounded-[4px] border px-4 py-3"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-row-border)",
@@ -2259,7 +2255,7 @@ function TypeBadge({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+        "inline-flex rounded-[4px] border px-3 py-1 text-xs font-semibold",
         isVendor || isSummary
           ? "border-[var(--lux-gold-border)] text-[var(--lux-gold)]"
           : "border-[var(--lux-row-border)] text-[var(--lux-text-secondary)]",
@@ -2285,7 +2281,7 @@ function SummaryTile({
 }) {
   return (
     <div
-      className="rounded-[20px] border px-4 py-4"
+      className="rounded-[4px] border px-4 py-4"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-row-border)",

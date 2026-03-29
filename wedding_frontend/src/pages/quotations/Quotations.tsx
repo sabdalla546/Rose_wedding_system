@@ -22,6 +22,7 @@ import {
   SearchableSelectItem,
 } from "@/components/ui/searchable-select";
 import { useEvents } from "@/hooks/events/useEvents";
+import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useDeleteQuotation } from "@/hooks/quotations/useDeleteQuotation";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
@@ -80,12 +81,7 @@ const QuotationsPage = () => {
   const { data: eventsResponse } = useEvents({
     currentPage: 1,
     itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    customerId: "",
-    venueId: "",
-    dateFrom: "",
-    dateTo: "",
+    filters: getInitialEventsBusinessFilters(),
   });
 
   const adapted = toTableQuotations(raw);

@@ -318,11 +318,13 @@ export const getEvents = async (req: Request, res: Response) => {
   }
 
   if (search) {
+    const like = `%${search}%`;
     where[Op.or] = [
-      { title: { [Op.like]: `%${search}%` } },
-      { groomName: { [Op.like]: `%${search}%` } },
-      { brideName: { [Op.like]: `%${search}%` } },
-      { venueNameSnapshot: { [Op.like]: `%${search}%` } },
+      { title: { [Op.like]: like } },
+      { groomName: { [Op.like]: like } },
+      { brideName: { [Op.like]: like } },
+      { venueNameSnapshot: { [Op.like]: like } },
+      { "$customer.fullName$": { [Op.like]: like } },
     ];
   }
 
@@ -359,7 +361,6 @@ export const getEventsCalendar = async (req: Request, res: Response) => {
     const data = await listEventsCalendarRecords({
       ...query,
       assignedUserId: undefined,
-      search: undefined,
     });
 
     return res.json({ data });

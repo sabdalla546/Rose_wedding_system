@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEvents } from "@/hooks/events/useEvents";
+import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import {
   useCreateQuotation,
   useCreateQuotationFromEvent,
@@ -67,7 +68,7 @@ import type {
 } from "./types";
 
 const textAreaClass =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
@@ -449,12 +450,7 @@ const QuotationFormPage = () => {
   const { data: eventsResponse } = useEvents({
     currentPage: 1,
     itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    customerId: "",
-    venueId: "",
-    dateFrom: "",
-    dateTo: "",
+    filters: getInitialEventsBusinessFilters(),
   });
   const { data: servicesResponse } = useServices({
     currentPage: 1,
@@ -1017,7 +1013,7 @@ const QuotationFormPage = () => {
           </button>
 
           <div
-            className="overflow-hidden rounded-[24px] border p-4 shadow-luxe"
+            className="overflow-hidden rounded-[4px] border p-4 shadow-luxe"
             style={{
               background: "var(--lux-panel-surface)",
               borderColor: "var(--lux-panel-border)",
@@ -1025,7 +1021,7 @@ const QuotationFormPage = () => {
           >
             <div className="flex items-start gap-4">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
+                className="flex h-12 w-12 items-center justify-center rounded-[4px] border"
                 style={{
                   background: "var(--lux-control-hover)",
                   borderColor: "var(--lux-control-border)",
@@ -1055,7 +1051,7 @@ const QuotationFormPage = () => {
             </div>
           </div>
 
-          <Card className="overflow-hidden rounded-[24px]">
+          <Card className="overflow-hidden rounded-[4px]">
             <div className="p-6 md:p-8">
               <Form {...form}>
                 <form
@@ -1082,7 +1078,7 @@ const QuotationFormPage = () => {
                         <button
                           type="button"
                           className={cn(
-                            "rounded-[22px] border p-5 text-start transition-all",
+                            "rounded-[4px] border p-5 text-start transition-all",
                             watchedCreateMode === "manual"
                               ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
@@ -1107,7 +1103,7 @@ const QuotationFormPage = () => {
                         <button
                           type="button"
                           className={cn(
-                            "rounded-[22px] border p-5 text-start transition-all",
+                            "rounded-[4px] border p-5 text-start transition-all",
                             watchedCreateMode === "from_event"
                               ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
@@ -1771,7 +1767,7 @@ function SourceCard({
 }) {
   return (
     <div
-      className="rounded-[22px] border p-5"
+      className="rounded-[4px] border p-5"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-row-border)",
@@ -1797,7 +1793,7 @@ function SelectionCard({
 }) {
   return (
     <div
-      className="rounded-[22px] border p-5"
+      className="rounded-[4px] border p-5"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-row-border)",
@@ -1815,7 +1811,7 @@ function SelectionCard({
 function EmptyHint({ text }: { text: string }) {
   return (
     <div
-      className="rounded-[18px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+      className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
       style={{
         background: "var(--lux-control-surface)",
         borderColor: "var(--lux-row-border)",
@@ -1846,7 +1842,7 @@ function SelectableCard({
   return (
     <label
       className={cn(
-        "flex gap-4 rounded-[20px] border p-4",
+        "flex gap-4 rounded-[4px] border p-4",
         disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer",
         checked
           ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
@@ -1892,15 +1888,15 @@ function PreviewSummary({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full border px-3 py-1 text-[var(--lux-text-secondary)]">
+        <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
           {t("quotations.selectedServices", { defaultValue: "Selected Services" })}:{" "}
           {selectedServicesCount}
         </span>
-        <span className="rounded-full border px-3 py-1 text-[var(--lux-text-secondary)]">
+        <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
           {t("quotations.selectedVendors", { defaultValue: "Selected Vendors" })}:{" "}
           {selectedVendorsCount}
         </span>
-        <span className="rounded-full border px-3 py-1 text-[var(--lux-text-secondary)]">
+        <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
           {t("quotations.totalServicesAmount", {
             defaultValue: "Total Services Amount",
           })}
@@ -1958,7 +1954,7 @@ function EditableItemsSection({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[22px] border" style={{ borderColor: "var(--lux-row-border)" }}>
+    <div className="overflow-x-auto rounded-[4px] border" style={{ borderColor: "var(--lux-row-border)" }}>
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
@@ -2128,7 +2124,7 @@ function EditableItemsSection({
                 <td className="min-w-[220px] px-3 py-3">
                   <textarea
                     {...notesField}
-                    className="min-h-[96px] w-full rounded-[18px] border px-3 py-2 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
+                    className="min-h-[96px] w-full rounded-[4px] border px-3 py-2 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]"
                     style={{
                       background: "var(--lux-control-surface)",
                       borderColor: "var(--lux-control-border)",
@@ -2170,7 +2166,7 @@ function PreviewTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[22px] border" style={{ borderColor: "var(--lux-row-border)" }}>
+    <div className="overflow-x-auto rounded-[4px] border" style={{ borderColor: "var(--lux-row-border)" }}>
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
@@ -2233,7 +2229,7 @@ function TypeBadge({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+        "inline-flex rounded-[4px] border px-3 py-1 text-xs font-semibold",
         isVendor || isSummary
           ? "border-[var(--lux-gold-border)] text-[var(--lux-gold)]"
           : "border-[var(--lux-row-border)] text-[var(--lux-text-secondary)]",
@@ -2259,7 +2255,7 @@ function SummaryTile({
 }) {
   return (
     <div
-      className="rounded-[20px] border px-4 py-4"
+      className="rounded-[4px] border px-4 py-4"
       style={{
         background: "var(--lux-panel-surface)",
         borderColor: "var(--lux-row-border)",

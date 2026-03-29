@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { CalendarDays } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -25,6 +25,11 @@ import {
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
 import { useVenues } from "@/hooks/venues/useVenues";
+import {
+  getInitialEventsBusinessFilters,
+  type EventsBusinessFilters,
+} from "@/pages/events/event-query-params";
+import { EVENT_STATUS_OPTIONS } from "@/pages/events/adapters";
 
 const filterFieldClassName =
   "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
@@ -36,25 +41,31 @@ const fieldStyle = {
 
 type EventsCalendarViewProps = {
   active: boolean;
+  filters: EventsBusinessFilters;
+  onFiltersChange: Dispatch<SetStateAction<EventsBusinessFilters>>;
 };
 
-export function EventsCalendarView({ active }: EventsCalendarViewProps) {
+export function EventsCalendarView({
+  active,
+  filters,
+  onFiltersChange,
+}: EventsCalendarViewProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const calendarRef = useRef<AppCalendarHandle | null>(null);
   const {
     items,
     calendarEvents,
-    filters,
-    setFilters,
-    resetFilters,
-    setCalendarRange,
     activeFiltersCount,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = useEventsCalendarView();
+  } = useEventsCalendarView(filters);
+
+  const resetFilters = () => {
+    onFiltersChange(getInitialEventsBusinessFilters());
+  };
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
@@ -121,17 +132,6 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
     [customersResponse?.data],
   );
 
-  const statusOptions = useMemo(
-    () =>
-      Array.from(new Set(items.map((item) => item.status)))
-        .sort()
-        .map((status) => ({
-          value: status,
-          label: t(`events.status.${status}`, { defaultValue: status }),
-        })),
-    [items, t],
-  );
-
   const activeFilterPills = [
     filters.search.trim() ? (
       <WorkspaceFilterPill key="search" label={filters.search.trim()} />
@@ -144,7 +144,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
         })}
       />
     ) : null,
-    filters.venueId !== "all" ? (
+    filters.venueId.trim() ? (
       <WorkspaceFilterPill
         key="venue"
         label={
@@ -153,7 +153,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
         }
       />
     ) : null,
-    filters.customerId !== "all" ? (
+    filters.customerId.trim() ? (
       <WorkspaceFilterPill
         key="customer"
         label={
@@ -224,7 +224,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 })}
                 value={filters.search}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     search: event.target.value,
                   }))
@@ -240,7 +240,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 style={fieldStyle}
                 value={filters.status}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     status: event.target.value as typeof filters.status,
                   }))
@@ -249,9 +249,11 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 <option value="all">
                   {t("events.allStatuses", { defaultValue: "All Statuses" })}
                 </option>
-                {statusOptions.map((option) => (
+                {EVENT_STATUS_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {t(`events.status.${option.value}`, {
+                      defaultValue: option.label,
+                    })}
                   </option>
                 ))}
               </select>
@@ -265,13 +267,13 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 style={fieldStyle}
                 value={filters.venueId}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     venueId: event.target.value,
                   }))
                 }
               >
-                <option value="all">
+                <option value="">
                   {t("events.allVenues", { defaultValue: "All Venues" })}
                 </option>
                 {venueOptions.map((option) => (
@@ -290,13 +292,13 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 style={fieldStyle}
                 value={filters.customerId}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     customerId: event.target.value,
                   }))
                 }
               >
-                <option value="all">
+                <option value="">
                   {t("events.calendarPage.allCustomers", {
                     defaultValue: "All customers",
                   })}
@@ -318,7 +320,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 style={fieldStyle}
                 value={filters.dateFrom}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     dateFrom: event.target.value,
                   }))
@@ -335,7 +337,7 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                 style={fieldStyle}
                 value={filters.dateTo}
                 onChange={(event) =>
-                  setFilters((current) => ({
+                  onFiltersChange((current) => ({
                     ...current,
                     dateTo: event.target.value,
                   }))
@@ -386,7 +388,6 @@ export function EventsCalendarView({ active }: EventsCalendarViewProps) {
                   "Try changing the planning window or clearing one of the active filters.",
               })}
               variant="event"
-              onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
                 setSelectedEventId(event.id);
                 setDetailsDialogOpen(true);

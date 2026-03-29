@@ -35,6 +35,7 @@ export const eventCalendarQuerySchema = z.object({
   status: calendarStatusEnum.optional(),
   venueId: queryNumber,
   customerId: queryNumber,
+  search: queryString,
 });
 
 export const calendarFeedQuerySchema = z.object({

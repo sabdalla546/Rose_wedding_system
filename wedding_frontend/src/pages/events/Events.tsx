@@ -7,6 +7,10 @@ import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { ViewModeToggle } from "@/components/shared/view-mode-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  getInitialEventsBusinessFilters,
+  type EventsBusinessFilters,
+} from "@/pages/events/event-query-params";
 
 import { EventsCalendarView } from "./_components/EventsCalendarView";
 import { EventsTableView } from "./_components/EventsTableView";
@@ -25,6 +29,10 @@ export default function EventsPage() {
   const [hasVisitedTable, setHasVisitedTable] = useState(viewMode === "table");
   const [hasVisitedCalendar, setHasVisitedCalendar] = useState(
     viewMode === "calendar",
+  );
+
+  const [eventFilters, setEventFilters] = useState<EventsBusinessFilters>(
+    getInitialEventsBusinessFilters,
   );
 
   const viewOptions = useMemo(
@@ -91,13 +99,17 @@ export default function EventsPage() {
 
         {hasVisitedTable ? (
           <div className={viewMode === "table" ? "space-y-4" : "hidden"}>
-            <EventsTableView />
+            <EventsTableView filters={eventFilters} onFiltersChange={setEventFilters} />
           </div>
         ) : null}
 
         {hasVisitedCalendar ? (
           <div className={viewMode === "calendar" ? "space-y-4" : "hidden"}>
-            <EventsCalendarView active={viewMode === "calendar"} />
+            <EventsCalendarView
+              active={viewMode === "calendar"}
+              filters={eventFilters}
+              onFiltersChange={setEventFilters}
+            />
           </div>
         ) : null}
       </PageContainer>

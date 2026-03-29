@@ -24,6 +24,7 @@ import {
 import { useContracts } from "@/hooks/contracts/useContracts";
 import { useDeleteContract } from "@/hooks/contracts/useDeleteContract";
 import { useEvents } from "@/hooks/events/useEvents";
+import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
@@ -94,12 +95,7 @@ const ContractsPage = () => {
   const { data: eventsResponse } = useEvents({
     currentPage: 1,
     itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-    customerId: "",
-    venueId: "",
-    dateFrom: "",
-    dateTo: "",
+    filters: getInitialEventsBusinessFilters(),
   });
 
   const adapted = toTableContracts(raw);
