@@ -38,7 +38,6 @@ import {
 import { useAppointment } from "@/hooks/appointments/useAppointments";
 import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
 import { useVenue, useVenues } from "@/hooks/venues/useVenues";
-import { mergeSelectedOption } from "@/lib/select-options";
 import {
   APPOINTMENT_STATUS_OPTIONS,
   APPOINTMENT_TYPE_OPTIONS,
@@ -192,8 +191,11 @@ const AppointmentFormPage = () => {
     [t, mode, isEditMode],
   );
 
-  const customers = customersResponse?.data ?? [];
-  const venues = venuesResponse?.data ?? [];
+  const customers = useMemo(
+    () => customersResponse?.data ?? [],
+    [customersResponse?.data],
+  );
+  const venues = useMemo(() => venuesResponse?.data ?? [], [venuesResponse?.data]);
   const preselectedCustomerId = searchParams.get("customerId") || "";
 
   const form = useForm<AppointmentFormValues>({
@@ -218,28 +220,62 @@ const AppointmentFormPage = () => {
       notes: "",
     },
   });
-  const selectedCustomerId =
+  const watchedCustomerId =
     useWatch({ control: form.control, name: "customerId" })?.trim() || "";
-  const selectedVenueId =
+  const watchedVenueId =
     useWatch({ control: form.control, name: "venueId" })?.trim() || "";
-  const selectedCustomerInList = customers.some(
-    (customer) => String(customer.id) === selectedCustomerId,
-  );
-  const selectedVenueInList = venues.some(
-    (venue) => String(venue.id) === selectedVenueId,
-  );
-  const appointmentCustomerLabel = appointment?.customer?.fullName ?? "";
-  const appointmentVenueLabel = appointment?.venue?.name ?? "";
+  const selectedCustomerId =
+    (isEditMode
+      ? watchedCustomerId || String(appointment?.customerId ?? "")
+      : watchedCustomerId) || "";
+  const selectedVenueId =
+    (isEditMode
+      ? watchedVenueId || String(appointment?.venueId ?? "")
+      : watchedVenueId) || "";
   const { data: selectedCustomer } = useCustomer(
-    selectedCustomerId && !selectedCustomerInList && !appointmentCustomerLabel
+    isEditMode && selectedCustomerId
       ? selectedCustomerId
       : undefined,
   );
   const { data: selectedVenue } = useVenue(
-    selectedVenueId && !selectedVenueInList && !appointmentVenueLabel
+    isEditMode && selectedVenueId
       ? selectedVenueId
       : undefined,
   );
+  const customerOptions = useMemo(() => {
+    const mergedCustomers = [...customers];
+    const fallbackCustomer = selectedCustomer ?? appointment?.customer ?? null;
+
+    if (
+      fallbackCustomer &&
+      !mergedCustomers.some(
+        (customer) => String(customer.id) === String(fallbackCustomer.id),
+      )
+    ) {
+      mergedCustomers.unshift(fallbackCustomer);
+    }
+
+    return mergedCustomers.map((customer) => ({
+      value: String(customer.id),
+      label: customer.fullName,
+    }));
+  }, [appointment?.customer, customers, selectedCustomer]);
+  const venueOptions = useMemo(() => {
+    const mergedVenues = [...venues];
+    const fallbackVenue = selectedVenue ?? appointment?.venue ?? null;
+
+    if (
+      fallbackVenue &&
+      !mergedVenues.some((venue) => String(venue.id) === String(fallbackVenue.id))
+    ) {
+      mergedVenues.unshift(fallbackVenue);
+    }
+
+    return mergedVenues.map((venue) => ({
+      value: String(venue.id),
+      label: venue.name,
+    }));
+  }, [appointment?.venue, selectedVenue, venues]);
 
   useEffect(() => {
     if (!isEditMode || !appointment) {
@@ -331,36 +367,6 @@ const AppointmentFormPage = () => {
     createMutation.isPending ||
     createWithCustomerMutation.isPending ||
     updateMutation.isPending;
-  const customerOptions = mergeSelectedOption(
-    customers.map((customer) => ({
-      value: String(customer.id),
-      label: customer.fullName,
-    })),
-    selectedCustomerId,
-    selectedCustomer?.fullName ||
-      appointmentCustomerLabel ||
-      (selectedCustomerId
-        ? t("appointments.customerFallbackOption", {
-            defaultValue: "Customer #{{id}}",
-            id: selectedCustomerId,
-          })
-        : ""),
-  );
-  const venueOptions = mergeSelectedOption(
-    venues.map((venue) => ({
-      value: String(venue.id),
-      label: venue.name,
-    })),
-    selectedVenueId,
-    selectedVenue?.name ||
-      appointmentVenueLabel ||
-      (selectedVenueId
-        ? t("appointments.venueFallbackOption", {
-            defaultValue: "Venue #{{id}}",
-            id: selectedVenueId,
-          })
-        : ""),
-  );
 
   return (
     <ProtectedComponent
