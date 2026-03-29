@@ -16,8 +16,12 @@ export function ReportsSectionBar() {
 
   const activeHref = useMemo(() => {
     const matches = reportsNavigationLeaves
-      .filter((item) => item.href && isPathWithinHref(location.pathname, item.href))
-      .sort((left, right) => (right.href?.length ?? 0) - (left.href?.length ?? 0));
+      .filter(
+        (item) => item.href && isPathWithinHref(location.pathname, item.href),
+      )
+      .sort(
+        (left, right) => (right.href?.length ?? 0) - (left.href?.length ?? 0),
+      );
 
     return matches[0]?.href;
   }, [location.pathname]);
@@ -28,7 +32,7 @@ export function ReportsSectionBar() {
 
   return (
     <section
-      className="flex h-[72px] border-b"
+      className="flex h-[40px] border-b"
       style={{
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
@@ -56,9 +60,7 @@ export function ReportsSectionBar() {
             const sharedClassName = cn(
               "inline-flex h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border px-3 text-[12px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-2.5",
               "rounded-none",
-              isActive
-                ? "text-white"
-                : "text-[var(--lux-shell-chrome-text)]",
+              isActive ? "text-white" : "text-[var(--lux-shell-chrome-text)]",
             );
 
             return (
@@ -69,7 +71,10 @@ export function ReportsSectionBar() {
                 fallback={
                   <button
                     aria-disabled={true}
-                    className={cn(sharedClassName, "cursor-not-allowed opacity-45")}
+                    className={cn(
+                      sharedClassName,
+                      "cursor-not-allowed opacity-45",
+                    )}
                     style={{
                       background: "var(--lux-shell-chrome-control)",
                       borderColor: "var(--lux-shell-chrome-control-border)",
@@ -106,4 +111,3 @@ export function ReportsSectionBar() {
     </section>
   );
 }
-

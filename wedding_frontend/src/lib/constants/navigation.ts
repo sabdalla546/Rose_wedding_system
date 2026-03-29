@@ -351,6 +351,13 @@ if (secretarialRootItem?.children) {
           subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
         },
         {
+          id: "designer-details",
+          labelKey: "sidebar.nav.designerDetails",
+          label: "Designer Details",
+          labelAr: "تفاصيل المصمم",
+          icon: Handshake,
+          children: [
+        {
           id: "settings-team-vendors",
           labelKey: "sidebar.nav.vendors",
           label: "Vendors",
@@ -371,6 +378,8 @@ if (secretarialRootItem?.children) {
           subtitle:
             "Manage catalog services, pricing types, and operational event items.",
           subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
+        },
+          ],
         },
       ],
     },

@@ -190,12 +190,6 @@ const AppointmentFormPage = () => {
     () => buildAppointmentSchema(t, mode, isEditMode),
     [t, mode, isEditMode],
   );
-
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const venues = useMemo(() => venuesResponse?.data ?? [], [venuesResponse?.data]);
   const preselectedCustomerId = searchParams.get("customerId") || "";
 
   const form = useForm<AppointmentFormValues>({
@@ -233,49 +227,80 @@ const AppointmentFormPage = () => {
       ? watchedVenueId || String(appointment?.venueId ?? "")
       : watchedVenueId) || "";
   const { data: selectedCustomer } = useCustomer(
-    isEditMode && selectedCustomerId
-      ? selectedCustomerId
-      : undefined,
+    selectedCustomerId || undefined,
   );
   const { data: selectedVenue } = useVenue(
-    isEditMode && selectedVenueId
-      ? selectedVenueId
-      : undefined,
+    selectedVenueId || undefined,
   );
   const customerOptions = useMemo(() => {
-    const mergedCustomers = [...customers];
-    const fallbackCustomer = selectedCustomer ?? appointment?.customer ?? null;
-
-    if (
-      fallbackCustomer &&
-      !mergedCustomers.some(
-        (customer) => String(customer.id) === String(fallbackCustomer.id),
-      )
-    ) {
-      mergedCustomers.unshift(fallbackCustomer);
-    }
-
-    return mergedCustomers.map((customer) => ({
+    const base = (customersResponse?.data ?? []).map((customer) => ({
       value: String(customer.id),
       label: customer.fullName,
     }));
-  }, [appointment?.customer, customers, selectedCustomer]);
-  const venueOptions = useMemo(() => {
-    const mergedVenues = [...venues];
-    const fallbackVenue = selectedVenue ?? appointment?.venue ?? null;
+    const exists = base.some((item) => item.value === selectedCustomerId);
 
-    if (
-      fallbackVenue &&
-      !mergedVenues.some((venue) => String(venue.id) === String(fallbackVenue.id))
-    ) {
-      mergedVenues.unshift(fallbackVenue);
+    if (!selectedCustomerId || exists) {
+      return base;
     }
 
-    return mergedVenues.map((venue) => ({
+    if (selectedCustomer?.id) {
+      return [
+        {
+          value: String(selectedCustomer.id),
+          label: selectedCustomer.fullName,
+        },
+        ...base,
+      ];
+    }
+
+    return [
+      {
+        value: selectedCustomerId,
+        label:
+          appointment?.customer?.fullName || `Customer #${selectedCustomerId}`,
+      },
+      ...base,
+    ];
+  }, [
+    appointment?.customer?.fullName,
+    customersResponse?.data,
+    selectedCustomer,
+    selectedCustomerId,
+  ]);
+  const venueOptions = useMemo(() => {
+    const base = (venuesResponse?.data ?? []).map((venue) => ({
       value: String(venue.id),
       label: venue.name,
     }));
-  }, [appointment?.venue, selectedVenue, venues]);
+    const exists = base.some((item) => item.value === selectedVenueId);
+
+    if (!selectedVenueId || exists) {
+      return base;
+    }
+
+    if (selectedVenue?.id) {
+      return [
+        {
+          value: String(selectedVenue.id),
+          label: selectedVenue.name,
+        },
+        ...base,
+      ];
+    }
+
+    return [
+      {
+        value: selectedVenueId,
+        label: appointment?.venue?.name || `Venue #${selectedVenueId}`,
+      },
+      ...base,
+    ];
+  }, [
+    appointment?.venue?.name,
+    selectedVenue,
+    selectedVenueId,
+    venuesResponse?.data,
+  ]);
 
   useEffect(() => {
     if (!isEditMode || !appointment) {
