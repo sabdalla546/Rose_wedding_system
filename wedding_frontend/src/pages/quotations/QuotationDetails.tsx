@@ -25,9 +25,9 @@ import { getEventDisplayTitle } from "@/pages/events/adapters";
 
 import {
   formatMoney,
-  formatQuotationItemCategory,
   getQuotationDisplayNumber,
   getQuotationItemDisplayName,
+  toNumberValue,
 } from "./adapters";
 import { QuotationStatusBadge } from "./_components/quotationStatusBadge";
 import type { QuotationItem } from "./types";
@@ -49,6 +49,9 @@ const getQuotationRowKindLabel = (
 
   return t("quotations.service", { defaultValue: "خدمة" });
 };
+
+const getQuotationItemPrice = (item: QuotationItem) =>
+  item.totalPrice ?? item.unitPrice ?? 0;
 
 function DetailItem({
   label,
@@ -106,6 +109,18 @@ const QuotationDetailsPage = () => {
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const sortedItems = [...(quotation?.items ?? [])].sort(
     (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
+  );
+  const serviceItems = sortedItems.filter((item) => item.itemType === "service");
+  const vendorItems = sortedItems.filter((item) => item.itemType === "vendor");
+  const vendorTotalAmount = vendorItems.reduce((sum, item) => {
+    return sum + (toNumberValue(getQuotationItemPrice(item)) ?? 0);
+  }, 0);
+  const pairedItems = Array.from(
+    { length: Math.max(serviceItems.length, vendorItems.length) },
+    (_, index) => ({
+      serviceItem: serviceItems[index],
+      vendorItem: vendorItems[index],
+    }),
   );
 
   const handleDownloadPdf = async () => {
@@ -407,75 +422,98 @@ const QuotationDetailsPage = () => {
                   <thead>
                     <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.type", {
-                          defaultValue: "Type",
+                        {t("quotations.serviceColumn", {
+                          defaultValue: "Services",
                         })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.itemName", { defaultValue: "Item" })}
-                      </th>
-                      <th className="px-3 py-3 text-start">
-                        {t("quotations.category", { defaultValue: "Category" })}
-                      </th>
-                      <th className="px-3 py-3 text-start">
-                        {t("quotations.quantity", {
-                          defaultValue: "Quantity",
+                        {t("quotations.priceColumn", {
+                          defaultValue: "Price",
                         })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.unitPrice", {
-                          defaultValue: "Unit Price",
+                        {t("quotations.companyColumn", {
+                          defaultValue: "Companies",
                         })}
                       </th>
                       <th className="px-3 py-3 text-start">
-                        {t("quotations.totalPrice", {
-                          defaultValue: "Total Price",
-                        })}
-                      </th>
-                      <th className="px-3 py-3 text-start">
-                        {t("common.notes", {
-                          defaultValue: "Notes",
+                        {t("quotations.priceColumn", {
+                          defaultValue: "Price",
                         })}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedItems.map((item) => (
+                    {pairedItems.map(({ serviceItem, vendorItem }, index) => (
                       <tr
-                        key={item.id}
+                        key={`${serviceItem?.id ?? "service-none"}-${vendorItem?.id ?? "vendor-none"}-${index}`}
                         className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
                         style={{
-                          background: isServiceSummaryItem(item)
+                          background: serviceItem && isServiceSummaryItem(serviceItem)
                             ? "var(--lux-control-hover)"
                             : "transparent",
                         }}
                       >
                         <td className="px-3 py-3">
-                          <ItemKindBadge item={item} t={t} />
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="font-medium text-[var(--lux-text)]">
-                            {getQuotationItemDisplayName(item)}
-                          </div>
+                          {serviceItem ? (
+                            <div className="space-y-1">
+                              <div className="font-medium text-[var(--lux-text)]">
+                                {getQuotationItemDisplayName(serviceItem)}
+                              </div>
+                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                <ItemKindBadge item={serviceItem} t={t} />
+                              </div>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {item.category
-                            ? t(`services.category.${item.category}`, {
-                                defaultValue: formatQuotationItemCategory(item.category),
-                              })
+                          {serviceItem
+                            ? formatMoney(getQuotationItemPrice(serviceItem))
                             : "-"}
                         </td>
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {item.quantity ?? "-"}
+                        <td className="px-3 py-3">
+                          {vendorItem ? (
+                            <div className="space-y-1">
+                              <div className="font-medium text-[var(--lux-text)]">
+                                {getQuotationItemDisplayName(vendorItem)}
+                              </div>
+                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                <ItemKindBadge item={vendorItem} t={t} />
+                              </div>
+                            </div>
+                          ) : serviceItem && isServiceSummaryItem(serviceItem) ? (
+                            <div className="space-y-1">
+                              <div className="font-medium text-[var(--lux-text)]">
+                                {t("quotations.totalCompanies", {
+                                  defaultValue: "إجمالي الشركات",
+                                })}
+                              </div>
+                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                <span
+                                  className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                                  style={{
+                                    borderColor: "var(--lux-gold-border)",
+                                    color: "var(--lux-gold)",
+                                  }}
+                                >
+                                  {t("quotations.totalCompanies", {
+                                    defaultValue: "إجمالي الشركات",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
                         </td>
                         <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {formatMoney(item.unitPrice)}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {formatMoney(item.totalPrice)}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                          {item.notes || "-"}
+                          {vendorItem
+                            ? formatMoney(getQuotationItemPrice(vendorItem))
+                            : serviceItem && isServiceSummaryItem(serviceItem)
+                              ? formatMoney(vendorTotalAmount)
+                            : "-"}
                         </td>
                       </tr>
                     ))}

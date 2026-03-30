@@ -9,6 +9,7 @@ import {
   matchesNavigationHref,
   navigationItems,
   secretarialNavigationLeaves,
+  type NavigationLeaf,
   type NavigationItem,
 } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
@@ -96,9 +97,9 @@ export function SecretarialSectionBar() {
   );
   const designerDetailsSecondaryItems = useMemo(
     () =>
-      DESIGNER_DETAILS_CHILD_IDS.map((id) =>
-        secretarialLeafById.get(id),
-      ).filter((item): item is NavigationItem => Boolean(item)),
+      DESIGNER_DETAILS_CHILD_IDS.map((id) => secretarialLeafById.get(id)).filter(
+        (item): item is NavigationLeaf => Boolean(item),
+      ),
     [secretarialLeafById],
   );
 
@@ -229,7 +230,10 @@ export function SecretarialSectionBar() {
 
   return (
     <section
-      className="flex h-[40px] flex-col "
+      className={cn(
+        "flex flex-col overflow-hidden",
+        secondaryNavigationItems.length > 0 ? "h-full" : "h-[40px]",
+      )}
       style={{
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",

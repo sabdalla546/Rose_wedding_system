@@ -1,0 +1,56 @@
+import type { VendorType as LegacyVendorType } from "../models/vendor.model";
+
+export type VendorTypeSeedDefinition = {
+  slug: LegacyVendorType;
+  name: string;
+  nameAr: string;
+  sortOrder: number;
+};
+
+export const vendorTypeCatalog: VendorTypeSeedDefinition[] = [
+  { slug: "dj", name: "DJ", nameAr: "دي جي", sortOrder: 10 },
+  { slug: "lighting", name: "Lighting", nameAr: "إضاءة", sortOrder: 20 },
+  { slug: "barcode", name: "Barcode", nameAr: "باركود", sortOrder: 30 },
+  { slug: "photography", name: "Photography", nameAr: "تصوير", sortOrder: 40 },
+  { slug: "perfumes", name: "Perfumes", nameAr: "عطور", sortOrder: 50 },
+  {
+    slug: "coffee_station",
+    name: "Coffee Station",
+    nameAr: "ركن القهوة",
+    sortOrder: 60,
+  },
+  { slug: "cheese", name: "Cheese", nameAr: "أجبان", sortOrder: 70 },
+  {
+    slug: "ac_generator",
+    name: "AC Generator",
+    nameAr: "مولدات التكييف",
+    sortOrder: 80,
+  },
+  { slug: "bleachers", name: "Bleachers", nameAr: "مدرجات", sortOrder: 90 },
+  {
+    slug: "instant_photography",
+    name: "Instant Photography",
+    nameAr: "تصوير فوري",
+    sortOrder: 100,
+  },
+  { slug: "valet", name: "Valet", nameAr: "صف سيارات", sortOrder: 110 },
+  {
+    slug: "female_supplies",
+    name: "Female Supplies",
+    nameAr: "مستلزمات نسائية",
+    sortOrder: 120,
+  },
+  {
+    slug: "family_services",
+    name: "Family Services",
+    nameAr: "خدمات عائلية",
+    sortOrder: 130,
+  },
+  {
+    slug: "sweets_savories",
+    name: "Sweets & Savories",
+    nameAr: "حلويات وموالح",
+    sortOrder: 140,
+  },
+  { slug: "other", name: "Other", nameAr: "أخرى", sortOrder: 150 },
+];

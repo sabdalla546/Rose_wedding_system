@@ -33,7 +33,11 @@ import { useEventServiceItems, useServices } from "@/hooks/services/useServices"
 import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
-import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
+import {
+  getQuotationDisplayNumber,
+  getQuotationItemDisplayName,
+} from "@/pages/quotations/adapters";
+import type { QuotationItem } from "@/pages/quotations/types";
 import {
   formatVendorType,
   getEventVendorDisplayName,
@@ -43,7 +47,6 @@ import {
   computeContractItemTotal,
   computeContractTotals,
   CONTRACT_STATUS_OPTIONS,
-  formatContractItemCategory,
   formatMoney,
   getContractItemDisplayName,
   getContractItemOriginLabel,
@@ -67,6 +70,45 @@ const textareaClassName =
   "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
+
+const isServiceSummaryItem = (
+  item?: { itemType?: string; category?: string } | null,
+) => item?.itemType === "service" && item?.category === "service_summary";
+
+const getContractPreviewItemPrice = (
+  item?: { totalPrice?: string | number | null; unitPrice?: string | number | null } | null,
+) => item?.totalPrice ?? item?.unitPrice ?? 0;
+
+const formatPreviewCategory = (value?: string | null) =>
+  value
+    ? value
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+    : null;
+
+const getQuotationPreviewOriginLabel = (item: QuotationItem) => {
+  if (item.itemType === "vendor") {
+    const vendorType = item.category ? formatPreviewCategory(item.category) : null;
+    const pricingPlanName = item.pricingPlan?.name || null;
+    const vendorName =
+      item.itemName ||
+      (item.eventVendor ? getEventVendorDisplayName(item.eventVendor) : null) ||
+      item.vendor?.name ||
+      "Vendor";
+
+    return [vendorName, vendorType, pricingPlanName].filter(Boolean).join(" - ");
+  }
+
+  const serviceName =
+    item.itemName ||
+    item.eventService?.serviceNameSnapshot ||
+    item.service?.name ||
+    "Service";
+  const serviceCategory = formatPreviewCategory(item.category);
+
+  return [serviceName, serviceCategory].filter(Boolean).join(" - ");
+};
 
 const createPaymentScheduleSchema = z.object({
   installmentName: z.string().max(150),
@@ -396,7 +438,10 @@ const ContractFormPage = () => {
     [events, watchedEventId],
   );
   const linkedQuotationItems = useMemo(
-    () => selectedQuotation?.items ?? [],
+    () =>
+      [...(selectedQuotation?.items ?? [])].sort(
+        (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
+      ),
     [selectedQuotation?.items],
   );
   const selectableQuotations = useMemo(
@@ -442,6 +487,37 @@ const ContractFormPage = () => {
       selectedQuotation?.subtotal,
       selectedQuotation?.totalAmount,
     ],
+  );
+  const quotationPreviewServiceItems = useMemo(
+    () => linkedQuotationItems.filter((item) => item.itemType === "service"),
+    [linkedQuotationItems],
+  );
+  const quotationPreviewVendorItems = useMemo(
+    () => linkedQuotationItems.filter((item) => item.itemType === "vendor"),
+    [linkedQuotationItems],
+  );
+  const quotationPreviewVendorTotalAmount = useMemo(
+    () =>
+      quotationPreviewVendorItems.reduce((sum, item) => {
+        return sum + (toNumberValue(getContractPreviewItemPrice(item)) ?? 0);
+      }, 0),
+    [quotationPreviewVendorItems],
+  );
+  const quotationPreviewPairedItems = useMemo(
+    () =>
+      Array.from(
+        {
+          length: Math.max(
+            quotationPreviewServiceItems.length,
+            quotationPreviewVendorItems.length,
+          ),
+        },
+        (_, index) => ({
+          serviceItem: quotationPreviewServiceItems[index],
+          vendorItem: quotationPreviewVendorItems[index],
+        }),
+      ),
+    [quotationPreviewServiceItems, quotationPreviewVendorItems],
   );
 
   useEffect(() => {
@@ -1786,67 +1862,110 @@ const ContractFormPage = () => {
                               <table className="min-w-full text-sm">
                                 <thead>
                                   <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
-                                    <th className="px-3 py-3 text-start">#</th>
                                     <th className="px-3 py-3 text-start">
-                                      {t("contracts.type", {
-                                        defaultValue: "Type",
+                                      {t("contracts.serviceColumn", {
+                                        defaultValue: "Services",
                                       })}
                                     </th>
                                     <th className="px-3 py-3 text-start">
-                                      {t("contracts.itemName", {
-                                        defaultValue: "Item",
+                                      {t("contracts.priceColumn", {
+                                        defaultValue: "Price",
                                       })}
                                     </th>
                                     <th className="px-3 py-3 text-start">
-                                      {t("contracts.category", {
-                                        defaultValue: "Category",
+                                      {t("contracts.companyColumn", {
+                                        defaultValue: "Companies",
                                       })}
                                     </th>
                                     <th className="px-3 py-3 text-start">
-                                      {t("contracts.quantity", {
-                                        defaultValue: "Quantity",
-                                      })}
-                                    </th>
-                                    <th className="px-3 py-3 text-start">
-                                      {t("contracts.totalPrice", {
-                                        defaultValue: "Total Price",
+                                      {t("contracts.priceColumn", {
+                                        defaultValue: "Price",
                                       })}
                                     </th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {(selectedQuotation.items ?? []).map((item, index) => (
+                                  {quotationPreviewPairedItems.map(
+                                    ({ serviceItem, vendorItem }, index) => (
                                     <tr
-                                      key={item.id}
-                                      className="border-b border-[var(--lux-row-border)] last:border-b-0"
+                                      key={`${serviceItem?.id ?? "service-none"}-${vendorItem?.id ?? "vendor-none"}-${index}`}
+                                      className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
+                                      style={{
+                                        background: serviceItem && isServiceSummaryItem(serviceItem)
+                                          ? "var(--lux-control-hover)"
+                                          : "transparent",
+                                      }}
                                     >
-                                      <td className="px-3 py-3">{index + 1}</td>
                                       <td className="px-3 py-3">
-                                        <TypeBadge
-                                          item={item as any}
-                                          t={t}
-                                        />
-                                      </td>
-                                      <td className="px-3 py-3">
-                                        <div className="font-medium text-[var(--lux-text)]">
-                                          {getContractItemDisplayName(item as any)}
-                                        </div>
-                                        <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-                                          {item.itemType === "vendor"
-                                            ? `${t("contracts.vendorOrigin", {
-                                                defaultValue: "Vendor-origin row",
-                                              })}: ${getContractItemOriginLabel(item as any)}`
-                                            : `${t("contracts.serviceOrigin", {
+                                        {serviceItem ? (
+                                          <div className="space-y-1">
+                                            <div className="font-medium text-[var(--lux-text)]">
+                                              {getQuotationItemDisplayName(serviceItem)}
+                                            </div>
+                                            <div className="text-xs text-[var(--lux-text-secondary)]">
+                                              <TypeBadge item={serviceItem} t={t} />
+                                            </div>
+                                            <div className="text-xs text-[var(--lux-text-secondary)]">
+                                              {`${t("contracts.serviceOrigin", {
                                                 defaultValue: "Service-origin row",
-                                              })}: ${getContractItemOriginLabel(item as any)}`}
-                                        </div>
+                                              })}: ${getQuotationPreviewOriginLabel(serviceItem)}`}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          "-"
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                                        {serviceItem
+                                          ? formatMoney(getContractPreviewItemPrice(serviceItem))
+                                          : "-"}
                                       </td>
                                       <td className="px-3 py-3">
-                                        {formatContractItemCategory(item.category)}
+                                        {vendorItem ? (
+                                          <div className="space-y-1">
+                                            <div className="font-medium text-[var(--lux-text)]">
+                                              {getQuotationItemDisplayName(vendorItem)}
+                                            </div>
+                                            <div className="text-xs text-[var(--lux-text-secondary)]">
+                                              <TypeBadge item={vendorItem} t={t} />
+                                            </div>
+                                            <div className="text-xs text-[var(--lux-text-secondary)]">
+                                              {`${t("contracts.vendorOrigin", {
+                                                defaultValue: "Vendor-origin row",
+                                              })}: ${getQuotationPreviewOriginLabel(vendorItem)}`}
+                                            </div>
+                                          </div>
+                                        ) : serviceItem && isServiceSummaryItem(serviceItem) ? (
+                                          <div className="space-y-1">
+                                            <div className="font-medium text-[var(--lux-text)]">
+                                              {t("contracts.totalCompanies", {
+                                                defaultValue: "إجمالي الشركات",
+                                              })}
+                                            </div>
+                                            <div className="text-xs text-[var(--lux-text-secondary)]">
+                                              <span
+                                                className="inline-flex rounded-[4px] border px-3 py-1 text-xs font-semibold"
+                                                style={{
+                                                  borderColor: "var(--lux-gold-border)",
+                                                  color: "var(--lux-gold)",
+                                                }}
+                                              >
+                                                {t("contracts.totalCompanies", {
+                                                  defaultValue: "إجمالي الشركات",
+                                                })}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          "-"
+                                        )}
                                       </td>
-                                      <td className="px-3 py-3">{item.quantity}</td>
-                                      <td className="px-3 py-3">
-                                        {formatMoney(item.totalPrice)}
+                                      <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                                        {vendorItem
+                                          ? formatMoney(getContractPreviewItemPrice(vendorItem))
+                                          : serviceItem && isServiceSummaryItem(serviceItem)
+                                            ? formatMoney(quotationPreviewVendorTotalAmount)
+                                            : "-"}
                                       </td>
                                     </tr>
                                   ))}

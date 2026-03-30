@@ -1,30 +1,27 @@
-import { format } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Edit, Eye, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
-import { getVendorTypeName, type TableVendor } from "@/pages/vendors/adapters";
+import type { TableVendorType } from "@/pages/vendors/adapters";
 
 import { VendorActiveBadge } from "./vendorActiveBadge";
 
 interface Props {
-  onDelete: (vendor: TableVendor) => void;
+  onDelete: (vendorType: TableVendorType) => void;
   editPermission: string;
   deletePermission: string;
 }
 
-export const useVendorsColumns = ({
+export const useVendorTypesColumns = ({
   onDelete,
   editPermission,
   deletePermission,
-}: Props): ColumnDef<TableVendor>[] => {
+}: Props): ColumnDef<TableVendorType>[] => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const dateLocale = i18n.language === "ar" ? ar : enUS;
   const alignClass = i18n.language === "ar" ? "text-right" : "text-left";
 
   return [
@@ -32,7 +29,7 @@ export const useVendorsColumns = ({
       accessorKey: "name",
       header: () => (
         <div className={alignClass}>
-          {t("vendors.name", { defaultValue: "Vendor Name" })}
+          {t("vendors.types.name", { defaultValue: "Name" })}
         </div>
       ),
       cell: ({ row }) => (
@@ -40,45 +37,39 @@ export const useVendorsColumns = ({
           <div className="font-medium text-[var(--lux-text)]">
             {row.original.name}
           </div>
-          <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.contactPerson || row.original.email || "-"}
-          </div>
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "type",
-      header: () => (
-        <div className={alignClass}>
-          {t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>
-          {getVendorTypeName({
-            slug: row.original.type,
-            vendorType: row.original.vendorType,
-            language: i18n.resolvedLanguage ?? "en",
-          })}
         </div>
       ),
     },
     {
-      id: "contact",
+      accessorKey: "nameAr",
       header: () => (
         <div className={alignClass}>
-          {t("vendors.contactDetails", { defaultValue: "Contact" })}
+          {t("vendors.types.nameAr", { defaultValue: "Arabic Name" })}
         </div>
       ),
       cell: ({ row }) => (
+        <div className={alignClass}>{row.original.nameAr || "-"}</div>
+      ),
+    },
+    {
+      accessorKey: "slug",
+      header: () => (
         <div className={alignClass}>
-          <div>{row.original.phone || "-"}</div>
-          <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
-            {row.original.phone2 || row.original.email || "-"}
-          </div>
+          {t("vendors.types.slug", { defaultValue: "Slug" })}
         </div>
       ),
+      cell: ({ row }) => (
+        <div className={`${alignClass} font-mono text-xs`}>{row.original.slug}</div>
+      ),
+    },
+    {
+      accessorKey: "sortOrder",
+      header: () => (
+        <div className={alignClass}>
+          {t("vendors.types.sortOrder", { defaultValue: "Sort Order" })}
+        </div>
+      ),
+      cell: ({ row }) => <div className={alignClass}>{row.original.sortOrder}</div>,
     },
     {
       accessorKey: "isActive",
@@ -94,24 +85,6 @@ export const useVendorsColumns = ({
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: () => (
-        <div className={alignClass}>
-          {t("vendors.createdAt", { defaultValue: "Created At" })}
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={alignClass}>
-          {row.original.createdAt
-            ? format(new Date(row.original.createdAt), "MMM d, yyyy", {
-                locale: dateLocale,
-              })
-            : "-"}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
       id: "actions",
       header: () => (
         <div className="text-center">
@@ -120,19 +93,11 @@ export const useVendorsColumns = ({
       ),
       cell: ({ row }) => (
         <div className="flex items-center justify-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => navigate(`/settings/vendors/${row.original.id}`)}
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </Button>
-
           <ProtectedComponent permission={editPermission}>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/settings/vendors/edit/${row.original.id}`)}
+              onClick={() => navigate(`/settings/vendors/types/edit/${row.original.id}`)}
             >
               <Edit className="h-3.5 w-3.5" />
             </Button>

@@ -4,10 +4,12 @@ import type {
   EventVendorProvidedBy,
   EventVendorStatus,
   Vendor,
+  VendorTypeRecord,
   VendorPricingPlan,
   VendorPricingPlansResponse,
   VendorSubService,
   VendorSubServicesResponse,
+  VendorTypesResponse,
   VendorsResponse,
   VendorType,
 } from "@/pages/vendors/types";
@@ -16,6 +18,8 @@ export type TableVendor = Vendor & {
   contactSummary: string;
   typeDisplay: string;
 };
+
+export type TableVendorType = VendorTypeRecord;
 
 export type TableVendorSubService = VendorSubService & {
   vendorDisplay: string;
@@ -31,6 +35,12 @@ export type TableVendorPricingPlan = VendorPricingPlan & {
 
 export type TableVendorsResponse = {
   data: { vendors: TableVendor[] };
+  total: number;
+  totalPages: number;
+};
+
+export type TableVendorTypesResponse = {
+  data: { vendorTypes: TableVendorType[] };
   total: number;
   totalPages: number;
 };
@@ -52,6 +62,24 @@ export const formatVendorType = (value: VendorType) =>
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+
+export const getVendorTypeName = ({
+  slug,
+  vendorType,
+  language = "en",
+}: {
+  slug?: VendorType | null;
+  vendorType?: VendorTypeRecord | null;
+  language?: string;
+}) => {
+  if (vendorType) {
+    return language === "ar"
+      ? vendorType.nameAr || vendorType.name
+      : vendorType.name || vendorType.nameAr;
+  }
+
+  return slug ? formatVendorType(slug) : "-";
+};
 
 export const toNumberValue = (value?: DecimalValue | null) => {
   if (value === null || typeof value === "undefined" || value === "") {
@@ -102,6 +130,18 @@ export function toTableVendors(res?: VendorsResponse): TableVendorsResponse {
   return {
     data: { vendors },
     total: res?.meta?.total ?? vendors.length,
+    totalPages: res?.meta?.pages ?? 1,
+  };
+}
+
+export function toTableVendorTypes(
+  res?: VendorTypesResponse,
+): TableVendorTypesResponse {
+  const vendorTypes = res?.data ?? [];
+
+  return {
+    data: { vendorTypes },
+    total: res?.meta?.total ?? vendorTypes.length,
     totalPages: res?.meta?.pages ?? 1,
   };
 }

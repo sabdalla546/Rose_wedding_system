@@ -10,7 +10,11 @@ import {
   VendorPricingPlan,
   Venue,
 } from "../../../models";
-import type { QuotationPdfData } from "../document.types";
+import type {
+  PdfLineItem,
+  PdfPairedLineItem,
+  QuotationPdfData,
+} from "../document.types";
 import { DocumentServiceError } from "../document.types";
 import { getCompanyProfile, normalizeDecimal } from "../document.utils";
 
@@ -35,6 +39,46 @@ function buildEventTitle(event?: any) {
   }
 
   return `Event #${event.id}`;
+}
+
+function buildPdfItems(items?: any[]): PdfLineItem[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item: any) => ({
+    itemType: item.itemType === "vendor" ? "vendor" : "service",
+    itemName: item.itemName,
+    category: item.category ?? null,
+    quantity: normalizeDecimal(item.quantity ?? 1),
+    unitPrice: normalizeDecimal(item.unitPrice ?? 0),
+    totalPrice: normalizeDecimal(item.totalPrice ?? item.unitPrice ?? 0),
+    notes: item.notes ?? null,
+    isSummaryRow:
+      item.itemType === "service"
+      && item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
+  }));
+}
+
+function buildPairedItems(items: PdfLineItem[]): PdfPairedLineItem[] {
+  const serviceItems = items.filter((item) => item.itemType === "service");
+  const vendorItems = items.filter((item) => item.itemType === "vendor");
+
+  return Array.from(
+    { length: Math.max(serviceItems.length, vendorItems.length) },
+    (_, index) => ({
+      serviceItem: serviceItems[index],
+      vendorItem: vendorItems[index],
+    }),
+  );
+}
+
+function computeVendorTotalAmount(items: PdfLineItem[]) {
+  return normalizeDecimal(
+    items
+      .filter((item) => item.itemType === "vendor")
+      .reduce((sum, item) => sum + normalizeDecimal(item.totalPrice), 0),
+  );
 }
 
 export async function buildQuotationPdfData(quotationId: number): Promise<QuotationPdfData> {
@@ -90,6 +134,7 @@ export async function buildQuotationPdfData(quotationId: number): Promise<Quotat
   const plainQuotation = quotation.toJSON() as any;
   const event = plainQuotation.event;
   const customer = plainQuotation.customer || event?.customer || null;
+  const items = buildPdfItems(plainQuotation.items);
 
   return {
     company: getCompanyProfile(),
@@ -118,19 +163,8 @@ export async function buildQuotationPdfData(quotationId: number): Promise<Quotat
       eventDate: event?.eventDate ?? null,
       venueName: event?.venue?.name ?? event?.venueNameSnapshot ?? null,
     },
-    items: Array.isArray(plainQuotation.items)
-      ? plainQuotation.items.map((item: any) => ({
-          itemType: item.itemType === "vendor" ? "vendor" : "service",
-          itemName: item.itemName,
-          category: item.category ?? null,
-          quantity: normalizeDecimal(item.quantity ?? 1),
-          unitPrice: normalizeDecimal(item.unitPrice ?? 0),
-          totalPrice: normalizeDecimal(item.totalPrice ?? 0),
-          notes: item.notes ?? null,
-          isSummaryRow:
-            item.itemType === "service"
-            && item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
-        }))
-      : [],
+    items,
+    pairedItems: buildPairedItems(items),
+    vendorTotalAmount: computeVendorTotalAmount(items),
   };
 }

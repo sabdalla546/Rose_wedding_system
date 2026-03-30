@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Handshake } from "lucide-react";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,45 +36,78 @@ import {
   useCreateVendor,
   useUpdateVendor,
 } from "@/hooks/vendors/useVendorMutations";
+import { useVendorTypes } from "@/hooks/vendors/useVendorTypes";
 import { useVendor } from "@/hooks/vendors/useVendors";
 
-import { VENDOR_TYPE_OPTIONS } from "./adapters";
-import type { VendorFormData, VendorType } from "./types";
-
-const vendorSchema = z.object({
-  name: z.string().min(2, "Vendor name is required").max(150),
-  type: z.enum(
-    VENDOR_TYPE_OPTIONS.map((option) => option.value) as [
-      VendorType,
-      ...VendorType[],
-    ],
-  ),
-  contactPerson: z.string().max(150).optional(),
-  phone: z.string().max(30).optional(),
-  phone2: z.string().max(30).optional(),
-  email: z.union([z.literal(""), z.string().email("Invalid email address")]),
-  address: z.string().max(255).optional(),
-  notes: z.string().optional(),
-  isActive: z.boolean().default(true),
-});
-
-type VendorFormValues = z.infer<typeof vendorSchema>;
+import { getVendorTypeName } from "./adapters";
+import type { VendorFormData } from "./types";
 
 const VendorFormPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
+  const language = i18n.resolvedLanguage ?? "en";
+  const vendorSchema = useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .min(
+            2,
+            t("vendors.validation.nameRequired", {
+              defaultValue: "Vendor name is required",
+            }),
+          )
+          .max(150),
+        typeId: z.string().min(
+          1,
+          t("vendors.validation.typeRequired", {
+            defaultValue: "Vendor type is required",
+          }),
+        ),
+        contactPerson: z.string().max(150).optional(),
+        phone: z.string().max(30).optional(),
+        phone2: z.string().max(30).optional(),
+        email: z.union([
+          z.literal(""),
+          z.string().email(
+            t("vendors.validation.emailInvalid", {
+              defaultValue: "Invalid email address",
+            }),
+          ),
+        ]),
+        address: z.string().max(255).optional(),
+        notes: z.string().optional(),
+        isActive: z.boolean(),
+      }),
+    [t],
+  );
+
+  type VendorFormValues = z.infer<typeof vendorSchema>;
 
   const { data: vendor, isLoading: vendorLoading } = useVendor(id);
+  const { data: vendorTypesResponse, isLoading: vendorTypesLoading } =
+    useVendorTypes({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      isActive: isEditMode ? "all" : "true",
+      activeOnly: !isEditMode,
+    });
   const createMutation = useCreateVendor();
   const updateMutation = useUpdateVendor(id);
+
+  const vendorTypeOptions = useMemo(
+    () => vendorTypesResponse?.data ?? [],
+    [vendorTypesResponse],
+  );
 
   const form = useForm<VendorFormValues>({
     resolver: zodResolver(vendorSchema),
     defaultValues: {
       name: "",
-      type: "other",
+      typeId: "",
       contactPerson: "",
       phone: "",
       phone2: "",
@@ -90,9 +123,13 @@ const VendorFormPage = () => {
       return;
     }
 
+    const selectedVendorType =
+      vendorTypeOptions.find((option) => option.id === vendor.typeId) ??
+      vendorTypeOptions.find((option) => option.slug === vendor.type);
+
     form.reset({
-      name: vendor.name,
-      type: vendor.type,
+      name: vendor.name ?? "",
+      typeId: selectedVendorType ? String(selectedVendorType.id) : "",
       contactPerson: vendor.contactPerson ?? "",
       phone: vendor.phone ?? "",
       phone2: vendor.phone2 ?? "",
@@ -101,10 +138,21 @@ const VendorFormPage = () => {
       notes: vendor.notes ?? "",
       isActive: vendor.isActive,
     });
-  }, [form, isEditMode, vendor]);
+  }, [form, isEditMode, vendor, vendorTypeOptions]);
+
+  const selectedTypeId = useWatch({ control: form.control, name: "typeId" });
+  const selectedVendorType = useMemo(
+    () =>
+      vendorTypeOptions.find((option) => String(option.id) === String(selectedTypeId)),
+    [selectedTypeId, vendorTypeOptions],
+  );
 
   const onSubmit: SubmitHandler<VendorFormValues> = (values) => {
-    const payload: VendorFormData = values;
+    const payload: VendorFormData = {
+      ...values,
+      typeId: Number(values.typeId),
+      type: selectedVendorType?.slug ?? vendor?.type,
+    };
 
     if (isEditMode) {
       updateMutation.mutate(payload);
@@ -117,6 +165,7 @@ const VendorFormPage = () => {
   const isBusy =
     vendorLoading || createMutation.isPending || updateMutation.isPending;
   const isActive = useWatch({ control: form.control, name: "isActive" });
+  const hasVendorTypes = vendorTypeOptions.length > 0;
 
   if (vendorLoading) {
     return (
@@ -158,14 +207,17 @@ const VendorFormPage = () => {
                 onClick={() => navigate("/settings/vendors")}
                 className="crud-header-back"
               >
-                <span aria-hidden="true">←</span>
+                <span aria-hidden="true">â†</span>
                 {t("vendors.backToVendors", { defaultValue: "Back to Vendors" })}
               </button>
             }
           >
             <div className="p-6 md:p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-8"
+                >
                   <CrudFormSection
                     title={t("vendors.basicInformation", {
                       defaultValue: "Basic Information",
@@ -199,7 +251,7 @@ const VendorFormPage = () => {
 
                       <FormField
                         control={form.control}
-                        name="type"
+                        name="typeId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
@@ -207,7 +259,11 @@ const VendorFormPage = () => {
                                 defaultValue: "Vendor Type",
                               })}
                             </FormLabel>
-                            <Select value={field.value} onValueChange={field.onChange}>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={vendorTypesLoading || !hasVendorTypes}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue
@@ -218,15 +274,25 @@ const VendorFormPage = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {VENDOR_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {t(`vendors.type.${option.value}`, {
-                                      defaultValue: option.label,
+                                {vendorTypeOptions.map((option) => (
+                                  <SelectItem key={option.id} value={String(option.id)}>
+                                    {getVendorTypeName({
+                                      slug: option.slug,
+                                      vendorType: option,
+                                      language,
                                     })}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
+                            {!hasVendorTypes ? (
+                              <p className="text-xs text-[var(--lux-text-secondary)]">
+                                {t("vendors.types.emptyHint", {
+                                  defaultValue:
+                                    "Create at least one active vendor type before creating vendors.",
+                                })}
+                              </p>
+                            ) : null}
                             <FormMessage />
                           </FormItem>
                         )}
@@ -279,7 +345,9 @@ const VendorFormPage = () => {
                               <Input
                                 type="email"
                                 {...field}
-                                placeholder="vendor@example.com"
+                                placeholder={t("vendors.emailPlaceholder", {
+                                  defaultValue: "vendor@example.com",
+                                })}
                               />
                             </FormControl>
                             <FormMessage />
@@ -361,9 +429,7 @@ const VendorFormPage = () => {
                       defaultValue: "Status & Notes",
                     })}
                   >
-                    <label
-                      className="form-status-card"
-                    >
+                    <label className="form-status-card">
                       <Checkbox
                         checked={isActive}
                         onCheckedChange={(checked: CheckedState) =>
@@ -421,7 +487,10 @@ const VendorFormPage = () => {
                       {t("common.cancel", { defaultValue: "Cancel" })}
                     </Button>
 
-                    <Button type="submit" disabled={isBusy}>
+                    <Button
+                      type="submit"
+                      disabled={isBusy || vendorTypesLoading || !hasVendorTypes}
+                    >
                       {isBusy
                         ? t("common.processing", {
                             defaultValue: "Processing...",

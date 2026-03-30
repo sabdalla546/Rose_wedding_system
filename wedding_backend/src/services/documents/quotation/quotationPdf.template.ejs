@@ -7,7 +7,7 @@
     <style>
       @page {
         size: A4;
-        margin: 0;
+        margin: 28mm 14mm 22mm;
       }
 
       * {
@@ -27,44 +27,7 @@
       }
 
       .page {
-        padding: 18mm 14mm;
-      }
-
-      .header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        border-bottom: 2px solid #d4af37;
-        padding-bottom: 12px;
-        margin-bottom: 16px;
-      }
-
-      .company {
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-      }
-
-      .logo {
-        width: 68px;
-        height: 68px;
-        border: 1px solid #d1d5db;
-        border-radius: 12px;
-        object-fit: contain;
-        background: #fff;
-      }
-
-      .title-block h1 {
-        margin: 0;
-        font-size: 24px;
-        color: #111827;
-      }
-
-      .title-block .subtitle {
-        margin-top: 4px;
-        color: #6b7280;
-        font-size: 12px;
+        padding: 0;
       }
 
       .meta-grid,
@@ -84,11 +47,6 @@
       .section.keep-together {
         break-inside: avoid-page;
         page-break-inside: avoid;
-      }
-
-      .items-section {
-        break-inside: auto;
-        page-break-inside: auto;
       }
 
       .section-title {
@@ -127,7 +85,7 @@
       th,
       td {
         border: 1px solid #e5e7eb;
-        padding: 8px 7px;
+        padding: 5px 6px;
         vertical-align: top;
       }
 
@@ -137,38 +95,35 @@
         font-weight: 700;
       }
 
-      tbody tr:nth-child(even) {
-        background: #fcfcfd;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        border: 1px solid #d1d5db;
-      }
-
-      .badge-service {
-        color: #374151;
-        background: #f9fafb;
-      }
-
-      .badge-summary,
-      .badge-vendor {
-        color: #92400e;
-        background: #fffbeb;
-        border-color: #f6d48d;
-      }
-
       .summary-row {
         background: #fff7ed !important;
         font-weight: 700;
       }
 
-      .vendor-row {
-        background: #fffbeb !important;
+      .item-cell-title {
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 2px;
+      }
+
+      .item-cell-note {
+        margin-top: 2px;
+        color: #6b7280;
+        font-size: 11px;
+        white-space: pre-wrap;
+      }
+
+      .item-cell-empty {
+        color: #9ca3af;
+      }
+
+      .price-cell {
+        white-space: nowrap;
+      }
+
+      .summary-secondary-title {
+        font-weight: 700;
+        color: #111827;
       }
 
       .muted {
@@ -206,47 +161,17 @@
         white-space: pre-wrap;
       }
 
-      .footer-note {
-        margin-top: 16px;
-        color: #6b7280;
-        font-size: 11px;
-        text-align: center;
+      .text-left {
+        text-align: left;
       }
 
       .text-center {
         text-align: center;
       }
-
-      .text-left {
-        text-align: left;
-      }
     </style>
   </head>
   <body>
     <div class="page">
-      <header class="header">
-        <div class="title-block">
-          <h1>عرض سعر</h1>
-          <div class="subtitle">Quotation PDF Snapshot</div>
-        </div>
-
-        <div class="company">
-          <% if (data.company.logoUrl) { %>
-            <img class="logo" src="<%= data.company.logoUrl %>" alt="logo" />
-          <% } %>
-
-          <div>
-            <div style="font-size: 18px; font-weight: 700; color: #111827;">
-              <%= helpers.displayText(data.company.name) %>
-            </div>
-            <div class="muted"><%= helpers.displayText(data.company.phone) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.email) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.address) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.website) %></div>
-          </div>
-        </div>
-      </header>
-
       <section class="section keep-together">
         <div class="meta-grid">
           <div class="field">
@@ -304,36 +229,51 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 44px;">م</th>
-              <th>البيان</th>
-              <th style="width: 100px;">النوع</th>
-              <th style="width: 90px;">الكمية</th>
-              <th style="width: 120px;">سعر الوحدة</th>
-              <th style="width: 120px;">الإجمالي</th>
-              <th style="width: 170px;">الملاحظات</th>
+              <th style="width: 46px;">م</th>
+              <th>تجهيز الديكورات الداخلية</th>
+              <th style="width: 140px;">السعر</th>
+              <th>شركات خارجية</th>
+              <th style="width: 140px;">السعر</th>
             </tr>
           </thead>
           <tbody>
-            <% data.items.forEach(function(item, index) { %>
-              <tr class="<%= item.isSummaryRow ? "summary-row" : item.itemType === "vendor" ? "vendor-row" : "" %>">
+            <% data.pairedItems.forEach(function(row, index) { %>
+              <tr class="<%= row.serviceItem && row.serviceItem.isSummaryRow ? 'summary-row' : '' %>">
                 <td class="text-center"><%= index + 1 %></td>
                 <td>
-                  <div style="font-weight: 700;"><%= helpers.displayText(item.itemName) %></div>
-                  <% if (item.category && item.category !== "service_summary") { %>
-                    <div class="muted"><%= item.category %></div>
+                  <% if (row.serviceItem) { %>
+                    <div class="item-cell-title"><%= helpers.displayText(row.serviceItem.itemName) %></div>
+                    <% if (row.serviceItem.notes) { %>
+                      <div class="item-cell-note"><%= helpers.displayText(row.serviceItem.notes) %></div>
+                    <% } %>
+                  <% } else { %>
+                    <div class="item-cell-empty">-</div>
                   <% } %>
                 </td>
-                <td class="text-center">
-                  <span
-                    class="badge <%= item.isSummaryRow ? "badge-summary" : item.itemType === "vendor" ? "badge-vendor" : "badge-service" %>"
-                  >
-                    <%= helpers.getItemTypeLabel(item) %>
-                  </span>
+                <td class="text-left price-cell">
+                  <%= row.serviceItem ? helpers.formatMoney(row.serviceItem.totalPrice) : '-' %>
                 </td>
-                <td class="text-center"><%= helpers.formatQuantity(item.quantity) %></td>
-                <td class="text-left"><%= helpers.formatMoney(item.unitPrice) %></td>
-                <td class="text-left"><%= helpers.formatMoney(item.totalPrice) %></td>
-                <td><%= helpers.displayText(item.notes) %></td>
+                <td>
+                  <% if (row.vendorItem) { %>
+                    <div class="item-cell-title"><%= helpers.displayText(row.vendorItem.itemName) %></div>
+                    <% if (row.vendorItem.notes) { %>
+                      <div class="item-cell-note"><%= helpers.displayText(row.vendorItem.notes) %></div>
+                    <% } %>
+                  <% } else if (row.serviceItem && row.serviceItem.isSummaryRow) { %>
+                    <div class="summary-secondary-title">إجمالي الشركات</div>
+                  <% } else { %>
+                    <div class="item-cell-empty">-</div>
+                  <% } %>
+                </td>
+                <td class="text-left price-cell">
+                  <% if (row.vendorItem) { %>
+                    <%= helpers.formatMoney(row.vendorItem.totalPrice) %>
+                  <% } else if (row.serviceItem && row.serviceItem.isSummaryRow) { %>
+                    <%= helpers.formatMoney(data.vendorTotalAmount) %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
               </tr>
             <% }) %>
           </tbody>
@@ -364,9 +304,6 @@
         </section>
       <% } %>
 
-      <div class="footer-note">
-        هذا المستند يمثل نسخة PDF من عرض السعر المحفوظ في النظام.
-      </div>
     </div>
   </body>
 </html>

@@ -25,6 +25,34 @@ export type CompanyProfile = {
   logoUrl?: string | null;
 };
 
+export type PdfLineItem = {
+  itemType: "service" | "vendor";
+  itemName: string;
+  category?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  notes?: string | null;
+  isSummaryRow?: boolean;
+};
+
+export type PdfPairedLineItem<TItem extends PdfLineItem = PdfLineItem> = {
+  serviceItem?: TItem;
+  vendorItem?: TItem;
+};
+
+export type PdfClauseDefinitionRow = {
+  number: string;
+  term: string;
+  definition: string;
+};
+
+export type PdfClause = {
+  title: string;
+  paragraphs: string[];
+  definitions?: PdfClauseDefinitionRow[];
+};
+
 export type QuotationPdfData = {
   company: CompanyProfile;
   quotation: {
@@ -48,16 +76,9 @@ export type QuotationPdfData = {
     eventDate?: string | null;
     venueName?: string | null;
   };
-  items: Array<{
-    itemType: "service" | "vendor";
-    itemName: string;
-    category?: string | null;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    notes?: string | null;
-    isSummaryRow?: boolean;
-  }>;
+  items: PdfLineItem[];
+  pairedItems: PdfPairedLineItem[];
+  vendorTotalAmount: number;
 };
 
 export type ContractPdfData = {
@@ -88,18 +109,12 @@ export type ContractPdfData = {
     title?: string | null;
     eventDate?: string | null;
     venueName?: string | null;
+    venueAddress?: string | null;
     guestCount?: number | null;
   };
-  items: Array<{
-    itemType: "service" | "vendor";
-    itemName: string;
-    category?: string | null;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    notes?: string | null;
-    isSummaryRow?: boolean;
-  }>;
+  items: PdfLineItem[];
+  pairedItems: PdfPairedLineItem[];
+  vendorTotalAmount: number;
   paymentSchedules: Array<{
     installmentName: string;
     dueDate?: string | null;
@@ -107,10 +122,7 @@ export type ContractPdfData = {
     status?: string | null;
     notes?: string | null;
   }>;
-  clauses: Array<{
-    title: string;
-    paragraphs: string[];
-  }>;
+  clauses: PdfClause[];
 };
 
 export type GeneratedPdfDocument<TData = unknown> = {

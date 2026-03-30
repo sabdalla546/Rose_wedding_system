@@ -19,13 +19,14 @@ export const vendorTypeValues = [
   "other",
 ] as const;
 
-export type VendorType =
-  | (typeof vendorTypeValues)[number];
+export type LegacyVendorType = (typeof vendorTypeValues)[number];
+export type VendorType = string;
 
 export interface VendorAttributes {
   id: number;
   name: string;
   type: VendorType;
+  typeId?: number | null;
   contactPerson?: string | null;
   phone?: string | null;
   phone2?: string | null;
@@ -59,6 +60,7 @@ export class Vendor
   public id!: number;
   public name!: string;
   public type!: VendorType;
+  public typeId?: number | null;
   public contactPerson?: string | null;
   public phone?: string | null;
   public phone2?: string | null;
@@ -85,8 +87,13 @@ Vendor.init(
     },
 
     type: {
-      type: DataTypes.ENUM(...vendorTypeValues),
+      type: DataTypes.STRING(150),
       allowNull: false,
+    },
+
+    typeId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
     },
 
     contactPerson: {
@@ -146,6 +153,7 @@ Vendor.init(
     indexes: [
       { fields: ["name"] },
       { fields: ["type"] },
+      { fields: ["typeId"] },
       { fields: ["isActive"] },
     ],
   },

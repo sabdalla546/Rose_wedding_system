@@ -18,6 +18,7 @@ const normalizeNullableString = (value?: string) => {
 
 const buildCreateVendorPayload = (values: VendorFormData) => ({
   name: values.name.trim(),
+  typeId: values.typeId,
   type: values.type,
   contactPerson: normalizeOptionalString(values.contactPerson),
   phone: normalizeOptionalString(values.phone),
@@ -30,6 +31,7 @@ const buildCreateVendorPayload = (values: VendorFormData) => ({
 
 const buildUpdateVendorPayload = (values: VendorFormData) => ({
   name: values.name.trim(),
+  typeId: values.typeId,
   type: values.type,
   contactPerson: normalizeNullableString(values.contactPerson),
   phone: normalizeNullableString(values.phone),

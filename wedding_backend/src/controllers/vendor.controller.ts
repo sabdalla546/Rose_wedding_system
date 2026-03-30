@@ -5,6 +5,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import {
   sequelize,
   Vendor,
+  VendorType,
   VendorSubService,
   VendorPricingPlan,
   EventVendor,
@@ -23,18 +24,39 @@ import {
   updateEventVendorSchema,
 } from "../validation/vendor.schemas";
 
-const userAuditInclude = [
+const buildUserAuditInclude = () => [
   { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+];
+
+const vendorTypeSummaryAttributes = [
+  "id",
+  "name",
+  "nameAr",
+  "slug",
+  "isActive",
+  "sortOrder",
+];
+
+const buildVendorTypeSummaryInclude = () => ({
+  model: VendorType,
+  as: "vendorType",
+  attributes: vendorTypeSummaryAttributes,
+});
+
+const buildVendorInclude = () => [
+  buildVendorTypeSummaryInclude(),
+  ...buildUserAuditInclude(),
 ];
 
 const buildVendorSummaryInclude = () => ({
   model: Vendor,
   as: "vendor",
-  attributes: ["id", "name", "type", "isActive"],
+  attributes: ["id", "name", "type", "typeId", "isActive"],
+  include: [buildVendorTypeSummaryInclude()],
 });
 
-const eventVendorInclude = [
+const buildEventVendorInclude = () => [
   buildVendorSummaryInclude(),
   { model: Event, as: "event" },
   {
@@ -53,16 +75,16 @@ const eventVendorInclude = [
       },
     ],
   },
-  ...userAuditInclude,
+  ...buildUserAuditInclude(),
 ];
 
-const vendorSubServiceInclude = [
+const buildVendorSubServiceInclude = () => [
   buildVendorSummaryInclude(),
-  ...userAuditInclude,
+  ...buildUserAuditInclude(),
 ];
-const vendorPricingPlanInclude = [
+const buildVendorPricingPlanInclude = () => [
   buildVendorSummaryInclude(),
-  ...userAuditInclude,
+  ...buildUserAuditInclude(),
 ];
 
 const parseBooleanQuery = (value: unknown) => {
@@ -86,6 +108,45 @@ const toNumberValue = (value?: number | string | null) => {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+const resolveVendorTypeSelection = async ({
+  type,
+  typeId,
+}: {
+  type?: string | null;
+  typeId?: number | null;
+}) => {
+  // TODO(phase-2): remove the legacy string fallback once vendor flows
+  // outside basic vendor CRUD fully consume typeId/vendorType records.
+  const normalizedType = type?.trim() || null;
+  const normalizedTypeId =
+    typeof typeId === "number" && typeId > 0 ? typeId : null;
+
+  let vendorType: VendorType | null = null;
+
+  if (normalizedTypeId) {
+    vendorType = await VendorType.findByPk(normalizedTypeId);
+
+    if (!vendorType) {
+      throw new Error("Vendor type not found");
+    }
+  }
+
+  if (!vendorType && normalizedType) {
+    vendorType = await VendorType.findOne({
+      where: { slug: normalizedType },
+    });
+  }
+
+  if (vendorType && normalizedType && vendorType.slug !== normalizedType) {
+    throw new Error("Vendor type does not match the selected legacy type");
+  }
+
+  return {
+    vendorType,
+    legacyType: vendorType?.slug ?? normalizedType,
+  };
 };
 
 const sanitizeEventVendorPayload = (eventVendor: any) => {
@@ -281,10 +342,21 @@ const syncEventVendorSubServices = async ({
 export const createVendor = async (req: AuthRequest, res: Response) => {
   try {
     const data = createVendorSchema.parse(req.body);
+    const { vendorType, legacyType } = await resolveVendorTypeSelection({
+      type: data.type,
+      typeId: data.typeId,
+    });
+
+    if (!legacyType) {
+      return res.status(400).json({
+        message: "Vendor type is required",
+      });
+    }
 
     const vendor = await Vendor.create({
       name: data.name.trim(),
-      type: data.type,
+      type: legacyType as Vendor["type"],
+      typeId: vendorType?.id ?? null,
       contactPerson: data.contactPerson ?? data.contactName ?? null,
       phone: data.phone ?? data.mobile ?? null,
       phone2: data.phone2 ?? null,
@@ -297,7 +369,7 @@ export const createVendor = async (req: AuthRequest, res: Response) => {
     });
 
     const created = await Vendor.findByPk(vendor.id, {
-      include: userAuditInclude,
+      include: buildVendorInclude(),
     });
 
     return res.status(201).json({
@@ -307,6 +379,13 @@ export const createVendor = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "Vendor type not found" ||
+        err.message === "Vendor type does not match the selected legacy type")
+    ) {
+      return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
@@ -337,7 +416,7 @@ export const getVendors = async (req: Request, res: Response) => {
 
   const { count, rows } = await Vendor.findAndCountAll({
     where,
-    include: userAuditInclude,
+    include: buildVendorInclude(),
     order: [["id", "DESC"]],
     limit,
     offset,
@@ -362,7 +441,7 @@ export const getVendorById = async (req: Request, res: Response) => {
   }
 
   const vendor = await Vendor.findByPk(id, {
-    include: userAuditInclude,
+    include: buildVendorInclude(),
   });
 
   if (!vendor) {
@@ -387,9 +466,23 @@ export const updateVendor = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
+    const shouldResolveVendorType =
+      typeof data.type !== "undefined" || typeof data.typeId !== "undefined";
+    const resolvedVendorType = shouldResolveVendorType
+      ? await resolveVendorTypeSelection({
+          type: typeof data.type !== "undefined" ? data.type : undefined,
+          typeId:
+            typeof data.typeId !== "undefined" ? (data.typeId ?? null) : undefined,
+        })
+      : null;
+
     await vendor.update({
       name: data.name ?? vendor.name,
-      type: data.type ?? vendor.type,
+      type: resolvedVendorType?.legacyType ?? vendor.type,
+      typeId:
+        shouldResolveVendorType
+          ? (resolvedVendorType?.vendorType?.id ?? null)
+          : vendor.typeId ?? null,
       contactPerson:
         typeof data.contactPerson !== "undefined"
           ? data.contactPerson
@@ -413,7 +506,7 @@ export const updateVendor = async (req: AuthRequest, res: Response) => {
     });
 
     const updated = await Vendor.findByPk(id, {
-      include: userAuditInclude,
+      include: buildVendorInclude(),
     });
 
     return res.json({
@@ -423,6 +516,13 @@ export const updateVendor = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof ZodError) {
       return res.status(400).json({ errors: err.errors });
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "Vendor type not found" ||
+        err.message === "Vendor type does not match the selected legacy type")
+    ) {
+      return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
@@ -466,7 +566,7 @@ export const createVendorSubService = async (
     });
 
     const created = await VendorSubService.findByPk(subService.id, {
-      include: vendorSubServiceInclude,
+      include: buildVendorSubServiceInclude(),
     });
 
     return res.status(201).json({
@@ -511,7 +611,7 @@ export const listVendorSubServices = async (req: Request, res: Response) => {
 
   const { count, rows } = await VendorSubService.findAndCountAll({
     where,
-    include: vendorSubServiceInclude,
+    include: buildVendorSubServiceInclude(),
     order: [
       ["vendorId", "ASC"],
       ["sortOrder", "ASC"],
@@ -541,7 +641,7 @@ export const getVendorSubServiceById = async (req: Request, res: Response) => {
   }
 
   const subService = await VendorSubService.findByPk(id, {
-    include: vendorSubServiceInclude,
+    include: buildVendorSubServiceInclude(),
   });
 
   if (!subService) {
@@ -603,7 +703,7 @@ export const updateVendorSubService = async (
     });
 
     const updated = await VendorSubService.findByPk(id, {
-      include: vendorSubServiceInclude,
+      include: buildVendorSubServiceInclude(),
     });
 
     return res.json({
@@ -644,7 +744,7 @@ export const createVendorPricingPlan = async (
     });
 
     const created = await VendorPricingPlan.findByPk(pricingPlan.id, {
-      include: vendorPricingPlanInclude,
+      include: buildVendorPricingPlanInclude(),
     });
 
     return res.status(201).json({
@@ -688,7 +788,7 @@ export const listVendorPricingPlans = async (req: Request, res: Response) => {
 
   const { count, rows } = await VendorPricingPlan.findAndCountAll({
     where,
-    include: vendorPricingPlanInclude,
+    include: buildVendorPricingPlanInclude(),
     order: [
       ["vendorId", "ASC"],
       ["minSubServices", "ASC"],
@@ -717,7 +817,7 @@ export const getVendorPricingPlanById = async (req: Request, res: Response) => {
   }
 
   const pricingPlan = await VendorPricingPlan.findByPk(id, {
-    include: vendorPricingPlanInclude,
+    include: buildVendorPricingPlanInclude(),
   });
 
   if (!pricingPlan) {
@@ -800,7 +900,7 @@ export const updateVendorPricingPlan = async (
     });
 
     const updated = await VendorPricingPlan.findByPk(id, {
-      include: vendorPricingPlanInclude,
+      include: buildVendorPricingPlanInclude(),
     });
 
     return res.json({
@@ -897,7 +997,7 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
     });
 
     const created = await EventVendor.findByPk(eventVendor.id, {
-      include: eventVendorInclude,
+      include: buildEventVendorInclude(),
     });
 
     return res.status(201).json({
@@ -944,7 +1044,7 @@ export const getEventVendors = async (req: Request, res: Response) => {
 
   const { count, rows } = await EventVendor.findAndCountAll({
     where,
-    include: eventVendorInclude,
+    include: buildEventVendorInclude(),
     distinct: true,
     order,
     limit,
@@ -970,7 +1070,7 @@ export const getEventVendorById = async (req: Request, res: Response) => {
   }
 
   const eventVendor = await EventVendor.findByPk(id, {
-    include: eventVendorInclude,
+    include: buildEventVendorInclude(),
   });
 
   if (!eventVendor) {
@@ -1109,7 +1209,7 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
     });
 
     const updated = await EventVendor.findByPk(id, {
-      include: eventVendorInclude,
+      include: buildEventVendorInclude(),
     });
 
     return res.json({

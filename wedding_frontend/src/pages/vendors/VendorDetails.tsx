@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { useVendor } from "@/hooks/vendors/useVendors";
 
-import { formatVendorType } from "./adapters";
+import { getVendorTypeName } from "./adapters";
 import { VendorActiveBadge } from "./_components/vendorActiveBadge";
 
 function DetailItem({
@@ -99,8 +99,10 @@ const VendorDetailsPage = () => {
                     <VendorActiveBadge isActive={vendor.isActive} />
                   </div>
                   <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {t(`vendors.type.${vendor.type}`, {
-                      defaultValue: formatVendorType(vendor.type),
+                    {getVendorTypeName({
+                      slug: vendor.type,
+                      vendorType: vendor.vendorType,
+                      language: i18n.resolvedLanguage ?? "en",
                     })}
                   </p>
                 </div>
@@ -137,8 +139,10 @@ const VendorDetailsPage = () => {
                 />
                 <DetailItem
                   label={t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
-                  value={t(`vendors.type.${vendor.type}`, {
-                    defaultValue: formatVendorType(vendor.type),
+                  value={getVendorTypeName({
+                    slug: vendor.type,
+                    vendorType: vendor.vendorType,
+                    language: i18n.resolvedLanguage ?? "en",
                   })}
                 />
                 <DetailItem

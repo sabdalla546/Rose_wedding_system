@@ -16,19 +16,21 @@ import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { useDeleteVendor } from "@/hooks/vendors/useDeleteVendor";
+import { useVendorTypes } from "@/hooks/vendors/useVendorTypes";
 import { useVendors } from "@/hooks/vendors/useVendors";
 
 import {
+  getVendorTypeName,
   toTableVendors,
-  VENDOR_TYPE_OPTIONS,
   type TableVendor,
 } from "./adapters";
 import { useVendorsColumns } from "./_components/vendorsColumns";
 import type { VendorType } from "./types";
 
 const VendorsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const language = i18n.resolvedLanguage ?? "en";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +56,13 @@ const VendorsPage = () => {
     type: typeFilter,
     isActive: isActiveFilter,
   });
+  const { data: vendorTypesResponse } = useVendorTypes({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    isActive: "all",
+  });
+  const vendorTypeOptions = vendorTypesResponse?.data ?? [];
 
   const adapted = toTableVendors(raw);
   const vendors = adapted.data.vendors;
@@ -137,6 +146,15 @@ const VendorsPage = () => {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => navigate("/settings/vendors/types")}
+              >
+                {t("vendors.types.title", {
+                  defaultValue: "Vendor Types",
+                })}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => navigate("/settings/vendors/sub-services")}
               >
                 <ClipboardList className="h-4 w-4" />
@@ -179,13 +197,15 @@ const VendorsPage = () => {
               <option value="all">
                 {t("vendors.allTypes", { defaultValue: "All Types" })}
               </option>
-              {VENDOR_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {t(`vendors.type.${option.value}`, {
-                    defaultValue: option.label,
+              {vendorTypeOptions.map((option) => (
+                <option key={option.id} value={option.slug}>
+                  {getVendorTypeName({
+                    slug: option.slug,
+                    vendorType: option,
+                    language,
                   })}
                 </option>
-                ))}
+              ))}
             </select>
           </CrudFilterField>
 

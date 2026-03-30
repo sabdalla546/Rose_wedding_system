@@ -1,19 +1,4 @@
-export type VendorType =
-  | "dj"
-  | "lighting"
-  | "barcode"
-  | "photography"
-  | "perfumes"
-  | "coffee_station"
-  | "cheese"
-  | "ac_generator"
-  | "bleachers"
-  | "instant_photography"
-  | "valet"
-  | "female_supplies"
-  | "family_services"
-  | "sweets_savories"
-  | "other";
+export type VendorType = string;
 
 export type EventVendorProvidedBy = "company" | "client";
 export type EventVendorStatus =
@@ -28,10 +13,48 @@ export interface VendorUserSummary {
   fullName: string;
 }
 
+export interface VendorTypeRecord {
+  id: number;
+  name: string;
+  nameAr: string;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdByUser?: VendorUserSummary | null;
+  updatedByUser?: VendorUserSummary | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+export interface VendorTypesResponse {
+  data: VendorTypeRecord[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface VendorTypeResponse {
+  data: VendorTypeRecord;
+}
+
+export interface VendorTypeFormData {
+  name: string;
+  nameAr: string;
+  slug?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface Vendor {
   id: number;
   name: string;
   type: VendorType;
+  typeId?: number | null;
+  vendorType?: VendorTypeRecord | null;
   contactPerson?: string | null;
   phone?: string | null;
   phone2?: string | null;
@@ -62,7 +85,8 @@ export interface VendorResponse {
 
 export interface VendorFormData {
   name: string;
-  type: VendorType;
+  typeId: number;
+  type?: VendorType;
   contactPerson?: string;
   phone?: string;
   phone2?: string;

@@ -13,7 +13,8 @@ export const eventVendorStatusEnum = z.enum([
 
 export const createVendorSchema = z.object({
   name: z.string().min(2).max(150),
-  type: vendorTypeEnum,
+  type: z.string().trim().min(1).max(150).optional(),
+  typeId: z.number().int().positive().optional(),
   contactPerson: z.string().max(150).optional(),
   contactName: z.string().max(150).optional(),
   phone: z.string().max(30).optional(),
@@ -23,11 +24,15 @@ export const createVendorSchema = z.object({
   address: z.string().max(255).optional(),
   notes: z.string().optional(),
   isActive: z.boolean().optional(),
+}).refine((data) => Boolean(data.typeId || data.type), {
+  message: "type or typeId is required",
+  path: ["typeId"],
 });
 
 export const updateVendorSchema = z.object({
   name: z.string().min(2).max(150).optional(),
-  type: vendorTypeEnum.optional(),
+  type: z.string().trim().min(1).max(150).optional(),
+  typeId: z.number().int().positive().optional().nullable(),
   contactPerson: z.string().max(150).optional().nullable(),
   contactName: z.string().max(150).optional().nullable(),
   phone: z.string().max(30).optional().nullable(),

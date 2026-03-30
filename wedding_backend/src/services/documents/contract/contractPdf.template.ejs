@@ -7,7 +7,7 @@
     <style>
       @page {
         size: A4;
-        margin: 0;
+        margin: 38mm 12mm 28mm;
       }
 
       * {
@@ -22,56 +22,19 @@
         color: #1f2937;
         background: #ffffff;
         font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
-        font-size: 12px;
-        line-height: 1.85;
+        font-size: 11px;
+        line-height: 1.5;
       }
 
       .page {
-        padding: 18mm 14mm;
-      }
-
-      .header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        border-bottom: 2px solid #d4af37;
-        padding-bottom: 12px;
-        margin-bottom: 16px;
-      }
-
-      .company {
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-      }
-
-      .logo {
-        width: 68px;
-        height: 68px;
-        border: 1px solid #d1d5db;
-        border-radius: 12px;
-        object-fit: contain;
-        background: #fff;
-      }
-
-      .title-block h1 {
-        margin: 0;
-        font-size: 24px;
-        color: #111827;
-      }
-
-      .title-block .subtitle {
-        margin-top: 4px;
-        color: #6b7280;
-        font-size: 12px;
+        padding: 0;
       }
 
       .section {
         border: 1px solid #e5e7eb;
         border-radius: 14px;
-        padding: 12px;
-        margin-bottom: 14px;
+        padding: 8px;
+        margin-bottom: 10px;
       }
 
       .section.keep-together {
@@ -79,9 +42,28 @@
         page-break-inside: avoid;
       }
 
+      .opening-section {
+        margin-bottom: 8px;
+        padding: 0 2px;
+      }
+
+      .opening-list {
+        margin: 0;
+        padding: 0 18px 0 0;
+      }
+
+      .opening-list li {
+        margin-bottom: 2px;
+      }
+
+      .opening-inline {
+        display: inline-block;
+        min-width: 120px;
+      }
+
       .section-title {
-        margin: 0 0 10px;
-        font-size: 13px;
+        margin: 0 0 6px;
+        font-size: 12px;
         font-weight: 700;
         color: #111827;
       }
@@ -125,8 +107,8 @@
 
       th,
       td {
-        border: 1px solid #e5e7eb;
-        padding: 8px 7px;
+        border: 1.2px solid #b8c0cc;
+        padding: 3px 4px;
         vertical-align: top;
       }
 
@@ -134,31 +116,7 @@
         background: #f8fafc;
         color: #374151;
         font-weight: 700;
-      }
-
-      tbody tr:nth-child(even) {
-        background: #fcfcfd;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        border: 1px solid #d1d5db;
-      }
-
-      .badge-service {
-        color: #374151;
-        background: #f9fafb;
-      }
-
-      .badge-summary,
-      .badge-vendor {
-        color: #92400e;
-        background: #fffbeb;
-        border-color: #f6d48d;
+        border-color: #9099a8;
       }
 
       .summary-row {
@@ -166,8 +124,51 @@
         font-weight: 700;
       }
 
-      .vendor-row {
-        background: #fffbeb !important;
+      .item-cell-title {
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1px;
+      }
+
+      .item-cell-note {
+        margin-top: 1px;
+        color: #6b7280;
+        font-size: 9px;
+        white-space: pre-wrap;
+        line-height: 1.25;
+      }
+
+      .item-cell-empty {
+        color: #9ca3af;
+      }
+
+      .price-cell {
+        white-space: nowrap;
+      }
+
+      .summary-secondary-title {
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .items-section {
+        padding-top: 6px;
+      }
+
+      .items-table {
+        font-size: 10px;
+        line-height: 1.2;
+      }
+
+      .items-table th,
+      .items-table td {
+        padding: 2px 4px;
+        border-color: #7f8898;
+      }
+
+      .page-break-before {
+        break-before: page;
+        page-break-before: always;
       }
 
       .totals {
@@ -197,7 +198,7 @@
       }
 
       .clause {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         break-inside: avoid-page;
         page-break-inside: avoid;
       }
@@ -213,6 +214,26 @@
         margin: 0 0 6px;
       }
 
+      .definitions-table {
+        margin: 8px 0 10px;
+      }
+
+      .definitions-table th,
+      .definitions-table td {
+        text-align: right;
+      }
+
+      .definitions-table th:nth-child(1),
+      .definitions-table td:nth-child(1) {
+        width: 48px;
+        text-align: center;
+      }
+
+      .definitions-table th:nth-child(2),
+      .definitions-table td:nth-child(2) {
+        width: 150px;
+      }
+
       .signatures {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -223,7 +244,7 @@
         border: 1px dashed #cbd5e1;
         border-radius: 14px;
         padding: 14px;
-        min-height: 170px;
+        min-height: 190px;
       }
 
       .signature-box h3 {
@@ -235,161 +256,111 @@
         margin-bottom: 10px;
       }
 
-      .muted {
-        color: #6b7280;
+      .closing-note {
+        margin-top: 10px;
+        text-align: center;
+        color: #374151;
+        font-weight: 600;
       }
 
-      .text-center {
-        text-align: center;
+      .muted {
+        color: #6b7280;
       }
 
       .text-left {
         text-align: left;
       }
+
+      .text-center {
+        text-align: center;
+      }
     </style>
   </head>
   <body>
+    <%
+      const signedDate = data.contract.signedDate ? new Date(data.contract.signedDate) : null;
+      const hasSignedDate = signedDate && !Number.isNaN(signedDate.getTime());
+      const signedWeekday = hasSignedDate
+        ? new Intl.DateTimeFormat("ar-KW", { weekday: "long" }).format(signedDate)
+        : "..........";
+      const signedDay = hasSignedDate
+        ? String(signedDate.getDate()).padStart(2, "0")
+        : "..........";
+      const signedMonth = hasSignedDate
+        ? new Intl.DateTimeFormat("ar-KW", { month: "long" }).format(signedDate)
+        : "..........";
+      const signedYear = hasSignedDate ? String(signedDate.getFullYear()) : "2026";
+      const rawContractNumber = String(helpers.displayText(data.contract.contractNumber, "")).trim();
+      const contractDisplayNumber = rawContractNumber && rawContractNumber !== "-"
+        ? (rawContractNumber.includes("/") ? rawContractNumber : `${rawContractNumber}/${signedYear}`)
+        : `...../${signedYear}`;
+      const customerName = helpers.displayText(data.customer.fullName, "..................");
+      const customerCivilId = helpers.displayText(data.customer.civilId, ".................................");
+      const customerAddress = helpers.displayText(data.customer.address, "........................................................");
+      const customerPhone = helpers.displayText(data.customer.mobile1 || data.customer.mobile2, "........................................");
+    %>
     <div class="page">
-      <header class="header">
-        <div class="title-block">
-          <h1>عقد اتفاق</h1>
-          <div class="subtitle">Contract PDF Snapshot</div>
-        </div>
-
-        <div class="company">
-          <% if (data.company.logoUrl) { %>
-            <img class="logo" src="<%= data.company.logoUrl %>" alt="logo" />
-          <% } %>
-
-          <div>
-            <div style="font-size: 18px; font-weight: 700; color: #111827;">
-              <%= helpers.displayText(data.company.name) %>
-            </div>
-            <div class="muted"><%= helpers.displayText(data.company.phone) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.email) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.address) %></div>
-            <div class="muted"><%= helpers.displayText(data.company.website) %></div>
-          </div>
-        </div>
-      </header>
-
-      <section class="section keep-together">
-        <div class="meta-grid">
-          <div class="field">
-            <div class="field-label">رقم العقد</div>
-            <div class="field-value"><%= helpers.displayText(data.contract.contractNumber) %></div>
-          </div>
-          <div class="field">
-            <div class="field-label">الحالة</div>
-            <div class="field-value"><%= helpers.displayText(data.contract.status) %></div>
-          </div>
-          <div class="field">
-            <div class="field-label">تاريخ التوقيع</div>
-            <div class="field-value"><%= helpers.formatDate(data.contract.signedDate) %></div>
-          </div>
-          <div class="field">
-            <div class="field-label">تاريخ الحفل</div>
-            <div class="field-value"><%= helpers.formatDate(data.contract.eventDate || data.event.eventDate) %></div>
-          </div>
-          <div class="field">
-            <div class="field-label">عرض السعر</div>
-            <div class="field-value"><%= helpers.displayText(data.quotation.quotationNumber || data.quotation.id) %></div>
-          </div>
-          <div class="field">
-            <div class="field-label">مكان الحفل</div>
-            <div class="field-value"><%= helpers.displayText(data.event.venueName) %></div>
-          </div>
-        </div>
+      <section class="opening-section keep-together">
+        <ul class="opening-list">
+          <li><strong>عقد اتفاق رقم (<%= contractDisplayNumber %>)</strong></li>
+          <li>أبرمت هذه الإتفاقية في هذا اليوم <span class="opening-inline"><%= signedWeekday %></span> الموافق <span class="opening-inline"><%= signedDay %></span> من شهر <span class="opening-inline"><%= signedMonth %></span> عام <%= signedYear %> بين كلاً من:</li>
+          <li>أولاً: (طرف أول) <strong>شركة اي بي روزس لتجهيز وادارة الافراح وتأجير معداتها</strong> <span class="opening-inline">(شركة تضامنية)</span></li>
+          <li>ثانياً: (طرف ثاني) السيدة/ <strong><%= customerName %></strong> المحترمين <span class="opening-inline">(كويتية الجنسية)</span></li>
+          <li>ب.م رقم: (<%= customerCivilId %>) <span class="opening-inline">العنوان: (<%= customerAddress %>)</span></li>
+          <li>رقم التليفون (<%= customerPhone %>)</li>
+          <li><strong>على تجهيز وتوريد الآتي:</strong></li>
+        </ul>
       </section>
 
-      <section class="section keep-together">
-        <h2 class="section-title">أطراف العقد</h2>
-        <div class="info-grid">
-          <div>
-            <div class="section-title" style="font-size: 12px;">الطرف الأول</div>
-            <div class="field">
-              <div class="field-label">الاسم</div>
-              <div class="field-value"><%= helpers.displayText(data.company.name) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">الهاتف</div>
-              <div class="field-value"><%= helpers.displayText(data.company.phone) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">البريد</div>
-              <div class="field-value"><%= helpers.displayText(data.company.email) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">العنوان</div>
-              <div class="field-value"><%= helpers.displayText(data.company.address) %></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="section-title" style="font-size: 12px;">الطرف الثاني</div>
-            <div class="field">
-              <div class="field-label">الاسم</div>
-              <div class="field-value"><%= helpers.displayText(data.customer.fullName) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">الهاتف 1</div>
-              <div class="field-value"><%= helpers.displayText(data.customer.mobile1) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">الهاتف 2</div>
-              <div class="field-value"><%= helpers.displayText(data.customer.mobile2) %></div>
-            </div>
-            <div class="field">
-              <div class="field-label">العنوان</div>
-              <div class="field-value"><%= helpers.displayText(data.customer.address) %></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section keep-together">
-        <h2 class="section-title">مقدمة العقد</h2>
-        <div class="intro">
-          أبرم هذا العقد بين الطرف الأول والطرف الثاني بشأن تجهيز وإدارة مناسبة <%= helpers.displayText(data.event.title) %> بتاريخ
-          <%= helpers.formatDate(data.contract.eventDate || data.event.eventDate) %> في <%= helpers.displayText(data.event.venueName) %>، وذلك
-          وفق البنود والتجهيزات والمبالغ الموضحة في هذا المستند.
-        </div>
-      </section>
-
-      <section class="section">
-        <h2 class="section-title">بنود العقد</h2>
-
-        <table>
+      <section class="section items-section">
+        <table class="items-table">
           <thead>
             <tr>
-              <th style="width: 44px;">م</th>
-              <th>البيان</th>
-              <th style="width: 100px;">النوع</th>
-              <th style="width: 90px;">الكمية</th>
-              <th style="width: 120px;">سعر الوحدة</th>
-              <th style="width: 120px;">الإجمالي</th>
-              <th style="width: 170px;">الملاحظات</th>
+              <th style="width: 46px;">م</th>
+              <th>تجهيز الديكورات الداخلية</th>
+              <th style="width: 140px;">السعر</th>
+              <th>شركات خارجية</th>
+              <th style="width: 140px;">السعر</th>
             </tr>
           </thead>
           <tbody>
-            <% data.items.forEach(function(item, index) { %>
-              <tr class="<%= item.isSummaryRow ? 'summary-row' : item.itemType === 'vendor' ? 'vendor-row' : '' %>">
+            <% data.pairedItems.forEach(function(row, index) { %>
+              <tr class="<%= row.serviceItem && row.serviceItem.isSummaryRow ? 'summary-row' : '' %>">
                 <td class="text-center"><%= index + 1 %></td>
                 <td>
-                  <div style="font-weight: 700;"><%= helpers.displayText(item.itemName) %></div>
-                  <% if (item.category && item.category !== "service_summary") { %>
-                    <div class="muted"><%= item.category %></div>
+                  <% if (row.serviceItem) { %>
+                    <div class="item-cell-title"><%= helpers.displayText(row.serviceItem.itemName) %></div>
+                    <% if (row.serviceItem.notes) { %>
+                      <div class="item-cell-note"><%= helpers.displayText(row.serviceItem.notes) %></div>
+                    <% } %>
+                  <% } else { %>
+                    <div class="item-cell-empty">-</div>
                   <% } %>
                 </td>
-                <td class="text-center">
-                  <span class="badge <%= item.isSummaryRow ? 'badge-summary' : item.itemType === 'vendor' ? 'badge-vendor' : 'badge-service' %>">
-                    <%= helpers.getItemTypeLabel(item) %>
-                  </span>
+                <td class="text-left price-cell">
+                  <%= row.serviceItem ? helpers.formatMoney(row.serviceItem.totalPrice) : '-' %>
                 </td>
-                <td class="text-center"><%= helpers.formatQuantity(item.quantity) %></td>
-                <td class="text-left"><%= helpers.formatMoney(item.unitPrice) %></td>
-                <td class="text-left"><%= helpers.formatMoney(item.totalPrice) %></td>
-                <td><%= helpers.displayText(item.notes) %></td>
+                <td>
+                  <% if (row.vendorItem) { %>
+                    <div class="item-cell-title"><%= helpers.displayText(row.vendorItem.itemName) %></div>
+                    <% if (row.vendorItem.notes) { %>
+                      <div class="item-cell-note"><%= helpers.displayText(row.vendorItem.notes) %></div>
+                    <% } %>
+                  <% } else if (row.serviceItem && row.serviceItem.isSummaryRow) { %>
+                    <div class="summary-secondary-title">إجمالي الشركات</div>
+                  <% } else { %>
+                    <div class="item-cell-empty">-</div>
+                  <% } %>
+                </td>
+                <td class="text-left price-cell">
+                  <% if (row.vendorItem) { %>
+                    <%= helpers.formatMoney(row.vendorItem.totalPrice) %>
+                  <% } else if (row.serviceItem && row.serviceItem.isSummaryRow) { %>
+                    <%= helpers.formatMoney(data.vendorTotalAmount) %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
               </tr>
             <% }) %>
           </tbody>
@@ -441,11 +412,31 @@
         </section>
       <% } %>
 
-      <section class="section">
+      <section class="section page-break-before">
         <h2 class="section-title">الشروط والأحكام</h2>
         <% data.clauses.forEach(function(clause) { %>
           <div class="clause">
             <h3 class="clause-title"><%= clause.title %></h3>
+            <% if (clause.definitions && clause.definitions.length > 0) { %>
+              <table class="definitions-table">
+                <thead>
+                  <tr>
+                    <th>م</th>
+                    <th>الكلمات</th>
+                    <th>التعريف</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% clause.definitions.forEach(function(row) { %>
+                    <tr>
+                      <td class="text-center"><%= row.number %></td>
+                      <td><%= row.term %></td>
+                      <td><%= row.definition %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            <% } %>
             <% clause.paragraphs.forEach(function(paragraph) { %>
               <p><%= paragraph %></p>
             <% }) %>
@@ -464,21 +455,21 @@
         <h2 class="section-title">التوقيعات</h2>
         <div class="signatures">
           <div class="signature-box">
-            <h3>الطرف الثاني</h3>
-            <div class="signature-line">الاسم: <strong><%= helpers.displayText(data.customer.fullName) %></strong></div>
+            <h3>(الطرف الثاني)</h3>
+            <div class="signature-line">الاسـم: <strong><%= helpers.displayText(data.customer.fullName) %></strong></div>
             <div class="signature-line">التاريخ: <strong><%= helpers.formatDate(data.contract.signedDate) %></strong></div>
-            <div class="signature-line">التوقيع: ................................</div>
-            <div class="signature-line">الرقم المدني: ................................</div>
+            <div class="signature-line">الرقم المدني: <strong><%= helpers.displayText(data.customer.civilId) %></strong></div>
+            <div class="signature-line" style="margin-top: 34px;">التوقيع: ____________________</div>
           </div>
 
           <div class="signature-box">
-            <h3>الطرف الأول</h3>
-            <div class="signature-line">الاسم: <strong><%= helpers.displayText(data.company.name) %></strong></div>
+            <h3>(الطرف الأول)</h3>
+            <div class="signature-line">الاسـم: <strong><%= helpers.displayText(data.company.name) %></strong></div>
             <div class="signature-line">التاريخ: <strong><%= helpers.formatDate(data.contract.signedDate) %></strong></div>
-            <div class="signature-line">التوقيع: ................................</div>
-            <div class="signature-line">الختم: ................................</div>
+            <div class="signature-line" style="margin-top: 62px;">التوقيع: ____________________</div>
           </div>
         </div>
+        <div class="closing-note">شكراً لتعاملكم معنا مع تمنياتنا لكم بدوام التوفيق والسعادة والخير والبركة</div>
       </section>
     </div>
   </body>

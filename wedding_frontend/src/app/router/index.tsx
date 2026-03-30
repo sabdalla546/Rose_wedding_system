@@ -38,6 +38,8 @@ import VendorPricingPlanFormPage from "@/pages/vendors/VendorPricingPlanForm";
 import VendorPricingPlansPage from "@/pages/vendors/VendorPricingPlans";
 import VendorSubServiceFormPage from "@/pages/vendors/VendorSubServiceForm";
 import VendorSubServicesPage from "@/pages/vendors/VendorSubServices";
+import VendorTypeFormPage from "@/pages/vendors/VendorTypeForm";
+import VendorTypesPage from "@/pages/vendors/VendorTypes";
 import VendorsPage from "@/pages/vendors/Vendors";
 import { LoginPage } from "@/pages/auth/login-page";
 import RoleFormPage from "@/pages/roles/RoleForm";
@@ -66,6 +68,9 @@ const explicitModulePaths = new Set([
   "/settings/vendors/create",
   "/settings/vendors/edit/:id",
   "/settings/vendors/:id",
+  "/settings/vendors/types",
+  "/settings/vendors/types/create",
+  "/settings/vendors/types/edit/:id",
   "/settings/vendors/sub-services",
   "/settings/vendors/sub-services/create",
   "/settings/vendors/sub-services/edit/:id",
@@ -275,6 +280,18 @@ export const router = createBrowserRouter([
           {
             path: "settings/vendors/:id",
             element: <VendorDetailsPage />,
+          },
+          {
+            path: "settings/vendors/types",
+            element: <VendorTypesPage />,
+          },
+          {
+            path: "settings/vendors/types/create",
+            element: <VendorTypeFormPage />,
+          },
+          {
+            path: "settings/vendors/types/edit/:id",
+            element: <VendorTypeFormPage />,
           },
           {
             path: "settings/vendors/sub-services",
