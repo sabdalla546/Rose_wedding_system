@@ -10,6 +10,8 @@ import {
   FileSignature,
   FileText,
   Handshake,
+  HandshakeIcon,
+  LandmarkIcon,
   LayoutDashboard,
   Package,
   PackageOpen,
@@ -20,8 +22,6 @@ import {
   UserCog,
   Users,
   UsersRound,
-  LandmarkIcon,
-  HandshakeIcon,
 } from "lucide-react";
 
 import {
@@ -149,7 +149,6 @@ const navigationTree: NavigationItem[] = [
         subtitleAr:
           "إدارة مواعيد العملاء المحتملين وحالة الاجتماع وتوزيع الفريق.",
       },
-
       {
         id: "customers-all",
         labelKey: "sidebar.nav.allCustomers",
@@ -212,7 +211,6 @@ const navigationTree: NavigationItem[] = [
       },
     ],
   },
-
   {
     id: "reports",
     labelKey: "sidebar.nav.reports",
@@ -355,30 +353,35 @@ if (secretarialRootItem?.children) {
           labelKey: "sidebar.nav.designerDetails",
           label: "Designer Details",
           labelAr: "تفاصيل المصمم",
+          href: "/designer-details",
           icon: Handshake,
+          subtitle:
+            "Operational hub for wedding management, external vendors, and service catalog control.",
+          subtitleAr: "مركز تشغيلي لإدارة الحفل والشركات والخدمات.",
           children: [
-        {
-          id: "settings-team-vendors",
-          labelKey: "sidebar.nav.vendors",
-          label: "Vendors",
-          labelAr: "الشركات",
-          href: "/settings/vendors",
-          icon: Handshake,
-          subtitle:
-            "Manage external vendors, service types, and operational contacts.",
-          subtitleAr: "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
-        },
-        {
-          id: "settings-team-services",
-          labelKey: "sidebar.nav.services",
-          label: "Services",
-          labelAr: "الخدمات",
-          href: "/settings/services",
-          icon: PackageOpen,
-          subtitle:
-            "Manage catalog services, pricing types, and operational event items.",
-          subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
-        },
+            {
+              id: "settings-team-vendors",
+              labelKey: "sidebar.nav.vendors",
+              label: "Vendors",
+              labelAr: "الشركات",
+              href: "/settings/vendors",
+              icon: Handshake,
+              subtitle:
+                "Manage external vendors, service types, and operational contacts.",
+              subtitleAr:
+                "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
+            },
+            {
+              id: "settings-team-services",
+              labelKey: "sidebar.nav.services",
+              label: "Services",
+              labelAr: "الخدمات",
+              href: "/settings/services",
+              icon: PackageOpen,
+              subtitle:
+                "Manage catalog services, pricing types, and operational event items.",
+              subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
+            },
           ],
         },
       ],
@@ -389,9 +392,9 @@ if (secretarialRootItem?.children) {
 function hasAccessRule(item: NavigationItem) {
   return Boolean(
     item.permission ||
-    item.anyOf?.length ||
-    item.allOf?.length ||
-    item.roles?.length,
+      item.anyOf?.length ||
+      item.allOf?.length ||
+      item.roles?.length,
   );
 }
 
@@ -464,9 +467,7 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
 })();
 
 export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
-  const reportsRoot = navigationItems.find(
-    (item) => item.id === REPORTS_ROOT_ID,
-  );
+  const reportsRoot = navigationItems.find((item) => item.id === REPORTS_ROOT_ID);
 
   if (!reportsRoot?.children?.length) {
     return [];
@@ -487,7 +488,6 @@ export const settingsNavigationLeaves: NavigationLeaf[] = (() => {
     return [];
   }
 
-  // Only show Settings > Team leaves (Users, Roles) in the section bar.
   return flattenNavigationLeaves(teamRoot.children, [
     SETTINGS_ROOT_ID,
     teamRoot.id,
@@ -501,7 +501,6 @@ export function flattenNavigationLeaves(
   return items.flatMap((item) => {
     const nextParents = [...parents, item.id];
     const ownLeaf = item.href ? [{ ...item, parents }] : [];
-
     const childLeaves = item.children
       ? flattenNavigationLeaves(item.children, nextParents)
       : [];

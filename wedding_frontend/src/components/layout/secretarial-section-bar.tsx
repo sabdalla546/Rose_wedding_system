@@ -156,10 +156,7 @@ export function SecretarialSectionBar() {
       >
         <div className="flex min-w-max flex-nowrap items-center gap-0 md:w-full md:min-w-0">
           {items.map((item) => {
-            const targetHref =
-              item.id === DESIGNER_DETAILS_ID
-                ? designerDetailsSecondaryItems[0]?.href
-                : getSectionTargetHref(item);
+            const targetHref = getSectionTargetHref(item);
 
             if (!targetHref) {
               return null;

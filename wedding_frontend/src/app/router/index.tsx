@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   Navigate,
   Outlet,
@@ -25,6 +26,7 @@ import { DashboardPage } from "@/pages/dashboard/dashboard-page";
 import ContractDetailsPage from "@/pages/contracts/ContractDetails";
 import ContractFormPage from "@/pages/contracts/ContractForm";
 import ContractsPage from "@/pages/contracts/Contracts";
+import DesignerDetailsPage from "@/pages/designer-details/DesignerDetails";
 import EventDetailsPage from "@/pages/events/EventDetails";
 import EventFormPage from "@/pages/events/EventForm";
 import EventCalendarPage from "@/pages/events/EventCalendar";
@@ -77,6 +79,7 @@ const explicitModulePaths = new Set([
   "/settings/vendors/pricing-plans",
   "/settings/vendors/pricing-plans/create",
   "/settings/vendors/pricing-plans/edit/:id",
+  "/designer-details",
   "/settings/services",
   "/settings/services/create",
   "/settings/services/edit/:id",
@@ -316,6 +319,10 @@ export const router = createBrowserRouter([
           {
             path: "settings/vendors/pricing-plans/edit/:id",
             element: <VendorPricingPlanFormPage />,
+          },
+          {
+            path: "designer-details",
+            element: <DesignerDetailsPage />,
           },
           {
             path: "settings/services",
