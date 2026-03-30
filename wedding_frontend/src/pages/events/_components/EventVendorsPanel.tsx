@@ -43,8 +43,8 @@ type Props = {
   t: TFunction;
   onViewModeChange: (nextValue: EventPanelViewMode) => void;
   onAdd: () => void;
-  onEdit: (vendorLink: EventVendorLink) => void;
-  onDelete: (vendorLink: EventVendorLink) => void;
+  onEdit?: (vendorLink: EventVendorLink) => void;
+  onDelete?: (vendorLink: EventVendorLink) => void;
   onToggleExpanded: (vendorId: number) => void;
 };
 
@@ -70,6 +70,7 @@ export function EventVendorsPanel({
   onDelete,
   onToggleExpanded,
 }: Props) {
+  const hasRowActions = Boolean(onEdit || onDelete);
   const vendorSummary = {
     itemsCount: vendorLinks.length,
     confirmedCount: vendorLinks.filter(
@@ -154,7 +155,9 @@ export function EventVendorsPanel({
                       <TableHead>{t("vendors.selectedSubServices", { defaultValue: "Selected Sub Services" })}</TableHead>
                       <TableHead>{t("vendors.costSummary", { defaultValue: "Cost Summary" })}</TableHead>
                       <TableHead>{t("vendors.assignmentStatusLabel", { defaultValue: "Status" })}</TableHead>
-                      <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                      {hasRowActions ? (
+                        <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                      ) : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,20 +227,26 @@ export function EventVendorsPanel({
                           <TableCell className="align-top">
                             <EventVendorStatusBadge status={vendorLink.status} />
                           </TableCell>
-                          <TableCell className="align-top">
-                            <ProtectedComponent permission="events.update">
-                              <div className="flex flex-wrap gap-2">
-                                <Button variant="outline" size="sm" onClick={() => onEdit(vendorLink)}>
-                                  <Pencil className="h-4 w-4" />
-                                  {t("common.edit", { defaultValue: "Edit" })}
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => onDelete(vendorLink)}>
-                                  <Trash2 className="h-4 w-4" />
-                                  {t("common.delete", { defaultValue: "Delete" })}
-                                </Button>
-                              </div>
-                            </ProtectedComponent>
-                          </TableCell>
+                          {hasRowActions ? (
+                            <TableCell className="align-top">
+                              <ProtectedComponent permission="events.update">
+                                <div className="flex flex-wrap gap-2">
+                                  {onEdit ? (
+                                    <Button variant="outline" size="sm" onClick={() => onEdit(vendorLink)}>
+                                      <Pencil className="h-4 w-4" />
+                                      {t("common.edit", { defaultValue: "Edit" })}
+                                    </Button>
+                                  ) : null}
+                                  {onDelete ? (
+                                    <Button variant="destructive" size="sm" onClick={() => onDelete(vendorLink)}>
+                                      <Trash2 className="h-4 w-4" />
+                                      {t("common.delete", { defaultValue: "Delete" })}
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </ProtectedComponent>
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                       );
                     })}
@@ -426,18 +435,24 @@ export function EventVendorsPanel({
                   </div>
                 ) : null}
 
-                <ProtectedComponent permission="events.update">
-                  <div className="flex flex-wrap gap-2 border-t border-[var(--lux-row-border)] px-4 py-4 sm:px-5">
-                    <Button variant="outline" onClick={() => onEdit(vendorLink)}>
-                      <Pencil className="h-4 w-4" />
-                      {t("common.edit", { defaultValue: "Edit" })}
-                    </Button>
-                    <Button variant="destructive" onClick={() => onDelete(vendorLink)}>
-                      <Trash2 className="h-4 w-4" />
-                      {t("common.delete", { defaultValue: "Delete" })}
-                    </Button>
-                  </div>
-                </ProtectedComponent>
+                {hasRowActions ? (
+                  <ProtectedComponent permission="events.update">
+                    <div className="flex flex-wrap gap-2 border-t border-[var(--lux-row-border)] px-4 py-4 sm:px-5">
+                      {onEdit ? (
+                        <Button variant="outline" onClick={() => onEdit(vendorLink)}>
+                          <Pencil className="h-4 w-4" />
+                          {t("common.edit", { defaultValue: "Edit" })}
+                        </Button>
+                      ) : null}
+                      {onDelete ? (
+                        <Button variant="destructive" onClick={() => onDelete(vendorLink)}>
+                          <Trash2 className="h-4 w-4" />
+                          {t("common.delete", { defaultValue: "Delete" })}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </ProtectedComponent>
+                ) : null}
               </EventPanelCard>
             );
           })

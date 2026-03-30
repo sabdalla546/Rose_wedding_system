@@ -16,9 +16,9 @@ type Props = {
   sections: EventSection[];
   dateLocale: Locale;
   t: TFunction;
-  onAddSection: () => void;
-  onEditSection: (section: EventSection) => void;
-  onDeleteSection: (section: EventSection) => void;
+  onAddSection?: () => void;
+  onEditSection?: (section: EventSection) => void;
+  onDeleteSection?: (section: EventSection) => void;
 };
 
 export function EventOverviewWorkspace({

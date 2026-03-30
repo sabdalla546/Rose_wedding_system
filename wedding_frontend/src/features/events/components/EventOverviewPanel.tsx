@@ -51,9 +51,9 @@ export function EventOverviewPanel({
       sections={event.sections ?? []}
       dateLocale={dateLocale}
       t={t}
-      onAddSection={onAddSection ?? (() => undefined)}
-      onEditSection={onEditSection ?? (() => undefined)}
-      onDeleteSection={onDeleteSection ?? (() => undefined)}
+      onAddSection={onAddSection}
+      onEditSection={onEditSection}
+      onDeleteSection={onDeleteSection}
     />
   );
 }

@@ -42,9 +42,9 @@ function renderDataValue(value: unknown) {
 type Props = {
   sections: EventSection[];
   t: TFunction;
-  onAdd: () => void;
-  onEdit: (section: EventSection) => void;
-  onDelete: (section: EventSection) => void;
+  onAdd?: () => void;
+  onEdit?: (section: EventSection) => void;
+  onDelete?: (section: EventSection) => void;
 };
 
 export function EventSectionsPanel({
@@ -54,6 +54,7 @@ export function EventSectionsPanel({
   onEdit,
   onDelete,
 }: Props) {
+  const hasActions = Boolean(onAdd || onEdit || onDelete);
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -67,12 +68,14 @@ export function EventSectionsPanel({
             })}
           </CardDescription>
         </div>
-        <ProtectedComponent permission="events.update">
-          <Button onClick={onAdd}>
-            <Plus className="h-4 w-4" />
-            {t("events.addSection", { defaultValue: "Add Section" })}
-          </Button>
-        </ProtectedComponent>
+        {onAdd ? (
+          <ProtectedComponent permission="events.update">
+            <Button onClick={onAdd}>
+              <Plus className="h-4 w-4" />
+              {t("events.addSection", { defaultValue: "Add Section" })}
+            </Button>
+          </ProtectedComponent>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
         {sections.length ? (
@@ -125,18 +128,24 @@ export function EventSectionsPanel({
                     </div>
                   </div>
 
-                  <ProtectedComponent permission="events.update">
-                    <div className="flex flex-wrap gap-2 xl:justify-end">
-                      <Button variant="outline" onClick={() => onEdit(section)}>
-                        <Pencil className="h-4 w-4" />
-                        {t("common.edit", { defaultValue: "Edit" })}
-                      </Button>
-                      <Button variant="destructive" onClick={() => onDelete(section)}>
-                        <Trash2 className="h-4 w-4" />
-                        {t("common.delete", { defaultValue: "Delete" })}
-                      </Button>
-                    </div>
-                  </ProtectedComponent>
+                  {hasActions ? (
+                    <ProtectedComponent permission="events.update">
+                      <div className="flex flex-wrap gap-2 xl:justify-end">
+                        {onEdit ? (
+                          <Button variant="outline" onClick={() => onEdit(section)}>
+                            <Pencil className="h-4 w-4" />
+                            {t("common.edit", { defaultValue: "Edit" })}
+                          </Button>
+                        ) : null}
+                        {onDelete ? (
+                          <Button variant="destructive" onClick={() => onDelete(section)}>
+                            <Trash2 className="h-4 w-4" />
+                            {t("common.delete", { defaultValue: "Delete" })}
+                          </Button>
+                        ) : null}
+                      </div>
+                    </ProtectedComponent>
+                  ) : null}
                 </div>
 
                 {Object.keys(section.data ?? {}).length ? (

@@ -84,8 +84,8 @@ export function EventServicesPanel({
         t={t}
         onViewModeChange={setViewMode}
         onAdd={onAdd ?? (() => undefined)}
-        onEdit={onEdit ?? (() => undefined)}
-        onDelete={onDelete ?? (() => undefined)}
+        onEdit={onEdit}
+        onDelete={onDelete}
       />
     );
   }
@@ -99,8 +99,8 @@ export function EventServicesPanel({
       t={t}
       onViewModeChange={setViewMode}
       onAdd={onAdd ?? (() => undefined)}
-      onEdit={onEdit ?? (() => undefined)}
-      onDelete={onDelete ?? (() => undefined)}
+      onEdit={onEdit}
+      onDelete={onDelete}
     />
   );
 }

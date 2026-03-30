@@ -1342,6 +1342,38 @@ export const resources = {
         viewContract: "View Contract",
         noContractParty: "No customer or lead linked",
         noContracts: "No contracts have been created for this event yet.",
+        operationsWorkspace: "Operations Workspace",
+        operationsWorkspaceTitle: "Wedding Operations Hub",
+        operationsWorkspaceHint:
+          "Run service planning, external vendors, quotations, contracts, and execution follow-up from one event workspace.",
+        totalServiceItems: "Total Service Items",
+        totalServiceItemsHint:
+          "Internal service lines currently linked to this event.",
+        totalExternalVendors: "Total External Vendors",
+        totalExternalVendorsHint:
+          "Assigned vendor links and external production partners.",
+        quotationSnapshot: "Quotation Snapshot",
+        contractSnapshot: "Contract Snapshot",
+        latestQuotation: "Latest Quotation",
+        latestContract: "Latest Contract",
+        noQuotationsTitle: "No quotations yet",
+        noContractsTitle: "No contracts yet",
+        noOperationalReadinessData: "No execution checkpoints yet",
+        loadingOverview: "Loading the event overview and planning sections.",
+        loadingExecution: "Loading execution tracking data for this event.",
+        loadingQuotations: "Loading quotations for this event.",
+        loadingContracts: "Loading contracts for this event.",
+        noEventFound: "This event could not be loaded.",
+        executionTab: "Execution",
+        currentEventStatus: "Current Event Status",
+        executionReadiness: "Execution Readiness",
+        executionReadinessHint:
+          "{{ready}} of {{total}} execution checkpoints are currently in a ready state.",
+        executionCoverage: "Operational Coverage",
+        executionCoverageHint:
+          "Services / vendors / planning sections currently tracked for this wedding.",
+        executionReadyLine: "Ready for execution",
+        executionPendingLine: "Needs follow-up before execution",
         currentEventPreview: "Editing:",
         status: {
           draft: "Draft",
@@ -1386,6 +1418,132 @@ export const resources = {
           deleted: "Section deleted successfully",
           deleteFailed: "Failed to delete section",
         },
+      },
+      designerDetails: {
+        title: "Designer Details",
+        subtitle:
+          "A unified operational hub that connects event management, vendors, services, quotations, and contracts from one page.",
+        selectorTitle: "Select Event",
+        selectorDescription:
+          "Choose the event you want to operate from Designer Details. Once selected, the full embedded workspace will appear below.",
+        capabilityEvent: "Event Management",
+        capabilityEventDescription:
+          "Operate the wedding, follow up service items, link vendors, and manage documents from one place.",
+        capabilityVendors: "Vendors",
+        capabilityVendorsDescription:
+          "Assign vendors, apply pricing plans, and manage selected sub-services without leaving the designer workspace.",
+        capabilityServices: "Services & Contracts",
+        capabilityServicesDescription:
+          "Manage service items, quotations, and contracts through a clearer execution-oriented workflow.",
+        currentEvent: "Current Event",
+        currentEventDescription:
+          "This page is now the primary event workspace inside Designer Details without opening the Event Details page.",
+        shortcutsTitle: "Supporting Shortcuts",
+        shortcutsDescription:
+          "Vendors and services remain available, but now support the event workspace instead of acting as the page's main purpose.",
+        openVendors: "Open Vendors",
+        openServices: "Open Services",
+        loadingEventsTitle: "Loading events",
+        loadingEventsDescription:
+          "Preparing the available event list so the workspace can start.",
+        noEventsTitle: "No events available",
+        noEventsDescription:
+          "Create an event first so the embedded management workspace can appear here.",
+        openEvents: "Open Events",
+        chooseEventTitle: "Select an event to begin",
+        chooseEventDescription:
+          "Once you choose an event, the overview, services, vendors, quotations, contracts, and execution panels will appear.",
+        loadingEventTitle: "Loading event data",
+        loadingEventDescription:
+          "Preparing the operational workspace for the selected event.",
+        loadEventFailedTitle: "Unable to load the event",
+        loadEventFailedDescription:
+          "We could not fetch the selected event. Try choosing another event from the list.",
+        editEvent: "Edit Event",
+        trackExecution: "Track Execution",
+        eventDateRequired: "Event date is required.",
+        editDialogTitle: "Edit Event Data",
+        editDialogDescription:
+          "Update the customer, date, venue, and event status directly from Designer Details.",
+        noCustomer: "No Customer",
+        noVenue: "No Venue",
+        customerField: "Customer",
+        eventDateField: "Event Date",
+        venueField: "Venue",
+        eventStatusField: "Event Status",
+        eventTitleField: "Event Title",
+        guestCountField: "Guest Count",
+        groomNameField: "Groom Name",
+        brideNameField: "Bride Name",
+        eventNotesField: "Event Notes",
+        saveChanges: "Save Changes",
+        cancel: "Cancel",
+        selectEventPlaceholder: "Select event",
+        loadingEventsPlaceholder: "Loading events...",
+        currentEventBadge: "Current Event",
+      },
+      designerDetails: {
+        title: "تفاصيل المصمم",
+        subtitle:
+          "مركز تشغيلي موحّد يربط إدارة الحفل والشركات والخدمات وعروض الأسعار والعقود من داخل نفس الصفحة.",
+        selectorTitle: "اختيار الحفل",
+        selectorDescription:
+          "اختر الحفل الذي تريد تشغيله من داخل تفاصيل المصمم. بعد الاختيار ستظهر جميع لوحات الإدارة التشغيلية في نفس الصفحة.",
+        capabilityEvent: "إدارة الحفل",
+        capabilityEventDescription:
+          "تشغيل الحفل ومتابعة البنود وربط الشركات وإدارة الوثائق من مكان واحد.",
+        capabilityVendors: "الشركات",
+        capabilityVendorsDescription:
+          "اختيار الشركات وتطبيق الخطط السعرية وإدارة الخدمات الفرعية دون مغادرة مساحة المصمم.",
+        capabilityServices: "الخدمات والعقود",
+        capabilityServicesDescription:
+          "إدارة بنود الخدمات وعروض الأسعار والعقود ضمن تدفق تشغيلي أوضح.",
+        currentEvent: "الحفل الحالي",
+        currentEventDescription:
+          "أصبحت هذه الصفحة مساحة العمل الرئيسية لإدارة الحفل داخل تفاصيل المصمم دون الانتقال إلى صفحة تفاصيل الحفل.",
+        shortcutsTitle: "اختصارات مساندة",
+        shortcutsDescription:
+          "بقيت إدارة الشركات والخدمات متاحة، لكنها أصبحت مساندة لمساحة تشغيل الحفل بدلًا من أن تكون هدف الصفحة الأساسي.",
+        openVendors: "فتح الشركات",
+        openServices: "فتح الخدمات",
+        loadingEventsTitle: "جارٍ تحميل الحفلات",
+        loadingEventsDescription:
+          "يجري الآن تجهيز قائمة الحفلات المتاحة لبدء العمل.",
+        noEventsTitle: "لا توجد حفلات متاحة",
+        noEventsDescription:
+          "أنشئ حفلًا أولًا حتى تظهر مساحة الإدارة التشغيلية داخل تفاصيل المصمم.",
+        openEvents: "فتح قائمة الحفلات",
+        chooseEventTitle: "اختر حفلًا للبدء",
+        chooseEventDescription:
+          "بمجرد اختيار الحفل ستظهر لوحة النظرة العامة والخدمات والشركات وعروض الأسعار والعقود.",
+        loadingEventTitle: "جارٍ تحميل بيانات الحفل",
+        loadingEventDescription:
+          "يتم الآن تجهيز مساحة العمل التشغيلية للحفل المختار.",
+        loadEventFailedTitle: "تعذر تحميل الحفل",
+        loadEventFailedDescription:
+          "لم نتمكن من جلب بيانات الحفل المختار. جرّب اختيار حفل آخر من القائمة.",
+        editEvent: "تعديل الحفل",
+        trackExecution: "متابعة التنفيذ",
+        eventDateRequired: "تاريخ الحفل مطلوب.",
+        editDialogTitle: "تعديل بيانات الحفل",
+        editDialogDescription:
+          "حدّث العميل والتاريخ والصالة وحالة الحفل مباشرة من مساحة المصمم.",
+        noCustomer: "بدون عميل",
+        noVenue: "بدون صالة",
+        customerField: "العميل",
+        eventDateField: "تاريخ الحفل",
+        venueField: "الصالة",
+        eventStatusField: "حالة الحفل",
+        eventTitleField: "عنوان الحفل",
+        guestCountField: "عدد الضيوف",
+        groomNameField: "اسم العريس",
+        brideNameField: "اسم العروس",
+        eventNotesField: "ملاحظات الحفل",
+        saveChanges: "حفظ التعديلات",
+        cancel: "إلغاء",
+        selectEventPlaceholder: "اختر الحفل",
+        loadingEventsPlaceholder: "جارٍ تحميل الحفلات...",
+        currentEventBadge: "الحفل الحالي",
       },
       quotations: {
         title: "Quotations",
@@ -2928,6 +3086,38 @@ export const resources = {
         viewContract: "عرض العقد",
         noContractParty: "لا يوجد عميل أو عميل محتمل مرتبط",
         noContracts: "لم يتم إنشاء عقود لهذا الحفل بعد.",
+        operationsWorkspace: "مساحة العمل التشغيلية",
+        operationsWorkspaceTitle: "مركز عمليات الحفل",
+        operationsWorkspaceHint:
+          "أدر الخدمات والشركات وعروض الأسعار والعقود والمتابعة التنفيذية من مساحة حفل واحدة.",
+        totalServiceItems: "إجمالي بنود الخدمات",
+        totalServiceItemsHint:
+          "بنود الخدمات الداخلية المرتبطة حاليًا بهذا الحفل.",
+        totalExternalVendors: "إجمالي الشركات الخارجية",
+        totalExternalVendorsHint:
+          "روابط الشركات المكلفة وشركاء التنفيذ الخارجيين.",
+        quotationSnapshot: "ملخص عروض الأسعار",
+        contractSnapshot: "ملخص العقود",
+        latestQuotation: "أحدث عرض سعر",
+        latestContract: "أحدث عقد",
+        noQuotationsTitle: "لا توجد عروض أسعار بعد",
+        noContractsTitle: "لا توجد عقود بعد",
+        noOperationalReadinessData: "لا توجد نقاط جاهزية تنفيذية بعد",
+        loadingOverview: "جارٍ تحميل نظرة الحفل العامة وأقسام التخطيط.",
+        loadingExecution: "جارٍ تحميل بيانات المتابعة التنفيذية لهذا الحفل.",
+        loadingQuotations: "جارٍ تحميل عروض الأسعار لهذا الحفل.",
+        loadingContracts: "جارٍ تحميل العقود لهذا الحفل.",
+        noEventFound: "تعذر تحميل هذا الحفل.",
+        executionTab: "التنفيذ",
+        currentEventStatus: "حالة الحفل الحالية",
+        executionReadiness: "جاهزية التنفيذ",
+        executionReadinessHint:
+          "{{ready}} من أصل {{total}} نقاط متابعة هي حاليًا في حالة جاهزة.",
+        executionCoverage: "التغطية التشغيلية",
+        executionCoverageHint:
+          "الخدمات / الشركات / أقسام التخطيط المتابَعة حاليًا لهذا الحفل.",
+        executionReadyLine: "جاهز للتنفيذ",
+        executionPendingLine: "يحتاج متابعة قبل التنفيذ",
         currentEventPreview: "جارٍ تعديل:",
         status: {
           draft: "مسودة",

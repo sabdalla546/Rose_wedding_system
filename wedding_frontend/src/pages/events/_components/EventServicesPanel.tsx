@@ -43,8 +43,8 @@ type Props = {
   t: TFunction;
   onViewModeChange: (nextValue: EventPanelViewMode) => void;
   onAdd: () => void;
-  onEdit: (serviceItem: EventServiceItem) => void;
-  onDelete: (serviceItem: EventServiceItem) => void;
+  onEdit?: (serviceItem: EventServiceItem) => void;
+  onDelete?: (serviceItem: EventServiceItem) => void;
 };
 
 export function EventServicesPanel({
@@ -58,6 +58,7 @@ export function EventServicesPanel({
   onEdit,
   onDelete,
 }: Props) {
+  const hasRowActions = Boolean(onEdit || onDelete);
   const resolveLineTotal = (serviceItem: EventServiceItem) => {
     const explicitTotal = toNumberValue(serviceItem.totalPrice);
 
@@ -151,7 +152,9 @@ export function EventServicesPanel({
                       <TableHead>{t("services.totalAmount", { defaultValue: "Total" })}</TableHead>
                       <TableHead>{t("services.eventStatusLabel", { defaultValue: "Status" })}</TableHead>
                       <TableHead>{t("common.notes", { defaultValue: "Notes" })}</TableHead>
-                      <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                      {hasRowActions ? (
+                        <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
+                      ) : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -191,20 +194,26 @@ export function EventServicesPanel({
                         <TableCell className="max-w-[320px] align-top text-[var(--lux-text-secondary)]">
                           {serviceItem.notes || "-"}
                         </TableCell>
-                        <TableCell className="align-top">
-                          <ProtectedComponent permission="events.update">
-                            <div className="flex flex-wrap gap-2">
-                              <Button variant="outline" size="sm" onClick={() => onEdit(serviceItem)}>
-                                <Pencil className="h-4 w-4" />
-                                {t("common.edit", { defaultValue: "Edit" })}
-                              </Button>
-                              <Button variant="destructive" size="sm" onClick={() => onDelete(serviceItem)}>
-                                <Trash2 className="h-4 w-4" />
-                                {t("common.delete", { defaultValue: "Delete" })}
-                              </Button>
-                            </div>
-                          </ProtectedComponent>
-                        </TableCell>
+                        {hasRowActions ? (
+                          <TableCell className="align-top">
+                            <ProtectedComponent permission="events.update">
+                              <div className="flex flex-wrap gap-2">
+                                {onEdit ? (
+                                  <Button variant="outline" size="sm" onClick={() => onEdit(serviceItem)}>
+                                    <Pencil className="h-4 w-4" />
+                                    {t("common.edit", { defaultValue: "Edit" })}
+                                  </Button>
+                                ) : null}
+                                {onDelete ? (
+                                  <Button variant="destructive" size="sm" onClick={() => onDelete(serviceItem)}>
+                                    <Trash2 className="h-4 w-4" />
+                                    {t("common.delete", { defaultValue: "Delete" })}
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </ProtectedComponent>
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -286,18 +295,24 @@ export function EventServicesPanel({
                   )}
                 </div>
 
-                <ProtectedComponent permission="events.update">
-                  <div className="flex flex-wrap gap-2 border-t border-[var(--lux-row-border)] pt-4">
-                    <Button variant="outline" onClick={() => onEdit(serviceItem)}>
-                      <Pencil className="h-4 w-4" />
-                      {t("common.edit", { defaultValue: "Edit" })}
-                    </Button>
-                    <Button variant="destructive" onClick={() => onDelete(serviceItem)}>
-                      <Trash2 className="h-4 w-4" />
-                      {t("common.delete", { defaultValue: "Delete" })}
-                    </Button>
-                  </div>
-                </ProtectedComponent>
+                {hasRowActions ? (
+                  <ProtectedComponent permission="events.update">
+                    <div className="flex flex-wrap gap-2 border-t border-[var(--lux-row-border)] pt-4">
+                      {onEdit ? (
+                        <Button variant="outline" onClick={() => onEdit(serviceItem)}>
+                          <Pencil className="h-4 w-4" />
+                          {t("common.edit", { defaultValue: "Edit" })}
+                        </Button>
+                      ) : null}
+                      {onDelete ? (
+                        <Button variant="destructive" onClick={() => onDelete(serviceItem)}>
+                          <Trash2 className="h-4 w-4" />
+                          {t("common.delete", { defaultValue: "Delete" })}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </ProtectedComponent>
+                ) : null}
               </EventPanelCard>
             ))}
           </div>
