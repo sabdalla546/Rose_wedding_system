@@ -25,9 +25,11 @@ interface UseEventVendorLinksParams {
   currentPage: number;
   itemsPerPage: number;
   eventId?: number;
+  vendorId?: number;
   vendorType: "all" | VendorType;
   providedBy: "all" | EventVendorProvidedBy;
   status: "all" | EventVendorStatus;
+  enabled?: boolean;
 }
 
 export const useVendors = ({
@@ -77,9 +79,11 @@ export const useEventVendorLinks = ({
   currentPage,
   itemsPerPage,
   eventId,
+  vendorId,
   vendorType,
   providedBy,
   status,
+  enabled,
 }: UseEventVendorLinksParams) => {
   return useQuery<EventVendorLinksResponse>({
     queryKey: [
@@ -87,6 +91,7 @@ export const useEventVendorLinks = ({
       currentPage,
       itemsPerPage,
       eventId,
+      vendorId,
       vendorType,
       providedBy,
       status,
@@ -97,6 +102,7 @@ export const useEventVendorLinks = ({
           page: currentPage,
           limit: itemsPerPage,
           eventId: eventId || undefined,
+          vendorId: vendorId || undefined,
           vendorType: vendorType === "all" ? undefined : vendorType,
           providedBy: providedBy === "all" ? undefined : providedBy,
           status: status === "all" ? undefined : status,
@@ -105,7 +111,7 @@ export const useEventVendorLinks = ({
 
       return res.data;
     },
-    enabled: Boolean(eventId),
+    enabled: typeof enabled === "boolean" ? enabled : Boolean(eventId || vendorId),
   });
 };
 

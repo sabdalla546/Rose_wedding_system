@@ -150,7 +150,13 @@ export const useCreateEventFromSource = () => {
   });
 };
 
-export const useUpdateEvent = (id?: string) => {
+export const useUpdateEvent = (
+  id?: string,
+  options?: {
+    navigateOnSuccess?: boolean;
+    onSuccess?: () => void;
+  },
+) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -170,7 +176,10 @@ export const useUpdateEvent = (id?: string) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       queryClient.invalidateQueries({ queryKey: ["events-calendar"] });
-      navigate("/events");
+      options?.onSuccess?.();
+      if (options?.navigateOnSuccess !== false) {
+        navigate("/events");
+      }
     },
     onError: (error) => {
       toast({

@@ -112,7 +112,10 @@ const buildUpdateQuotationItemPayload = (
   sortOrder: item.sortOrder?.trim() ? Number(item.sortOrder) : 0,
 });
 
-export const useCreateQuotation = () => {
+export const useCreateQuotation = (options?: {
+  navigateOnSuccess?: boolean;
+  onSuccess?: (quotationId: number) => void;
+}) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -133,7 +136,10 @@ export const useCreateQuotation = () => {
 
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["event", String(createdQuotation.eventId)] });
-      navigate(`/quotations/${createdQuotation.id}`);
+      options?.onSuccess?.(createdQuotation.id);
+      if (options?.navigateOnSuccess !== false) {
+        navigate(`/quotations/${createdQuotation.id}`);
+      }
     },
     onError: (error) => {
       toast({
@@ -150,7 +156,10 @@ export const useCreateQuotation = () => {
   });
 };
 
-export const useCreateQuotationFromEvent = () => {
+export const useCreateQuotationFromEvent = (options?: {
+  navigateOnSuccess?: boolean;
+  onSuccess?: (quotationId: number) => void;
+}) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -174,7 +183,10 @@ export const useCreateQuotationFromEvent = () => {
 
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["event", String(createdQuotation.eventId)] });
-      navigate(`/quotations/${createdQuotation.id}`);
+      options?.onSuccess?.(createdQuotation.id);
+      if (options?.navigateOnSuccess !== false) {
+        navigate(`/quotations/${createdQuotation.id}`);
+      }
     },
     onError: (error) => {
       toast({

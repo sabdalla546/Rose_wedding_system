@@ -139,7 +139,10 @@ const invalidateRelatedQueries = (
   }
 };
 
-export const useCreateContract = () => {
+export const useCreateContract = (options?: {
+  navigateOnSuccess?: boolean;
+  onSuccess?: (contractId: number) => void;
+}) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -162,7 +165,10 @@ export const useCreateContract = () => {
         eventId: createdContract.eventId,
         quotationId: createdContract.quotationId,
       });
-      navigate(`/contracts/${createdContract.id}`);
+      options?.onSuccess?.(createdContract.id);
+      if (options?.navigateOnSuccess !== false) {
+        navigate(`/contracts/${createdContract.id}`);
+      }
     },
     onError: (error) => {
       toast({
@@ -179,7 +185,10 @@ export const useCreateContract = () => {
   });
 };
 
-export const useCreateContractFromQuotation = () => {
+export const useCreateContractFromQuotation = (options?: {
+  navigateOnSuccess?: boolean;
+  onSuccess?: (contractId: number) => void;
+}) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -205,7 +214,10 @@ export const useCreateContractFromQuotation = () => {
         eventId: createdContract.eventId,
         quotationId: createdContract.quotationId,
       });
-      navigate(`/contracts/${createdContract.id}`);
+      options?.onSuccess?.(createdContract.id);
+      if (options?.navigateOnSuccess !== false) {
+        navigate(`/contracts/${createdContract.id}`);
+      }
     },
     onError: (error) => {
       toast({

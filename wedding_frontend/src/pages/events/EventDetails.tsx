@@ -25,14 +25,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useCreateEventSection,
   useDeleteEventSection,
   useUpdateEventSection,
 } from "@/hooks/events/useEventSectionMutations";
+import { useUpdateEvent } from "@/hooks/events/useEventMutations";
 import { useEvent } from "@/hooks/events/useEvents";
 import { useContracts } from "@/hooks/contracts/useContracts";
+import {
+  useCreateContract,
+  useCreateContractFromQuotation,
+} from "@/hooks/contracts/useContractMutations";
+import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
+import { useCreateQuotationFromEvent } from "@/hooks/quotations/useQuotationMutations";
 import {
   useCreateEventService,
   useDeleteEventService,
@@ -49,12 +57,18 @@ import {
 } from "@/hooks/vendors/useEventVendorMutations";
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
-import { EventBusinessDocsPanels } from "./_components/EventBusinessDocsPanels";
+import { useVenues } from "@/hooks/venues/useVenues";
 import { EventDetailsHero } from "./_components/EventDetailsHero";
-import { EventSectionsPanel } from "./_components/EventSectionsPanel";
 import { EventServicesChecklistDialog } from "./_components/EventServicesChecklistDialog";
-import { EventServicesPanel } from "./_components/EventServicesPanel";
-import { EventVendorsPanel } from "./_components/EventVendorsPanel";
+import { EventWorkspaceSummary } from "./_components/EventWorkspaceSummary";
+import {
+  EventContractsPanel,
+  EventExecutionPanel,
+  EventOverviewPanel,
+  EventQuotationsPanel,
+  EventServicesPanel,
+  EventVendorsPanel,
+} from "@/features/events/components";
 import {
   EVENT_SERVICE_STATUS_OPTIONS,
   formatMoney,
@@ -66,6 +80,8 @@ import type {
   EventServiceStatus,
   ServiceCategory,
 } from "@/pages/services/types";
+import type { ContractStatus } from "@/pages/contracts/types";
+import type { QuotationStatus } from "@/pages/quotations/types";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import {
   EVENT_VENDOR_PROVIDED_BY_OPTIONS,
@@ -83,8 +99,7 @@ import type {
 } from "@/pages/vendors/types";
 
 import { EVENT_SECTION_TYPE_OPTIONS } from "./adapters";
-import type { EventSection, EventSectionType } from "./types";
-import type { EventPanelViewMode } from "./_components/EventDetailsPrimitives";
+import type { EventSection, EventSectionType, EventStatus } from "./types";
 
 type SectionFormState = {
   sectionType: EventSectionType;
@@ -115,6 +130,46 @@ type EventServiceFormState = {
   status: EventServiceStatus;
   sortOrder: string;
 };
+
+type EventEditFormState = {
+  customerId: string;
+  eventDate: string;
+  venueId: string;
+  venueNameSnapshot: string;
+  groomName: string;
+  brideName: string;
+  guestCount: string;
+  title: string;
+  notes: string;
+  status: EventStatus | "";
+};
+
+type QuotationCreateFormState = {
+  quotationNumber: string;
+  issueDate: string;
+  validUntil: string;
+  notes: string;
+  status: QuotationStatus;
+  eventServiceIds: string[];
+  eventVendorIds: string[];
+};
+
+type ContractCreateFormState = {
+  quotationId: string;
+  contractNumber: string;
+  signedDate: string;
+  eventDate: string;
+  notes: string;
+  status: ContractStatus;
+};
+
+type EventDetailsTabValue =
+  | "overview"
+  | "items"
+  | "vendors"
+  | "quotations"
+  | "contracts"
+  | "execution";
 
 const textareaClassName =
   "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] sm:min-h-[130px]";
@@ -217,11 +272,52 @@ const createDefaultEventServiceState = (
   sortOrder: String(sortOrder),
 });
 
-const EventDetailsPage = () => {
+const createDefaultEventEditState = (): EventEditFormState => ({
+  customerId: "",
+  eventDate: "",
+  venueId: "",
+  venueNameSnapshot: "",
+  groomName: "",
+  brideName: "",
+  guestCount: "",
+  title: "",
+  notes: "",
+  status: "",
+});
+
+const createDefaultQuotationCreateState = (): QuotationCreateFormState => ({
+  quotationNumber: "",
+  issueDate: "",
+  validUntil: "",
+  notes: "",
+  status: "draft",
+  eventServiceIds: [],
+  eventVendorIds: [],
+});
+
+const createDefaultContractCreateState = (): ContractCreateFormState => ({
+  quotationId: "",
+  contractNumber: "",
+  signedDate: "",
+  eventDate: "",
+  notes: "",
+  status: "draft",
+});
+
+type EventDetailsPageProps = {
+  eventIdOverride?: number | string;
+  embedded?: boolean;
+};
+
+export const EventDetailsPage = ({
+  eventIdOverride,
+  embedded = false,
+}: EventDetailsPageProps = {}) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
-  const { data: event, isLoading } = useEvent(id);
+  const resolvedEventId = eventIdOverride ? String(eventIdOverride) : id;
+  const { data: event, isLoading } = useEvent(resolvedEventId);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
 
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
@@ -240,7 +336,6 @@ const EventDetailsPage = () => {
     useState<EventVendorLink | null>(null);
   const [deleteVendorCandidate, setDeleteVendorCandidate] =
     useState<EventVendorLink | null>(null);
-  const [expandedVendorIds, setExpandedVendorIds] = useState<number[]>([]);
   const [vendorError, setVendorError] = useState("");
   const [vendorForm, setVendorForm] = useState<EventVendorFormState>(
     createDefaultEventVendorState(),
@@ -255,20 +350,47 @@ const EventDetailsPage = () => {
   const [serviceForm, setServiceForm] = useState<EventServiceFormState>(
     createDefaultEventServiceState(),
   );
-  const [vendorPanelViewMode, setVendorPanelViewMode] =
-    useState<EventPanelViewMode>("table");
-  const [servicePanelViewMode, setServicePanelViewMode] =
-    useState<EventPanelViewMode>("table");
+  const [activeTab, setActiveTab] = useState<EventDetailsTabValue>("overview");
+  const [editEventDialogOpen, setEditEventDialogOpen] = useState(false);
+  const [editEventForm, setEditEventForm] = useState<EventEditFormState>(
+    createDefaultEventEditState(),
+  );
+  const [editEventError, setEditEventError] = useState("");
+  const [createQuotationDialogOpen, setCreateQuotationDialogOpen] = useState(false);
+  const [quotationCreateForm, setQuotationCreateForm] =
+    useState<QuotationCreateFormState>(createDefaultQuotationCreateState());
+  const [createContractDialogOpen, setCreateContractDialogOpen] = useState(false);
+  const [contractCreateForm, setContractCreateForm] =
+    useState<ContractCreateFormState>(createDefaultContractCreateState());
 
   const createSectionMutation = useCreateEventSection();
-  const updateSectionMutation = useUpdateEventSection(Number(id || 0));
-  const deleteSectionMutation = useDeleteEventSection(Number(id || 0));
+  const updateSectionMutation = useUpdateEventSection(Number(resolvedEventId || 0));
+  const deleteSectionMutation = useDeleteEventSection(Number(resolvedEventId || 0));
+  const updateEventMutation = useUpdateEvent(resolvedEventId, {
+    navigateOnSuccess: false,
+    onSuccess: () => {
+      setEditEventDialogOpen(false);
+      setEditEventError("");
+    },
+  });
+  const createQuotationFromEventMutation = useCreateQuotationFromEvent({
+    navigateOnSuccess: false,
+    onSuccess: () => setCreateQuotationDialogOpen(false),
+  });
+  const createContractMutation = useCreateContract({
+    navigateOnSuccess: false,
+    onSuccess: () => setCreateContractDialogOpen(false),
+  });
+  const createContractFromQuotationMutation = useCreateContractFromQuotation({
+    navigateOnSuccess: false,
+    onSuccess: () => setCreateContractDialogOpen(false),
+  });
   const createEventServiceMutation = useCreateEventService();
-  const updateEventServiceMutation = useUpdateEventService(Number(id || 0));
-  const deleteEventServiceMutation = useDeleteEventService(Number(id || 0));
-  const createEventVendorMutation = useCreateEventVendor(Number(id || 0));
-  const updateEventVendorMutation = useUpdateEventVendor(Number(id || 0));
-  const deleteEventVendorMutation = useDeleteEventVendor(Number(id || 0));
+  const updateEventServiceMutation = useUpdateEventService(Number(resolvedEventId || 0));
+  const deleteEventServiceMutation = useDeleteEventService(Number(resolvedEventId || 0));
+  const createEventVendorMutation = useCreateEventVendor(Number(resolvedEventId || 0));
+  const updateEventVendorMutation = useUpdateEventVendor(Number(resolvedEventId || 0));
+  const deleteEventVendorMutation = useDeleteEventVendor(Number(resolvedEventId || 0));
   const { data: vendorCatalogResponse } = useVendors({
     currentPage: 1,
     itemsPerPage: 200,
@@ -276,15 +398,14 @@ const EventDetailsPage = () => {
     type: "all",
     isActive: "all",
   });
-  const { data: eventVendorLinksResponse, isLoading: eventVendorLinksLoading } =
-    useEventVendorLinks({
-      currentPage: 1,
-      itemsPerPage: 200,
-      eventId: Number(id || 0),
-      vendorType: "all",
-      providedBy: "all",
-      status: "all",
-    });
+  const { data: eventVendorLinksResponse } = useEventVendorLinks({
+    currentPage: 1,
+    itemsPerPage: 200,
+    eventId: Number(resolvedEventId || 0),
+    vendorType: "all",
+    providedBy: "all",
+    status: "all",
+  });
   const {
     data: vendorSubServicesResponse,
     isLoading: vendorSubServicesLoading,
@@ -318,41 +439,68 @@ const EventDetailsPage = () => {
     category: "all",
     isActive: "all",
   });
-  const {
-    data: eventServiceItemsResponse,
-    isLoading: eventServiceItemsLoading,
-  } = useEventServiceItems({
+  const { data: customersResponse } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
-    eventId: Number(id || 0),
+    searchQuery: "",
+    status: "all",
+  });
+  const { data: venuesResponse } = useVenues({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    isActive: "all",
+  });
+  const { data: eventServiceItemsResponse } = useEventServiceItems({
+    currentPage: 1,
+    itemsPerPage: 200,
+    eventId: Number(resolvedEventId || 0),
     category: "all",
     status: "all",
   });
-  const { data: eventQuotationsResponse, isLoading: eventQuotationsLoading } =
-    useQuotations({
-      currentPage: 1,
-      itemsPerPage: 200,
-      searchQuery: "",
-      eventId: String(id || ""),
-      status: "all",
-      issueDateFrom: "",
-      issueDateTo: "",
-    });
-  const { data: eventContractsResponse, isLoading: eventContractsLoading } =
-    useContracts({
-      currentPage: 1,
-      itemsPerPage: 200,
-      searchQuery: "",
-      quotationId: "",
-      eventId: String(id || ""),
-      status: "all",
-      signedDateFrom: "",
-      signedDateTo: "",
+  const { data: eventQuotationsResponse } = useQuotations({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    eventId: String(resolvedEventId || ""),
+    status: "all",
+    issueDateFrom: "",
+    issueDateTo: "",
   });
-  const vendorCatalog = vendorCatalogResponse?.data ?? [];
-  const vendorSubServices = vendorSubServicesResponse?.data ?? [];
-  const vendorPricingPlans = vendorPricingPlansResponse?.data ?? [];
-  const serviceCatalog = serviceCatalogResponse?.data ?? [];
+  const { data: eventContractsResponse } = useContracts({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    quotationId: "",
+    eventId: String(resolvedEventId || ""),
+    status: "all",
+    signedDateFrom: "",
+    signedDateTo: "",
+  });
+  const vendorCatalog = useMemo(
+    () => vendorCatalogResponse?.data ?? [],
+    [vendorCatalogResponse?.data],
+  );
+  const customerCatalog = useMemo(
+    () => customersResponse?.data ?? [],
+    [customersResponse?.data],
+  );
+  const vendorSubServices = useMemo(
+    () => vendorSubServicesResponse?.data ?? [],
+    [vendorSubServicesResponse?.data],
+  );
+  const vendorPricingPlans = useMemo(
+    () => vendorPricingPlansResponse?.data ?? [],
+    [vendorPricingPlansResponse?.data],
+  );
+  const serviceCatalog = useMemo(
+    () => serviceCatalogResponse?.data ?? [],
+    [serviceCatalogResponse?.data],
+  );
+  const venueCatalog = useMemo(
+    () => venuesResponse?.data ?? [],
+    [venuesResponse?.data],
+  );
 
   const sortedSections = useMemo(
     () =>
@@ -488,18 +636,6 @@ const EventDetailsPage = () => {
         }),
     [serviceCatalog, serviceForm.serviceId],
   );
-  const eventServiceSummary = useMemo(
-    () =>
-      sortedEventServiceItems.reduce(
-        (summary) => ({
-          itemsCount: summary.itemsCount + 1,
-        }),
-        {
-          itemsCount: 0,
-        },
-      ),
-    [sortedEventServiceItems],
-  );
   const sortedEventQuotations = useMemo(
     () =>
       [...(eventQuotationsResponse?.data ?? [])].sort((left, right) => {
@@ -513,24 +649,6 @@ const EventDetailsPage = () => {
         return right.id - left.id;
       }),
     [eventQuotationsResponse?.data],
-  );
-  const quotationSummary = useMemo(
-    () =>
-      sortedEventQuotations.reduce(
-        (summary, quotation) => ({
-          itemsCount: summary.itemsCount + 1,
-          totalAmount: Number(
-            (
-              summary.totalAmount + (toNumberValue(quotation.totalAmount) ?? 0)
-            ).toFixed(3),
-          ),
-        }),
-        {
-          itemsCount: 0,
-          totalAmount: 0,
-        },
-      ),
-    [sortedEventQuotations],
   );
   const sortedEventContracts = useMemo(
     () =>
@@ -546,24 +664,34 @@ const EventDetailsPage = () => {
       }),
     [eventContractsResponse?.data],
   );
-  const contractSummary = useMemo(
-    () =>
-      sortedEventContracts.reduce(
-        (summary, contract) => ({
-          itemsCount: summary.itemsCount + 1,
-          totalAmount: Number(
-            (
-              summary.totalAmount + (toNumberValue(contract.totalAmount) ?? 0)
-            ).toFixed(3),
-          ),
-        }),
-        {
-          itemsCount: 0,
-          totalAmount: 0,
-        },
-      ),
-    [sortedEventContracts],
-  );
+  const latestQuotation = sortedEventQuotations[0] ?? null;
+  const latestContract = sortedEventContracts[0] ?? null;
+  const operationalReadiness = useMemo(() => {
+    const servicesReady = sortedEventServiceItems.filter(
+      (item) => item.status === "confirmed" || item.status === "completed",
+    ).length;
+    const vendorsReady = sortedEventVendorLinks.filter(
+      (link) => link.status === "approved" || link.status === "confirmed",
+    ).length;
+    const sectionsReady = sortedSections.filter((section) => section.isCompleted).length;
+    const total =
+      sortedEventServiceItems.length +
+      sortedEventVendorLinks.length +
+      sortedSections.length;
+    const ready = servicesReady + vendorsReady + sectionsReady;
+
+    return {
+      ready,
+      total,
+      percent: total > 0 ? Math.round((ready / total) * 100) : null,
+      servicesReady,
+      servicesTotal: sortedEventServiceItems.length,
+      vendorsReady,
+      vendorsTotal: sortedEventVendorLinks.length,
+      sectionsReady,
+      sectionsTotal: sortedSections.length,
+    };
+  }, [sortedEventServiceItems, sortedEventVendorLinks, sortedSections]);
 
   useEffect(() => {
     if (!sectionDialogOpen) {
@@ -677,6 +805,61 @@ const EventDetailsPage = () => {
     });
   }, [editingServiceItem, serviceEditorOpen, sortedEventServiceItems.length]);
 
+  useEffect(() => {
+    if (!event) {
+      return;
+    }
+
+    setEditEventForm({
+      customerId: event.customerId ? String(event.customerId) : "",
+      eventDate: event.eventDate ? String(event.eventDate).slice(0, 10) : "",
+      venueId: event.venueId ? String(event.venueId) : "",
+      venueNameSnapshot: event.venueNameSnapshot ?? "",
+      groomName: event.groomName ?? "",
+      brideName: event.brideName ?? "",
+      guestCount:
+        typeof event.guestCount === "number" ? String(event.guestCount) : "",
+      title: event.title ?? "",
+      notes: event.notes ?? "",
+      status: event.status,
+    });
+  }, [event]);
+
+  useEffect(() => {
+    if (!createQuotationDialogOpen) {
+      setQuotationCreateForm(createDefaultQuotationCreateState());
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    setQuotationCreateForm({
+      quotationNumber: "",
+      issueDate: today,
+      validUntil: "",
+      notes: "",
+      status: "draft",
+      eventServiceIds: sortedEventServiceItems.map((item) => String(item.id)),
+      eventVendorIds: sortedEventVendorLinks.map((item) => String(item.id)),
+    });
+  }, [createQuotationDialogOpen, sortedEventServiceItems, sortedEventVendorLinks]);
+
+  useEffect(() => {
+    if (!createContractDialogOpen) {
+      setContractCreateForm(createDefaultContractCreateState());
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    setContractCreateForm({
+      quotationId: latestQuotation ? String(latestQuotation.id) : "",
+      contractNumber: "",
+      signedDate: today,
+      eventDate: event?.eventDate ? String(event.eventDate).slice(0, 10) : "",
+      notes: "",
+      status: "draft",
+    });
+  }, [createContractDialogOpen, event?.eventDate, latestQuotation]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -698,7 +881,7 @@ const EventDetailsPage = () => {
   }
 
   const handleSectionSave = () => {
-    if (!id) {
+    if (!resolvedEventId) {
       return;
     }
 
@@ -748,13 +931,13 @@ const EventDetailsPage = () => {
     }
 
     createSectionMutation.mutate(
-      { eventId: Number(id), ...payload },
+      { eventId: Number(resolvedEventId), ...payload },
       { onSuccess: () => setSectionDialogOpen(false) },
     );
   };
 
   const handleVendorSave = () => {
-    if (!id) {
+    if (!resolvedEventId) {
       return;
     }
 
@@ -814,7 +997,7 @@ const EventDetailsPage = () => {
     setVendorError("");
 
     const payload = {
-      eventId: Number(id),
+      eventId: Number(resolvedEventId),
       vendorType: vendorForm.vendorType,
       providedBy: vendorForm.providedBy,
       vendorId: vendorForm.providedBy === "company" ? vendorForm.vendorId : "",
@@ -839,7 +1022,7 @@ const EventDetailsPage = () => {
   };
 
   const handleServiceSave = () => {
-    if (!id) {
+    if (!resolvedEventId) {
       return;
     }
 
@@ -871,7 +1054,7 @@ const EventDetailsPage = () => {
     setServiceError("");
 
     const payload = {
-      eventId: Number(id),
+      eventId: Number(resolvedEventId),
       serviceId: serviceForm.serviceId,
       serviceNameSnapshot,
       category: serviceForm.category,
@@ -895,14 +1078,93 @@ const EventDetailsPage = () => {
     );
   };
 
+  const handleEventUpdateSave = () => {
+    if (!resolvedEventId) {
+      return;
+    }
+
+    if (!editEventForm.eventDate.trim()) {
+      setEditEventError(
+        t("events.validation.eventDateRequired", {
+          defaultValue: "Event date is required",
+        }),
+      );
+      return;
+    }
+
+    setEditEventError("");
+    updateEventMutation.mutate({
+      customerId: editEventForm.customerId,
+      eventDate: editEventForm.eventDate,
+      venueId: editEventForm.venueId,
+      venueNameSnapshot: editEventForm.venueNameSnapshot,
+      groomName: editEventForm.groomName,
+      brideName: editEventForm.brideName,
+      guestCount: editEventForm.guestCount,
+      title: editEventForm.title,
+      notes: editEventForm.notes,
+      status: editEventForm.status,
+    });
+  };
+
+  const handleCreateQuotationSave = () => {
+    if (!resolvedEventId) {
+      return;
+    }
+
+    createQuotationFromEventMutation.mutate({
+      eventId: String(resolvedEventId),
+      quotationNumber: quotationCreateForm.quotationNumber,
+      issueDate: quotationCreateForm.issueDate,
+      validUntil: quotationCreateForm.validUntil,
+      notes: quotationCreateForm.notes,
+      eventServiceIds: quotationCreateForm.eventServiceIds,
+      eventVendorIds: quotationCreateForm.eventVendorIds,
+      status: quotationCreateForm.status,
+    });
+  };
+
+  const handleCreateContractSave = () => {
+    if (!resolvedEventId) {
+      return;
+    }
+
+    if (contractCreateForm.quotationId) {
+      createContractFromQuotationMutation.mutate({
+        quotationId: contractCreateForm.quotationId,
+        contractNumber: contractCreateForm.contractNumber,
+        signedDate: contractCreateForm.signedDate,
+        eventDate: contractCreateForm.eventDate,
+        notes: contractCreateForm.notes,
+        status: contractCreateForm.status,
+      });
+      return;
+    }
+
+    createContractMutation.mutate({
+      eventId: String(resolvedEventId),
+      quotationId: "",
+      contractNumber: contractCreateForm.contractNumber,
+      signedDate: contractCreateForm.signedDate,
+      eventDate: contractCreateForm.eventDate,
+      notes: contractCreateForm.notes,
+      status: contractCreateForm.status,
+      items: [],
+      paymentSchedules: [],
+    });
+  };
+
   return (
     <>
       <ProtectedComponent permission="events.read">
-        <PageContainer className="pb-4 pt-4 text-foreground">
+        <PageContainer
+          className={embedded ? "p-0 text-foreground" : "pb-4 pt-4 text-foreground"}
+        >
           <div
             dir={i18n.dir()}
-            className="mx-auto w-full max-w-6xl space-y-6"
+            className={`mx-auto w-full space-y-6 ${embedded ? "max-w-none" : "max-w-6xl"}`}
           >
+            {!embedded ? (
               <EventDetailsHero
                 event={event}
                 dateLocale={dateLocale}
@@ -920,88 +1182,536 @@ const EventDetailsPage = () => {
                     : undefined
                 }
               />
+            ) : null}
 
-              <EventSectionsPanel
-                sections={sortedSections}
-                t={t}
-                onAdd={() => setSectionDialogOpen(true)}
-                onEdit={(section) => {
-                  setEditingSection(section);
-                  setSectionDialogOpen(true);
-                }}
-                onDelete={(section) => setDeleteCandidate(section)}
-              />
+            <EventWorkspaceSummary
+              t={t}
+              dateLocale={dateLocale}
+              servicesCount={sortedEventServiceItems.length}
+              vendorsCount={sortedEventVendorLinks.length}
+              latestQuotation={latestQuotation}
+              latestContract={latestContract}
+              readiness={operationalReadiness}
+              onEditEvent={() => setEditEventDialogOpen(true)}
+              onAddService={() => {
+                setActiveTab("items");
+                setServiceChecklistOpen(true);
+              }}
+              onAssignVendor={() => {
+                setActiveTab("vendors");
+                setVendorDialogOpen(true);
+              }}
+              onCreateQuotation={() => {
+                setActiveTab("quotations");
+                setCreateQuotationDialogOpen(true);
+              }}
+              onCreateContract={() => {
+                setActiveTab("contracts");
+                setCreateContractDialogOpen(true);
+              }}
+            />
 
-              <EventVendorsPanel
-                vendorLinks={sortedEventVendorLinks}
-                loading={eventVendorLinksLoading}
-                expandedVendorIds={expandedVendorIds}
-                viewMode={vendorPanelViewMode}
-                t={t}
-                onViewModeChange={setVendorPanelViewMode}
-                onAdd={() => setVendorDialogOpen(true)}
-                onEdit={(vendorLink) => {
-                  setEditingVendorLink(vendorLink);
-                  setVendorDialogOpen(true);
-                }}
-                onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
-                onToggleExpanded={(vendorId) =>
-                  setExpandedVendorIds((current) =>
-                    current.includes(vendorId)
-                      ? current.filter((value) => value !== vendorId)
-                      : [...current, vendorId],
-                  )
-                }
-              />
+            <Tabs
+              dir={i18n.dir()}
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as EventDetailsTabValue)}
+              className="w-full"
+            >
+              <TabsList>
+                <TabsTrigger value="overview">
+                  {t("events.overviewTab", { defaultValue: "Overview" })}
+                </TabsTrigger>
+                <TabsTrigger value="items">
+                  {t("events.itemsTab", { defaultValue: "Items / Services" })}
+                </TabsTrigger>
+                <TabsTrigger value="vendors">
+                  {t("events.externalVendorsTab", {
+                    defaultValue: "External Vendors",
+                  })}
+                </TabsTrigger>
+                <TabsTrigger value="quotations">
+                  {t("events.quotations", { defaultValue: "Quotations" })}
+                </TabsTrigger>
+                <TabsTrigger value="contracts">
+                  {t("events.contracts", { defaultValue: "Contracts" })}
+                </TabsTrigger>
+                <TabsTrigger value="execution">
+                  {t("events.executionTab", { defaultValue: "Execution" })}
+                </TabsTrigger>
+              </TabsList>
 
-              <EventServicesPanel
-                serviceItems={sortedEventServiceItems}
-                loading={eventServiceItemsLoading}
-                summary={eventServiceSummary}
-                viewMode={servicePanelViewMode}
-                t={t}
-                onViewModeChange={setServicePanelViewMode}
-                onAdd={() => setServiceChecklistOpen(true)}
-                onEdit={(serviceItem) => {
-                  setEditingServiceItem(serviceItem);
-                  setServiceEditorOpen(true);
-                }}
-                onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
-              />
+              <TabsContent value="overview">
+                <EventOverviewPanel
+                  eventId={resolvedEventId ?? ""}
+                  onAddSection={() => setSectionDialogOpen(true)}
+                  onEditSection={(section) => {
+                    setEditingSection(section);
+                    setSectionDialogOpen(true);
+                  }}
+                  onDeleteSection={(section) => setDeleteCandidate(section)}
+                />
+              </TabsContent>
 
-              <EventBusinessDocsPanels
-                quotations={sortedEventQuotations}
-                quotationsLoading={eventQuotationsLoading}
-                quotationSummary={quotationSummary}
-                contracts={sortedEventContracts}
-                contractsLoading={eventContractsLoading}
-                contractSummary={contractSummary}
-                dateLocale={dateLocale}
-                t={t}
-                onCreateQuotation={() =>
-                  navigate(`/quotations/create?eventId=${event.id}`)
-                }
-                onCreateQuotationFromEvent={() =>
-                  navigate(`/quotations/create?mode=from-event&eventId=${event.id}`)
-                }
-                onViewQuotation={(quotationId) =>
-                  navigate(`/quotations/${quotationId}`)
-                }
-                onCreateContract={() =>
-                  navigate(`/contracts/create?eventId=${event.id}`)
-                }
-                onCreateContractFromQuotation={() =>
-                  navigate(
-                    `/contracts/create?mode=from-quotation&eventId=${event.id}`,
-                  )
-                }
-                onViewContract={(contractId) =>
-                  navigate(`/contracts/${contractId}`)
-                }
-              />
+              <TabsContent value="items">
+                <EventServicesPanel
+                  eventId={resolvedEventId ?? ""}
+                  onAdd={() => setServiceChecklistOpen(true)}
+                  onEdit={(serviceItem) => {
+                    setEditingServiceItem(serviceItem);
+                    setServiceEditorOpen(true);
+                  }}
+                  onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
+                />
+              </TabsContent>
+
+              <TabsContent value="vendors">
+                <EventVendorsPanel
+                  eventId={resolvedEventId ?? ""}
+                  onAdd={() => setVendorDialogOpen(true)}
+                  onEdit={(vendorLink) => {
+                    setEditingVendorLink(vendorLink);
+                    setVendorDialogOpen(true);
+                  }}
+                  onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
+                />
+              </TabsContent>
+
+              <TabsContent value="quotations">
+                <EventQuotationsPanel
+                  eventId={resolvedEventId ?? ""}
+                  onCreateQuotation={() => setCreateQuotationDialogOpen(true)}
+                  onCreateQuotationFromEvent={() => setCreateQuotationDialogOpen(true)}
+                  onViewQuotation={undefined}
+                />
+              </TabsContent>
+
+              <TabsContent value="contracts">
+                <EventContractsPanel
+                  eventId={resolvedEventId ?? ""}
+                  onCreateContract={() => setCreateContractDialogOpen(true)}
+                  onCreateContractFromQuotation={() => setCreateContractDialogOpen(true)}
+                  onViewContract={undefined}
+                />
+              </TabsContent>
+
+              <TabsContent value="execution">
+                <EventExecutionPanel eventId={resolvedEventId ?? ""} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </PageContainer>
+      </ProtectedComponent>
+
+      <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
+        <AppDialogShell size="lg" className="h-[min(88dvh,820px)]">
+          <AppDialogHeader
+            title={t("events.editTitle", { defaultValue: "Edit Event" })}
+            description={t("events.editDescription", {
+              defaultValue: "Update event details, venue, and linked records.",
+            })}
+          />
+          <AppDialogBody className={dialogBodyClassName}>
+            <div className={dialogSectionClassName}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.customer", { defaultValue: "Customer" })}
+                  </span>
+                  <Select
+                    value={editEventForm.customerId || "none"}
+                    onValueChange={(value) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        customerId: value === "none" ? "" : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {t("events.noCustomerSelected", {
+                          defaultValue: "No customer selected",
+                        })}
+                      </SelectItem>
+                      {customerCatalog.map((customer) => (
+                        <SelectItem key={customer.id} value={String(customer.id)}>
+                          {customer.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.eventDate", { defaultValue: "Event Date" })}
+                  </span>
+                  <Input
+                    type="date"
+                    value={editEventForm.eventDate}
+                    onChange={(event) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        eventDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("common.venue", { defaultValue: "Venue" })}
+                  </span>
+                  <Select
+                    value={editEventForm.venueId || "none"}
+                    onValueChange={(value) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        venueId: value === "none" ? "" : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {t("events.noVenueSelected", {
+                          defaultValue: "No venue selected",
+                        })}
+                      </SelectItem>
+                      {venueCatalog.map((venue) => (
+                        <SelectItem key={venue.id} value={String(venue.id)}>
+                          {venue.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.statusLabel", { defaultValue: "Status" })}
+                  </span>
+                  <Select
+                    value={editEventForm.status || "draft"}
+                    onValueChange={(value) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        status: value as EventStatus,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["draft", "designing", "confirmed", "in_progress", "completed", "cancelled"].map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {t(`events.status.${status}`, { defaultValue: status })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.titleField", { defaultValue: "Title" })}
+                  </span>
+                  <Input
+                    value={editEventForm.title}
+                    onChange={(event) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.guestCount", { defaultValue: "Guest Count" })}
+                  </span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editEventForm.guestCount}
+                    onChange={(event) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        guestCount: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.groomName", { defaultValue: "Groom Name" })}
+                  </span>
+                  <Input
+                    value={editEventForm.groomName}
+                    onChange={(event) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        groomName: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("events.brideName", { defaultValue: "Bride Name" })}
+                  </span>
+                  <Input
+                    value={editEventForm.brideName}
+                    onChange={(event) =>
+                      setEditEventForm((current) => ({
+                        ...current,
+                        brideName: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("common.notes", { defaultValue: "Notes" })}
+                </span>
+                <textarea
+                  className={textareaClassName}
+                  value={editEventForm.notes}
+                  onChange={(event) =>
+                    setEditEventForm((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              {editEventError ? (
+                <p className="text-sm text-[var(--lux-danger)]">{editEventError}</p>
+              ) : null}
             </div>
-          </PageContainer>
-        </ProtectedComponent>
+          </AppDialogBody>
+          <AppDialogFooter className="gap-3">
+            <Button variant="outline" onClick={() => setEditEventDialogOpen(false)}>
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              onClick={handleEventUpdateSave}
+              disabled={updateEventMutation.isPending}
+            >
+              {updateEventMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.update", { defaultValue: "Update" })}
+            </Button>
+          </AppDialogFooter>
+        </AppDialogShell>
+      </Dialog>
+
+      <Dialog
+        open={createQuotationDialogOpen}
+        onOpenChange={setCreateQuotationDialogOpen}
+      >
+        <AppDialogShell size="lg" className="h-[min(88dvh,820px)]">
+          <AppDialogHeader
+            title={t("quotations.createFromEvent", {
+              defaultValue: "Create From Event",
+            })}
+            description={t("events.quotationsHint", {
+              defaultValue:
+                "Review linked quotations and move quickly into quotation workflows for this event.",
+            })}
+          />
+          <AppDialogBody className={dialogBodyClassName}>
+            <div className={dialogSectionClassName}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("quotations.issueDate", { defaultValue: "Issue Date" })}
+                  </span>
+                  <Input
+                    type="date"
+                    value={quotationCreateForm.issueDate}
+                    onChange={(event) =>
+                      setQuotationCreateForm((current) => ({
+                        ...current,
+                        issueDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("quotations.validUntil", { defaultValue: "Valid Until" })}
+                  </span>
+                  <Input
+                    type="date"
+                    value={quotationCreateForm.validUntil}
+                    onChange={(event) =>
+                      setQuotationCreateForm((current) => ({
+                        ...current,
+                        validUntil: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3">
+                <p className={fieldLabelClassName}>
+                  {t("services.eventServices", { defaultValue: "Event Services" })}
+                </p>
+                {sortedEventServiceItems.map((item) => (
+                  <label key={item.id} className={dialogCheckboxCardClassName}>
+                    <Checkbox
+                      checked={quotationCreateForm.eventServiceIds.includes(String(item.id))}
+                      onCheckedChange={(checked: CheckedState) =>
+                        setQuotationCreateForm((current) => ({
+                          ...current,
+                          eventServiceIds: checked === true
+                            ? [...new Set([...current.eventServiceIds, String(item.id)])]
+                            : current.eventServiceIds.filter((value) => value !== String(item.id)),
+                        }))
+                      }
+                    />
+                    <span className="text-sm text-[var(--lux-text)]">
+                      {item.service?.name || item.serviceNameSnapshot}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="grid gap-3">
+                <p className={fieldLabelClassName}>
+                  {t("vendors.eventVendors", { defaultValue: "Event Vendors" })}
+                </p>
+                {sortedEventVendorLinks.map((item) => (
+                  <label key={item.id} className={dialogCheckboxCardClassName}>
+                    <Checkbox
+                      checked={quotationCreateForm.eventVendorIds.includes(String(item.id))}
+                      onCheckedChange={(checked: CheckedState) =>
+                        setQuotationCreateForm((current) => ({
+                          ...current,
+                          eventVendorIds: checked === true
+                            ? [...new Set([...current.eventVendorIds, String(item.id)])]
+                            : current.eventVendorIds.filter((value) => value !== String(item.id)),
+                        }))
+                      }
+                    />
+                    <span className="text-sm text-[var(--lux-text)]">
+                      {item.resolvedCompanyName || item.vendor?.name || item.companyNameSnapshot}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </AppDialogBody>
+          <AppDialogFooter className="gap-3">
+            <Button variant="outline" onClick={() => setCreateQuotationDialogOpen(false)}>
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              onClick={handleCreateQuotationSave}
+              disabled={createQuotationFromEventMutation.isPending}
+            >
+              {createQuotationFromEventMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.create", { defaultValue: "Create" })}
+            </Button>
+          </AppDialogFooter>
+        </AppDialogShell>
+      </Dialog>
+
+      <Dialog
+        open={createContractDialogOpen}
+        onOpenChange={setCreateContractDialogOpen}
+      >
+        <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
+          <AppDialogHeader
+            title={t("contracts.create", { defaultValue: "Create Contract" })}
+            description={t("events.contractsHint", {
+              defaultValue:
+                "Review linked contracts and move quickly into contract workflows for this event.",
+            })}
+          />
+          <AppDialogBody className={dialogBodyClassName}>
+            <div className={dialogSectionClassName}>
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("events.quotations", { defaultValue: "Quotations" })}
+                </span>
+                <Select
+                  value={contractCreateForm.quotationId || "none"}
+                  onValueChange={(value) =>
+                    setContractCreateForm((current) => ({
+                      ...current,
+                      quotationId: value === "none" ? "" : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      {t("contracts.noQuotation", {
+                        defaultValue: "Create without quotation",
+                      })}
+                    </SelectItem>
+                    {sortedEventQuotations.map((quotation) => (
+                      <SelectItem key={quotation.id} value={String(quotation.id)}>
+                        {quotation.quotationNumber || `QT-${quotation.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("contracts.signedDate", { defaultValue: "Signed Date" })}
+                </span>
+                <Input
+                  type="date"
+                  value={contractCreateForm.signedDate}
+                  onChange={(event) =>
+                    setContractCreateForm((current) => ({
+                      ...current,
+                      signedDate: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+          </AppDialogBody>
+          <AppDialogFooter className="gap-3">
+            <Button variant="outline" onClick={() => setCreateContractDialogOpen(false)}>
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              onClick={handleCreateContractSave}
+              disabled={
+                createContractMutation.isPending ||
+                createContractFromQuotationMutation.isPending
+              }
+            >
+              {createContractMutation.isPending ||
+              createContractFromQuotationMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.create", { defaultValue: "Create" })}
+            </Button>
+          </AppDialogFooter>
+        </AppDialogShell>
+      </Dialog>
 
         <Dialog
           open={sectionDialogOpen}

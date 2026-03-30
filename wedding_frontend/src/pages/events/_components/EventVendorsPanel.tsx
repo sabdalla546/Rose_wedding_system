@@ -70,6 +70,21 @@ export function EventVendorsPanel({
   onDelete,
   onToggleExpanded,
 }: Props) {
+  const vendorSummary = {
+    itemsCount: vendorLinks.length,
+    confirmedCount: vendorLinks.filter(
+      (vendorLink) =>
+        vendorLink.status === "approved" || vendorLink.status === "confirmed",
+    ).length,
+    totalAgreedPrice: vendorLinks.reduce((total, vendorLink) => {
+      const price = typeof vendorLink.agreedPrice === "undefined" || vendorLink.agreedPrice === null
+        ? 0
+        : Number(vendorLink.agreedPrice);
+
+      return Number.isFinite(price) ? total + price : total;
+    }, 0),
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -100,6 +115,25 @@ export function EventVendorsPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryItem
+            label={t("events.totalExternalVendors", {
+              defaultValue: "Total External Vendors",
+            })}
+            value={vendorSummary.itemsCount}
+          />
+          <SummaryItem
+            label={t("events.readyExternalVendors", {
+              defaultValue: "Ready Vendors",
+            })}
+            value={vendorSummary.confirmedCount}
+          />
+          <SummaryItem
+            label={t("vendors.agreedPrice", { defaultValue: "Agreed Price" })}
+            value={formatMoney(vendorSummary.totalAgreedPrice)}
+          />
+        </div>
+
         {loading ? (
           <EventEmptyState
             title={t("common.loading", { defaultValue: "Loading..." })}
@@ -116,10 +150,9 @@ export function EventVendorsPanel({
                     <TableRow className="border-[var(--lux-row-border)]">
                       <TableHead>{t("vendors.resolvedCompanyName", { defaultValue: "Resolved Company / Vendor" })}</TableHead>
                       <TableHead>{t("vendors.typeLabel", { defaultValue: "Vendor Type" })}</TableHead>
-                      <TableHead>{t("vendors.providedByLabel", { defaultValue: "Provided By" })}</TableHead>
                       <TableHead>{t("vendors.pricingPlans.name", { defaultValue: "Pricing Plan" })}</TableHead>
-                      <TableHead>{t("vendors.selectedSubServicesCount", { defaultValue: "Selected Count" })}</TableHead>
-                      <TableHead>{t("vendors.agreedPrice", { defaultValue: "Agreed Price" })}</TableHead>
+                      <TableHead>{t("vendors.selectedSubServices", { defaultValue: "Selected Sub Services" })}</TableHead>
+                      <TableHead>{t("vendors.costSummary", { defaultValue: "Cost Summary" })}</TableHead>
                       <TableHead>{t("vendors.assignmentStatusLabel", { defaultValue: "Status" })}</TableHead>
                       <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
                     </TableRow>
@@ -150,11 +183,6 @@ export function EventVendorsPanel({
                             })}
                           </TableCell>
                           <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                            {t(`vendors.providedBy.${vendorLink.providedBy}`, {
-                              defaultValue: vendorLink.providedBy,
-                            })}
-                          </TableCell>
-                          <TableCell className="align-top text-[var(--lux-text-secondary)]">
                             {vendorLink.resolvedPricingLabel ||
                               (vendorLink.selectedSubServicesCount > 0
                                 ? t("vendors.noMatchingPricingPlan", {
@@ -165,13 +193,33 @@ export function EventVendorsPanel({
                                   }))}
                           </TableCell>
                           <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                            {vendorLink.selectedSubServicesCount}
+                            {(vendorLink.selectedSubServices ?? []).length
+                              ? (vendorLink.selectedSubServices ?? [])
+                                  .map((selectedSubService) => selectedSubService.nameSnapshot)
+                                  .join(" • ")
+                              : t("vendors.noSelectedSubServicesTitle", {
+                                  defaultValue: "No sub-services selected",
+                                })}
                           </TableCell>
                           <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                            {vendorLink.agreedPrice !== null &&
-                            typeof vendorLink.agreedPrice !== "undefined"
-                              ? formatMoney(vendorLink.agreedPrice)
-                              : "-"}
+                            <div className="space-y-1">
+                              <div>
+                                {t("vendors.agreedPrice", {
+                                  defaultValue: "Agreed Price",
+                                })}
+                                :{" "}
+                                {vendorLink.agreedPrice !== null &&
+                                typeof vendorLink.agreedPrice !== "undefined"
+                                  ? formatMoney(vendorLink.agreedPrice)
+                                  : "-"}
+                              </div>
+                              <div className="text-xs">
+                                {t("vendors.selectedSubServicesCount", {
+                                  defaultValue: "Selected Count",
+                                })}
+                                : {vendorLink.selectedSubServicesCount}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className="align-top">
                             <EventVendorStatusBadge status={vendorLink.status} />
@@ -257,18 +305,10 @@ export function EventVendorsPanel({
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          <EventMetaChip
-                            label={t("vendors.providedByLabel", {
-                              defaultValue: "Provided By",
-                            })}
-                            value={t(`vendors.providedBy.${vendorLink.providedBy}`, {
-                              defaultValue: vendorLink.providedBy,
-                            })}
-                          />
-                          <EventMetaChip
-                            label={t("common.contact", { defaultValue: "Contact" })}
-                            value={vendorContact}
-                            className="max-w-full"
+                      <EventMetaChip
+                        label={t("common.contact", { defaultValue: "Contact" })}
+                        value={vendorContact}
+                        className="max-w-full"
                           />
                         </div>
                       </div>

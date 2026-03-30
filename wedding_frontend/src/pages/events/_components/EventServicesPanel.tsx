@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/table";
 import { EventServiceStatusBadge } from "@/pages/services/_components/eventServiceStatusBadge";
 import {
+  formatMoney,
   formatServiceCategory,
   getEventServiceDisplayName,
+  toNumberValue,
 } from "@/pages/services/adapters";
 import type { EventServiceItem, ServiceCategory } from "@/pages/services/types";
 import {
@@ -36,7 +38,7 @@ import {
 type Props = {
   serviceItems: EventServiceItem[];
   loading: boolean;
-  summary: { itemsCount: number };
+  summary: { itemsCount: number; totalQuantity: number; totalAmount: number };
   viewMode: EventPanelViewMode;
   t: TFunction;
   onViewModeChange: (nextValue: EventPanelViewMode) => void;
@@ -56,6 +58,23 @@ export function EventServicesPanel({
   onEdit,
   onDelete,
 }: Props) {
+  const resolveLineTotal = (serviceItem: EventServiceItem) => {
+    const explicitTotal = toNumberValue(serviceItem.totalPrice);
+
+    if (explicitTotal !== null) {
+      return explicitTotal;
+    }
+
+    const quantity = toNumberValue(serviceItem.quantity);
+    const unitPrice = toNumberValue(serviceItem.unitPrice);
+
+    if (quantity === null || unitPrice === null) {
+      return null;
+    }
+
+    return Number((quantity * unitPrice).toFixed(3));
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -94,6 +113,21 @@ export function EventServicesPanel({
               defaultValue: "Linked service line items currently assigned to this event.",
             })}
           />
+          <EventInfoBlock
+            label={t("services.quantity", { defaultValue: "Quantity" })}
+            value={summary.totalQuantity}
+            helper={t("services.summaryQuantityHint", {
+              defaultValue: "Combined quantity across all linked service items.",
+            })}
+          />
+          <EventInfoBlock
+            label={t("services.totalAmount", { defaultValue: "Total" })}
+            value={formatMoney(summary.totalAmount)}
+            helper={t("services.summaryValueHint", {
+              defaultValue:
+                "Total service value using line totals or quantity x unit price when available.",
+            })}
+          />
         </div>
 
         {loading ? (
@@ -112,8 +146,10 @@ export function EventServicesPanel({
                     <TableRow className="border-[var(--lux-row-border)]">
                       <TableHead>{t("services.service", { defaultValue: "Service" })}</TableHead>
                       <TableHead>{t("services.categoryLabel", { defaultValue: "Category" })}</TableHead>
+                      <TableHead>{t("services.quantity", { defaultValue: "Quantity" })}</TableHead>
+                      <TableHead>{t("services.unitPrice", { defaultValue: "Unit Price" })}</TableHead>
+                      <TableHead>{t("services.totalAmount", { defaultValue: "Total" })}</TableHead>
                       <TableHead>{t("services.eventStatusLabel", { defaultValue: "Status" })}</TableHead>
-                      <TableHead>{t("services.sortOrder", { defaultValue: "Order" })}</TableHead>
                       <TableHead>{t("common.notes", { defaultValue: "Notes" })}</TableHead>
                       <TableHead>{t("common.actions", { defaultValue: "Actions" })}</TableHead>
                     </TableRow>
@@ -140,11 +176,17 @@ export function EventServicesPanel({
                             ),
                           })}
                         </TableCell>
-                        <TableCell className="align-top">
-                          <EventServiceStatusBadge status={serviceItem.status} />
+                        <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                          {toNumberValue(serviceItem.quantity) ?? "-"}
                         </TableCell>
                         <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                          {serviceItem.sortOrder}
+                          {formatMoney(serviceItem.unitPrice)}
+                        </TableCell>
+                        <TableCell className="align-top text-[var(--lux-text-secondary)]">
+                          {formatMoney(resolveLineTotal(serviceItem))}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <EventServiceStatusBadge status={serviceItem.status} />
                         </TableCell>
                         <TableCell className="max-w-[320px] align-top text-[var(--lux-text-secondary)]">
                           {serviceItem.notes || "-"}
@@ -215,6 +257,14 @@ export function EventServicesPanel({
                           value={serviceItem.service.code}
                         />
                       ) : null}
+                      <EventMetaChip
+                        label={t("services.quantity", { defaultValue: "Quantity" })}
+                        value={toNumberValue(serviceItem.quantity) ?? "-"}
+                      />
+                      <EventMetaChip
+                        label={t("services.totalAmount", { defaultValue: "Total" })}
+                        value={formatMoney(resolveLineTotal(serviceItem))}
+                      />
                     </div>
                   </div>
 

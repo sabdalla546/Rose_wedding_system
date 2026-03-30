@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { Edit, Handshake } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -15,7 +16,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useVendor } from "@/hooks/vendors/useVendors";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EventManagementWorkspace } from "@/features/events/components";
+import { useEventVendorLinks, useVendor } from "@/hooks/vendors/useVendors";
 
 import { getVendorTypeName } from "./adapters";
 import { VendorActiveBadge } from "./_components/vendorActiveBadge";
@@ -43,6 +53,52 @@ const VendorDetailsPage = () => {
   const { id } = useParams();
   const { data: vendor, isLoading } = useVendor(id);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const { data: vendorEventLinksResponse, isLoading: vendorEventsLoading } =
+    useEventVendorLinks({
+      currentPage: 1,
+      itemsPerPage: 500,
+      eventId: undefined,
+      vendorId: vendor?.id,
+      vendorType: "all",
+      providedBy: "all",
+      status: "all",
+      enabled: Boolean(vendor?.id),
+    });
+  const relatedEvents = useMemo(() => {
+    return Array.from(
+      new Map(
+        (vendorEventLinksResponse?.data ?? [])
+          .filter((link) => link.vendorId === vendor?.id && link.event?.id)
+          .map((link) => [
+            link.event!.id,
+            {
+              id: link.event!.id,
+              title: link.event?.title || `#${link.event!.id}`,
+              eventDate: link.event?.eventDate || null,
+            },
+          ]),
+      ).values(),
+    ).sort((left, right) => {
+      const leftTime = left.eventDate ? new Date(left.eventDate).getTime() : 0;
+      const rightTime = right.eventDate ? new Date(right.eventDate).getTime() : 0;
+      return rightTime - leftTime;
+    });
+  }, [vendor?.id, vendorEventLinksResponse?.data]);
+  const resolvedSelectedEventId = useMemo(() => {
+    if (
+      selectedEventId &&
+      relatedEvents.some((eventItem) => String(eventItem.id) === selectedEventId)
+    ) {
+      return selectedEventId;
+    }
+
+    if (!relatedEvents.length) {
+      return "";
+    }
+
+    return String(relatedEvents[0].id);
+  }, [relatedEvents, selectedEventId]);
 
   if (isLoading) {
     return (
@@ -117,140 +173,241 @@ const VendorDetailsPage = () => {
             </div>
           </SectionCard>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("vendors.basicInformation", {
-                    defaultValue: "Basic Information",
-                  })}
-                </CardTitle>
-                <CardDescription>
-                  {t("vendors.basicInformationHint", {
-                    defaultValue:
-                      "Capture the core vendor information and service type.",
-                  })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem
-                  label={t("vendors.name", { defaultValue: "Vendor Name" })}
-                  value={vendor.name}
-                />
-                <DetailItem
-                  label={t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
-                  value={getVendorTypeName({
-                    slug: vendor.type,
-                    vendorType: vendor.vendorType,
-                    language: i18n.resolvedLanguage ?? "en",
-                  })}
-                />
-                <DetailItem
-                  label={t("vendors.statusLabel", { defaultValue: "Status" })}
-                  value={vendor.isActive
-                    ? t("vendors.status.active", { defaultValue: "Active" })
-                    : t("vendors.status.inactive", { defaultValue: "Inactive" })}
-                />
-              </CardContent>
-            </Card>
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList>
+              <TabsTrigger value="details">
+                {t("vendors.detailsTab", { defaultValue: "التفاصيل" })}
+              </TabsTrigger>
+              <TabsTrigger value="event-management">
+                {t("vendors.eventManagementTab", {
+                  defaultValue: "إدارة الحفل",
+                })}
+              </TabsTrigger>
+            </TabsList>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("vendors.contactSection", {
-                    defaultValue: "Contact Details",
-                  })}
-                </CardTitle>
-                <CardDescription>
-                  {t("vendors.contactSectionHint", {
-                    defaultValue:
-                      "Save the main contact points for the vendor team.",
-                  })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem
-                  label={t("vendors.contactPerson", {
-                    defaultValue: "Contact Person",
-                  })}
-                  value={vendor.contactPerson}
-                />
-                <DetailItem
-                  label={t("vendors.phone", { defaultValue: "Primary Phone" })}
-                  value={vendor.phone}
-                />
-                <DetailItem
-                  label={t("vendors.phone2", { defaultValue: "Secondary Phone" })}
-                  value={vendor.phone2}
-                />
-                <DetailItem
-                  label={t("vendors.email", { defaultValue: "Email" })}
-                  value={vendor.email}
-                />
-                <DetailItem
-                  label={t("vendors.address", { defaultValue: "Address" })}
-                  value={vendor.address}
-                />
-              </CardContent>
-            </Card>
+            <TabsContent value="details" className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {t("vendors.basicInformation", {
+                        defaultValue: "Basic Information",
+                      })}
+                    </CardTitle>
+                    <CardDescription>
+                      {t("vendors.basicInformationHint", {
+                        defaultValue:
+                          "Capture the core vendor information and service type.",
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <DetailItem
+                      label={t("vendors.name", { defaultValue: "Vendor Name" })}
+                      value={vendor.name}
+                    />
+                    <DetailItem
+                      label={t("vendors.typeLabel", { defaultValue: "Vendor Type" })}
+                      value={getVendorTypeName({
+                        slug: vendor.type,
+                        vendorType: vendor.vendorType,
+                        language: i18n.resolvedLanguage ?? "en",
+                      })}
+                    />
+                    <DetailItem
+                      label={t("vendors.statusLabel", { defaultValue: "Status" })}
+                      value={vendor.isActive
+                        ? t("vendors.status.active", { defaultValue: "Active" })
+                        : t("vendors.status.inactive", { defaultValue: "Inactive" })}
+                    />
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("vendors.auditTrail", { defaultValue: "Audit Trail" })}
-                </CardTitle>
-                <CardDescription>
-                  {t("vendors.auditTrailHint", {
-                    defaultValue: "Who created the vendor and when it was updated.",
-                  })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <DetailItem
-                  label={t("vendors.createdBy", { defaultValue: "Created By" })}
-                  value={vendor.createdByUser?.fullName}
-                />
-                <DetailItem
-                  label={t("vendors.updatedBy", { defaultValue: "Updated By" })}
-                  value={vendor.updatedByUser?.fullName}
-                />
-                <DetailItem
-                  label={t("vendors.createdAt", { defaultValue: "Created At" })}
-                  value={
-                    vendor.createdAt
-                      ? format(new Date(vendor.createdAt), "MMM d, yyyy p", {
-                          locale: dateLocale,
-                        })
-                      : "-"
-                  }
-                />
-                <DetailItem
-                  label={t("vendors.updatedAt", { defaultValue: "Updated At" })}
-                  value={
-                    vendor.updatedAt
-                      ? format(new Date(vendor.updatedAt), "MMM d, yyyy p", {
-                          locale: dateLocale,
-                        })
-                      : "-"
-                  }
-                />
-              </CardContent>
-            </Card>
-          </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {t("vendors.contactSection", {
+                        defaultValue: "Contact Details",
+                      })}
+                    </CardTitle>
+                    <CardDescription>
+                      {t("vendors.contactSectionHint", {
+                        defaultValue:
+                          "Save the main contact points for the vendor team.",
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <DetailItem
+                      label={t("vendors.contactPerson", {
+                        defaultValue: "Contact Person",
+                      })}
+                      value={vendor.contactPerson}
+                    />
+                    <DetailItem
+                      label={t("vendors.phone", { defaultValue: "Primary Phone" })}
+                      value={vendor.phone}
+                    />
+                    <DetailItem
+                      label={t("vendors.phone2", { defaultValue: "Secondary Phone" })}
+                      value={vendor.phone2}
+                    />
+                    <DetailItem
+                      label={t("vendors.email", { defaultValue: "Email" })}
+                      value={vendor.email}
+                    />
+                    <DetailItem
+                      label={t("vendors.address", { defaultValue: "Address" })}
+                      value={vendor.address}
+                    />
+                  </CardContent>
+                </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("common.notes", { defaultValue: "Notes" })}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap text-sm leading-6 text-[var(--lux-text-secondary)]">
-                {vendor.notes ||
-                  t("vendors.noNotes", {
-                    defaultValue: "No notes added yet.",
-                  })}
-              </p>
-            </CardContent>
-          </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {t("vendors.auditTrail", { defaultValue: "Audit Trail" })}
+                    </CardTitle>
+                    <CardDescription>
+                      {t("vendors.auditTrailHint", {
+                        defaultValue: "Who created the vendor and when it was updated.",
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <DetailItem
+                      label={t("vendors.createdBy", { defaultValue: "Created By" })}
+                      value={vendor.createdByUser?.fullName}
+                    />
+                    <DetailItem
+                      label={t("vendors.updatedBy", { defaultValue: "Updated By" })}
+                      value={vendor.updatedByUser?.fullName}
+                    />
+                    <DetailItem
+                      label={t("vendors.createdAt", { defaultValue: "Created At" })}
+                      value={
+                        vendor.createdAt
+                          ? format(new Date(vendor.createdAt), "MMM d, yyyy p", {
+                              locale: dateLocale,
+                            })
+                          : "-"
+                      }
+                    />
+                    <DetailItem
+                      label={t("vendors.updatedAt", { defaultValue: "Updated At" })}
+                      value={
+                        vendor.updatedAt
+                          ? format(new Date(vendor.updatedAt), "MMM d, yyyy p", {
+                              locale: dateLocale,
+                            })
+                          : "-"
+                      }
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("common.notes", { defaultValue: "Notes" })}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-[var(--lux-text-secondary)]">
+                    {vendor.notes ||
+                      t("vendors.noNotes", {
+                        defaultValue: "No notes added yet.",
+                      })}
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="event-management" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {t("vendors.eventManagementTab", {
+                      defaultValue: "إدارة الحفل",
+                    })}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("vendors.eventManagementHint", {
+                      defaultValue:
+                        "Manage the linked wedding directly from the designer details page.",
+                    })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {vendorEventsLoading ? (
+                    <p className="text-sm text-[var(--lux-text-secondary)]">
+                      {t("common.loading", { defaultValue: "Loading..." })}
+                    </p>
+                  ) : !relatedEvents.length ? (
+                    <div className="rounded-[20px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-5 py-8 text-center">
+                      <p className="text-base font-semibold text-[var(--lux-heading)]">
+                        {t("vendors.noLinkedEventTitle", {
+                          defaultValue: "لا يوجد حفل مرتبط",
+                        })}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[var(--lux-text-secondary)]">
+                        {t("vendors.noLinkedEventDescription", {
+                          defaultValue:
+                            "لم يتم ربط هذا المورد بأي حفل حتى الآن.",
+                        })}
+                      </p>
+                      <div className="mt-4">
+                        <Button variant="outline" disabled>
+                          {t("vendors.linkEvent", {
+                            defaultValue: "ربط حفل",
+                          })}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {relatedEvents.length > 1 ? (
+                        <label className="block space-y-2">
+                          <span className="text-sm font-medium text-[var(--lux-text)]">
+                            {t("vendors.selectEvent", {
+                              defaultValue: "اختيار حفل",
+                            })}
+                          </span>
+                          <Select
+                            value={resolvedSelectedEventId}
+                            onValueChange={setSelectedEventId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={t("vendors.selectEvent", {
+                                  defaultValue: "اختيار حفل",
+                                })}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {relatedEvents.map((eventItem) => (
+                                <SelectItem key={eventItem.id} value={String(eventItem.id)}>
+                                  {eventItem.title}
+                                  {eventItem.eventDate
+                                    ? ` • ${format(new Date(eventItem.eventDate), "PPP", {
+                                        locale: dateLocale,
+                                      })}`
+                                    : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </label>
+                      ) : null}
+
+                      {resolvedSelectedEventId ? (
+                        <EventManagementWorkspace eventId={resolvedSelectedEventId} />
+                      ) : null}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </PageContainer>
     </ProtectedComponent>
