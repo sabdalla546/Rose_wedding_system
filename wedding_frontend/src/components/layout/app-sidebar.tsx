@@ -1,10 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { useToast } from "@/app/providers/use-toast";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { getApiErrorMessage } from "@/lib/axios";
 import {
   INVENTORY_ROOT_ID,
   REPORTS_ROOT_ID,
@@ -21,7 +25,7 @@ import {
   type NavigationLeaf,
 } from "@/lib/constants/navigation";
 import { routeAccessByHref } from "@/lib/constants/route-permissions";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { useAuth } from "@/app/providers/use-auth";
 
 const SIDEBAR_EXPANDED_WIDTH = 225;
@@ -55,9 +59,11 @@ export function AppSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { i18n, t } = useTranslation();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const isRtl = i18n.resolvedLanguage === "ar";
   const [hoverOpen, setHoverOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     {},
   );
@@ -178,11 +184,13 @@ export function AppSidebar({
       }
 
       if (leaf.anyOf?.length) {
-        allowed = allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+        allowed =
+          allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
       }
 
       if (leaf.allOf?.length) {
-        allowed = allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+        allowed =
+          allowed && leaf.allOf.every((p) => user.permissions.includes(p));
       }
 
       if (leaf.roles?.length) {
@@ -210,11 +218,13 @@ export function AppSidebar({
       }
 
       if (leaf.anyOf?.length) {
-        allowed = allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
+        allowed =
+          allowed && leaf.anyOf.some((p) => user.permissions.includes(p));
       }
 
       if (leaf.allOf?.length) {
-        allowed = allowed && leaf.allOf.every((p) => user.permissions.includes(p));
+        allowed =
+          allowed && leaf.allOf.every((p) => user.permissions.includes(p));
       }
 
       if (leaf.roles?.length) {
@@ -243,6 +253,35 @@ export function AppSidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+
+    try {
+      await signOut();
+      toast({
+        title: t("auth.toast.logoutSuccessTitle"),
+        description: t("auth.toast.logoutSuccessDescription"),
+        variant: "success",
+      });
+      navigate("/login", { replace: true });
+    } catch (error) {
+      toast({
+        title: t("auth.toast.logoutErrorTitle"),
+        description: getApiErrorMessage(
+          error,
+          t("auth.toast.logoutErrorDescription"),
+        ),
+        variant: "error",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   const toggleItem = (id: string) => {
     setExpandedItems((current) => ({
       ...current,
@@ -269,7 +308,9 @@ export function AppSidebar({
 
   const hasActiveChild = (item: NavigationItem): boolean =>
     item.children?.some((child) => {
-      if (matchesNavigationHref(location.pathname, location.search, child.href)) {
+      if (
+        matchesNavigationHref(location.pathname, location.search, child.href)
+      ) {
         return true;
       }
 
@@ -294,10 +335,14 @@ export function AppSidebar({
         : item.id === INVENTORY_ROOT_ID
           ? isInventoryActive
           : item.id === REPORTS_ROOT_ID
-          ? isReportsActive
+            ? isReportsActive
             : item.id === SETTINGS_ROOT_ID
               ? isSettingsActive
-          : matchesNavigationHref(location.pathname, location.search, item.href);
+              : matchesNavigationHref(
+                  location.pathname,
+                  location.search,
+                  item.href,
+                );
     const childActive = hasActiveChild(item);
     const hasExplicitExpansionState = Object.prototype.hasOwnProperty.call(
       expandedItems,
@@ -412,7 +457,9 @@ export function AppSidebar({
               cn(baseRowClassName, isActive ? activeFillClass : undefined)
             }
             style={{
-              background: active ? "var(--lux-sidebar-active-bg)" : "transparent",
+              background: active
+                ? "var(--lux-sidebar-active-bg)"
+                : "transparent",
             }}
             end
             title={!showFull ? label : ""}
@@ -573,7 +620,7 @@ export function AppSidebar({
       <div
         className={cn("app-shell-sidebar__brand px-4", !showFull && "px-3")}
         style={{
-          background: "var(--lux-shell-chrome-elevated)",
+          background: "var(--lux-shell-chrome-surface)",
           height: `${SIDEBAR_HEADER_HEIGHT}px`,
         }}
       >
@@ -631,6 +678,74 @@ export function AppSidebar({
           {navigationItems.map((item) => renderNavItem(item))}
         </nav>
       </div>
+
+      {user ? (
+        <div
+          className="border-t border-[var(--lux-shell-border)] px-2 py-2"
+          style={{
+            background: "var(--lux-shell-chrome-elevated)",
+          }}
+        >
+          <div
+            className={cn(
+              "border-y py-2.5",
+              showFull
+                ? "flex items-center gap-2.5"
+                : "flex flex-col items-center gap-1.5 px-2 py-2",
+            )}
+            style={{
+              background:
+                "color-mix(in srgb, var(--lux-shell-chrome-control) 88%, transparent)",
+              borderColor:
+                "color-mix(in srgb, var(--lux-shell-chrome-control-border) 78%, transparent)",
+              color: "var(--lux-shell-chrome-text)",
+            }}
+          >
+            <Avatar className="h-8 w-8 shrink-0 ring-1 ring-[var(--lux-gold-border)]">
+              <AvatarFallback>
+                {getInitials(user.fullName ?? t("header.adminUser"))}
+              </AvatarFallback>
+            </Avatar>
+
+            <AnimatePresence initial={false}>
+              {showFull ? (
+                <motion.div
+                  animate={{ opacity: 1, width: "auto", x: 0 }}
+                  className={cn(
+                    "min-w-0 flex-1 overflow-hidden",
+                    isRtl ? "text-right" : "text-left",
+                  )}
+                  exit={{ opacity: 0, width: 0, x: isRtl ? 8 : -8 }}
+                  initial={{ opacity: 0, width: 0, x: isRtl ? 8 : -8 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                >
+                  <p className="truncate text-[13px] font-semibold leading-none text-[var(--lux-shell-chrome-text)]">
+                    {user.fullName ?? t("header.adminUser")}
+                  </p>
+                  {user.email ? (
+                    <p className="mt-0.5 truncate text-[11px] leading-none text-[var(--lux-shell-chrome-muted)]">
+                      {user.email}
+                    </p>
+                  ) : null}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <Button
+              size="icon"
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 shrink-0 rounded-none text-[var(--lux-shell-chrome-text)] hover:bg-[color-mix(in_srgb,var(--lux-shell-chrome-control)_70%,transparent)]"
+              aria-label={t("header.logout")}
+              title={t("header.logout")}
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

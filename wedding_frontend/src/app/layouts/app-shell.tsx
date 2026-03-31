@@ -26,7 +26,7 @@ const CONTENT_GUTTER = 0;
 const CONNECTED_EDGE_GUTTER = 0;
 // Must match the rendered `AppHeader` height (including borders).
 // Keep slightly generous to avoid overlap across fonts/browsers.
-const HEADER_FIXED_HEIGHT = 56;
+const HEADER_FIXED_HEIGHT = 44;
 const SECTION_BAR_HEIGHT = 72;
 const shellInset = "0px";
 
@@ -98,25 +98,23 @@ export function AppShell() {
 
   const sectionBarFixedStyle = isMobile
     ? {
-        top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
+        top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
         left: `${shellInset}`,
         right: `${shellInset}`,
       }
     : isRtl
       ? {
-          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
+          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
           left: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
           right: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
         }
       : {
-          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT - 1}px`,
+          top: `${HEADER_TOP_OFFSET + HEADER_FIXED_HEIGHT}px`,
           left: `calc(${shellInset} + ${desktopOffset + CONNECTED_EDGE_GUTTER}px)`,
           right: `calc(${shellInset} + ${CONTENT_GUTTER}px)`,
         };
 
-  const sectionBarBleedStyle = isMobile
-    ? undefined
-    : undefined;
+  const sectionBarBleedStyle = isMobile ? undefined : undefined;
 
   const matchesLeaf = (href?: string) =>
     matchesNavigationHref(location.pathname, location.search, href);

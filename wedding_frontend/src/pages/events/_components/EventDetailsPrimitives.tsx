@@ -1,4 +1,5 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
@@ -44,15 +45,24 @@ export function EventMetaChip({
   value,
   className,
 }: EventMetaChipProps) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <div
       className={cn(
         "inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1.5 text-xs text-[var(--lux-text-secondary)]",
+        isRtl ? "flex-row-reverse text-right" : "text-left",
         className,
       )}
     >
       {label ? (
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--lux-text-muted)]">
+        <span
+          className={cn(
+            "text-[10px] font-semibold text-[var(--lux-text-muted)]",
+            isRtl ? "tracking-normal" : "uppercase tracking-[0.14em]",
+          )}
+        >
           {label}
         </span>
       ) : null}
@@ -69,6 +79,9 @@ export function EventMetricTile({
   helper,
   className,
 }: EventMetricTileProps) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <div
       className={cn(
@@ -76,15 +89,30 @@ export function EventMetricTile({
         className,
       )}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+      <p
+        className={cn(
+          "text-[11px] font-semibold text-[var(--lux-text-muted)]",
+          isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+        )}
+      >
         {label}
       </p>
       <div className="mt-3 space-y-1">
-        <p className="text-lg font-semibold leading-7 text-[var(--lux-heading)] sm:text-xl">
+        <p
+          className={cn(
+            "text-lg font-semibold leading-7 text-[var(--lux-heading)] sm:text-xl",
+            isRtl ? "text-right" : "text-left",
+          )}
+        >
           {value}
         </p>
         {helper ? (
-          <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
+          <p
+            className={cn(
+              "text-xs leading-5 text-[var(--lux-text-secondary)]",
+              isRtl ? "text-right" : "text-left",
+            )}
+          >
             {helper}
           </p>
         ) : null}
@@ -100,6 +128,9 @@ export function EventInfoBlock({
   className,
   compact = false,
 }: EventInfoBlockProps) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <div
       className={cn(
@@ -108,14 +139,29 @@ export function EventInfoBlock({
         className,
       )}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+      <p
+        className={cn(
+          "text-[11px] font-semibold text-[var(--lux-text-muted)]",
+          isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+        )}
+      >
         {label}
       </p>
-      <div className="mt-1.5 break-words text-sm font-medium leading-6 text-[var(--lux-text)]">
+      <div
+        className={cn(
+          "mt-1.5 break-words text-sm font-medium leading-6 text-[var(--lux-text)]",
+          isRtl ? "text-right" : "text-left",
+        )}
+      >
         {value || "-"}
       </div>
       {helper ? (
-        <p className="mt-1 text-xs leading-5 text-[var(--lux-text-secondary)]">
+        <p
+          className={cn(
+            "mt-1 text-xs leading-5 text-[var(--lux-text-secondary)]",
+            isRtl ? "text-right" : "text-left",
+          )}
+        >
           {helper}
         </p>
       ) : null}

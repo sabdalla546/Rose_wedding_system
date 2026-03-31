@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { TFunction } from "i18next";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,8 @@ export function EventWorkspaceSummary({
   onCreateQuotation,
   onCreateContract,
 }: Props) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const latestQuotationDate = latestQuotation?.issueDate
     ? format(new Date(latestQuotation.issueDate), "PPP", {
         locale: dateLocale,
@@ -106,9 +109,17 @@ export function EventWorkspaceSummary({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="gap-4 border-b border-[var(--lux-row-border)]">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div
+          className={`flex flex-col gap-4 xl:items-start xl:justify-between ${
+            "xl:flex-row"
+          }`}
+        >
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
+            <p
+              className={`text-[11px] font-semibold text-[var(--lux-text-muted)] ${
+                isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.18em] text-left"
+              }`}
+            >
               {t("events.operationsWorkspace", {
                 defaultValue: "Operations Workspace",
               })}
@@ -215,7 +226,7 @@ export function EventWorkspaceSummary({
                       : null,
                   ]
                     .filter(Boolean)
-                    .join(" • ")}
+                    .join(" / ")}
                   badge={<QuotationStatusBadge status={latestQuotation.status} />}
                 />
               ) : (
@@ -250,7 +261,7 @@ export function EventWorkspaceSummary({
                       : null,
                   ]
                     .filter(Boolean)
-                    .join(" • ")}
+                    .join(" / ")}
                   badge={<ContractStatusBadge status={latestContract.status} />}
                 />
               ) : (
@@ -288,7 +299,7 @@ export function EventWorkspaceSummary({
                 <ClipboardList className="h-3.5 w-3.5" />
                 {t("events.operationalReadinessBreakdown", {
                   defaultValue:
-                    "Services {{servicesReady}}/{{servicesTotal}} • Vendors {{vendorsReady}}/{{vendorsTotal}} • Sections {{sectionsReady}}/{{sectionsTotal}}",
+                    "Services {{servicesReady}}/{{servicesTotal}} / Vendors {{vendorsReady}}/{{vendorsTotal}} / Sections {{sectionsReady}}/{{sectionsTotal}}",
                   servicesReady: readiness.servicesReady,
                   servicesTotal: readiness.servicesTotal,
                   vendorsReady: readiness.vendorsReady,

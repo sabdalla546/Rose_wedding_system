@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import {
@@ -11,7 +11,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
@@ -45,7 +45,6 @@ import { useDeleteEventVendor } from "@/hooks/vendors/useEventVendorMutations";
 import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
 import { useVenues } from "@/hooks/venues/useVenues";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
-import { EventServicesChecklistDialog } from "@/pages/events/_components/EventServicesChecklistDialog";
 import {
   EventEmptyState,
   EventMetaChip,
@@ -59,6 +58,7 @@ import {
   EventExecutionPanel,
   EventOverviewPanel,
   EventQuotationsPanel,
+  EventServiceEditorDialog,
   EventServicesPanel,
   EventVendorAssignmentDialog,
   EventVendorsPanel,
@@ -68,6 +68,7 @@ import type { Contract } from "@/pages/contracts/types";
 import type { Quotation } from "@/pages/quotations/types";
 import type { EventServiceItem } from "@/pages/services/types";
 import type { EventVendorLink } from "@/pages/vendors/types";
+import { cn } from "@/lib/utils";
 
 type WorkspaceTabValue =
   | "overview"
@@ -76,6 +77,19 @@ type WorkspaceTabValue =
   | "quotations"
   | "contracts"
   | "execution";
+
+const WORKSPACE_TAB_VALUES: WorkspaceTabValue[] = [
+  "overview",
+  "services",
+  "vendors",
+  "quotations",
+  "contracts",
+  "execution",
+];
+
+function isWorkspaceTabValue(value: string | null): value is WorkspaceTabValue {
+  return Boolean(value && WORKSPACE_TAB_VALUES.includes(value as WorkspaceTabValue));
+}
 
 type EventEditFormState = {
   customerId: string;
@@ -108,8 +122,10 @@ const createDefaultEventEditState = (): EventEditFormState => ({
 
 function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
+  const isRtl = i18n.dir() === "rtl";
 
   const { data: event, isLoading: eventLoading } = useEvent(eventId);
   const { data: eventServiceItemsResponse } = useEventServiceItems({
@@ -159,8 +175,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     isActive: "all",
   });
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTabValue>("overview");
-  const [serviceChecklistOpen, setServiceChecklistOpen] = useState(false);
+  const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
+  const [editingServiceItem, setEditingServiceItem] =
+    useState<EventServiceItem | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] = useState<EventVendorLink | null>(
     null,
@@ -267,6 +284,22 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       sectionsTotal: sections.length,
     };
   }, [event?.sections, serviceItems, vendorLinks]);
+  const requestedTab = searchParams.get("tab");
+  const activeTab = isWorkspaceTabValue(requestedTab) ? requestedTab : "overview";
+
+  useEffect(() => {
+    if (!requestedTab) {
+      return;
+    }
+
+    if (isWorkspaceTabValue(requestedTab)) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("tab");
+    setSearchParams(nextParams, { replace: true });
+  }, [requestedTab, searchParams, setSearchParams]);
 
   if (eventLoading) {
     return (
@@ -293,6 +326,44 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     event.customer?.fullName || t("events.noCustomerSelected");
   const resolvedVenueName =
     event.venue?.name || event.venueNameSnapshot || t("events.noVenueSelected");
+  const workspaceTabs: Array<{ value: WorkspaceTabValue; label: string }> = [
+    {
+      value: "overview",
+      label: t("common.overview", { defaultValue: "Overview" }),
+    },
+    {
+      value: "services",
+      label: t("events.services"),
+    },
+    {
+      value: "vendors",
+      label: t("events.vendors"),
+    },
+    {
+      value: "quotations",
+      label: t("events.quotations"),
+    },
+    {
+      value: "contracts",
+      label: t("events.contracts"),
+    },
+    {
+      value: "execution",
+      label: t("events.executionTab"),
+    },
+  ];
+
+  const setActiveTab = (value: WorkspaceTabValue) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (value === "overview") {
+      nextParams.delete("tab");
+    } else {
+      nextParams.set("tab", value);
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const handleOpenEditEventDialog = () => {
     setEditEventError("");
@@ -377,8 +448,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             "radial-gradient(circle at top right, color-mix(in srgb, var(--lux-gold) 12%, transparent), transparent 40%), linear-gradient(135deg, color-mix(in srgb, var(--lux-panel-surface) 90%, black), color-mix(in srgb, var(--lux-control-hover) 56%, transparent))",
         }}
       >
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="space-y-4">
+        <div
+          className={cn(
+            "flex flex-col gap-5 xl:items-start xl:justify-between",
+            "xl:flex-row",
+          )}
+        >
+          <div className={cn("space-y-4", isRtl ? "text-right" : "text-left")}>
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-4 py-2 text-xs font-semibold text-[var(--lux-gold)]">
               <CalendarRange className="h-4 w-4" />
               {t("designerDetails.currentEventBadge")}
@@ -386,7 +462,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-3xl font-semibold text-[var(--lux-heading)]">
+                <h2
+                  dir="auto"
+                  className="text-3xl font-semibold text-[var(--lux-heading)]"
+                >
                   {getEventDisplayTitle(event)}
                 </h2>
                 <EventStatusBadge status={event.status} />
@@ -429,7 +508,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         latestQuotation={latestQuotation as Quotation | null}
         latestContract={latestContract as Contract | null}
         readiness={readiness}
-        onAddService={() => setServiceChecklistOpen(true)}
+        onAddService={() => {
+          setEditingServiceItem(null);
+          setServiceEditorOpen(true);
+        }}
         onAssignVendor={() => {
           setEditingVendorLink(null);
           setVendorDialogOpen(true);
@@ -439,45 +521,68 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         onCreateContract={handleCreateContract}
       />
 
-      <SectionCard className="space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
-              {t("designerDetails.shortcutsTitle")}
-            </h3>
-            <p className="text-sm text-[var(--lux-text-secondary)]">
-              {t("designerDetails.shortcutsDescription")}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/settings/vendors">
-                <Handshake className="h-4 w-4" />
-                {t("designerDetails.openVendors")}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/settings/services">
-                <PackageOpen className="h-4 w-4" />
-                {t("designerDetails.openServices")}
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </SectionCard>
-
       <Tabs
+        className="space-y-5"
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as WorkspaceTabValue)}
+        onValueChange={(value) => {
+          if (isWorkspaceTabValue(value)) {
+            setActiveTab(value);
+          }
+        }}
       >
-        <TabsList>
-          <TabsTrigger value="overview">{t("common.overview", { defaultValue: "Overview" })}</TabsTrigger>
-          <TabsTrigger value="services">{t("events.services")}</TabsTrigger>
-          <TabsTrigger value="vendors">{t("events.vendors")}</TabsTrigger>
-          <TabsTrigger value="quotations">{t("events.quotations")}</TabsTrigger>
-          <TabsTrigger value="contracts">{t("events.contracts")}</TabsTrigger>
-          <TabsTrigger value="execution">{t("events.executionTab")}</TabsTrigger>
-        </TabsList>
+        <SectionCard
+          className="space-y-4 border border-[var(--lux-row-border)]"
+        >
+          <div
+            className={cn(
+              "flex flex-col gap-3 lg:items-center lg:justify-between",
+              "lg:flex-row-reverse",
+            )}
+          >
+            <div className={cn(isRtl ? "text-right" : "text-left")}>
+              <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
+                {t("designerDetails.currentEventBadge")}
+              </h3>
+              <p className="text-sm text-[var(--lux-text-secondary)]">
+                {t("designerDetails.shortcutsDescription")}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link to="/settings/vendors">
+                  <Handshake className="h-4 w-4" />
+                  {t("designerDetails.openVendors")}
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/settings/services">
+                  <PackageOpen className="h-4 w-4" />
+                  {t("designerDetails.openServices")}
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <TabsList
+            className={cn(
+              "w-full gap-2 rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-control-surface)] p-2 shadow-none",
+            )}
+          >
+            {workspaceTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className={cn(
+                  "min-h-11 min-w-[110px] flex-1 rounded-[16px] border border-transparent px-4 py-2.5 text-sm font-semibold data-[state=active]:border-[var(--lux-gold-border)] data-[state=active]:bg-[color-mix(in_srgb,var(--lux-gold)_14%,var(--lux-panel-surface))] data-[state=active]:text-[var(--lux-heading)] data-[state=active]:shadow-none",
+                  isRtl ? "text-right" : "text-left",
+                )}
+              >
+                <span className="truncate">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </SectionCard>
 
         <TabsContent value="overview">
           <EventOverviewPanel eventId={eventId} />
@@ -486,7 +591,14 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         <TabsContent value="services">
           <EventServicesPanel
             eventId={eventId}
-            onAdd={() => setServiceChecklistOpen(true)}
+            onAdd={() => {
+              setEditingServiceItem(null);
+              setServiceEditorOpen(true);
+            }}
+            onEdit={(serviceItem) => {
+              setEditingServiceItem(serviceItem);
+              setServiceEditorOpen(true);
+            }}
             onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
           />
         </TabsContent>
@@ -529,14 +641,20 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         </TabsContent>
       </Tabs>
 
-      <EventServicesChecklistDialog
-        open={serviceChecklistOpen}
-        onOpenChange={setServiceChecklistOpen}
-        eventId={Number(eventId)}
-        existingServiceIds={serviceItems
-          .map((item) => item.serviceId)
-          .filter((value): value is number => typeof value === "number")}
-      />
+      {serviceEditorOpen ? (
+        <EventServiceEditorDialog
+          open={serviceEditorOpen}
+          onOpenChange={(open) => {
+            setServiceEditorOpen(open);
+            if (!open) {
+              setEditingServiceItem(null);
+            }
+          }}
+          eventId={Number(eventId)}
+          defaultSortOrder={serviceItems.length}
+          editingServiceItem={editingServiceItem}
+        />
+      ) : null}
 
       {vendorDialogOpen ? (
         <EventVendorAssignmentDialog
@@ -559,9 +677,11 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             setDeleteServiceCandidate(null);
           }
         }}
-        title={t("services.deleteEventServiceTitle", { defaultValue: "Delete service item" })}
-        message={t("services.deleteEventServiceMessage", {
-          defaultValue: "This service item will be removed from the event. Do you want to continue?",
+        title={t("services.deleteEventItemTitle", {
+          defaultValue: "Delete service item",
+        })}
+        message={t("services.deleteEventItemMessage", {
+          defaultValue: "Are you sure you want to delete this service item?",
         })}
         confirmLabel={t("common.delete")}
         cancelLabel={t("designerDetails.cancel")}
@@ -806,6 +926,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 
 export default function DesignerDetailsPage() {
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const [selectedEventId, setSelectedEventId] = useState("");
 
   const { data: eventsResponse, isLoading: eventsLoading } = useEvents({
@@ -846,8 +967,13 @@ export default function DesignerDetailsPage() {
                 "radial-gradient(circle at top right, color-mix(in srgb, var(--lux-gold) 12%, transparent), transparent 42%), linear-gradient(135deg, color-mix(in srgb, var(--lux-panel-surface) 92%, black), color-mix(in srgb, var(--lux-control-hover) 52%, transparent))",
             }}
           >
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl space-y-4">
+            <div
+              className={cn(
+                "flex flex-col gap-5 lg:items-start lg:justify-between",
+                "lg:flex-row",
+              )}
+            >
+              <div className={cn("max-w-3xl space-y-4", isRtl ? "text-right" : "text-left")}>
                 <div className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-4 py-2 text-xs font-semibold text-[var(--lux-gold)]">
                   <Sparkles className="h-4 w-4" />
                   {t("designerDetails.title")}
@@ -869,8 +995,13 @@ export default function DesignerDetailsPage() {
           </SectionCard>
 
           <SectionCard className="space-y-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-              <div className="space-y-2">
+            <div
+              className={cn(
+                "flex flex-col gap-3 xl:items-end xl:justify-between",
+                "xl:flex-row",
+              )}
+            >
+              <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
                 <h2 className="text-xl font-semibold text-[var(--lux-heading)]">
                   {t("designerDetails.selectorTitle")}
                 </h2>
@@ -885,7 +1016,13 @@ export default function DesignerDetailsPage() {
                   onValueChange={(value) => setSelectedEventId(value)}
                   disabled={eventsLoading || availableEvents.length === 0}
                 >
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger
+                    dir={i18n.dir()}
+                    className={cn(
+                      "h-12",
+                      isRtl ? "text-right [&_span]:text-right" : "text-left [&_span]:text-left",
+                    )}
+                  >
                     <SelectValue
                       placeholder={
                         eventsLoading
@@ -894,10 +1031,16 @@ export default function DesignerDetailsPage() {
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent dir={i18n.dir()}>
                     {availableEvents.map((event) => (
-                      <SelectItem key={event.id} value={String(event.id)}>
-                        {getEventDisplayTitle(event)}
+                      <SelectItem
+                        key={event.id}
+                        value={String(event.id)}
+                        className={cn(isRtl ? "text-right" : "text-left")}
+                      >
+                        <span dir="auto" className="block w-full">
+                          {getEventDisplayTitle(event)}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -907,7 +1050,12 @@ export default function DesignerDetailsPage() {
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                <p
+                  className={cn(
+                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
+                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                  )}
+                >
                   {t("designerDetails.capabilityEvent")}
                 </p>
                 <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">
@@ -915,7 +1063,12 @@ export default function DesignerDetailsPage() {
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                <p
+                  className={cn(
+                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
+                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                  )}
+                >
                   {t("designerDetails.capabilityVendors")}
                 </p>
                 <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">
@@ -923,7 +1076,12 @@ export default function DesignerDetailsPage() {
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                <p
+                  className={cn(
+                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
+                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                  )}
+                >
                   {t("designerDetails.capabilityServices")}
                 </p>
                 <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">

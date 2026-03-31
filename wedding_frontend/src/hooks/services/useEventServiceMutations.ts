@@ -18,10 +18,23 @@ const normalizeRequiredNumber = (value?: string, fallback = 0) => {
   return trimmed ? Number(trimmed) : fallback;
 };
 
+const normalizeOptionalNumber = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? Number(trimmed) : undefined;
+};
+
+const normalizeNullableNumber = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? Number(trimmed) : null;
+};
+
 const buildUpdateEventServicePayload = (values: EventServiceItemFormData) => ({
   serviceId: values.serviceId ? Number(values.serviceId) : null,
   serviceNameSnapshot: normalizeNullableString(values.serviceNameSnapshot),
   category: values.category,
+  quantity: normalizeNullableNumber(values.quantity),
+  unitPrice: normalizeNullableNumber(values.unitPrice),
+  totalPrice: normalizeNullableNumber(values.totalPrice),
   notes: normalizeNullableString(values.notes),
   status: values.status,
   sortOrder: normalizeRequiredNumber(values.sortOrder, 0),
@@ -37,6 +50,9 @@ const buildCreateEventServicePayload = (values: EventServiceItemFormData) => ({
   serviceId: values.serviceId ? Number(values.serviceId) : undefined,
   serviceNameSnapshot: normalizeOptionalString(values.serviceNameSnapshot),
   category: values.category,
+  quantity: normalizeOptionalNumber(values.quantity),
+  unitPrice: normalizeOptionalNumber(values.unitPrice),
+  totalPrice: normalizeOptionalNumber(values.totalPrice),
   notes: normalizeOptionalString(values.notes),
   status: (values.status || "confirmed") as EventServiceStatus,
   sortOrder: values.sortOrder?.trim() ? Number(values.sortOrder) : 0,

@@ -58,6 +58,7 @@ export function AppDialogShell({
   className,
   size = "md",
   children,
+  style,
   ...props
 }: AppDialogShellProps) {
   const sizeClassName =
@@ -71,7 +72,14 @@ export function AppDialogShell({
 
   return (
     <DialogContent
-      className={cn("dialog-shell", sizeClassName, className)}
+      className={cn("dialog-shell !gap-0", sizeClassName, className)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        gap: 0,
+        ...style,
+      }}
       {...props}
     >
       {children}

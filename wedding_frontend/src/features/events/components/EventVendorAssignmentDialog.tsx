@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   AppDialogBody,
@@ -160,6 +161,7 @@ export function EventVendorAssignmentDialog({
   eventId,
   editingVendorLink = null,
 }: Props) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<EventVendorFormState>(() =>
     createStateFromVendorLink(editingVendorLink),
   );
@@ -254,16 +256,16 @@ export function EventVendorAssignmentDialog({
 
     if (form.providedBy === "company") {
       if (!form.vendorId && !resolvedCompanyNameSnapshot) {
-        setError("اختر شركة أو اكتب اسم الشركة يدويًا.");
+        setError(t("vendors.dialogCompanyOrManualRequired"));
         return;
       }
     } else if (!resolvedCompanyNameSnapshot) {
-      setError("اكتب اسم الشركة أو الجهة التي أحضرها العميل.");
+      setError(t("vendors.dialogClientNameRequired"));
       return;
     }
 
     if (!form.vendorId && form.selectedSubServiceIds.length > 0) {
-      setError("لا يمكن اختيار خدمات فرعية قبل تحديد الشركة.");
+      setError(t("vendors.dialogSubServicesNeedVendor"));
       return;
     }
 
@@ -271,7 +273,7 @@ export function EventVendorAssignmentDialog({
       form.agreedPrice.trim() &&
       (toNumberValue(form.agreedPrice) === null || Number(form.agreedPrice) < 0)
     ) {
-      setError("أدخل تكلفة صحيحة أو اترك الحقل فارغًا.");
+      setError(t("vendors.dialogAgreedPriceInvalid"));
       return;
     }
 
@@ -304,16 +306,22 @@ export function EventVendorAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogShell size="lg">
+      <AppDialogShell size="lg" className="h-[min(88dvh,860px)]">
         <AppDialogHeader
-          title={editingVendorLink ? "تعديل الشركة المرتبطة" : "إضافة شركة للحفل"}
-          description="اربط الشركة والخدمات الفرعية والخطة السعرية داخل نفس مساحة إدارة الحفل."
+          title={
+            editingVendorLink
+              ? t("vendors.editVendorAssignment")
+              : t("vendors.assignVendor")
+          }
+          description={t("vendors.vendorAssignmentHint")}
         />
 
-        <AppDialogBody className="space-y-5">
+        <AppDialogBody className="min-h-0 flex flex-1 flex-col overflow-y-auto space-y-5">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--lux-text)]">نوع الشركة</p>
+              <p className="text-sm font-medium text-[var(--lux-text)]">
+                {t("vendors.typeLabel")}
+              </p>
               <Select
                 value={form.vendorType}
                 onValueChange={(value) =>
@@ -329,12 +337,14 @@ export function EventVendorAssignmentDialog({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر النوع" />
+                  <SelectValue placeholder={t("vendors.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {VENDOR_TYPE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {formatVendorType(option.value)}
+                      {t(`vendors.type.${option.value}`, {
+                        defaultValue: formatVendorType(option.value),
+                      })}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -342,7 +352,9 @@ export function EventVendorAssignmentDialog({
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--lux-text)]">الجهة المقدمة</p>
+              <p className="text-sm font-medium text-[var(--lux-text)]">
+                {t("vendors.providedByLabel")}
+              </p>
               <Select
                 value={form.providedBy}
                 onValueChange={(value) =>
@@ -360,12 +372,12 @@ export function EventVendorAssignmentDialog({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الجهة" />
+                  <SelectValue placeholder={t("vendors.selectProvidedBy")} />
                 </SelectTrigger>
                 <SelectContent>
                   {EVENT_VENDOR_PROVIDED_BY_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.value === "company" ? "من الشركة" : "من العميل"}
+                      {t(`vendors.providedBy.${option.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -373,7 +385,9 @@ export function EventVendorAssignmentDialog({
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--lux-text)]">الحالة</p>
+              <p className="text-sm font-medium text-[var(--lux-text)]">
+                {t("vendors.assignmentStatusLabel")}
+              </p>
               <Select
                 value={form.status}
                 onValueChange={(value) =>
@@ -384,18 +398,12 @@ export function EventVendorAssignmentDialog({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الحالة" />
+                  <SelectValue placeholder={t("vendors.selectAssignmentStatus")} />
                 </SelectTrigger>
                 <SelectContent>
                   {EVENT_VENDOR_STATUS_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.value === "pending"
-                        ? "قيد الانتظار"
-                        : option.value === "approved"
-                          ? "معتمد"
-                          : option.value === "confirmed"
-                            ? "مؤكد"
-                            : "ملغي"}
+                      {t(`vendors.assignmentStatus.${option.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -406,9 +414,15 @@ export function EventVendorAssignmentDialog({
           <div className="rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
-                {form.providedBy === "company" ? "تشغيل داخلي" : "مورد من العميل"}
+                {form.providedBy === "company"
+                  ? t("vendors.internalVendor")
+                  : t("vendors.clientProvidedVendor")}
               </Badge>
-              <Badge variant="outline">{formatVendorType(form.vendorType)}</Badge>
+              <Badge variant="outline">
+                {t(`vendors.type.${form.vendorType}`, {
+                  defaultValue: formatVendorType(form.vendorType),
+                })}
+              </Badge>
               {editingVendorLink ? (
                 <Badge variant="outline">{getEventVendorDisplayName(editingVendorLink)}</Badge>
               ) : null}
@@ -417,7 +431,9 @@ export function EventVendorAssignmentDialog({
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               {form.providedBy === "company" ? (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-[var(--lux-text)]">اختيار الشركة</p>
+                  <p className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("vendors.vendorSelection")}
+                  </p>
                   <Select
                     value={form.vendorId || "none"}
                     onValueChange={(value) =>
@@ -440,10 +456,10 @@ export function EventVendorAssignmentDialog({
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر الشركة" />
+                      <SelectValue placeholder={t("vendors.selectVendor")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">بدون اختيار</SelectItem>
+                      <SelectItem value="none">{t("vendors.noVendorSelected")}</SelectItem>
                       {filteredVendorCatalog.map((vendor) => (
                         <SelectItem key={vendor.id} value={String(vendor.id)}>
                           {vendor.name}
@@ -452,14 +468,16 @@ export function EventVendorAssignmentDialog({
                     </SelectContent>
                   </Select>
                   <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                    يمكنك أيضًا ترك الشركة فارغة وكتابة الاسم يدويًا إذا لم تكن مسجلة بعد.
+                    {t("vendors.vendorSelectionHint")}
                   </p>
                 </div>
               ) : null}
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {form.providedBy === "company" ? "اسم الشركة المعروض" : "اسم الشركة / الجهة"}
+                  {form.providedBy === "company"
+                    ? t("vendors.displayCompanyName")
+                    : t("vendors.displayCompanyOrSource")}
                 </p>
                 <Input
                   value={form.companyNameSnapshot}
@@ -469,7 +487,7 @@ export function EventVendorAssignmentDialog({
                       companyNameSnapshot: event.target.value,
                     }))
                   }
-                  placeholder="اكتب الاسم الظاهر في ملف الحفل"
+                  placeholder={t("vendors.displayCompanyPlaceholder")}
                 />
               </div>
             </div>
@@ -479,31 +497,33 @@ export function EventVendorAssignmentDialog({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-[var(--lux-text)]">
-                  الخدمات الفرعية والخطة السعرية
+                  {t("vendors.subServicesPricingTitle")}
                 </h3>
                 <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                  اختر الخدمات الفرعية لاحتساب الخطة السعرية تلقائيًا عند توفرها.
+                  {t("vendors.subServicesPricingHint")}
                 </p>
               </div>
-              <Badge variant="outline">{form.selectedSubServiceIds.length} خدمة</Badge>
+              <Badge variant="outline">
+                {form.selectedSubServiceIds.length} {t("vendors.subServicesCountSuffix")}
+              </Badge>
             </div>
 
             {form.providedBy !== "company" ? (
               <div className="mt-4 rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
-                الخدمات الفرعية متاحة فقط عند اختيار شركة من قاعدة البيانات.
+                {t("vendors.subServicesCompanyOnly")}
               </div>
             ) : !form.vendorId ? (
               <div className="mt-4 rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
-                اختر الشركة أولًا لإظهار خدماتها الفرعية وخططها السعرية.
+                {t("vendors.subServicesSelectVendorFirst")}
               </div>
             ) : vendorSubServicesLoading ? (
               <div className="mt-4 flex items-center justify-center rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-6 text-sm text-[var(--lux-text-secondary)]">
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                جاري تحميل الخدمات الفرعية...
+                {t("vendors.loadingVendorSubServices")}
               </div>
             ) : vendorSubServices.length === 0 ? (
               <div className="mt-4 rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
-                لا توجد خدمات فرعية مفعلة لهذه الشركة حاليًا.
+                {t("vendors.noVendorSubServices")}
               </div>
             ) : (
               <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -538,7 +558,7 @@ export function EventVendorAssignmentDialog({
                           {subService.name}
                         </p>
                         <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                          {subService.code || "بدون كود"}
+                          {subService.code || t("vendors.noSubServiceCode")}
                         </p>
                       </div>
                     </label>
@@ -550,13 +570,15 @@ export function EventVendorAssignmentDialog({
             <div className="mt-4 rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-[var(--lux-text)]">الخطة السعرية المقترحة</p>
+                  <p className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("vendors.suggestedPricingPlan")}
+                  </p>
                   <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
                     {vendorPricingPlansLoading
-                      ? "جاري احتساب الخطة الأنسب..."
+                      ? t("vendors.loadingPricingPlan")
                       : selectedPricingPlan
                         ? selectedPricingPlan.name
-                        : "لا توجد خطة مطابقة لعدد الخدمات المختارة."}
+                        : t("vendors.noMatchingPricingPlan")}
                   </p>
                 </div>
                 <Badge variant="secondary">
@@ -582,15 +604,19 @@ export function EventVendorAssignmentDialog({
                   }
                 />
                 <div>
-                  <p className="text-sm font-medium text-[var(--lux-text)]">تعديل السعر يدويًا</p>
+                  <p className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("vendors.manualPriceOverride")}
+                  </p>
                   <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                    عطّل التسعير التلقائي إذا كان هناك اتفاق خاص مع المورد.
+                    {t("vendors.manualPriceOverrideHint")}
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">التكلفة المتفق عليها</p>
+                <p className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("vendors.agreedPrice")}
+                </p>
                 <Input
                   value={resolvedAgreedPrice}
                   disabled={!form.isPriceOverride}
@@ -607,7 +633,9 @@ export function EventVendorAssignmentDialog({
 
             <div className="rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 sm:p-5">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">ملاحظات التشغيل</p>
+                <p className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("vendors.assignmentNotesLabel")}
+                </p>
                 <textarea
                   className={textareaClassName}
                   value={form.notes}
@@ -617,7 +645,7 @@ export function EventVendorAssignmentDialog({
                       notes: event.target.value,
                     }))
                   }
-                  placeholder="أضف تفاصيل التنسيق أو شروط الشركة إن وجدت"
+                  placeholder={t("vendors.assignmentNotesPlaceholder")}
                 />
               </div>
             </div>
@@ -633,18 +661,18 @@ export function EventVendorAssignmentDialog({
         <AppDialogFooter>
           <div className="flex w-full items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+              {t("common.cancel")}
             </Button>
             <Button type="button" onClick={handleSubmit} disabled={pending}>
               {pending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  جارٍ الحفظ...
+                  {t("common.processing")}
                 </>
               ) : editingVendorLink ? (
-                "حفظ التعديلات"
+                t("common.update")
               ) : (
-                "إضافة الشركة"
+                t("vendors.assignVendor")
               )}
             </Button>
           </div>

@@ -47,6 +47,13 @@ export const resources = {
         switchView: "Switch view",
         tableView: "Table",
         calendarView: "Calendar",
+        overview: "Overview",
+        contact: "Contact",
+        status: "Status",
+        yes: "Yes",
+        no: "No",
+        showMore: "Show more",
+        showLess: "Show less",
         from: "From",
         to: "To",
       },
@@ -56,7 +63,8 @@ export const resources = {
         billingCenter: "Billing Center",
         enterFullscreen: "Enter fullscreen",
         exitFullscreen: "Exit fullscreen",
-        fullscreenUnsupported: "Fullscreen mode is not available in this browser.",
+        fullscreenUnsupported:
+          "Fullscreen mode is not available in this browser.",
         logout: "Log Out",
       },
       auth: {
@@ -619,6 +627,18 @@ export const resources = {
         deleteEventItemTitle: "Delete Event Service",
         deleteEventItemMessage:
           "Are you sure you want to delete this event service item?",
+        loadingEventServices: "Loading service items for this event.",
+        summaryItemsHint:
+          "Linked service line items currently assigned to this event.",
+        summaryQuantityHint:
+          "Combined quantity across all linked service items.",
+        summaryValueHint:
+          "Total service value using line totals or quantity x unit price when available.",
+        noNotesHint:
+          "No internal notes have been added to this service line yet.",
+        noEventServicesTitle: "No service items yet",
+        totalAmount: "Total",
+        totalAutoCalculated: "Auto calculated from quantity x unit price",
         selectionRequired: "Select a catalog service or enter a service name.",
         quantityInvalid: "Quantity must be greater than zero.",
         unitPriceInvalid: "Unit price must be zero or greater.",
@@ -758,6 +778,15 @@ export const resources = {
           "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a",
         deleteEventItemTitle: "حذف بند الحفل",
         deleteEventItemMessage: "هل أنت متأكد من حذف بند الخدمة هذا؟",
+        loadingEventServices: "جاري تحميل بنود الخدمات لهذا الحفل.",
+        summaryItemsHint: "بنود الخدمات المرتبطة حاليًا بهذا الحفل.",
+        summaryQuantityHint: "إجمالي الكمية عبر جميع بنود الخدمات المرتبطة.",
+        summaryValueHint:
+          "إجمالي قيمة الخدمات باستخدام الإجمالي المباشر أو الكمية × سعر الوحدة عند توفره.",
+        noNotesHint: "لا توجد ملاحظات داخلية مضافة لهذا البند حتى الآن.",
+        noEventServicesTitle: "لا توجد بنود خدمات بعد",
+        totalAmount: "الإجمالي",
+        totalAutoCalculated: "يتم احتسابه تلقائيًا من الكمية × سعر الوحدة",
         selectionRequired: "اختر خدمة من الدليل أو أدخل اسم الخدمة.",
         quantityInvalid: "يجب أن تكون الكمية أكبر من صفر.",
         unitPriceInvalid: "يجب أن يكون سعر الوحدة صفرًا أو أكبر.",
@@ -1024,13 +1053,61 @@ export const resources = {
           "Enter company name if the vendor is not in the catalog",
         providedByLabel: "Provided By",
         assignmentStatusLabel: "Assignment Status",
+        agreedPrice: "Agreed Price",
+        selectedSubServicesCount: "Selected Sub-Services",
         assignmentNotesPlaceholder:
           "Add assignment notes, responsibilities, or coordination remarks...",
         noEventVendors:
           "No vendor assignments have been added to this event yet.",
+        noEventVendorsTitle: "No vendor assignments yet",
         deleteLinkTitle: "Delete Vendor Assignment",
         deleteLinkMessage:
           "Are you sure you want to delete this vendor assignment?",
+        deleteEventVendorTitle: "Delete linked vendor",
+        deleteEventVendorMessage:
+          "This vendor will be unlinked from the event. Do you want to continue?",
+        loadingEventVendors: "Loading vendor assignments for this event.",
+        resolvedCompanyName: "Resolved Company / Vendor",
+        costSummary: "Cost Summary",
+        noMatchingPricingPlan: "No matching pricing plan",
+        noPricingPlan: "No pricing plan selected",
+        noSelectedSubServicesTitle: "No sub-services selected",
+        noSelectedSubServices:
+          "No sub-services have been selected for this vendor yet.",
+        clientProvidedVendor: "Client-provided vendor",
+        internalVendor: "Internal operation",
+        manualPriceOverride: "Manual Price",
+        manualPriceOverrideHint:
+          "Disable automatic pricing when there is a special agreement with the vendor.",
+        assignmentNotesLabel: "Operations Notes",
+        selectProvidedBy: "Select provider",
+        selectAssignmentStatus: "Select status",
+        displayCompanyName: "Displayed Company Name",
+        displayCompanyOrSource: "Company / Source Name",
+        displayCompanyPlaceholder:
+          "Type the name that should appear in the event file",
+        subServicesPricingTitle: "Sub-services and pricing plan",
+        subServicesPricingHint:
+          "Select sub-services to calculate the most suitable pricing plan automatically when available.",
+        subServicesCountSuffix: "service",
+        subServicesCompanyOnly:
+          "Sub-services are available only when selecting a vendor from the catalog.",
+        subServicesSelectVendorFirst:
+          "Select a vendor first to display its sub-services and pricing plans.",
+        loadingVendorSubServices: "Loading sub-services...",
+        noVendorSubServices:
+          "There are no active sub-services for this vendor right now.",
+        noSubServiceCode: "No code",
+        suggestedPricingPlan: "Suggested Pricing Plan",
+        loadingPricingPlan: "Calculating the best matching plan...",
+        dialogCompanyOrManualRequired:
+          "Select a vendor or type the company name manually.",
+        dialogClientNameRequired:
+          "Enter the company or source name provided by the client.",
+        dialogSubServicesNeedVendor:
+          "You cannot select sub-services before choosing a vendor.",
+        dialogAgreedPriceInvalid:
+          "Enter a valid agreed price or leave the field empty.",
         selectionRequired: "Select a catalog vendor or enter a company name.",
         types: {
           title: "Vendor Types",
@@ -1275,11 +1352,9 @@ export const resources = {
             visible: "Visible On This Page",
             visibleHint: "Events currently loaded into the table.",
             execution: "Execution-ready",
-            executionHint:
-              "Confirmed and in-progress events on this page.",
+            executionHint: "Confirmed and in-progress events on this page.",
             filters: "Active Filters",
-            filtersHint:
-              "Narrow the workspace without changing the route.",
+            filtersHint: "Narrow the workspace without changing the route.",
           },
         },
         dateFrom: "Date From",
@@ -1300,6 +1375,17 @@ export const resources = {
           guestCountInvalid: "Guest count must be zero or greater",
         },
         sectionsTitle: "Event Sections",
+        overviewTab: "Overview",
+        overviewMainInfo: "Main Event Information",
+        overviewMainInfoHint:
+          "Review the customer, wedding details, venue context, guest profile, and notes from one place.",
+        customerAndVenueSnapshot: "Customer and Venue Snapshot",
+        noVenueLinked: "No venue linked",
+        noSourceAppointmentTitle: "No source appointment linked",
+        noSourceAppointmentHint:
+          "This event was created without a linked appointment source.",
+        executionSectionNoNotes:
+          "No execution note has been added to this section yet.",
         sectionsHint: "Manage the ordered planning sections for this event.",
         addSection: "Add Section",
         editSection: "Edit Section",
@@ -1356,6 +1442,7 @@ export const resources = {
         contractSnapshot: "Contract Snapshot",
         latestQuotation: "Latest Quotation",
         latestContract: "Latest Contract",
+        readyExternalVendors: "Ready Vendors",
         noQuotationsTitle: "No quotations yet",
         noContractsTitle: "No contracts yet",
         noOperationalReadinessData: "No execution checkpoints yet",
@@ -1374,6 +1461,11 @@ export const resources = {
           "Services / vendors / planning sections currently tracked for this wedding.",
         executionReadyLine: "Ready for execution",
         executionPendingLine: "Needs follow-up before execution",
+        operationalReadiness: "Operational Readiness",
+        operationalReadinessHint:
+          "{{ready}} of {{total}} checkpoints are currently ready across services, vendors, and execution sections.",
+        operationalReadinessBreakdown:
+          "Services {{servicesReady}}/{{servicesTotal}} / Vendors {{vendorsReady}}/{{vendorsTotal}} / Sections {{sectionsReady}}/{{sectionsTotal}}",
         currentEventPreview: "Editing:",
         status: {
           draft: "Draft",
@@ -1481,69 +1573,6 @@ export const resources = {
         selectEventPlaceholder: "Select event",
         loadingEventsPlaceholder: "Loading events...",
         currentEventBadge: "Current Event",
-      },
-      designerDetails: {
-        title: "تفاصيل المصمم",
-        subtitle:
-          "مركز تشغيلي موحّد يربط إدارة الحفل والشركات والخدمات وعروض الأسعار والعقود من داخل نفس الصفحة.",
-        selectorTitle: "اختيار الحفل",
-        selectorDescription:
-          "اختر الحفل الذي تريد تشغيله من داخل تفاصيل المصمم. بعد الاختيار ستظهر جميع لوحات الإدارة التشغيلية في نفس الصفحة.",
-        capabilityEvent: "إدارة الحفل",
-        capabilityEventDescription:
-          "تشغيل الحفل ومتابعة البنود وربط الشركات وإدارة الوثائق من مكان واحد.",
-        capabilityVendors: "الشركات",
-        capabilityVendorsDescription:
-          "اختيار الشركات وتطبيق الخطط السعرية وإدارة الخدمات الفرعية دون مغادرة مساحة المصمم.",
-        capabilityServices: "الخدمات والعقود",
-        capabilityServicesDescription:
-          "إدارة بنود الخدمات وعروض الأسعار والعقود ضمن تدفق تشغيلي أوضح.",
-        currentEvent: "الحفل الحالي",
-        currentEventDescription:
-          "أصبحت هذه الصفحة مساحة العمل الرئيسية لإدارة الحفل داخل تفاصيل المصمم دون الانتقال إلى صفحة تفاصيل الحفل.",
-        shortcutsTitle: "اختصارات مساندة",
-        shortcutsDescription:
-          "بقيت إدارة الشركات والخدمات متاحة، لكنها أصبحت مساندة لمساحة تشغيل الحفل بدلًا من أن تكون هدف الصفحة الأساسي.",
-        openVendors: "فتح الشركات",
-        openServices: "فتح الخدمات",
-        loadingEventsTitle: "جارٍ تحميل الحفلات",
-        loadingEventsDescription:
-          "يجري الآن تجهيز قائمة الحفلات المتاحة لبدء العمل.",
-        noEventsTitle: "لا توجد حفلات متاحة",
-        noEventsDescription:
-          "أنشئ حفلًا أولًا حتى تظهر مساحة الإدارة التشغيلية داخل تفاصيل المصمم.",
-        openEvents: "فتح قائمة الحفلات",
-        chooseEventTitle: "اختر حفلًا للبدء",
-        chooseEventDescription:
-          "بمجرد اختيار الحفل ستظهر لوحة النظرة العامة والخدمات والشركات وعروض الأسعار والعقود.",
-        loadingEventTitle: "جارٍ تحميل بيانات الحفل",
-        loadingEventDescription:
-          "يتم الآن تجهيز مساحة العمل التشغيلية للحفل المختار.",
-        loadEventFailedTitle: "تعذر تحميل الحفل",
-        loadEventFailedDescription:
-          "لم نتمكن من جلب بيانات الحفل المختار. جرّب اختيار حفل آخر من القائمة.",
-        editEvent: "تعديل الحفل",
-        trackExecution: "متابعة التنفيذ",
-        eventDateRequired: "تاريخ الحفل مطلوب.",
-        editDialogTitle: "تعديل بيانات الحفل",
-        editDialogDescription:
-          "حدّث العميل والتاريخ والصالة وحالة الحفل مباشرة من مساحة المصمم.",
-        noCustomer: "بدون عميل",
-        noVenue: "بدون صالة",
-        customerField: "العميل",
-        eventDateField: "تاريخ الحفل",
-        venueField: "الصالة",
-        eventStatusField: "حالة الحفل",
-        eventTitleField: "عنوان الحفل",
-        guestCountField: "عدد الضيوف",
-        groomNameField: "اسم العريس",
-        brideNameField: "اسم العروس",
-        eventNotesField: "ملاحظات الحفل",
-        saveChanges: "حفظ التعديلات",
-        cancel: "إلغاء",
-        selectEventPlaceholder: "اختر الحفل",
-        loadingEventsPlaceholder: "جارٍ تحميل الحفلات...",
-        currentEventBadge: "الحفل الحالي",
       },
       quotations: {
         title: "Quotations",
@@ -1952,8 +1981,7 @@ export const resources = {
             visible: "Visible On This Page",
             visibleHint: "Appointments currently loaded into the table.",
             open: "Needs Follow-up",
-            openHint:
-              "Scheduled or rescheduled appointments awaiting closure.",
+            openHint: "Scheduled or rescheduled appointments awaiting closure.",
             filters: "Active Filters",
             filtersHint: "Confirmed appointments on this page.",
           },
@@ -2222,6 +2250,13 @@ export const resources = {
         switchView: "تبديل طريقة العرض",
         tableView: "جدول",
         calendarView: "تقويم",
+        overview: "نظرة عامة",
+        contact: "التواصل",
+        status: "الحالة",
+        yes: "نعم",
+        no: "لا",
+        showMore: "عرض المزيد",
+        showLess: "عرض أقل",
         showing: "عرض",
         of: "من",
         itemsPerPage: "عدد العناصر في الصفحة",
@@ -2307,6 +2342,7 @@ export const resources = {
           amountPlaceholder: "أدخل المبلغ",
         },
       },
+
       roles: {
         title: "الأدوار",
         totalRoles: "إجمالي الأدوار",
@@ -2337,6 +2373,71 @@ export const resources = {
           permissionRequired: "مطلوب اختيار صلاحية واحدة على الأقل",
         },
       },
+
+      designerDetails: {
+        title: "تفاصيل المصمم",
+        subtitle:
+          "مركز عمليات موحد يربط إدارة الفعاليات والموردين والخدمات والعروض والعقود من صفحة واحدة.",
+        selectorTitle: "اختر الفعالية",
+        selectorDescription:
+          "اختر الفعالية التي تريد العمل عليها من Designer Details. بعد الاختيار، ستظهر مساحة العمل المدمجة كاملة أدناه.",
+        capabilityEvent: "إدارة الفعاليات",
+        capabilityEventDescription:
+          "إدارة الزفاف، متابعة بنود الخدمة، ربط الموردين، وإدارة المستندات من مكان واحد.",
+        capabilityVendors: "الموردين",
+        capabilityVendorsDescription:
+          "تعيين الموردين، تطبيق خطط التسعير، وإدارة الخدمات الفرعية المختارة دون مغادرة مساحة عمل المصمم.",
+        capabilityServices: "الخدمات والعقود",
+        capabilityServicesDescription:
+          "إدارة بنود الخدمة والعروض السعرية والعقود من خلال سير عمل تنفيذي أوضح.",
+        currentEvent: "الفعالية الحالية",
+        currentEventDescription:
+          "أصبحت هذه الصفحة مساحة عمل الفعالية الأساسية داخل Designer Details دون الحاجة لفتح صفحة تفاصيل الفعالية.",
+        shortcutsTitle: "الاختصارات الداعمة",
+        shortcutsDescription:
+          "يظل الموردون والخدمات متاحين، لكنهم الآن يدعمون مساحة عمل الفعالية بدلاً من أن يكونوا الغرض الرئيسي للصفحة.",
+        openVendors: "فتح الموردين",
+        openServices: "فتح الخدمات",
+        loadingEventsTitle: "جاري تحميل الفعاليات",
+        loadingEventsDescription:
+          "جاري إعداد قائمة الفعاليات المتاحة لبدء مساحة العمل.",
+        noEventsTitle: "لا توجد فعاليات متاحة",
+        noEventsDescription:
+          "يرجى إنشاء فعالية أولاً حتى تظهر مساحة إدارة العمل المدمجة هنا.",
+        openEvents: "فتح الفعاليات",
+        chooseEventTitle: "اختر فعالية لبدء العمل",
+        chooseEventDescription:
+          "بمجرد اختيارك لفعالية، ستظهر نظرة عامة والخدمات والموردين والعروض والعقود ولوحات التنفيذ.",
+        loadingEventTitle: "جاري تحميل بيانات الفعالية",
+        loadingEventDescription:
+          "جاري إعداد مساحة العمل التشغيلية للفعالية المختارة.",
+        loadEventFailedTitle: "تعذر تحميل الفعالية",
+        loadEventFailedDescription:
+          "لم نتمكن من جلب الفعالية المختارة. يرجى اختيار فعالية أخرى من القائمة.",
+        editEvent: "تعديل الفعالية",
+        trackExecution: "متابعة التنفيذ",
+        eventDateRequired: "تاريخ الفعالية مطلوب.",
+        editDialogTitle: "تعديل بيانات الفعالية",
+        editDialogDescription:
+          "قم بتحديث العميل والتاريخ والمكان وحالة الفعالية مباشرة من Designer Details.",
+        noCustomer: "لا يوجد عميل",
+        noVenue: "لا يوجد مكان",
+        customerField: "العميل",
+        eventDateField: "تاريخ الفعالية",
+        venueField: "المكان",
+        eventStatusField: "حالة الفعالية",
+        eventTitleField: "عنوان الفعالية",
+        guestCountField: "عدد الضيوف",
+        groomNameField: "اسم العريس",
+        brideNameField: "اسم العروس",
+        eventNotesField: "ملاحظات الفعالية",
+        saveChanges: "حفظ التغييرات",
+        cancel: "إلغاء",
+        selectEventPlaceholder: "اختر الفعالية",
+        loadingEventsPlaceholder: "جاري تحميل الفعاليات...",
+        currentEventBadge: "الفعالية الحالية",
+      },
+
       users: {
         title: "المستخدمون",
         totalUsers: "إجمالي المستخدمين",
@@ -2721,8 +2822,7 @@ export const resources = {
         masterDataTitle: "البيانات الأساسية للشركات",
         masterDataDescription:
           "أدر الخدمات الفرعية وخطط التسعير القابلة لإعادة الاستخدام حسب نوع الشركة دون التأثير على سير عمل شركات الحفل.",
-        filterDescription:
-          "صفِّ قائمة الشركات حسب النوع وحالة النشاط.",
+        filterDescription: "صفِّ قائمة الشركات حسب النوع وحالة النشاط.",
         basicInformation: "البيانات الأساسية",
         basicInformationHint: "سجّل البيانات الرئيسية للشركة ونوع الخدمة.",
         name: "اسم الشركة",
@@ -2782,13 +2882,55 @@ export const resources = {
         assignmentNotesPlaceholder:
           "أضف ملاحظات الربط أو المسؤوليات أو ملاحظات التنسيق...",
         noEventVendors: "لم تتم إضافة أي شركات لهذا الحفل بعد.",
+        noEventVendorsTitle: "لا توجد شركات مرتبطة بعد",
         deleteLinkTitle: "حذف ربط الشركة",
         deleteLinkMessage: "هل أنت متأكد من حذف ربط هذه الشركة؟",
+        deleteEventVendorTitle: "حذف الشركة المرتبطة",
+        deleteEventVendorMessage:
+          "سيتم إلغاء ربط هذه الشركة من الحفل. هل تريد المتابعة؟",
+        loadingEventVendors: "جاري تحميل روابط الشركات لهذا الحفل.",
+        resolvedCompanyName: "الشركة / المورد المعتمد",
+        costSummary: "ملخص التكلفة",
+        noMatchingPricingPlan: "لا توجد خطة سعرية مطابقة",
+        noPricingPlan: "لا توجد خطة سعرية محددة",
+        noSelectedSubServicesTitle: "لا توجد خدمات فرعية محددة",
+        noSelectedSubServices: "لم يتم اختيار أي خدمات فرعية لهذه الشركة بعد.",
+        clientProvidedVendor: "شركة من طرف العميل",
+        internalVendor: "تشغيل داخلي",
+        manualPriceOverride: "تعديل السعر يدويًا",
+        manualPriceOverrideHint:
+          "عطّل التسعير التلقائي إذا كان هناك اتفاق خاص مع المورد.",
+        assignmentNotesLabel: "ملاحظات التشغيل",
+        selectProvidedBy: "اختر الجهة",
+        selectAssignmentStatus: "اختر الحالة",
+        displayCompanyName: "اسم الشركة المعروض",
+        displayCompanyOrSource: "اسم الشركة / الجهة",
+        displayCompanyPlaceholder: "اكتب الاسم الظاهر في ملف الحفل",
+        subServicesPricingTitle: "الخدمات الفرعية والخطة السعرية",
+        subServicesPricingHint:
+          "اختر الخدمات الفرعية لاحتساب الخطة السعرية تلقائيًا عند توفرها.",
+        subServicesCountSuffix: "خدمة",
+        subServicesCompanyOnly:
+          "الخدمات الفرعية متاحة فقط عند اختيار شركة من قاعدة البيانات.",
+        subServicesSelectVendorFirst:
+          "اختر الشركة أولًا لإظهار خدماتها الفرعية وخططها السعرية.",
+        loadingVendorSubServices: "جاري تحميل الخدمات الفرعية...",
+        noVendorSubServices: "لا توجد خدمات فرعية مفعلة لهذه الشركة حاليًا.",
+        noSubServiceCode: "بدون كود",
+        suggestedPricingPlan: "الخطة السعرية المقترحة",
+        loadingPricingPlan: "جاري احتساب الخطة الأنسب...",
+        dialogCompanyOrManualRequired: "اختر شركة أو اكتب اسم الشركة يدويًا.",
+        dialogClientNameRequired:
+          "اكتب اسم الشركة أو الجهة التي أحضرها العميل.",
+        dialogSubServicesNeedVendor:
+          "لا يمكن اختيار خدمات فرعية قبل تحديد الشركة.",
+        dialogAgreedPriceInvalid: "أدخل تكلفة صحيحة أو اترك الحقل فارغًا.",
         selectionRequired: "اختر شركة من الدليل أو أدخل اسم الشركة.",
         types: {
           title: "أنواع الشركات",
           total: "إجمالي أنواع الشركات",
-          searchPlaceholder: "ابحث بالاسم أو الاسم العربي أو الرابط التعريفي...",
+          searchPlaceholder:
+            "ابحث بالاسم أو الاسم العربي أو الرابط التعريفي...",
           create: "إنشاء نوع شركة",
           createTitle: "إنشاء نوع شركة",
           editTitle: "تعديل نوع الشركة",
@@ -2816,8 +2958,7 @@ export const resources = {
             "تبقى أنواع الشركات غير النشطة متاحة للسجلات الحالية، لكن لا ينبغي استخدامها عند إنشاء شركات جديدة.",
           deleteTitle: "حذف نوع الشركة",
           deleteMessage: "هل أنت متأكد من حذف نوع الشركة هذا؟",
-          emptyHint:
-            "أنشئ نوع شركة نشطًا واحدًا على الأقل قبل إنشاء الشركات.",
+          emptyHint: "أنشئ نوع شركة نشطًا واحدًا على الأقل قبل إنشاء الشركات.",
           toast: {
             created: "تم إنشاء نوع الشركة بنجاح",
             createFailed: "تعذر إنشاء نوع الشركة",
@@ -3023,8 +3164,7 @@ export const resources = {
             visible: "الظاهرة في هذه الصفحة",
             visibleHint: "الحفلات المحمّلة حاليًا داخل الجدول.",
             execution: "جاهزة للتنفيذ",
-            executionHint:
-              "الحفلات المؤكدة والجارية في هذه الصفحة.",
+            executionHint: "الحفلات المؤكدة والجارية في هذه الصفحة.",
             filters: "الفلاتر النشطة",
             filtersHint: "ضيّق مساحة العمل دون تغيير المسار.",
           },
@@ -3047,6 +3187,16 @@ export const resources = {
           guestCountInvalid: "يجب أن يكون عدد الضيوف صفراً أو أكثر",
         },
         sectionsTitle: "أقسام الحفل",
+        overviewTab: "نظرة عامة",
+        overviewMainInfo: "معلومات الحفل الأساسية",
+        overviewMainInfoHint:
+          "راجع العميل وتفاصيل الحفل والصالة وعدد الضيوف والملاحظات من مكان واحد.",
+        customerAndVenueSnapshot: "ملخص العميل والصالة",
+        noVenueLinked: "لا توجد صالة مرتبطة",
+        noSourceAppointmentTitle: "لا يوجد موعد مصدر مرتبط",
+        noSourceAppointmentHint: "تم إنشاء هذا الحفل دون ربطه بموعد مصدر.",
+        executionSectionNoNotes:
+          "لا توجد ملاحظة تنفيذية مضافة لهذا القسم حتى الآن.",
         sectionsHint: "أدر أقسام التخطيط المرتبة لهذا الحفل.",
         addSection: "إضافة قسم",
         editSection: "تعديل قسم",
@@ -3100,6 +3250,7 @@ export const resources = {
         contractSnapshot: "ملخص العقود",
         latestQuotation: "أحدث عرض سعر",
         latestContract: "أحدث عقد",
+        readyExternalVendors: "الشركات الجاهزة",
         noQuotationsTitle: "لا توجد عروض أسعار بعد",
         noContractsTitle: "لا توجد عقود بعد",
         noOperationalReadinessData: "لا توجد نقاط جاهزية تنفيذية بعد",
@@ -3118,6 +3269,11 @@ export const resources = {
           "الخدمات / الشركات / أقسام التخطيط المتابَعة حاليًا لهذا الحفل.",
         executionReadyLine: "جاهز للتنفيذ",
         executionPendingLine: "يحتاج متابعة قبل التنفيذ",
+        operationalReadiness: "الجاهزية التشغيلية",
+        operationalReadinessHint:
+          "{{ready}} من أصل {{total}} نقاط جاهزة حاليًا عبر الخدمات والشركات وأقسام التنفيذ.",
+        operationalReadinessBreakdown:
+          "الخدمات {{servicesReady}}/{{servicesTotal}} / الشركات {{vendorsReady}}/{{vendorsTotal}} / الأقسام {{sectionsReady}}/{{sectionsTotal}}",
         currentEventPreview: "جارٍ تعديل:",
         status: {
           draft: "مسودة",
@@ -3542,16 +3698,14 @@ export const resources = {
           dateFiltersHint:
             "حدّد نطاقًا زمنيًا معيّنًا لعرض المواعيد المطابقة في القائمة.",
           emptyTitle: "لا توجد مواعيد مطابقة لهذه الفلاتر",
-          emptyDescription:
-            "جرّب توسيع النطاق الزمني أو إزالة أحد الفلاتر.",
+          emptyDescription: "جرّب توسيع النطاق الزمني أو إزالة أحد الفلاتر.",
           summary: {
             total: "إجمالي المواعيد",
             totalHint: "السجلات المطابقة للاستعلام الحالي في الجدول.",
             visible: "الظاهرة في هذه الصفحة",
             visibleHint: "المواعيد المعروضة حاليًا داخل الجدول.",
             open: "تحتاج متابعة",
-            openHint:
-              "مواعيد مجدولة أو معاد جدولتها وما زالت تحتاج إلى إغلاق.",
+            openHint: "مواعيد مجدولة أو معاد جدولتها وما زالت تحتاج إلى إغلاق.",
             filters: "الفلاتر النشطة",
             filtersHint: "المواعيد المؤكدة في هذه الصفحة.",
           },

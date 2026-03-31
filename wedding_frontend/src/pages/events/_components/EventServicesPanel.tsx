@@ -1,5 +1,6 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,8 @@ export function EventServicesPanel({
   onEdit,
   onDelete,
 }: Props) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const hasRowActions = Boolean(onEdit || onDelete);
   const resolveLineTotal = (serviceItem: EventServiceItem) => {
     const explicitTotal = toNumberValue(serviceItem.totalPrice);
@@ -77,9 +80,13 @@ export function EventServicesPanel({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1.5">
+    <Card dir={i18n.dir()}>
+      <CardHeader
+        className={`flex flex-col gap-4 md:items-center md:justify-between ${
+          "md:flex-row"
+        }`}
+      >
+        <div className={isRtl ? "space-y-1.5 text-right" : "space-y-1.5 text-left"}>
           <CardTitle>
             {t("services.eventServices", { defaultValue: "Event Services" })}
           </CardTitle>
@@ -279,7 +286,11 @@ export function EventServicesPanel({
 
                   {serviceItem.notes ? (
                     <div className="rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-3.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+                      <p
+                        className={`text-[11px] font-semibold text-[var(--lux-text-muted)] ${
+                          isRtl ? "tracking-normal" : "uppercase tracking-[0.16em]"
+                        }`}
+                      >
                         {t("common.notes", { defaultValue: "Notes" })}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-[var(--lux-text-secondary)]">

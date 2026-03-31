@@ -110,6 +110,9 @@ export interface EventServiceItemFormData {
   serviceId?: string;
   serviceNameSnapshot?: string;
   category: ServiceCategory;
+  quantity?: string;
+  unitPrice?: string;
+  totalPrice?: string;
   notes?: string;
   status: EventServiceStatus;
   sortOrder: string;

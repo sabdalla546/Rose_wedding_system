@@ -1,8 +1,10 @@
 import { CheckCircle2, CircleDashed, ClipboardList } from "lucide-react";
 import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
+import type { Event, EventSection } from "@/pages/events/types";
 import { EventServiceStatusBadge } from "@/pages/services/_components/eventServiceStatusBadge";
 import {
   formatMoney,
@@ -17,7 +19,6 @@ import {
   getEventVendorDisplayName,
 } from "@/pages/vendors/adapters";
 import type { EventVendorLink } from "@/pages/vendors/types";
-import type { Event, EventSection } from "@/pages/events/types";
 import {
   EventEmptyState,
   EventMetricTile,
@@ -51,10 +52,13 @@ export function EventExecutionPanel({
   t,
   readiness,
 }: Props) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
-    <div className="space-y-6">
+    <div dir={i18n.dir()} className="space-y-6">
       <Card>
-        <CardHeader>
+        <CardHeader className={isRtl ? "text-right" : "text-left"}>
           <CardTitle>
             {t("events.executionTab", { defaultValue: "Execution" })}
           </CardTitle>
@@ -66,7 +70,11 @@ export function EventExecutionPanel({
                 defaultValue: "Current Event Status",
               })}
               value={
-                <div className="flex flex-wrap items-center gap-2">
+                <div
+                  className={`flex flex-wrap items-center gap-2 ${
+                    isRtl ? "justify-end" : "justify-start"
+                  }`}
+                >
                   <span>
                     {t(`events.status.${event.status}`, {
                       defaultValue: event.status,
@@ -110,7 +118,7 @@ export function EventExecutionPanel({
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card>
-          <CardHeader>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
             <CardTitle>
               {t("services.eventServices", { defaultValue: "Event Services" })}
             </CardTitle>
@@ -128,9 +136,13 @@ export function EventExecutionPanel({
 
                 return (
                   <EventPanelCard key={service.id} className="space-y-3 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div
+                      className={`flex flex-wrap items-center justify-between gap-3 ${
+                        isRtl ? "text-right" : "text-left"
+                      }`}
+                    >
                       <div className="space-y-1">
-                        <h4 className="font-semibold text-[var(--lux-heading)]">
+                        <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
                           {getEventServiceDisplayName(service)}
                         </h4>
                         <p className="text-xs text-[var(--lux-text-secondary)]">
@@ -141,7 +153,7 @@ export function EventExecutionPanel({
                       </div>
                       <EventServiceStatusBadge status={service.status} />
                     </div>
-                    <div className="grid gap-2 text-sm text-[var(--lux-text-secondary)]">
+                    <div className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
                       <p>
                         {t("services.quantity", { defaultValue: "Quantity" })}:{" "}
                         {quantityValue ?? "-"}
@@ -150,7 +162,11 @@ export function EventExecutionPanel({
                         {t("services.totalAmount", { defaultValue: "Total" })}:{" "}
                         {formatMoney(resolvedTotal)}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div
+                        className={`flex items-center gap-2 ${
+                          isRtl ? "justify-end" : "justify-start"
+                        }`}
+                      >
                         {isServiceReady(service.status) ? (
                           <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
                         ) : (
@@ -185,7 +201,7 @@ export function EventExecutionPanel({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
             <CardTitle>
               {t("vendors.eventVendors", { defaultValue: "Event Vendors" })}
             </CardTitle>
@@ -194,9 +210,13 @@ export function EventExecutionPanel({
             {vendors.length ? (
               vendors.map((vendor) => (
                 <EventPanelCard key={vendor.id} className="space-y-3 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-3 ${
+                      isRtl ? "text-right" : "text-left"
+                    }`}
+                  >
                     <div className="space-y-1">
-                      <h4 className="font-semibold text-[var(--lux-heading)]">
+                      <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
                         {getEventVendorDisplayName(vendor)}
                       </h4>
                       <p className="text-xs text-[var(--lux-text-secondary)]">
@@ -207,7 +227,7 @@ export function EventExecutionPanel({
                     </div>
                     <EventVendorStatusBadge status={vendor.status} />
                   </div>
-                  <div className="grid gap-2 text-sm text-[var(--lux-text-secondary)]">
+                  <div className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
                     <p>
                       {t("vendors.pricingPlans.name", {
                         defaultValue: "Pricing Plan",
@@ -224,7 +244,11 @@ export function EventExecutionPanel({
                       {t("vendors.agreedPrice", { defaultValue: "Agreed Price" })}
                       : {formatMoney(vendor.agreedPrice)}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div
+                      className={`flex items-center gap-2 ${
+                        isRtl ? "justify-end" : "justify-start"
+                      }`}
+                    >
                       {isVendorReady(vendor.status) ? (
                         <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
                       ) : (
@@ -259,7 +283,7 @@ export function EventExecutionPanel({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
             <CardTitle>
               {t("events.sectionsTitle", { defaultValue: "Event Sections" })}
             </CardTitle>
@@ -268,9 +292,13 @@ export function EventExecutionPanel({
             {sections.length ? (
               sections.map((section) => (
                 <EventPanelCard key={section.id} className="space-y-3 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-3 ${
+                      isRtl ? "text-right" : "text-left"
+                    }`}
+                  >
                     <div className="space-y-1">
-                      <h4 className="font-semibold text-[var(--lux-heading)]">
+                      <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
                         {section.title ||
                           t(`events.sectionType.${section.sectionType}`, {
                             defaultValue: section.sectionType,
@@ -288,7 +316,7 @@ export function EventExecutionPanel({
                       <ClipboardList className="h-5 w-5 text-[var(--lux-text-muted)]" />
                     )}
                   </div>
-                  <div className="text-sm leading-6 text-[var(--lux-text-secondary)]">
+                  <div className={`text-sm leading-6 text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
                     {section.notes ||
                       t("events.executionSectionNoNotes", {
                         defaultValue: "No execution note has been added to this section yet.",

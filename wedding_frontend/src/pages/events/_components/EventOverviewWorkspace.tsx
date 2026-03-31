@@ -1,8 +1,10 @@
 import { format } from "date-fns";
 import type { Locale } from "date-fns";
 import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { Event, EventSection } from "@/pages/events/types";
 import {
   EventEmptyState,
@@ -30,6 +32,8 @@ export function EventOverviewWorkspace({
   onEditSection,
   onDeleteSection,
 }: Props) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const eventDateLabel = format(new Date(event.eventDate), "PPP", {
     locale: dateLocale,
   });
@@ -48,22 +52,26 @@ export function EventOverviewWorkspace({
   });
   const venueLocation = [event.venue?.area, event.venue?.city]
     .filter(Boolean)
-    .join(" • ");
+    .join(" / ");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={i18n.dir()}>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-        <EventPanelCard className="space-y-5">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
+        <EventPanelCard className={cn("space-y-5", isRtl && "xl:order-2")}>
+          <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
+            <p
+              className={`text-[11px] font-semibold text-[var(--lux-text-muted)] ${
+                isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.18em] text-left"
+              }`}
+            >
               {t("events.overviewTab", { defaultValue: "Overview" })}
             </p>
-            <h3 className="text-2xl font-semibold text-[var(--lux-heading)]">
+            <h3 className={cn("text-2xl font-semibold text-[var(--lux-heading)]", isRtl ? "text-right" : "text-left")}>
               {t("events.overviewMainInfo", {
                 defaultValue: "Main Event Information",
               })}
             </h3>
-            <p className="text-sm leading-7 text-[var(--lux-text-secondary)]">
+            <p className={cn("text-sm leading-7 text-[var(--lux-text-secondary)]", isRtl ? "text-right" : "text-left")}>
               {t("events.overviewMainInfoHint", {
                 defaultValue:
                   "Review the customer, wedding details, venue context, guest profile, and notes from one place.",
@@ -74,36 +82,38 @@ export function EventOverviewWorkspace({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <EventInfoBlock
               label={t("events.titleField", { defaultValue: "Title" })}
-              value={event.title}
+              value={<span dir="auto">{event.title}</span>}
             />
             <EventInfoBlock
               label={t("events.eventDate", { defaultValue: "Event Date" })}
-              value={eventDateLabel}
+              value={<span dir="auto">{eventDateLabel}</span>}
             />
             <EventInfoBlock
               label={t("events.statusLabel", { defaultValue: "Status" })}
-              value={eventStatusLabel}
+              value={<span dir="auto">{eventStatusLabel}</span>}
             />
             <EventInfoBlock
               label={t("events.groomName", { defaultValue: "Groom Name" })}
-              value={event.groomName}
+              value={<span dir="auto">{event.groomName}</span>}
             />
             <EventInfoBlock
               label={t("events.brideName", { defaultValue: "Bride Name" })}
-              value={event.brideName}
+              value={<span dir="auto">{event.brideName}</span>}
             />
             <EventInfoBlock
               label={t("events.guestCount", { defaultValue: "Guest Count" })}
               value={
-                typeof event.guestCount === "number" ? String(event.guestCount) : "-"
+                <span dir="auto">
+                  {typeof event.guestCount === "number" ? String(event.guestCount) : "-"}
+                </span>
               }
             />
           </div>
         </EventPanelCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className={cn(isRtl && "xl:order-1")}>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
+            <CardTitle className={isRtl ? "text-right" : "text-left"}>
               {t("events.customerAndVenueSnapshot", {
                 defaultValue: "Customer and Venue Snapshot",
               })}
@@ -112,33 +122,35 @@ export function EventOverviewWorkspace({
           <CardContent className="space-y-3">
             <EventInfoBlock
               label={t("events.customer", { defaultValue: "Customer" })}
-              value={event.customer?.fullName}
+              value={<span dir="auto">{event.customer?.fullName}</span>}
               helper={
-                [event.customer?.mobile, event.customer?.email]
-                  .filter(Boolean)
-                  .join(" • ") ||
-                t("events.noCustomerLinked", {
-                  defaultValue: "No customer linked",
-                })
+                <span dir="auto">
+                  {[event.customer?.mobile, event.customer?.email].filter(Boolean).join(" / ") ||
+                    t("events.noCustomerLinked", {
+                      defaultValue: "No customer linked",
+                    })}
+                </span>
               }
               compact
             />
             <EventInfoBlock
               label={t("common.venue", { defaultValue: "Venue" })}
-              value={event.venue?.name || event.venueNameSnapshot}
+              value={<span dir="auto">{event.venue?.name || event.venueNameSnapshot}</span>}
               helper={
-                venueLocation ||
-                event.venue?.address ||
-                t("events.noVenueLinked", {
-                  defaultValue: "No venue linked",
-                })
+                <span dir="auto">
+                  {venueLocation ||
+                    event.venue?.address ||
+                    t("events.noVenueLinked", {
+                      defaultValue: "No venue linked",
+                    })}
+                </span>
               }
               compact
             />
             <EventInfoBlock
               label={t("common.contact", { defaultValue: "Contact" })}
-              value={event.venue?.contactPerson || event.customer?.mobile}
-              helper={event.venue?.phone || event.customer?.address}
+              value={<span dir="auto">{event.venue?.contactPerson || event.customer?.mobile}</span>}
+              helper={<span dir="auto">{event.venue?.phone || event.customer?.address}</span>}
               compact
             />
           </CardContent>
@@ -146,9 +158,9 @@ export function EventOverviewWorkspace({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className={cn(isRtl && "xl:order-2")}>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
+            <CardTitle className={isRtl ? "text-right" : "text-left"}>
               {t("events.sourceAppointment", {
                 defaultValue: "Source Appointment",
               })}
@@ -161,29 +173,31 @@ export function EventOverviewWorkspace({
                   label={t("events.sourceAppointment", {
                     defaultValue: "Source Appointment",
                   })}
-                  value={`#${event.sourceAppointmentId}`}
+                  value={<span dir="auto">{`#${event.sourceAppointmentId}`}</span>}
                   compact
                 />
                 <EventInfoBlock
                   label={t("appointments.appointmentDate", {
                     defaultValue: "Appointment Date",
                   })}
-                  value={sourceAppointmentDateLabel}
+                  value={<span dir="auto">{sourceAppointmentDateLabel}</span>}
                   compact
                 />
                 <EventInfoBlock
                   label={t("appointments.weddingDate", {
                     defaultValue: "Wedding Date",
                   })}
-                  value={sourceWeddingDateLabel}
+                  value={<span dir="auto">{sourceWeddingDateLabel}</span>}
                   compact
                 />
                 <EventInfoBlock
                   label={t("events.guestCount", { defaultValue: "Guest Count" })}
                   value={
-                    typeof event.sourceAppointment?.guestCount === "number"
-                      ? String(event.sourceAppointment.guestCount)
-                      : "-"
+                    <span dir="auto">
+                      {typeof event.sourceAppointment?.guestCount === "number"
+                        ? String(event.sourceAppointment.guestCount)
+                        : "-"}
+                    </span>
                   }
                   compact
                 />
@@ -203,13 +217,19 @@ export function EventOverviewWorkspace({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("common.notes", { defaultValue: "Notes" })}</CardTitle>
+        <Card className={cn(isRtl && "xl:order-1")}>
+          <CardHeader className={isRtl ? "text-right" : "text-left"}>
+            <CardTitle className={isRtl ? "text-right" : "text-left"}>{t("common.notes", { defaultValue: "Notes" })}</CardTitle>
           </CardHeader>
           <CardContent>
             {event.notes ? (
-              <div className="rounded-[20px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4 text-sm leading-7 text-[var(--lux-text-secondary)]">
+              <div
+                dir="auto"
+                className={cn(
+                  "rounded-[20px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4 text-sm leading-7 text-[var(--lux-text-secondary)]",
+                  isRtl ? "text-right" : "text-left",
+                )}
+              >
                 {event.notes}
               </div>
             ) : (

@@ -139,22 +139,34 @@ export function SecretarialSectionBar() {
         : (activePrimaryItem?.children ?? []),
     [activePrimaryItem, designerDetailsSecondaryItems],
   );
+  const isDesignerDetailsSecondaryRow =
+    activePrimaryItem?.id === DESIGNER_DETAILS_ID;
 
   if (!activeLeaf) {
     return null;
   }
 
-  const renderNavigationRow = (
+  const renderPrimaryNavigationRow = (
     items: NavigationItem[],
     activeId: string,
     rowClassName: string,
   ) => (
     <div className={rowClassName}>
       <div
-        className="subtle-scrollbar flex w-full items-center overflow-x-auto overflow-y-hidden md:overflow-hidden"
+        className="subtle-scrollbar flex w-full items-center overflow-x-auto overflow-y-hidden md:justify-center"
         dir={isRtl ? "rtl" : "ltr"}
       >
-        <div className="flex min-w-max flex-nowrap items-center gap-0 md:w-full md:min-w-0">
+        <div
+          className="inline-flex min-w-max flex-nowrap items-center gap-1 rounded-full border p-1"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--lux-shell-chrome-control) 88%, transparent), color-mix(in srgb, var(--lux-shell-chrome-surface) 82%, transparent))",
+            borderColor:
+              "color-mix(in srgb, var(--lux-shell-chrome-control-border) 72%, transparent)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.03), 0 14px 24px rgba(0,0,0,0.06)",
+          }}
+        >
           {items.map((item) => {
             const targetHref = getSectionTargetHref(item);
 
@@ -172,9 +184,10 @@ export function SecretarialSectionBar() {
             const isActive = item.id === activeId;
 
             const sharedClassName = cn(
-              "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border px-3 text-[12px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-2.5",
-              "rounded-none",
-              isActive ? "text-white" : "text-[var(--lux-shell-chrome-text)]",
+              "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-[12px] font-semibold transition-all duration-200",
+              isActive
+                ? "text-[var(--lux-shell-bg)]"
+                : "text-[var(--lux-shell-chrome-text)] hover:text-white",
             );
 
             return (
@@ -190,8 +203,10 @@ export function SecretarialSectionBar() {
                       "cursor-not-allowed opacity-45",
                     )}
                     style={{
-                      background: "var(--lux-shell-chrome-control)",
-                      borderColor: "var(--lux-shell-chrome-control-border)",
+                      background:
+                        "color-mix(in srgb, var(--lux-shell-chrome-control) 82%, transparent)",
+                      borderColor:
+                        "color-mix(in srgb, var(--lux-shell-chrome-control-border) 62%, transparent)",
                     }}
                     type="button"
                   >
@@ -207,15 +222,151 @@ export function SecretarialSectionBar() {
                   style={{
                     background: isActive
                       ? "var(--lux-gold)"
-                      : "var(--lux-shell-chrome-control)",
+                      : "transparent",
                     borderColor: isActive
                       ? "var(--lux-gold)"
-                      : "var(--lux-shell-chrome-control-border)",
+                      : "transparent",
+                    boxShadow: isActive
+                      ? "0 10px 24px color-mix(in srgb, var(--lux-gold) 20%, transparent)"
+                      : "none",
                   }}
                   to={targetHref}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span className="truncate">{label}</span>
+                </NavLink>
+              </ProtectedComponent>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSecondaryNavigationRow = (
+    items: NavigationItem[],
+    activeId: string,
+    compact = false,
+  ) => (
+    <div
+      className={cn(
+        "flex items-center",
+        compact ? "h-8 px-2 md:px-3" : "h-9 px-2 md:px-3",
+      )}
+    >
+      <div
+        className="subtle-scrollbar flex w-full items-center overflow-x-auto overflow-y-hidden"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <div
+          className={cn(
+            "inline-flex min-w-max items-center gap-1 rounded-full border",
+            compact ? "px-1 py-[3px]" : "px-1 py-1",
+          )}
+          style={{
+            background:
+              compact
+                ? "color-mix(in srgb, var(--lux-shell-chrome-control) 72%, transparent)"
+                : "color-mix(in srgb, var(--lux-shell-chrome-control) 88%, transparent)",
+            borderColor:
+              compact
+                ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 52%, transparent)"
+                : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 72%, transparent)",
+            boxShadow: compact
+              ? "inset 0 1px 0 rgba(255,255,255,0.02)"
+              : "inset 0 1px 0 rgba(255,255,255,0.03)",
+          }}
+        >
+          {items.map((item) => {
+            const targetHref = getSectionTargetHref(item);
+
+            if (!targetHref) {
+              return null;
+            }
+
+            const translated = t(item.labelKey);
+            const label =
+              translated !== item.labelKey
+                ? translated
+                : isRtl
+                  ? (item.labelAr ?? item.label ?? item.id)
+                  : (item.label ?? item.labelAr ?? item.id);
+            const isActive = item.id === activeId;
+
+            const sharedClassName = cn(
+              "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full border font-semibold transition-all duration-200",
+              compact
+                ? "h-6 gap-1 px-2.5 text-[10px] md:text-[11px]"
+                : "h-7 gap-1.5 px-3 text-[11px]",
+              isActive
+                ? "text-[var(--lux-shell-bg)]"
+                : "text-[var(--lux-shell-chrome-text)] hover:text-white",
+            );
+
+            return (
+              <ProtectedComponent
+                key={item.id}
+                allOf={item.allOf}
+                anyOf={item.anyOf}
+                fallback={
+                  <button
+                    aria-disabled={true}
+                    className={cn(
+                      sharedClassName,
+                      "cursor-not-allowed opacity-45",
+                    )}
+                    style={{
+                      background:
+                        compact
+                          ? "color-mix(in srgb, var(--lux-shell-chrome-control) 68%, transparent)"
+                          : "color-mix(in srgb, var(--lux-shell-chrome-control) 82%, transparent)",
+                      borderColor:
+                        compact
+                          ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 46%, transparent)"
+                          : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 60%, transparent)",
+                    }}
+                    type="button"
+                  >
+                    <item.icon
+                      className={cn(
+                        "shrink-0",
+                        compact ? "h-3 w-3 md:h-3.5 md:w-3.5" : "h-3.5 w-3.5",
+                      )}
+                    />
+                    <span>{label}</span>
+                  </button>
+                }
+                permission={item.permission}
+                roles={item.roles}
+              >
+                <NavLink
+                  className={sharedClassName}
+                  style={{
+                    background: isActive
+                      ? "var(--lux-gold)"
+                      : compact
+                        ? "color-mix(in srgb, var(--lux-shell-chrome-control) 64%, transparent)"
+                        : "color-mix(in srgb, var(--lux-shell-chrome-control) 78%, transparent)",
+                    borderColor: isActive
+                      ? "var(--lux-gold)"
+                      : compact
+                        ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 44%, transparent)"
+                        : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 58%, transparent)",
+                    boxShadow: isActive
+                      ? compact
+                        ? "0 6px 18px color-mix(in srgb, var(--lux-gold) 14%, transparent)"
+                        : "0 8px 24px color-mix(in srgb, var(--lux-gold) 20%, transparent)"
+                      : "none",
+                  }}
+                  to={targetHref}
+                >
+                  <item.icon
+                    className={cn(
+                      "shrink-0",
+                      compact ? "h-3 w-3 md:h-3.5 md:w-3.5" : "h-3.5 w-3.5",
+                    )}
+                  />
+                  <span>{label}</span>
                 </NavLink>
               </ProtectedComponent>
             );
@@ -235,20 +386,20 @@ export function SecretarialSectionBar() {
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
       }}
-    >
-      {renderNavigationRow(
+      >
+      {renderPrimaryNavigationRow(
         primaryNavigationItems,
         activePrimaryItem?.id ?? activeLeaf.id,
         cn(
-          "flex border-b",
-          secondaryNavigationItems.length > 0 ? "h-9" : "h-full",
+          "flex border-b px-2 py-1 md:px-3",
+          secondaryNavigationItems.length > 0 ? "h-10" : "h-full",
         ),
       )}
       {secondaryNavigationItems.length > 0
-        ? renderNavigationRow(
+        ? renderSecondaryNavigationRow(
             secondaryNavigationItems,
             activeLeaf.id,
-            "flex h-9",
+            isDesignerDetailsSecondaryRow,
           )
         : null}
     </section>
