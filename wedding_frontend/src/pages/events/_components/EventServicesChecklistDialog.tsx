@@ -27,6 +27,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   eventId: number;
   existingServiceIds?: number[];
+  onSelectService?: (service: Service) => void;
 };
 
 const STATUS_DEFAULT = "confirmed";
@@ -44,6 +45,7 @@ export function EventServicesChecklistDialog({
   onOpenChange,
   eventId,
   existingServiceIds = [],
+  onSelectService,
 }: Props) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,7 +62,7 @@ export function EventServicesChecklistDialog({
     isActive: "true",
   });
 
-  const services: Service[] = data?.data ?? [];
+  const services = useMemo<Service[]>(() => data?.data ?? [], [data?.data]);
   const existingServiceIdSet = useMemo(
     () => new Set(existingServiceIds),
     [existingServiceIds],
@@ -87,23 +89,39 @@ export function EventServicesChecklistDialog({
 
   const toggleService = (serviceId: number, checked: boolean) => {
     setSelectedServiceIds((current) =>
-      checked
-        ? [...current, serviceId]
-        : current.filter((id) => id !== serviceId),
+      onSelectService
+        ? checked
+          ? [serviceId]
+          : []
+        : checked
+          ? [...current, serviceId]
+          : current.filter((id) => id !== serviceId),
     );
   };
 
   const handleSubmit = async () => {
     if (!selectedServiceIds.length) return;
 
+    const selectedServices = services.filter(
+      (service) =>
+        selectedServiceIds.includes(service.id) &&
+        !existingServiceIdSet.has(service.id),
+    );
+
+    if (onSelectService) {
+      const selectedService = selectedServices[0];
+
+      if (!selectedService) {
+        return;
+      }
+
+      onSelectService(selectedService);
+      onOpenChange(false);
+      return;
+    }
+
     try {
       setSubmitting(true);
-
-      const selectedServices = services.filter(
-        (service) =>
-          selectedServiceIds.includes(service.id) &&
-          !existingServiceIdSet.has(service.id),
-      );
 
       await Promise.all(
         selectedServices.map((service, index) => {
@@ -335,9 +353,13 @@ export function EventServicesChecklistDialog({
                     {t("common.saving", { defaultValue: "Saving..." })}
                   </>
                 ) : (
-                  t("services.addSelectedServices", {
-                    defaultValue: "Add Selected Services",
-                  })
+                  onSelectService
+                    ? t("services.continueToServiceEditor", {
+                        defaultValue: "Continue",
+                      })
+                    : t("services.addSelectedServices", {
+                        defaultValue: "Add Selected Services",
+                      })
                 )}
               </Button>
             </div>

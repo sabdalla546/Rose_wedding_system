@@ -10,7 +10,6 @@ import { Appointment } from "./appointment.model";
 import { Venue } from "./venue.model";
 import { Customer } from "./customer.model";
 import { Event } from "./event.model";
-import { EventSection } from "./eventSection.model";
 import { Vendor } from "./vendor.model";
 import { VendorType } from "./vendorType.model";
 import { VendorSubService } from "./vendorSubService.model";
@@ -134,16 +133,6 @@ Event.belongsTo(Appointment, {
   as: "sourceAppointment",
 });
 
-// Event -> EventSection
-Event.hasMany(EventSection, {
-  foreignKey: "eventId",
-  as: "sections",
-});
-EventSection.belongsTo(Event, {
-  foreignKey: "eventId",
-  as: "event",
-});
-
 // User -> Event audit
 User.hasMany(Event, {
   foreignKey: "createdBy",
@@ -159,25 +148,6 @@ User.hasMany(Event, {
   as: "updatedEvents",
 });
 Event.belongsTo(User, {
-  foreignKey: "updatedBy",
-  as: "updatedByUser",
-});
-
-// User -> EventSection audit
-User.hasMany(EventSection, {
-  foreignKey: "createdBy",
-  as: "createdEventSections",
-});
-EventSection.belongsTo(User, {
-  foreignKey: "createdBy",
-  as: "createdByUser",
-});
-
-User.hasMany(EventSection, {
-  foreignKey: "updatedBy",
-  as: "updatedEventSections",
-});
-EventSection.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
 });
@@ -731,7 +701,6 @@ export {
   Appointment,
   Customer,
   Event,
-  EventSection,
   Vendor,
   VendorType,
   VendorSubService,

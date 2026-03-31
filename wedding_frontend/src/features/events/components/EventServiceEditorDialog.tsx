@@ -33,6 +33,7 @@ import type {
   EventServiceItem,
   EventServiceItemFormData,
   EventServiceStatus,
+  Service,
   ServiceCategory,
 } from "@/pages/services/types";
 
@@ -53,6 +54,7 @@ type Props = {
   eventId: number;
   defaultSortOrder?: number;
   editingServiceItem?: EventServiceItem | null;
+  initialService?: Service | null;
 };
 
 const textareaClassName =
@@ -61,6 +63,7 @@ const textareaClassName =
 const createDefaultEventServiceState = (
   sortOrder = 0,
   editingServiceItem?: EventServiceItem | null,
+  initialService?: Service | null,
 ): EventServiceFormState => {
   if (editingServiceItem) {
     return {
@@ -86,9 +89,9 @@ const createDefaultEventServiceState = (
   }
 
   return {
-    serviceId: "",
-    serviceNameSnapshot: "",
-    category: "other",
+    serviceId: initialService ? String(initialService.id) : "",
+    serviceNameSnapshot: initialService?.name ?? "",
+    category: initialService?.category ?? "other",
     quantity: "",
     unitPrice: "",
     notes: "",
@@ -103,25 +106,32 @@ export function EventServiceEditorDialog({
   eventId,
   defaultSortOrder = 0,
   editingServiceItem = null,
+  initialService = null,
 }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState<EventServiceFormState>(() =>
-    createDefaultEventServiceState(defaultSortOrder, editingServiceItem),
+    createDefaultEventServiceState(
+      defaultSortOrder,
+      editingServiceItem,
+      initialService,
+    ),
   );
   const [error, setError] = useState("");
 
   const createEventServiceMutation = useCreateEventService();
   const updateEventServiceMutation = useUpdateEventService(eventId);
   const pending =
-    createEventServiceMutation.isPending || updateEventServiceMutation.isPending;
+    createEventServiceMutation.isPending ||
+    updateEventServiceMutation.isPending;
 
-  const { data: serviceCatalogResponse, isLoading: serviceCatalogLoading } = useServices({
-    currentPage: 1,
-    itemsPerPage: 500,
-    searchQuery: "",
-    category: "all",
-    isActive: "all",
-  });
+  const { data: serviceCatalogResponse, isLoading: serviceCatalogLoading } =
+    useServices({
+      currentPage: 1,
+      itemsPerPage: 500,
+      searchQuery: "",
+      category: "all",
+      isActive: "all",
+    });
 
   const serviceCatalog = useMemo(
     () =>

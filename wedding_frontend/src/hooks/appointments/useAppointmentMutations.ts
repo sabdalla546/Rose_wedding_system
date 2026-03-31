@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
-import type { AppointmentFormData, AppointmentType } from "@/pages/appointments/types";
+import type {
+  AppointmentFormData,
+  AppointmentType,
+} from "@/pages/appointments/types";
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
@@ -67,7 +70,7 @@ const buildCreateAppointmentWithCustomerPayload = (
   values: CreateAppointmentWithCustomerValues,
 ) => ({
   customerId: values.customerId?.trim() ? Number(values.customerId) : undefined,
-      customer: values.customer
+  customer: values.customer
     ? {
         fullName: values.customer.fullName.trim(),
         mobile: values.customer.mobile.trim(),
@@ -114,7 +117,7 @@ export const useCreateAppointment = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      navigate("/appointments");
+      navigate("/appointments?view=calendar");
     },
     onError: (error) => {
       toast({
@@ -154,7 +157,7 @@ export const useCreateAppointmentWithCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      navigate("/appointments");
+      navigate("/appointments?view=calendar");
     },
     onError: (error) => {
       toast({
@@ -191,7 +194,7 @@ export const useUpdateAppointment = (id?: string) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["appointment", id] });
-      navigate("/appointments");
+      navigate("/appointments?view=calendar");
     },
     onError: (error) => {
       toast({

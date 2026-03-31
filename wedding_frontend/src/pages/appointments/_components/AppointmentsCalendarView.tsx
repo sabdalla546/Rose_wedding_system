@@ -4,9 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { AppCalendar, type AppCalendarHandle } from "@/components/calendar/app-calendar";
+import {
+  AppCalendar,
+  type AppCalendarHandle,
+} from "@/components/calendar/app-calendar";
 import { SummaryCard } from "@/components/dashboard/summary-card";
-import { AppDialogFooter, AppDialogHeader, AppDialogShell } from "@/components/shared/app-dialog";
+import {
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogShell,
+} from "@/components/shared/app-dialog";
 import { SectionCard } from "@/components/shared/section-card";
 import {
   WorkspaceFilterBar,
@@ -252,12 +259,15 @@ export function AppointmentsCalendarView({
     isError,
     refetch,
   } = useAppointmentsCalendarView();
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<
+    string | null
+  >(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [cancelCandidate, setCancelCandidate] = useState<ActionTarget>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelNotes, setCancelNotes] = useState("");
-  const [rescheduleCandidate, setRescheduleCandidate] = useState<ActionTarget>(null);
+  const [rescheduleCandidate, setRescheduleCandidate] =
+    useState<ActionTarget>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
@@ -453,7 +463,9 @@ export function AppointmentsCalendarView({
                 }
               >
                 <option value="all">
-                  {t("appointments.allStatuses", { defaultValue: "All Statuses" })}
+                  {t("appointments.allStatuses", {
+                    defaultValue: "All Statuses",
+                  })}
                 </option>
                 {APPOINTMENT_STATUS_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -486,7 +498,7 @@ export function AppointmentsCalendarView({
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
-                  ))}
+                ))}
               </select>
             </WorkspaceFilterField>
 
@@ -583,15 +595,21 @@ export function AppointmentsCalendarView({
               locale={i18n.language === "ar" ? "ar" : "en"}
               events={calendarEvents}
               initialView="month"
+              initialDate={
+                filters.dateFrom ? new Date(filters.dateFrom) : undefined
+              }
               loading={isLoading || isFetching}
               legends={getAppointmentCalendarLegendItems(t)}
               emptyTitle={t("appointments.calendarPage.emptyTitle", {
                 defaultValue: "No appointments in this range",
               })}
-              emptyDescription={t("appointments.calendarPage.emptyDescription", {
-                defaultValue:
-                  "Try another visible range or clear one of the active filters.",
-              })}
+              emptyDescription={t(
+                "appointments.calendarPage.emptyDescription",
+                {
+                  defaultValue:
+                    "Try another visible range or clear one of the active filters.",
+                },
+              )}
               variant="appointment"
               onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
@@ -599,7 +617,9 @@ export function AppointmentsCalendarView({
                 setDetailsDialogOpen(true);
               }}
               onDateSelect={(date) =>
-                navigate(`/appointments/create?date=${format(date, "yyyy-MM-dd")}`)
+                navigate(
+                  `/appointments/create?date=${format(date, "yyyy-MM-dd")}`,
+                )
               }
             />
           )}
@@ -608,8 +628,12 @@ export function AppointmentsCalendarView({
         <div className="space-y-6 2xl:col-span-4">
           <AppointmentQuickView
             appointment={selectedAppointment}
-            onView={(appointment) => navigate(`/appointments/${appointment.id}`)}
-            onEdit={(appointment) => navigate(`/appointments/edit/${appointment.id}`)}
+            onView={(appointment) =>
+              navigate(`/appointments/${appointment.id}`)
+            }
+            onEdit={(appointment) =>
+              navigate(`/appointments/edit/${appointment.id}`)
+            }
             onReschedule={openRescheduleDialog}
             onConfirm={(appointment) =>
               confirmAppointment.mutate({ id: appointment.id, values: {} })
@@ -628,7 +652,9 @@ export function AppointmentsCalendarView({
         onOpenChange={setDetailsDialogOpen}
         appointment={selectedAppointment}
         onView={(appointment) => navigate(`/appointments/${appointment.id}`)}
-        onEdit={(appointment) => navigate(`/appointments/edit/${appointment.id}`)}
+        onEdit={(appointment) =>
+          navigate(`/appointments/edit/${appointment.id}`)
+        }
         onReschedule={openRescheduleDialog}
         onConfirm={(appointment) =>
           confirmAppointment.mutate({ id: appointment.id, values: {} })

@@ -44,6 +44,7 @@ import { useEventServiceItems } from "@/hooks/services/useServices";
 import { useDeleteEventVendor } from "@/hooks/vendors/useEventVendorMutations";
 import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
 import { useVenues } from "@/hooks/venues/useVenues";
+import { EventServicesChecklistDialog } from "@/pages/events/_components/EventServicesChecklistDialog";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
 import {
   EventEmptyState,
@@ -66,7 +67,7 @@ import {
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import type { Contract } from "@/pages/contracts/types";
 import type { Quotation } from "@/pages/quotations/types";
-import type { EventServiceItem } from "@/pages/services/types";
+import type { EventServiceItem, Service } from "@/pages/services/types";
 import type { EventVendorLink } from "@/pages/vendors/types";
 import { cn } from "@/lib/utils";
 
@@ -176,8 +177,11 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   });
 
   const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
+  const [serviceChecklistOpen, setServiceChecklistOpen] = useState(false);
   const [editingServiceItem, setEditingServiceItem] =
     useState<EventServiceItem | null>(null);
+  const [selectedServiceForCreate, setSelectedServiceForCreate] =
+    useState<Service | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] = useState<EventVendorLink | null>(
     null,
@@ -217,6 +221,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         return left.id - right.id;
       }),
     [eventServiceItemsResponse?.data],
+  );
+  const existingServiceIds = useMemo(
+    () =>
+      serviceItems
+        .map((item) => item.serviceId)
+        .filter((value): value is number => typeof value === "number"),
+    [serviceItems],
   );
   const vendorLinks = useMemo(
     () =>
@@ -365,6 +376,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     setSearchParams(nextParams, { replace: true });
   };
 
+  const handleStartAddService = () => {
+    setEditingServiceItem(null);
+    setSelectedServiceForCreate(null);
+    setActiveTab("services");
+    setServiceChecklistOpen(true);
+  };
+
   const handleOpenEditEventDialog = () => {
     setEditEventError("");
     setEditEventForm({
@@ -508,10 +526,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         latestQuotation={latestQuotation as Quotation | null}
         latestContract={latestContract as Contract | null}
         readiness={readiness}
-        onAddService={() => {
-          setEditingServiceItem(null);
-          setServiceEditorOpen(true);
-        }}
+        onAddService={handleStartAddService}
         onAssignVendor={() => {
           setEditingVendorLink(null);
           setVendorDialogOpen(true);
@@ -591,11 +606,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         <TabsContent value="services">
           <EventServicesPanel
             eventId={eventId}
-            onAdd={() => {
-              setEditingServiceItem(null);
-              setServiceEditorOpen(true);
-            }}
+            onAdd={handleStartAddService}
             onEdit={(serviceItem) => {
+              setSelectedServiceForCreate(null);
               setEditingServiceItem(serviceItem);
               setServiceEditorOpen(true);
             }}
@@ -648,11 +661,29 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             setServiceEditorOpen(open);
             if (!open) {
               setEditingServiceItem(null);
+              setSelectedServiceForCreate(null);
             }
           }}
           eventId={Number(eventId)}
           defaultSortOrder={serviceItems.length}
           editingServiceItem={editingServiceItem}
+          initialService={selectedServiceForCreate}
+        />
+      ) : null}
+
+      {event ? (
+        <EventServicesChecklistDialog
+          open={serviceChecklistOpen}
+          onOpenChange={setServiceChecklistOpen}
+          eventId={event.id}
+          existingServiceIds={existingServiceIds}
+          onSelectService={(service) => {
+            setSelectedServiceForCreate(service);
+            setEditingServiceItem(null);
+            window.setTimeout(() => {
+              setServiceEditorOpen(true);
+            }, 0);
+          }}
         />
       ) : null}
 

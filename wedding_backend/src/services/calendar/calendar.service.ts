@@ -1,7 +1,6 @@
 import { Op, type WhereOptions } from "sequelize";
 
 import { Appointment, Customer, Event, User, Venue } from "../../models";
-import { appointmentTypePublicFromDb } from "../../models/appointment.model";
 import type {
   AppointmentCalendarRecord,
   CalendarFeedFilters,
@@ -56,13 +55,7 @@ const buildSearchMatcher = (search?: string) => {
 
 const formatAppointmentType = (value: string) => {
   if (!value) return "";
-  if (!value.includes("_")) {
-    return value;
-  }
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return value;
 };
 
 const buildEventTitle = (event: EventCalendarRecord) => {
@@ -111,7 +104,6 @@ const buildConflictPreparationMeta = (item: {
     venueId: item.venueId ?? null,
     assignedUserId: item.assignedUserId ?? null,
   },
-  // TODO: Use these scope keys for venue/coordinator/customer overlap detection.
   conflictWindow: {
     startAt: item.startAt,
     endAt: item.endAt,
@@ -119,11 +111,6 @@ const buildConflictPreparationMeta = (item: {
   sourceType: item.sourceType,
 });
 
-// Architecture note:
-// - `/appointments/calendar` remains the legacy appointment-only calendar feed.
-// - `/events/calendar` adds the same lightweight read model for events.
-// - `/calendar/feed` is the normalized operational feed used by the unified frontend calendar.
-// - Events still have date-only scheduling today, so they are emitted as all-day items until time fields exist.
 export const listAppointmentsCalendarRecords = async (
   filters: Omit<CalendarFeedFilters, "sourceType" | "venueId">,
 ): Promise<AppointmentCalendarRecord[]> => {
@@ -175,7 +162,7 @@ export const listAppointmentsCalendarRecords = async (
       appointmentDate: appointment.appointmentDate,
       startTime: appointment.startTime,
       endTime: appointment.endTime ?? null,
-      type: appointmentTypePublicFromDb(appointment.type),
+      type: appointment.type,
       notes: appointment.notes ?? null,
       status: appointment.status,
       customerName: appointment.customer?.fullName ?? null,
@@ -367,9 +354,8 @@ export const getUnifiedCalendarFeed = async (
       sourceType: _sourceType,
       ...appointmentFilters
     } = filters;
-    const appointments = await listAppointmentsCalendarRecords(
-      appointmentFilters,
-    );
+    const appointments =
+      await listAppointmentsCalendarRecords(appointmentFilters);
     feedItems.push(...appointments.map(appointmentToCalendarFeedItem));
   }
 

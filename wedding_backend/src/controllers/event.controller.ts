@@ -2,20 +2,11 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
-import {
-  Appointment,
-  Event,
-  EventSection,
-  Customer,
-  Venue,
-  User,
-} from "../models";
+import { Appointment, Event, Customer, Venue, User } from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
 import {
   createEventSchema,
   updateEventSchema,
-  createEventSectionSchema,
-  updateEventSectionSchema,
   createEventFromSourceSchema,
 } from "../validation/event.schemas";
 import { eventCalendarQuerySchema } from "../validation/calendar.schemas";
@@ -31,15 +22,7 @@ const eventInclude: any = [
       { model: Venue, as: "venue" },
     ],
   },
-  {
-    model: EventSection,
-    as: "sections",
-    separate: true,
-    order: [
-      ["sortOrder", "ASC"],
-      ["id", "ASC"],
-    ],
-  },
+
   { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
@@ -180,6 +163,7 @@ export const createEventFromSource = async (
     const sourceAppointment = await getSourceAppointmentDefaults(
       data.sourceAppointmentId ?? null,
     );
+
     if (data.sourceAppointmentId && !sourceAppointment) {
       return res.status(404).json({ message: "Source appointment not found" });
     }
@@ -204,20 +188,23 @@ export const createEventFromSource = async (
     const resolvedCustomerId =
       typeof data.customerId !== "undefined" && data.customerId !== null
         ? data.customerId
-        : sourceAppointment?.customerId ?? null;
+        : (sourceAppointment?.customerId ?? null);
+
     const resolvedEventDate =
       data.eventDate ||
       sourceAppointment?.weddingDate ||
       sourceAppointment?.appointmentDate ||
       null;
+
     const resolvedVenueId =
       typeof data.venueId !== "undefined"
         ? data.venueId
-        : sourceAppointment?.venueId ?? null;
+        : (sourceAppointment?.venueId ?? null);
+
     const resolvedGuestCount =
       typeof data.guestCount !== "undefined"
         ? data.guestCount
-        : sourceAppointment?.guestCount ?? null;
+        : (sourceAppointment?.guestCount ?? null);
 
     if (!resolvedCustomerId) {
       return res.status(400).json({ message: "Customer is required" });
@@ -256,25 +243,6 @@ export const createEventFromSource = async (
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
-
-    if (data.sections?.length) {
-      await EventSection.bulkCreate(
-        data.sections.map((section) => ({
-          eventId: event.id,
-          sectionType: section.sectionType,
-          title:
-            typeof section.title !== "undefined" && section.title !== null
-              ? section.title.trim()
-              : null,
-          sortOrder: section.sortOrder ?? 0,
-          data: section.data ?? {},
-          notes: typeof section.notes !== "undefined" ? section.notes : null,
-          isCompleted: section.isCompleted ?? false,
-          createdBy: req.user?.id ?? null,
-          updatedBy: req.user?.id ?? null,
-        })),
-      );
-    }
 
     const created = await Event.findByPk(event.id, {
       include: eventInclude,
@@ -517,99 +485,6 @@ export const deleteEvent = async (req: Request, res: Response) => {
   }
 
   await event.destroy();
-
-  return res.json({ message: req.t("common.deleted_successfully") });
-};
-
-export const createEventSection = async (req: AuthRequest, res: Response) => {
-  try {
-    const data = createEventSectionSchema.parse(req.body);
-
-    const event = await Event.findByPk(data.eventId);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    const section = await EventSection.create({
-      eventId: data.eventId,
-      sectionType: data.sectionType,
-      title: data.title ?? null,
-      sortOrder: data.sortOrder ?? 0,
-      data: data.data ?? {},
-      notes: data.notes ?? null,
-      isCompleted: data.isCompleted ?? false,
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
-
-    return res.status(201).json({
-      message: "Event section created successfully",
-      data: section,
-    });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
-  }
-};
-
-export const updateEventSection = async (req: AuthRequest, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-
-    if (!id) {
-      return res.status(400).json({ message: req.t("common.invalid_id") });
-    }
-
-    const data = updateEventSectionSchema.parse(req.body);
-    const section = await EventSection.findByPk(id);
-
-    if (!section) {
-      return res.status(404).json({ message: req.t("common.not_found") });
-    }
-
-    await section.update({
-      sectionType: data.sectionType ?? section.sectionType,
-      title: typeof data.title !== "undefined" ? data.title : section.title,
-      sortOrder:
-        typeof data.sortOrder !== "undefined"
-          ? data.sortOrder
-          : section.sortOrder,
-      data: typeof data.data !== "undefined" ? data.data : section.data,
-      notes: typeof data.notes !== "undefined" ? data.notes : section.notes,
-      isCompleted:
-        typeof data.isCompleted !== "undefined"
-          ? data.isCompleted
-          : section.isCompleted,
-      updatedBy: req.user?.id ?? null,
-    });
-
-    return res.json({
-      message: req.t("common.updated_successfully"),
-      data: section,
-    });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
-  }
-};
-
-export const deleteEventSection = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ message: req.t("common.invalid_id") });
-  }
-
-  const section = await EventSection.findByPk(id);
-  if (!section) {
-    return res.status(404).json({ message: req.t("common.not_found") });
-  }
-
-  await section.destroy();
 
   return res.json({ message: req.t("common.deleted_successfully") });
 };

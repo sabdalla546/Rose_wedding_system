@@ -10,7 +10,9 @@ import {
 } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction";
+import interactionPlugin, {
+  type DateClickArg,
+} from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import arLocale from "@fullcalendar/core/locales/ar";
@@ -61,7 +63,10 @@ type AppCalendarProps = {
   variant?: "default" | "event" | "appointment";
 };
 
-type CalendarExtendedProps = Omit<AppCalendarEvent, "id" | "title" | "start" | "end" | "allDay">;
+type CalendarExtendedProps = Omit<
+  AppCalendarEvent,
+  "id" | "title" | "start" | "end" | "allDay"
+>;
 
 function viewToFullCalendarView(view: AppCalendarView) {
   switch (view) {
@@ -146,9 +151,7 @@ function renderEventContent(
       <div className="app-calendar-event__time">{timeLabel}</div>
       <div className="app-calendar-event__title">{content.event.title}</div>
       {extendedProps.subtitle ? (
-        <div className="app-calendar-event__meta">
-          {extendedProps.subtitle}
-        </div>
+        <div className="app-calendar-event__meta">{extendedProps.subtitle}</div>
       ) : null}
       {showAppointmentDetails && extendedProps.description ? (
         <div className="app-calendar-event__description">
@@ -156,15 +159,22 @@ function renderEventContent(
         </div>
       ) : null}
       {variant === "event" && extendedProps.location ? (
-        <div className="app-calendar-event__location">{extendedProps.location}</div>
+        <div className="app-calendar-event__location">
+          {extendedProps.location}
+        </div>
       ) : null}
-      {showEventFooter && (extendedProps.badgeLabel || extendedProps.statusLabel) ? (
+      {showEventFooter &&
+      (extendedProps.badgeLabel || extendedProps.statusLabel) ? (
         <div className="app-calendar-event__footer">
           {extendedProps.badgeLabel ? (
-            <span className="app-calendar-event__badge">{extendedProps.badgeLabel}</span>
+            <span className="app-calendar-event__badge">
+              {extendedProps.badgeLabel}
+            </span>
           ) : null}
           {extendedProps.statusLabel ? (
-            <span className="app-calendar-event__status">{extendedProps.statusLabel}</span>
+            <span className="app-calendar-event__status">
+              {extendedProps.statusLabel}
+            </span>
           ) : null}
         </div>
       ) : null}
@@ -197,163 +207,182 @@ function closeCalendarPopover() {
   }
 }
 
-export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(function AppCalendar({
-  events,
-  initialView = "month",
-  initialDate = new Date(),
-  locale = "en",
-  loading = false,
-  legends = [],
-  emptyTitle,
-  emptyDescription,
-  onEventSelect,
-  onDateSelect,
-  onRangeChange,
-  onStateChange,
-  actions,
-  className,
-  hideToolbar = false,
-  variant = "default",
-}, ref) {
-  const calendarRef = useRef<FullCalendar | null>(null);
-  const [currentView, setCurrentView] = useState<AppCalendarView>(initialView);
-  const [currentTitle, setCurrentTitle] = useState("");
-
-  const eventInputs = useMemo(() => toEventInputs(events), [events]);
-
-  useEffect(() => {
-    const api = calendarRef.current?.getApi();
-
-    if (!api) {
-      return;
-    }
-
-    const nextView = viewToFullCalendarView(currentView);
-
-    if (api.view.type !== nextView) {
-      api.changeView(nextView);
-    }
-  }, [currentView]);
-
-  useImperativeHandle(ref, () => ({
-    previous: () => runCalendarAction("prev"),
-    next: () => runCalendarAction("next"),
-    today: () => runCalendarAction("today"),
-    setView: (view) => setCurrentView(view),
-    updateSize: () => {
-      calendarRef.current?.getApi().updateSize();
+export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
+  function AppCalendar(
+    {
+      events,
+      initialView = "month",
+      initialDate = new Date(),
+      locale = "en",
+      loading = false,
+      legends = [],
+      emptyTitle,
+      emptyDescription,
+      onEventSelect,
+      onDateSelect,
+      onRangeChange,
+      onStateChange,
+      actions,
+      className,
+      hideToolbar = false,
+      variant = "default",
     },
-  }));
+    ref,
+  ) {
+    const calendarRef = useRef<FullCalendar | null>(null);
+    const [currentView, setCurrentView] =
+      useState<AppCalendarView>(initialView);
+    const [currentTitle, setCurrentTitle] = useState("");
 
-  const handleDatesSet = (arg: DatesSetArg) => {
-    const nextView = fullCalendarViewToAppView(arg.view.type);
-    setCurrentView(nextView);
-    setCurrentTitle(arg.view.title);
-    onStateChange?.({ title: arg.view.title, view: nextView });
-    onRangeChange?.({
-      view: nextView,
-      title: arg.view.title,
-      start: arg.start,
-      end: arg.end,
-      currentStart: arg.view.currentStart,
-      currentEnd: arg.view.currentEnd,
-    });
-  };
+    const eventInputs = useMemo(() => toEventInputs(events), [events]);
 
-  const handleEventClick = (arg: EventClickArg) => {
-    const extendedProps = arg.event.extendedProps as CalendarExtendedProps;
+    useEffect(() => {
+      const api = calendarRef.current?.getApi();
 
-    onEventSelect?.({
-      id: arg.event.id,
-      title: arg.event.title,
-      start: arg.event.start ?? new Date(),
-      end: arg.event.end ?? undefined,
-      allDay: arg.event.allDay,
-      accent: extendedProps.accent,
-      statusLabel: extendedProps.statusLabel,
-      typeLabel: extendedProps.typeLabel,
-      subtitle: extendedProps.subtitle,
-      description: extendedProps.description,
-      location: extendedProps.location,
-      raw: extendedProps.raw,
-    });
+      if (!api) {
+        return;
+      }
 
-    window.requestAnimationFrame(() => {
-      closeCalendarPopover();
-    });
-  };
+      const nextView = viewToFullCalendarView(currentView);
 
-  const handleDateClick = (arg: DateClickArg) => {
-    onDateSelect?.(arg.date);
-  };
+      if (api.view.type !== nextView) {
+        api.changeView(nextView);
+      }
+    }, [currentView]);
 
-  const runCalendarAction = (action: "prev" | "next" | "today") => {
-    const api = calendarRef.current?.getApi();
+    useImperativeHandle(ref, () => ({
+      previous: () => runCalendarAction("prev"),
+      next: () => runCalendarAction("next"),
+      today: () => runCalendarAction("today"),
+      setView: (view) => setCurrentView(view),
+      updateSize: () => {
+        calendarRef.current?.getApi().updateSize();
+      },
+    }));
 
-    if (!api) {
-      return;
-    }
+    const handleDatesSet = (arg: DatesSetArg) => {
+      const nextView = fullCalendarViewToAppView(arg.view.type);
+      setCurrentView(nextView);
+      setCurrentTitle(arg.view.title);
+      onStateChange?.({ title: arg.view.title, view: nextView });
+      onRangeChange?.({
+        view: nextView,
+        title: arg.view.title,
+        start: arg.start,
+        end: arg.end,
+        currentStart: arg.view.currentStart,
+        currentEnd: arg.view.currentEnd,
+      });
+    };
 
-    api[action]();
-  };
+    const handleEventClick = (arg: EventClickArg) => {
+      const extendedProps = arg.event.extendedProps as CalendarExtendedProps;
 
-  return (
-    <SectionCard className={className}>
-      <div className="space-y-4">
-        {!hideToolbar ? (
-          <CalendarToolbar
-            title={currentTitle}
-            view={currentView}
-            onPrevious={() => runCalendarAction("prev")}
-            onNext={() => runCalendarAction("next")}
-            onToday={() => runCalendarAction("today")}
-            onViewChange={setCurrentView}
-            actions={actions}
-          />
-        ) : null}
+      onEventSelect?.({
+        id: arg.event.id,
+        title: arg.event.title,
+        start: arg.event.start ?? new Date(),
+        end: arg.event.end ?? undefined,
+        allDay: arg.event.allDay,
+        accent: extendedProps.accent,
+        statusLabel: extendedProps.statusLabel,
+        typeLabel: extendedProps.typeLabel,
+        subtitle: extendedProps.subtitle,
+        description: extendedProps.description,
+        location: extendedProps.location,
+        raw: extendedProps.raw,
+      });
 
-        <CalendarLegend items={legends} />
+      window.requestAnimationFrame(() => {
+        closeCalendarPopover();
+      });
+    };
 
-        {loading ? (
-          <CalendarLoadingState />
-        ) : (
+    const handleDateClick = (arg: DateClickArg) => {
+      onDateSelect?.(arg.date);
+    };
+
+    const runCalendarAction = (action: "prev" | "next" | "today") => {
+      const api = calendarRef.current?.getApi();
+
+      if (!api) {
+        return;
+      }
+
+      api[action]();
+    };
+
+    return (
+      <SectionCard className={className}>
+        <div className="space-y-4">
+          {!hideToolbar ? (
+            <CalendarToolbar
+              title={currentTitle}
+              view={currentView}
+              onPrevious={() => runCalendarAction("prev")}
+              onNext={() => runCalendarAction("next")}
+              onToday={() => runCalendarAction("today")}
+              onViewChange={setCurrentView}
+              actions={actions}
+            />
+          ) : null}
+
+          <CalendarLegend items={legends} />
+
           <div className="space-y-4">
-            <div className={`app-calendar-shell app-calendar-shell--${variant}`}>
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-                initialView={viewToFullCalendarView(initialView)}
-                initialDate={initialDate}
-                headerToolbar={false}
-                locale={locale === "ar" ? arLocale : "en"}
-                height="auto"
-                dayMaxEvents={3}
-                weekends
-                selectable={Boolean(onDateSelect)}
-                events={eventInputs}
-                eventContent={(content) => renderEventContent(content, variant)}
-                datesSet={handleDatesSet}
-                eventClick={handleEventClick}
-                dateClick={handleDateClick}
-                nowIndicator
-                displayEventEnd={false}
-                eventTimeFormat={{
-                  hour: "numeric",
-                  minute: "2-digit",
-                  meridiem: "short",
-                }}
-              />
+            <div className="relative">
+              <div
+                className={`app-calendar-shell app-calendar-shell--${variant}`}
+              >
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[
+                    dayGridPlugin,
+                    timeGridPlugin,
+                    listPlugin,
+                    interactionPlugin,
+                  ]}
+                  initialView={viewToFullCalendarView(initialView)}
+                  initialDate={initialDate}
+                  headerToolbar={false}
+                  locale={locale === "ar" ? arLocale : "en"}
+                  height="auto"
+                  dayMaxEvents={3}
+                  weekends
+                  selectable={Boolean(onDateSelect)}
+                  events={eventInputs}
+                  eventContent={(content) =>
+                    renderEventContent(content, variant)
+                  }
+                  datesSet={handleDatesSet}
+                  eventClick={handleEventClick}
+                  dateClick={handleDateClick}
+                  nowIndicator
+                  displayEventEnd={false}
+                  eventTimeFormat={{
+                    hour: "numeric",
+                    minute: "2-digit",
+                    meridiem: "short",
+                  }}
+                />
+              </div>
+
+              {loading ? (
+                <div className="absolute inset-0 z-10">
+                  <CalendarLoadingState />
+                </div>
+              ) : null}
             </div>
 
-            {events.length === 0 ? (
+            {!loading && events.length === 0 ? (
               <CalendarEmptyState
                 title={emptyTitle}
                 description={emptyDescription}
               />
             ) : null}
           </div>
-        )}
-      </div>
-    </SectionCard>
-  );
-});
+        </div>
+      </SectionCard>
+    );
+  },
+);

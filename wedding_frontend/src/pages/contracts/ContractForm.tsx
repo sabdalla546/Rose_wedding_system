@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -29,7 +30,10 @@ import { useContract } from "@/hooks/contracts/useContracts";
 import { useEvents } from "@/hooks/events/useEvents";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useQuotation, useQuotations } from "@/hooks/quotations/useQuotations";
-import { useEventServiceItems, useServices } from "@/hooks/services/useServices";
+import {
+  useEventServiceItems,
+  useServices,
+} from "@/hooks/services/useServices";
 import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
@@ -76,20 +80,25 @@ const isServiceSummaryItem = (
 ) => item?.itemType === "service" && item?.category === "service_summary";
 
 const getContractPreviewItemPrice = (
-  item?: { totalPrice?: string | number | null; unitPrice?: string | number | null } | null,
+  item?: {
+    totalPrice?: string | number | null;
+    unitPrice?: string | number | null;
+  } | null,
 ) => item?.totalPrice ?? item?.unitPrice ?? 0;
 
 const formatPreviewCategory = (value?: string | null) =>
   value
     ? value
-      .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ")
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
     : null;
 
 const getQuotationPreviewOriginLabel = (item: QuotationItem) => {
   if (item.itemType === "vendor") {
-    const vendorType = item.category ? formatPreviewCategory(item.category) : null;
+    const vendorType = item.category
+      ? formatPreviewCategory(item.category)
+      : null;
     const pricingPlanName = item.pricingPlan?.name || null;
     const vendorName =
       item.itemName ||
@@ -97,7 +106,9 @@ const getQuotationPreviewOriginLabel = (item: QuotationItem) => {
       item.vendor?.name ||
       "Vendor";
 
-    return [vendorName, vendorType, pricingPlanName].filter(Boolean).join(" - ");
+    return [vendorName, vendorType, pricingPlanName]
+      .filter(Boolean)
+      .join(" - ");
   }
 
   const serviceName =
@@ -136,7 +147,8 @@ const createPaymentScheduleSchema = z.object({
     .string()
     .optional()
     .refine(
-      (value) => !value || (Number.isInteger(Number(value)) && Number(value) >= 0),
+      (value) =>
+        !value || (Number.isInteger(Number(value)) && Number(value) >= 0),
       "Sort order must be zero or greater",
     ),
 });
@@ -178,7 +190,10 @@ const createContractFormSchema = (isEditMode: boolean) =>
           category: z.string().max(100).optional(),
           quantity: z
             .string()
-            .refine((value) => Number(value) > 0, "Quantity must be greater than zero"),
+            .refine(
+              (value) => Number(value) > 0,
+              "Quantity must be greater than zero",
+            ),
           unitPrice: z
             .string()
             .refine(
@@ -201,7 +216,10 @@ const createContractFormSchema = (isEditMode: boolean) =>
       paymentSchedules: z.array(createPaymentScheduleSchema),
     })
     .superRefine((values, ctx) => {
-      if ((isEditMode || values.createMode === "manual") && !values.eventId?.trim()) {
+      if (
+        (isEditMode || values.createMode === "manual") &&
+        !values.eventId?.trim()
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["eventId"],
@@ -209,7 +227,11 @@ const createContractFormSchema = (isEditMode: boolean) =>
         });
       }
 
-      if (!isEditMode && values.createMode === "from_quotation" && !values.quotationId?.trim()) {
+      if (
+        !isEditMode &&
+        values.createMode === "from_quotation" &&
+        !values.quotationId?.trim()
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["quotationId"],
@@ -217,7 +239,10 @@ const createContractFormSchema = (isEditMode: boolean) =>
         });
       }
 
-      if ((isEditMode || values.createMode === "manual") && values.items.length === 0) {
+      if (
+        (isEditMode || values.createMode === "manual") &&
+        values.items.length === 0
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["items"],
@@ -420,7 +445,10 @@ const ContractFormPage = () => {
     () => quotationsResponse?.data ?? [],
     [quotationsResponse?.data],
   );
-  const events = useMemo(() => eventsResponse?.data ?? [], [eventsResponse?.data]);
+  const events = useMemo(
+    () => eventsResponse?.data ?? [],
+    [eventsResponse?.data],
+  );
   const services = useMemo(
     () => servicesResponse?.data ?? [],
     [servicesResponse?.data],
@@ -542,7 +570,9 @@ const ContractFormPage = () => {
       items: (contract.items ?? []).map((item) => ({
         id: item.id,
         itemType: item.itemType ?? "service",
-        quotationItemId: item.quotationItemId ? String(item.quotationItemId) : "",
+        quotationItemId: item.quotationItemId
+          ? String(item.quotationItemId)
+          : "",
         eventServiceId: item.eventServiceId ? String(item.eventServiceId) : "",
         serviceId: item.serviceId ? String(item.serviceId) : "",
         eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
@@ -563,7 +593,9 @@ const ContractFormPage = () => {
       (contract.items ?? []).map((item) => ({
         id: item.id,
         itemType: item.itemType ?? "service",
-        quotationItemId: item.quotationItemId ? String(item.quotationItemId) : "",
+        quotationItemId: item.quotationItemId
+          ? String(item.quotationItemId)
+          : "",
         eventServiceId: item.eventServiceId ? String(item.eventServiceId) : "",
         serviceId: item.serviceId ? String(item.serviceId) : "",
         eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
@@ -586,7 +618,9 @@ const ContractFormPage = () => {
     }
 
     if (!isEditMode && preselectedQuotationId) {
-      form.setValue("quotationId", preselectedQuotationId, { shouldDirty: false });
+      form.setValue("quotationId", preselectedQuotationId, {
+        shouldDirty: false,
+      });
     }
   }, [form, isEditMode, preselectedEventId, preselectedQuotationId]);
 
@@ -646,7 +680,10 @@ const ContractFormPage = () => {
     });
   };
 
-  const handleItemTypeChange = (index: number, nextItemType: ContractItemType) => {
+  const handleItemTypeChange = (
+    index: number,
+    nextItemType: ContractItemType,
+  ) => {
     const currentItem = form.getValues(`items.${index}`);
 
     form.setValue(
@@ -666,7 +703,10 @@ const ContractFormPage = () => {
     );
   };
 
-  const handleQuotationItemSelect = (index: number, nextQuotationItemId: string) => {
+  const handleQuotationItemSelect = (
+    index: number,
+    nextQuotationItemId: string,
+  ) => {
     const selectedItem = linkedQuotationItems.find(
       (item) => String(item.id) === nextQuotationItemId,
     );
@@ -715,7 +755,10 @@ const ContractFormPage = () => {
     });
   };
 
-  const handleEventServiceSelect = (index: number, nextEventServiceId: string) => {
+  const handleEventServiceSelect = (
+    index: number,
+    nextEventServiceId: string,
+  ) => {
     const selectedEventService = availableEventServices.find(
       (item) => String(item.id) === nextEventServiceId,
     );
@@ -758,7 +801,9 @@ const ContractFormPage = () => {
 
     updateItemValues(index, {
       itemType: "service",
-      eventServiceId: nextServiceId ? "" : form.getValues(`items.${index}.eventServiceId`),
+      eventServiceId: nextServiceId
+        ? ""
+        : form.getValues(`items.${index}.eventServiceId`),
       eventVendorId: "",
       vendorId: "",
       pricingPlanId: "",
@@ -775,7 +820,10 @@ const ContractFormPage = () => {
     });
   };
 
-  const handleEventVendorSelect = (index: number, nextEventVendorId: string) => {
+  const handleEventVendorSelect = (
+    index: number,
+    nextEventVendorId: string,
+  ) => {
     const selectedEventVendor = availableEventVendors.find(
       (item) => String(item.id) === nextEventVendorId,
     );
@@ -950,7 +998,10 @@ const ContractFormPage = () => {
           <Card className="overflow-hidden rounded-[4px]">
             <div className="p-6 md:p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-8"
+                >
                   {!isEditMode ? (
                     <section className="space-y-4">
                       <div
@@ -1083,14 +1134,20 @@ const ContractFormPage = () => {
                       {!isEditMode ? (
                         <label className="space-y-2">
                           <span className="text-sm font-medium text-[var(--lux-text)]">
-                            {t("contracts.quotation", { defaultValue: "Quotation" })}
+                            {t("contracts.quotation", {
+                              defaultValue: "Quotation",
+                            })}
                           </span>
                           <Select
                             value={form.watch("quotationId") || "none"}
                             onValueChange={(value) =>
-                              form.setValue("quotationId", value === "none" ? "" : value, {
-                                shouldDirty: true,
-                              })
+                              form.setValue(
+                                "quotationId",
+                                value === "none" ? "" : value,
+                                {
+                                  shouldDirty: true,
+                                },
+                              )
                             }
                           >
                             <SelectTrigger>
@@ -1107,7 +1164,10 @@ const ContractFormPage = () => {
                                 })}
                               </SelectItem>
                               {selectableQuotations.map((quotation) => (
-                                <SelectItem key={quotation.id} value={String(quotation.id)}>
+                                <SelectItem
+                                  key={quotation.id}
+                                  value={String(quotation.id)}
+                                >
                                   {getQuotationDisplayNumber(quotation)}
                                 </SelectItem>
                               ))}
@@ -1115,7 +1175,9 @@ const ContractFormPage = () => {
                           </Select>
                           {form.formState.errors.quotationId ? (
                             <p className="text-[0.8rem] font-medium text-[var(--lux-danger)]">
-                              {String(form.formState.errors.quotationId.message)}
+                              {String(
+                                form.formState.errors.quotationId.message,
+                              )}
                             </p>
                           ) : null}
                         </label>
@@ -1129,9 +1191,13 @@ const ContractFormPage = () => {
                           <Select
                             value={form.watch("eventId") || "none"}
                             onValueChange={(value) =>
-                              form.setValue("eventId", value === "none" ? "" : value, {
-                                shouldDirty: true,
-                              })
+                              form.setValue(
+                                "eventId",
+                                value === "none" ? "" : value,
+                                {
+                                  shouldDirty: true,
+                                },
+                              )
                             }
                           >
                             <SelectTrigger>
@@ -1148,7 +1214,10 @@ const ContractFormPage = () => {
                                 })}
                               </SelectItem>
                               {events.map((event) => (
-                                <SelectItem key={event.id} value={String(event.id)}>
+                                <SelectItem
+                                  key={event.id}
+                                  value={String(event.id)}
+                                >
                                   {getEventDisplayTitle(event)}
                                 </SelectItem>
                               ))}
@@ -1170,9 +1239,12 @@ const ContractFormPage = () => {
                         </span>
                         <Input
                           {...form.register("contractNumber")}
-                          placeholder={t("contracts.contractNumberPlaceholder", {
-                            defaultValue: "Enter contract number",
-                          })}
+                          placeholder={t(
+                            "contracts.contractNumberPlaceholder",
+                            {
+                              defaultValue: "Enter contract number",
+                            },
+                          )}
                         />
                       </label>
 
@@ -1200,8 +1272,7 @@ const ContractFormPage = () => {
                       </label>
 
                       {!isEditMode && watchedCreateMode === "manual" ? (
-                        <>
-                        </>
+                        <></>
                       ) : null}
 
                       {isEditMode || watchedCreateMode === "manual" ? (
@@ -1222,7 +1293,9 @@ const ContractFormPage = () => {
                           />
                           {form.formState.errors.discountAmount ? (
                             <p className="text-[0.8rem] font-medium text-[var(--lux-danger)]">
-                              {String(form.formState.errors.discountAmount.message)}
+                              {String(
+                                form.formState.errors.discountAmount.message,
+                              )}
                             </p>
                           ) : null}
                         </label>
@@ -1230,7 +1303,9 @@ const ContractFormPage = () => {
 
                       <label className="space-y-2">
                         <span className="text-sm font-medium text-[var(--lux-text)]">
-                          {t("contracts.statusLabel", { defaultValue: "Status" })}
+                          {t("contracts.statusLabel", {
+                            defaultValue: "Status",
+                          })}
                         </span>
                         <Select
                           value={form.watch("status")}
@@ -1245,7 +1320,10 @@ const ContractFormPage = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {CONTRACT_STATUS_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
                                 {t(`contracts.status.${option.value}`, {
                                   defaultValue: option.label,
                                 })}
@@ -1256,7 +1334,9 @@ const ContractFormPage = () => {
                       </label>
                     </div>
 
-                    {selectedQuotation && !isEditMode && watchedCreateMode === "from_quotation" ? (
+                    {selectedQuotation &&
+                    !isEditMode &&
+                    watchedCreateMode === "from_quotation" ? (
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                         <ReadonlyInfo
                           label={t("contracts.quotation", {
@@ -1337,7 +1417,9 @@ const ContractFormPage = () => {
                               type="button"
                               variant="outline"
                               onClick={() =>
-                                appendItem(createEmptyContractItem(itemFields.length))
+                                appendItem(
+                                  createEmptyContractItem(itemFields.length),
+                                )
                               }
                             >
                               <Plus className="h-4 w-4" />
@@ -1411,7 +1493,9 @@ const ContractFormPage = () => {
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                                   <label className="space-y-2">
                                     <span className="text-sm font-medium text-[var(--lux-text)]">
-                                      {t("contracts.type", { defaultValue: "Type" })}
+                                      {t("contracts.type", {
+                                        defaultValue: "Type",
+                                      })}
                                     </span>
                                     <Select
                                       value={itemType}
@@ -1447,7 +1531,11 @@ const ContractFormPage = () => {
                                       })}
                                     </span>
                                     <Select
-                                      value={form.watch(`items.${index}.quotationItemId`) || "none"}
+                                      value={
+                                        form.watch(
+                                          `items.${index}.quotationItemId`,
+                                        ) || "none"
+                                      }
                                       onValueChange={(value) =>
                                         handleQuotationItemSelect(
                                           index,
@@ -1458,20 +1546,33 @@ const ContractFormPage = () => {
                                     >
                                       <SelectTrigger>
                                         <SelectValue
-                                          placeholder={t("contracts.selectQuotationItem", {
-                                            defaultValue: "Select quotation item",
-                                          })}
+                                          placeholder={t(
+                                            "contracts.selectQuotationItem",
+                                            {
+                                              defaultValue:
+                                                "Select quotation item",
+                                            },
+                                          )}
                                         />
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="none">
-                                          {t("contracts.noQuotationItemSelected", {
-                                            defaultValue: "No quotation item selected",
-                                          })}
+                                          {t(
+                                            "contracts.noQuotationItemSelected",
+                                            {
+                                              defaultValue:
+                                                "No quotation item selected",
+                                            },
+                                          )}
                                         </SelectItem>
                                         {linkedQuotationItems.map((item) => (
-                                          <SelectItem key={item.id} value={String(item.id)}>
-                                            {getContractItemDisplayName(item as any)}
+                                          <SelectItem
+                                            key={item.id}
+                                            value={String(item.id)}
+                                          >
+                                            {getContractItemDisplayName(
+                                              item as any,
+                                            )}
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
@@ -1484,11 +1585,16 @@ const ContractFormPage = () => {
                                         defaultValue: "Event Vendor",
                                       })}
                                       error={
-                                        form.formState.errors.items?.[index]?.eventVendorId?.message
+                                        form.formState.errors.items?.[index]
+                                          ?.eventVendorId?.message
                                       }
                                     >
                                       <Select
-                                        value={form.watch(`items.${index}.eventVendorId`) || "none"}
+                                        value={
+                                          form.watch(
+                                            `items.${index}.eventVendorId`,
+                                          ) || "none"
+                                        }
                                         onValueChange={(value) =>
                                           handleEventVendorSelect(
                                             index,
@@ -1499,23 +1605,37 @@ const ContractFormPage = () => {
                                       >
                                         <SelectTrigger>
                                           <SelectValue
-                                            placeholder={t("contracts.selectEventVendor", {
-                                              defaultValue: "Select event vendor",
-                                            })}
+                                            placeholder={t(
+                                              "contracts.selectEventVendor",
+                                              {
+                                                defaultValue:
+                                                  "Select event vendor",
+                                              },
+                                            )}
                                           />
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="none">
-                                            {t("contracts.noEventVendorSelected", {
-                                              defaultValue: "No event vendor selected",
-                                            })}
+                                            {t(
+                                              "contracts.noEventVendorSelected",
+                                              {
+                                                defaultValue:
+                                                  "No event vendor selected",
+                                              },
+                                            )}
                                           </SelectItem>
                                           {availableEventVendors.map((item) => (
-                                            <SelectItem key={item.id} value={String(item.id)}>
+                                            <SelectItem
+                                              key={item.id}
+                                              value={String(item.id)}
+                                            >
                                               {`${getEventVendorDisplayName(item)} • ${t(
                                                 `vendors.type.${item.vendorType}`,
                                                 {
-                                                  defaultValue: formatVendorType(item.vendorType),
+                                                  defaultValue:
+                                                    formatVendorType(
+                                                      item.vendorType,
+                                                    ),
                                                 },
                                               )} • ${formatMoney(item.agreedPrice ?? 0)}`}
                                             </SelectItem>
@@ -1531,7 +1651,11 @@ const ContractFormPage = () => {
                                         })}
                                       </span>
                                       <Select
-                                        value={form.watch(`items.${index}.eventServiceId`) || "none"}
+                                        value={
+                                          form.watch(
+                                            `items.${index}.eventServiceId`,
+                                          ) || "none"
+                                        }
                                         onValueChange={(value) =>
                                           handleEventServiceSelect(
                                             index,
@@ -1542,22 +1666,35 @@ const ContractFormPage = () => {
                                       >
                                         <SelectTrigger>
                                           <SelectValue
-                                            placeholder={t("contracts.selectEventService", {
-                                              defaultValue: "Select event service",
-                                            })}
+                                            placeholder={t(
+                                              "contracts.selectEventService",
+                                              {
+                                                defaultValue:
+                                                  "Select event service",
+                                              },
+                                            )}
                                           />
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="none">
-                                            {t("contracts.noEventServiceSelected", {
-                                              defaultValue: "No event service selected",
-                                            })}
+                                            {t(
+                                              "contracts.noEventServiceSelected",
+                                              {
+                                                defaultValue:
+                                                  "No event service selected",
+                                              },
+                                            )}
                                           </SelectItem>
-                                          {availableEventServices.map((item) => (
-                                            <SelectItem key={item.id} value={String(item.id)}>
-                                              {item.serviceNameSnapshot}
-                                            </SelectItem>
-                                          ))}
+                                          {availableEventServices.map(
+                                            (item) => (
+                                              <SelectItem
+                                                key={item.id}
+                                                value={String(item.id)}
+                                              >
+                                                {item.serviceNameSnapshot}
+                                              </SelectItem>
+                                            ),
+                                          )}
                                         </SelectContent>
                                       </Select>
                                     </label>
@@ -1582,10 +1719,13 @@ const ContractFormPage = () => {
                                           ? `${t("contracts.pricingPlan", {
                                               defaultValue: "Pricing Plan",
                                             })}: #${itemValues.pricingPlanId}`
-                                          : t("contracts.vendorAgreedPriceHint", {
-                                              defaultValue:
-                                                "Vendor rows use the event vendor agreed price as the default contract amount.",
-                                            })}
+                                          : t(
+                                              "contracts.vendorAgreedPriceHint",
+                                              {
+                                                defaultValue:
+                                                  "Vendor rows use the event vendor agreed price as the default contract amount.",
+                                              },
+                                            )}
                                       </p>
                                     </div>
                                   ) : (
@@ -1596,7 +1736,11 @@ const ContractFormPage = () => {
                                         })}
                                       </span>
                                       <Select
-                                        value={form.watch(`items.${index}.serviceId`) || "none"}
+                                        value={
+                                          form.watch(
+                                            `items.${index}.serviceId`,
+                                          ) || "none"
+                                        }
                                         onValueChange={(value) =>
                                           handleServiceSelect(
                                             index,
@@ -1606,19 +1750,26 @@ const ContractFormPage = () => {
                                       >
                                         <SelectTrigger>
                                           <SelectValue
-                                            placeholder={t("contracts.selectService", {
-                                              defaultValue: "Select service",
-                                            })}
+                                            placeholder={t(
+                                              "contracts.selectService",
+                                              {
+                                                defaultValue: "Select service",
+                                              },
+                                            )}
                                           />
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="none">
                                             {t("contracts.noServiceSelected", {
-                                              defaultValue: "No service selected",
+                                              defaultValue:
+                                                "No service selected",
                                             })}
                                           </SelectItem>
                                           {services.map((service) => (
-                                            <SelectItem key={service.id} value={String(service.id)}>
+                                            <SelectItem
+                                              key={service.id}
+                                              value={String(service.id)}
+                                            >
                                               {service.name}
                                             </SelectItem>
                                           ))}
@@ -1641,16 +1792,22 @@ const ContractFormPage = () => {
                                           defaultValue: "Vendor-origin row",
                                         })
                                       : t("contracts.serviceManualPricing", {
-                                          defaultValue: "Manual service pricing",
+                                          defaultValue:
+                                            "Manual service pricing",
                                         })}
                                   </p>
                                   <p className="mt-1">
                                     {isVendorItem
-                                      ? getContractItemOriginLabel(itemValues as any) || "-"
-                                      : t("contracts.serviceManualPricingHint", {
-                                          defaultValue:
-                                            "Service selection only fills description and references. Enter the contract amount manually in this row.",
-                                        })}
+                                      ? getContractItemOriginLabel(
+                                          itemValues as any,
+                                        ) || "-"
+                                      : t(
+                                          "contracts.serviceManualPricingHint",
+                                          {
+                                            defaultValue:
+                                              "Service selection only fills description and references. Enter the contract amount manually in this row.",
+                                          },
+                                        )}
                                   </p>
                                   <p className="mt-1 text-xs">
                                     {itemValues?.quotationItemId
@@ -1690,13 +1847,21 @@ const ContractFormPage = () => {
                                     label={t("contracts.itemName", {
                                       defaultValue: "Item Name",
                                     })}
-                                    error={form.formState.errors.items?.[index]?.itemName?.message}
+                                    error={
+                                      form.formState.errors.items?.[index]
+                                        ?.itemName?.message
+                                    }
                                   >
                                     <Input
-                                      {...form.register(`items.${index}.itemName`)}
-                                      placeholder={t("contracts.itemNamePlaceholder", {
-                                        defaultValue: "Enter item name",
-                                      })}
+                                      {...form.register(
+                                        `items.${index}.itemName`,
+                                      )}
+                                      placeholder={t(
+                                        "contracts.itemNamePlaceholder",
+                                        {
+                                          defaultValue: "Enter item name",
+                                        },
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -1706,10 +1871,15 @@ const ContractFormPage = () => {
                                     })}
                                   >
                                     <Input
-                                      {...form.register(`items.${index}.category`)}
-                                      placeholder={t("contracts.categoryPlaceholder", {
-                                        defaultValue: "Enter item category",
-                                      })}
+                                      {...form.register(
+                                        `items.${index}.category`,
+                                      )}
+                                      placeholder={t(
+                                        "contracts.categoryPlaceholder",
+                                        {
+                                          defaultValue: "Enter item category",
+                                        },
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -1717,12 +1887,17 @@ const ContractFormPage = () => {
                                     label={t("contracts.sortOrder", {
                                       defaultValue: "Sort Order",
                                     })}
-                                    error={form.formState.errors.items?.[index]?.sortOrder?.message}
+                                    error={
+                                      form.formState.errors.items?.[index]
+                                        ?.sortOrder?.message
+                                    }
                                   >
                                     <Input
                                       type="number"
                                       min="0"
-                                      {...form.register(`items.${index}.sortOrder`)}
+                                      {...form.register(
+                                        `items.${index}.sortOrder`,
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -1730,13 +1905,18 @@ const ContractFormPage = () => {
                                     label={t("contracts.quantity", {
                                       defaultValue: "Quantity",
                                     })}
-                                    error={form.formState.errors.items?.[index]?.quantity?.message}
+                                    error={
+                                      form.formState.errors.items?.[index]
+                                        ?.quantity?.message
+                                    }
                                   >
                                     <Input
                                       type="number"
                                       min="0.001"
                                       step="0.001"
-                                      {...form.register(`items.${index}.quantity`)}
+                                      {...form.register(
+                                        `items.${index}.quantity`,
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -1744,13 +1924,18 @@ const ContractFormPage = () => {
                                     label={t("contracts.unitPrice", {
                                       defaultValue: "Unit Price",
                                     })}
-                                    error={form.formState.errors.items?.[index]?.unitPrice?.message}
+                                    error={
+                                      form.formState.errors.items?.[index]
+                                        ?.unitPrice?.message
+                                    }
                                   >
                                     <Input
                                       type="number"
                                       min="0"
                                       step="0.001"
-                                      {...form.register(`items.${index}.unitPrice`)}
+                                      {...form.register(
+                                        `items.${index}.unitPrice`,
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -1765,15 +1950,20 @@ const ContractFormPage = () => {
 
                                 <label className="space-y-2">
                                   <span className="text-sm font-medium text-[var(--lux-text)]">
-                                    {t("common.notes", { defaultValue: "Notes" })}
+                                    {t("common.notes", {
+                                      defaultValue: "Notes",
+                                    })}
                                   </span>
                                   <textarea
                                     {...form.register(`items.${index}.notes`)}
                                     className={textareaClassName}
-                                    placeholder={t("contracts.itemNotesPlaceholder", {
-                                      defaultValue:
-                                        "Add item notes, scope details, or commercial remarks...",
-                                    })}
+                                    placeholder={t(
+                                      "contracts.itemNotesPlaceholder",
+                                      {
+                                        defaultValue:
+                                          "Add item notes, scope details, or commercial remarks...",
+                                      },
+                                    )}
                                     style={{
                                       background: "var(--lux-control-surface)",
                                       borderColor: "var(--lux-control-border)",
@@ -1833,7 +2023,9 @@ const ContractFormPage = () => {
                               label={t("contracts.quotation", {
                                 defaultValue: "Quotation",
                               })}
-                              value={getQuotationDisplayNumber(selectedQuotation)}
+                              value={getQuotationDisplayNumber(
+                                selectedQuotation,
+                              )}
                             />
                             <ReadonlyInfo
                               label={t("contracts.event", {
@@ -1841,7 +2033,9 @@ const ContractFormPage = () => {
                               })}
                               value={
                                 selectedQuotation.event
-                                  ? getEventDisplayTitle(selectedQuotation.event)
+                                  ? getEventDisplayTitle(
+                                      selectedQuotation.event,
+                                    )
                                   : `Event #${selectedQuotation.eventId}`
                               }
                             />
@@ -1887,88 +2081,131 @@ const ContractFormPage = () => {
                                 <tbody>
                                   {quotationPreviewPairedItems.map(
                                     ({ serviceItem, vendorItem }, index) => (
-                                    <tr
-                                      key={`${serviceItem?.id ?? "service-none"}-${vendorItem?.id ?? "vendor-none"}-${index}`}
-                                      className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
-                                      style={{
-                                        background: serviceItem && isServiceSummaryItem(serviceItem)
-                                          ? "var(--lux-control-hover)"
-                                          : "transparent",
-                                      }}
-                                    >
-                                      <td className="px-3 py-3">
-                                        {serviceItem ? (
-                                          <div className="space-y-1">
-                                            <div className="font-medium text-[var(--lux-text)]">
-                                              {getQuotationItemDisplayName(serviceItem)}
+                                      <tr
+                                        key={`${serviceItem?.id ?? "service-none"}-${vendorItem?.id ?? "vendor-none"}-${index}`}
+                                        className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
+                                        style={{
+                                          background:
+                                            serviceItem &&
+                                            isServiceSummaryItem(serviceItem)
+                                              ? "var(--lux-control-hover)"
+                                              : "transparent",
+                                        }}
+                                      >
+                                        <td className="px-3 py-3">
+                                          {serviceItem ? (
+                                            <div className="space-y-1">
+                                              <div className="font-medium text-[var(--lux-text)]">
+                                                {getQuotationItemDisplayName(
+                                                  serviceItem,
+                                                )}
+                                              </div>
+                                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                                <TypeBadge
+                                                  item={serviceItem}
+                                                  t={t}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                                {`${t(
+                                                  "contracts.serviceOrigin",
+                                                  {
+                                                    defaultValue:
+                                                      "Service-origin row",
+                                                  },
+                                                )}: ${getQuotationPreviewOriginLabel(serviceItem)}`}
+                                              </div>
                                             </div>
-                                            <div className="text-xs text-[var(--lux-text-secondary)]">
-                                              <TypeBadge item={serviceItem} t={t} />
-                                            </div>
-                                            <div className="text-xs text-[var(--lux-text-secondary)]">
-                                              {`${t("contracts.serviceOrigin", {
-                                                defaultValue: "Service-origin row",
-                                              })}: ${getQuotationPreviewOriginLabel(serviceItem)}`}
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          "-"
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                                        {serviceItem
-                                          ? formatMoney(getContractPreviewItemPrice(serviceItem))
-                                          : "-"}
-                                      </td>
-                                      <td className="px-3 py-3">
-                                        {vendorItem ? (
-                                          <div className="space-y-1">
-                                            <div className="font-medium text-[var(--lux-text)]">
-                                              {getQuotationItemDisplayName(vendorItem)}
-                                            </div>
-                                            <div className="text-xs text-[var(--lux-text-secondary)]">
-                                              <TypeBadge item={vendorItem} t={t} />
-                                            </div>
-                                            <div className="text-xs text-[var(--lux-text-secondary)]">
-                                              {`${t("contracts.vendorOrigin", {
-                                                defaultValue: "Vendor-origin row",
-                                              })}: ${getQuotationPreviewOriginLabel(vendorItem)}`}
-                                            </div>
-                                          </div>
-                                        ) : serviceItem && isServiceSummaryItem(serviceItem) ? (
-                                          <div className="space-y-1">
-                                            <div className="font-medium text-[var(--lux-text)]">
-                                              {t("contracts.totalCompanies", {
-                                                defaultValue: "إجمالي الشركات",
-                                              })}
-                                            </div>
-                                            <div className="text-xs text-[var(--lux-text-secondary)]">
-                                              <span
-                                                className="inline-flex rounded-[4px] border px-3 py-1 text-xs font-semibold"
-                                                style={{
-                                                  borderColor: "var(--lux-gold-border)",
-                                                  color: "var(--lux-gold)",
-                                                }}
-                                              >
-                                                {t("contracts.totalCompanies", {
-                                                  defaultValue: "إجمالي الشركات",
-                                                })}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          "-"
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
-                                        {vendorItem
-                                          ? formatMoney(getContractPreviewItemPrice(vendorItem))
-                                          : serviceItem && isServiceSummaryItem(serviceItem)
-                                            ? formatMoney(quotationPreviewVendorTotalAmount)
+                                          ) : (
+                                            "-"
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                                          {serviceItem
+                                            ? formatMoney(
+                                                getContractPreviewItemPrice(
+                                                  serviceItem,
+                                                ),
+                                              )
                                             : "-"}
-                                      </td>
-                                    </tr>
-                                  ))}
+                                        </td>
+                                        <td className="px-3 py-3">
+                                          {vendorItem ? (
+                                            <div className="space-y-1">
+                                              <div className="font-medium text-[var(--lux-text)]">
+                                                {getQuotationItemDisplayName(
+                                                  vendorItem,
+                                                )}
+                                              </div>
+                                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                                <TypeBadge
+                                                  item={vendorItem}
+                                                  t={t}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                                {`${t(
+                                                  "contracts.vendorOrigin",
+                                                  {
+                                                    defaultValue:
+                                                      "Vendor-origin row",
+                                                  },
+                                                )}: ${getQuotationPreviewOriginLabel(vendorItem)}`}
+                                              </div>
+                                            </div>
+                                          ) : serviceItem &&
+                                            isServiceSummaryItem(
+                                              serviceItem,
+                                            ) ? (
+                                            <div className="space-y-1">
+                                              <div className="font-medium text-[var(--lux-text)]">
+                                                {t("contracts.totalCompanies", {
+                                                  defaultValue:
+                                                    "إجمالي الشركات",
+                                                })}
+                                              </div>
+                                              <div className="text-xs text-[var(--lux-text-secondary)]">
+                                                <span
+                                                  className="inline-flex rounded-[4px] border px-3 py-1 text-xs font-semibold"
+                                                  style={{
+                                                    borderColor:
+                                                      "var(--lux-gold-border)",
+                                                    color: "var(--lux-gold)",
+                                                  }}
+                                                >
+                                                  {t(
+                                                    "contracts.totalCompanies",
+                                                    {
+                                                      defaultValue:
+                                                        "إجمالي الشركات",
+                                                    },
+                                                  )}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            "-"
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                                          {vendorItem
+                                            ? formatMoney(
+                                                getContractPreviewItemPrice(
+                                                  vendorItem,
+                                                ),
+                                              )
+                                            : serviceItem &&
+                                                isServiceSummaryItem(
+                                                  serviceItem,
+                                                )
+                                              ? formatMoney(
+                                                  quotationPreviewVendorTotalAmount,
+                                                )
+                                              : "-"}
+                                        </td>
+                                      </tr>
+                                    ),
+                                  )}
                                 </tbody>
                               </table>
                             </div>
@@ -2011,7 +2248,9 @@ const ContractFormPage = () => {
                             variant="outline"
                             onClick={() =>
                               appendPaymentSchedule(
-                                createEmptyPaymentSchedule(paymentScheduleFields.length),
+                                createEmptyPaymentSchedule(
+                                  paymentScheduleFields.length,
+                                ),
                               )
                             }
                           >
@@ -2061,8 +2300,9 @@ const ContractFormPage = () => {
                                       defaultValue: "Installment Name",
                                     })}
                                     error={
-                                      form.formState.errors.paymentSchedules?.[index]
-                                        ?.installmentName?.message
+                                      form.formState.errors.paymentSchedules?.[
+                                        index
+                                      ]?.installmentName?.message
                                     }
                                   >
                                     <Input
@@ -2096,16 +2336,21 @@ const ContractFormPage = () => {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {PAYMENT_SCHEDULE_TYPE_OPTIONS.map((option) => (
-                                          <SelectItem
-                                            key={option.value}
-                                            value={option.value}
-                                          >
-                                            {t(`contracts.scheduleType.${option.value}`, {
-                                              defaultValue: option.label,
-                                            })}
-                                          </SelectItem>
-                                        ))}
+                                        {PAYMENT_SCHEDULE_TYPE_OPTIONS.map(
+                                          (option) => (
+                                            <SelectItem
+                                              key={option.value}
+                                              value={option.value}
+                                            >
+                                              {t(
+                                                `contracts.scheduleType.${option.value}`,
+                                                {
+                                                  defaultValue: option.label,
+                                                },
+                                              )}
+                                            </SelectItem>
+                                          ),
+                                        )}
                                       </SelectContent>
                                     </Select>
                                   </label>
@@ -2117,7 +2362,9 @@ const ContractFormPage = () => {
                                   >
                                     <Input
                                       type="date"
-                                      {...form.register(`paymentSchedules.${index}.dueDate`)}
+                                      {...form.register(
+                                        `paymentSchedules.${index}.dueDate`,
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -2126,15 +2373,18 @@ const ContractFormPage = () => {
                                       defaultValue: "Amount",
                                     })}
                                     error={
-                                      form.formState.errors.paymentSchedules?.[index]?.amount
-                                        ?.message
+                                      form.formState.errors.paymentSchedules?.[
+                                        index
+                                      ]?.amount?.message
                                     }
                                   >
                                     <Input
                                       type="number"
                                       min="0"
                                       step="0.001"
-                                      {...form.register(`paymentSchedules.${index}.amount`)}
+                                      {...form.register(
+                                        `paymentSchedules.${index}.amount`,
+                                      )}
                                     />
                                   </FieldInput>
 
@@ -2162,16 +2412,21 @@ const ContractFormPage = () => {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {PAYMENT_SCHEDULE_STATUS_OPTIONS.map((option) => (
-                                          <SelectItem
-                                            key={option.value}
-                                            value={option.value}
-                                          >
-                                            {t(`contracts.paymentStatus.${option.value}`, {
-                                              defaultValue: option.label,
-                                            })}
-                                          </SelectItem>
-                                        ))}
+                                        {PAYMENT_SCHEDULE_STATUS_OPTIONS.map(
+                                          (option) => (
+                                            <SelectItem
+                                              key={option.value}
+                                              value={option.value}
+                                            >
+                                              {t(
+                                                `contracts.paymentStatus.${option.value}`,
+                                                {
+                                                  defaultValue: option.label,
+                                                },
+                                              )}
+                                            </SelectItem>
+                                          ),
+                                        )}
                                       </SelectContent>
                                     </Select>
                                   </label>
@@ -2181,24 +2436,31 @@ const ContractFormPage = () => {
                                       defaultValue: "Sort Order",
                                     })}
                                     error={
-                                      form.formState.errors.paymentSchedules?.[index]
-                                        ?.sortOrder?.message
+                                      form.formState.errors.paymentSchedules?.[
+                                        index
+                                      ]?.sortOrder?.message
                                     }
                                   >
                                     <Input
                                       type="number"
                                       min="0"
-                                      {...form.register(`paymentSchedules.${index}.sortOrder`)}
+                                      {...form.register(
+                                        `paymentSchedules.${index}.sortOrder`,
+                                      )}
                                     />
                                   </FieldInput>
                                 </div>
 
                                 <label className="space-y-2">
                                   <span className="text-sm font-medium text-[var(--lux-text)]">
-                                    {t("common.notes", { defaultValue: "Notes" })}
+                                    {t("common.notes", {
+                                      defaultValue: "Notes",
+                                    })}
                                   </span>
                                   <textarea
-                                    {...form.register(`paymentSchedules.${index}.notes`)}
+                                    {...form.register(
+                                      `paymentSchedules.${index}.notes`,
+                                    )}
                                     className={textareaClassName}
                                     placeholder={t(
                                       "contracts.paymentScheduleNotesPlaceholder",
@@ -2315,13 +2577,7 @@ const ContractFormPage = () => {
   );
 };
 
-function ReadonlyInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function ReadonlyInfo({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="rounded-[4px] border px-4 py-3"
@@ -2349,7 +2605,9 @@ function FieldInput({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-medium text-[var(--lux-text)]">{label}</span>
+      <span className="text-sm font-medium text-[var(--lux-text)]">
+        {label}
+      </span>
       {children}
       {error ? (
         <p className="text-[0.8rem] font-medium text-[var(--lux-danger)]">
@@ -2364,7 +2622,10 @@ function TypeBadge({
   item,
   t,
 }: {
-  item?: Partial<ContractItemFormData> | { itemType?: ContractItemType; category?: string } | null;
+  item?:
+    | Partial<ContractItemFormData>
+    | { itemType?: ContractItemType; category?: string }
+    | null;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const type = item?.itemType ?? "service";

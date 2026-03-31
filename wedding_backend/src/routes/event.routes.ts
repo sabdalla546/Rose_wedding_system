@@ -9,9 +9,6 @@ import {
   getEventById,
   updateEvent,
   deleteEvent,
-  createEventSection,
-  updateEventSection,
-  deleteEventSection,
 } from "../controllers/event.controller";
 
 const router = Router();
@@ -55,27 +52,6 @@ router.delete(
   authMiddleware,
   requirePermissions("events.delete"),
   deleteEvent,
-);
-
-router.post(
-  "/sections",
-  authMiddleware,
-  requirePermissions("events.update"),
-  createEventSection,
-);
-
-router.put(
-  "/sections/:id",
-  authMiddleware,
-  requirePermissions("events.update"),
-  updateEventSection,
-);
-
-router.delete(
-  "/sections/:id",
-  authMiddleware,
-  requirePermissions("events.update"),
-  deleteEventSection,
 );
 
 export default router;

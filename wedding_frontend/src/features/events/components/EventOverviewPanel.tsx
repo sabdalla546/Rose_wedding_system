@@ -4,21 +4,12 @@ import { useTranslation } from "react-i18next";
 import { useEvent } from "@/hooks/events/useEvents";
 import { EventOverviewWorkspace } from "@/pages/events/_components/EventOverviewWorkspace";
 import { EventEmptyState } from "@/pages/events/_components/EventDetailsPrimitives";
-import type { EventSection } from "@/pages/events/types";
 
 type Props = {
   eventId: number | string;
-  onAddSection?: () => void;
-  onEditSection?: (section: EventSection) => void;
-  onDeleteSection?: (section: EventSection) => void;
 };
 
-export function EventOverviewPanel({
-  eventId,
-  onAddSection,
-  onEditSection,
-  onDeleteSection,
-}: Props) {
+export function EventOverviewPanel({ eventId }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const { data: event, isLoading } = useEvent(String(eventId));
@@ -28,7 +19,7 @@ export function EventOverviewPanel({
       <EventEmptyState
         title={t("common.loading", { defaultValue: "Loading..." })}
         description={t("events.loadingOverview", {
-          defaultValue: "Loading the event overview and planning sections.",
+          defaultValue: "Loading the event overview.",
         })}
       />
     );
@@ -45,15 +36,5 @@ export function EventOverviewPanel({
     );
   }
 
-  return (
-    <EventOverviewWorkspace
-      event={event}
-      sections={event.sections ?? []}
-      dateLocale={dateLocale}
-      t={t}
-      onAddSection={onAddSection}
-      onEditSection={onEditSection}
-      onDeleteSection={onDeleteSection}
-    />
-  );
+  return <EventOverviewWorkspace event={event} dateLocale={dateLocale} t={t} />;
 }

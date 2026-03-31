@@ -10,13 +10,6 @@ export const appointmentStatusEnum = z.enum([
 ]);
 
 export const appointmentTypeEnum = z.enum([
-  "office_visit",
-  "phone_call",
-  "video_call",
-  "venue_visit",
-]);
-
-export const appointmentTypePublicEnum = z.enum([
   "New Appointment 1",
   "New Appointment 2",
   "New Appointment 3",
@@ -26,14 +19,17 @@ export const appointmentTypePublicEnum = z.enum([
   "Office Visit",
 ]);
 
-// Accept both legacy DB codes and new public Arabic values.
-export const appointmentTypeInputSchema = z.union([
-  appointmentTypeEnum,
-  appointmentTypePublicEnum,
-]);
+export const appointmentTypeInputSchema = appointmentTypeEnum;
 
-const optionalNullableShortString = z.string().trim().max(30).nullable().optional();
+const optionalNullableShortString = z
+  .string()
+  .trim()
+  .max(30)
+  .nullable()
+  .optional();
+
 const optionalNullableEmail = z.string().trim().email().nullable().optional();
+
 const optionalNullableDate = z.preprocess(
   (value) => {
     if (typeof value !== "string") {
@@ -49,39 +45,24 @@ const optionalNullableDate = z.preprocess(
     .nullable()
     .optional(),
 );
-const optionalNullableNonNegativeInt = z.preprocess(
-  (value) => {
-    if (value === "" || value === null || typeof value === "undefined") {
-      return null;
-    }
 
-    return typeof value === "string" ? Number(value) : value;
-  },
-  z.number().int().min(0).nullable().optional(),
-);
-const optionalNullablePositiveInt = z.preprocess(
-  (value) => {
-    if (value === "" || value === null || typeof value === "undefined") {
-      return null;
-    }
+const optionalNullableNonNegativeInt = z.preprocess((value) => {
+  if (value === "" || value === null || typeof value === "undefined") {
+    return null;
+  }
 
-    return typeof value === "string" ? Number(value) : value;
-  },
-  z.number().int().positive().nullable().optional(),
-);
-const optionalNullableNationalId = z
-  .preprocess(
-    (value) => {
-      if (typeof value !== "string") {
-        return value;
-      }
+  return typeof value === "string" ? Number(value) : value;
+}, z.number().int().min(0).nullable().optional());
 
-      const trimmed = value.trim();
-      return trimmed === "" ? null : trimmed;
-    },
-    z.string().regex(/^\d{12}$/).nullable().optional(),
-  );
-const optionalNullableAddress = z.preprocess(
+const optionalNullablePositiveInt = z.preprocess((value) => {
+  if (value === "" || value === null || typeof value === "undefined") {
+    return null;
+  }
+
+  return typeof value === "string" ? Number(value) : value;
+}, z.number().int().positive().nullable().optional());
+
+const optionalNullableNationalId = z.preprocess(
   (value) => {
     if (typeof value !== "string") {
       return value;
@@ -90,8 +71,21 @@ const optionalNullableAddress = z.preprocess(
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
   },
-  z.string().max(255).nullable().optional(),
+  z
+    .string()
+    .regex(/^\d{12}$/)
+    .nullable()
+    .optional(),
 );
+
+const optionalNullableAddress = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}, z.string().max(255).nullable().optional());
 
 export const createAppointmentSchema = z.object({
   customerId: z.number().int().positive(),

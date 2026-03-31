@@ -1,10 +1,10 @@
-import { CheckCircle2, CircleDashed, ClipboardList } from "lucide-react";
+import { CheckCircle2, CircleDashed } from "lucide-react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
-import type { Event, EventSection } from "@/pages/events/types";
+import type { Event } from "@/pages/events/types";
 import { EventServiceStatusBadge } from "@/pages/services/_components/eventServiceStatusBadge";
 import {
   formatMoney,
@@ -29,7 +29,6 @@ type Props = {
   event: Event;
   services: EventServiceItem[];
   vendors: EventVendorLink[];
-  sections: EventSection[];
   t: TFunction;
   readiness: {
     ready: number;
@@ -48,7 +47,6 @@ export function EventExecutionPanel({
   event,
   services,
   vendors,
-  sections,
   t,
   readiness,
 }: Props) {
@@ -63,6 +61,7 @@ export function EventExecutionPanel({
             {t("events.executionTab", { defaultValue: "Execution" })}
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <EventMetricTile
@@ -84,6 +83,7 @@ export function EventExecutionPanel({
                 </div>
               }
             />
+
             <EventMetricTile
               label={t("events.executionReadiness", {
                 defaultValue: "Execution Readiness",
@@ -102,27 +102,29 @@ export function EventExecutionPanel({
                 total: readiness.total,
               })}
             />
+
             <EventMetricTile
               label={t("events.executionCoverage", {
                 defaultValue: "Operational Coverage",
               })}
-              value={`${services.length} / ${vendors.length} / ${sections.length}`}
+              value={`${services.length} / ${vendors.length}`}
               helper={t("events.executionCoverageHint", {
                 defaultValue:
-                  "Services / vendors / planning sections currently tracked for this wedding.",
+                  "Services / vendors currently tracked for this wedding.",
               })}
             />
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader className={isRtl ? "text-right" : "text-left"}>
             <CardTitle>
               {t("services.eventServices", { defaultValue: "Event Services" })}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="space-y-3">
             {services.length ? (
               services.map((service) => {
@@ -142,18 +144,28 @@ export function EventExecutionPanel({
                       }`}
                     >
                       <div className="space-y-1">
-                        <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
+                        <h4
+                          dir="auto"
+                          className="font-semibold text-[var(--lux-heading)]"
+                        >
                           {getEventServiceDisplayName(service)}
                         </h4>
                         <p className="text-xs text-[var(--lux-text-secondary)]">
                           {t(`services.category.${service.category}`, {
-                            defaultValue: formatServiceCategory(service.category),
+                            defaultValue: formatServiceCategory(
+                              service.category,
+                            ),
                           })}
                         </p>
                       </div>
                       <EventServiceStatusBadge status={service.status} />
                     </div>
-                    <div className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
+
+                    <div
+                      className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${
+                        isRtl ? "text-right" : "text-left"
+                      }`}
+                    >
                       <p>
                         {t("services.quantity", { defaultValue: "Quantity" })}:{" "}
                         {quantityValue ?? "-"}
@@ -178,7 +190,8 @@ export function EventExecutionPanel({
                                 defaultValue: "Ready for execution",
                               })
                             : t("events.executionPendingLine", {
-                                defaultValue: "Needs follow-up before execution",
+                                defaultValue:
+                                  "Needs follow-up before execution",
                               })}
                         </span>
                       </div>
@@ -192,7 +205,8 @@ export function EventExecutionPanel({
                   defaultValue: "No service items yet",
                 })}
                 description={t("services.noEventServices", {
-                  defaultValue: "No service items have been added to this event yet.",
+                  defaultValue:
+                    "No service items have been added to this event yet.",
                 })}
                 className="py-7"
               />
@@ -206,6 +220,7 @@ export function EventExecutionPanel({
               {t("vendors.eventVendors", { defaultValue: "Event Vendors" })}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="space-y-3">
             {vendors.length ? (
               vendors.map((vendor) => (
@@ -216,7 +231,10 @@ export function EventExecutionPanel({
                     }`}
                   >
                     <div className="space-y-1">
-                      <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
+                      <h4
+                        dir="auto"
+                        className="font-semibold text-[var(--lux-heading)]"
+                      >
                         {getEventVendorDisplayName(vendor)}
                       </h4>
                       <p className="text-xs text-[var(--lux-text-secondary)]">
@@ -227,7 +245,12 @@ export function EventExecutionPanel({
                     </div>
                     <EventVendorStatusBadge status={vendor.status} />
                   </div>
-                  <div className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
+
+                  <div
+                    className={`grid gap-2 text-sm text-[var(--lux-text-secondary)] ${
+                      isRtl ? "text-right" : "text-left"
+                    }`}
+                  >
                     <p>
                       {t("vendors.pricingPlans.name", {
                         defaultValue: "Pricing Plan",
@@ -241,7 +264,9 @@ export function EventExecutionPanel({
                       : {vendor.selectedSubServicesCount}
                     </p>
                     <p>
-                      {t("vendors.agreedPrice", { defaultValue: "Agreed Price" })}
+                      {t("vendors.agreedPrice", {
+                        defaultValue: "Agreed Price",
+                      })}
                       : {formatMoney(vendor.agreedPrice)}
                     </p>
                     <div
@@ -275,62 +300,6 @@ export function EventExecutionPanel({
                 description={t("vendors.noEventVendors", {
                   defaultValue:
                     "Add the first vendor assignment to capture company ownership, selected sub-services, and pricing for this event.",
-                })}
-                className="py-7"
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className={isRtl ? "text-right" : "text-left"}>
-            <CardTitle>
-              {t("events.sectionsTitle", { defaultValue: "Event Sections" })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {sections.length ? (
-              sections.map((section) => (
-                <EventPanelCard key={section.id} className="space-y-3 p-4">
-                  <div
-                    className={`flex flex-wrap items-center justify-between gap-3 ${
-                      isRtl ? "text-right" : "text-left"
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <h4 dir="auto" className="font-semibold text-[var(--lux-heading)]">
-                        {section.title ||
-                          t(`events.sectionType.${section.sectionType}`, {
-                            defaultValue: section.sectionType,
-                          })}
-                      </h4>
-                      <p className="text-xs text-[var(--lux-text-secondary)]">
-                        {t(`events.sectionType.${section.sectionType}`, {
-                          defaultValue: section.sectionType,
-                        })}
-                      </p>
-                    </div>
-                    {section.isCompleted ? (
-                      <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />
-                    ) : (
-                      <ClipboardList className="h-5 w-5 text-[var(--lux-text-muted)]" />
-                    )}
-                  </div>
-                  <div className={`text-sm leading-6 text-[var(--lux-text-secondary)] ${isRtl ? "text-right" : "text-left"}`}>
-                    {section.notes ||
-                      t("events.executionSectionNoNotes", {
-                        defaultValue: "No execution note has been added to this section yet.",
-                      })}
-                  </div>
-                </EventPanelCard>
-              ))
-            ) : (
-              <EventEmptyState
-                title={t("events.noSectionsTitle", {
-                  defaultValue: "No sections added yet",
-                })}
-                description={t("events.noSections", {
-                  defaultValue: "No sections have been added to this event yet.",
                 })}
                 className="py-7"
               />

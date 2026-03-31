@@ -6,7 +6,15 @@ const SEED_COUNT = 50;
 const SEED_EMAIL_DOMAIN = "seed.rose.local";
 const SEED_NOTE_TAG = "[seed:customers-appointments-events]";
 
-const appointmentTypes = ["office_visit"] as const;
+const appointmentTypes = [
+  "New Appointment 1",
+  "New Appointment 2",
+  "New Appointment 3",
+  "Details Appointment 1",
+  "Details Appointment 2",
+  "Details Appointment 3",
+  "Office Visit",
+] as const;
 
 const appointmentStatuses = [
   "scheduled",

@@ -22,40 +22,9 @@ export type EventStatus =
   | "completed"
   | "cancelled";
 
-export type EventSectionType =
-  | "client_info"
-  | "stage"
-  | "chairs"
-  | "floor"
-  | "hall_sides"
-  | "entrance"
-  | "vip_front"
-  | "back_seating"
-  | "buffet"
-  | "flowers"
-  | "groom_stage"
-  | "external_companies"
-  | "summary"
-  | "designer_notes"
-  | "general_notes";
-
 export interface EventUserSummary {
   id: number;
   fullName: string;
-}
-
-export interface EventSection {
-  id: number;
-  eventId: number;
-  sectionType: EventSectionType;
-  title?: string | null;
-  sortOrder: number;
-  data: Record<string, unknown>;
-  notes?: string | null;
-  isCompleted: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
 }
 
 export interface Event {
@@ -74,7 +43,6 @@ export interface Event {
   customer?: Customer | null;
   venue?: Venue | null;
   sourceAppointment?: EventSourceAppointmentSummary | null;
-  sections?: EventSection[];
   createdByUser?: EventUserSummary | null;
   updatedByUser?: EventUserSummary | null;
   createdAt?: string;

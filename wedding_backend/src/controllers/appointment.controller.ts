@@ -5,10 +5,6 @@ import { sequelize } from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Appointment, Customer, User, Venue } from "../models";
 import {
-  appointmentTypePublicFromDb,
-  normalizeAppointmentTypeToDb,
-} from "../models/appointment.model";
-import {
   createAppointmentSchema,
   createAppointmentWithCustomerSchema,
   updateAppointmentSchema,
@@ -28,16 +24,8 @@ const appointmentInclude = [
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
 
-const serializeAppointment = (instance: any) => {
-  const plain =
-    typeof instance?.toJSON === "function" ? instance.toJSON() : instance;
-  if (!plain) return plain;
-
-  return {
-    ...plain,
-    type: plain.type ? appointmentTypePublicFromDb(plain.type) : plain.type,
-  };
-};
+const serializeAppointment = (instance: any) =>
+  typeof instance?.toJSON === "function" ? instance.toJSON() : instance;
 
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -60,7 +48,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
       endTime: data.endTime ?? null,
-      type: normalizeAppointmentTypeToDb(data.type) ?? "office_visit",
+      type: data.type ?? "Office Visit",
       weddingDate: data.weddingDate ?? null,
       guestCount: data.guestCount ?? null,
       venueId: data.venueId ?? null,
@@ -153,7 +141,7 @@ export const createAppointmentWithCustomer = async (
           appointmentDate: data.appointment.appointmentDate,
           startTime: data.appointment.startTime,
           endTime: data.appointment.endTime ?? null,
-          type: normalizeAppointmentTypeToDb(data.appointment.type) ?? "office_visit",
+          type: data.appointment.type ?? "Office Visit",
           weddingDate: data.appointment.weddingDate ?? null,
           guestCount: data.appointment.guestCount ?? null,
           venueId: data.appointment.venueId ?? null,
@@ -294,7 +282,7 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: "Appointment confirmed successfully",
-      data: updated,
+      data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -338,7 +326,7 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: "Appointment completed successfully",
-      data: updated,
+      data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -384,7 +372,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       message: "Appointment cancelled successfully",
-      data: updated,
+      data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -423,7 +411,9 @@ export const rescheduleAppointment = async (
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
       endTime:
-        typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime,
+        typeof data.endTime !== "undefined"
+          ? data.endTime
+          : appointment.endTime,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
       status: "rescheduled",
       updatedBy: req.user?.id ?? null,
@@ -435,7 +425,7 @@ export const rescheduleAppointment = async (
 
     return res.json({
       message: "Appointment rescheduled successfully",
-      data: updated,
+      data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -483,8 +473,10 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       appointmentDate: data.appointmentDate ?? appointment.appointmentDate,
       startTime: data.startTime ?? appointment.startTime,
       endTime:
-        typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime,
-      type: normalizeAppointmentTypeToDb(data.type) ?? appointment.type,
+        typeof data.endTime !== "undefined"
+          ? data.endTime
+          : appointment.endTime,
+      type: data.type ?? appointment.type,
       weddingDate:
         typeof data.weddingDate !== "undefined"
           ? data.weddingDate
@@ -494,7 +486,9 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
           ? data.guestCount
           : appointment.guestCount,
       venueId:
-        typeof data.venueId !== "undefined" ? data.venueId : appointment.venueId,
+        typeof data.venueId !== "undefined"
+          ? data.venueId
+          : appointment.venueId,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
       status: data.status ?? appointment.status,
       updatedBy: req.user?.id ?? null,
@@ -542,7 +536,8 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
     return res.status(400).json({ errors: parsed.error.errors });
   }
 
-  const { dateFrom, dateTo, status, assignedUserId, customerId, search } = parsed.data;
+  const { dateFrom, dateTo, status, assignedUserId, customerId, search } =
+    parsed.data;
 
   const where: any = {};
 

@@ -5,51 +5,43 @@ import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Event, EventSection } from "@/pages/events/types";
+import type { Event } from "@/pages/events/types";
 import {
   EventEmptyState,
   EventInfoBlock,
   EventPanelCard,
 } from "./EventDetailsPrimitives";
-import { EventSectionsPanel } from "./EventSectionsPanel";
 
 type Props = {
   event: Event;
-  sections: EventSection[];
   dateLocale: Locale;
   t: TFunction;
-  onAddSection?: () => void;
-  onEditSection?: (section: EventSection) => void;
-  onDeleteSection?: (section: EventSection) => void;
 };
 
-export function EventOverviewWorkspace({
-  event,
-  sections,
-  dateLocale,
-  t,
-  onAddSection,
-  onEditSection,
-  onDeleteSection,
-}: Props) {
+export function EventOverviewWorkspace({ event, dateLocale, t }: Props) {
   const { i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
+
   const eventDateLabel = format(new Date(event.eventDate), "PPP", {
     locale: dateLocale,
   });
+
   const sourceAppointmentDateLabel = event.sourceAppointment?.appointmentDate
     ? format(new Date(event.sourceAppointment.appointmentDate), "PPP", {
         locale: dateLocale,
       })
     : "-";
+
   const sourceWeddingDateLabel = event.sourceAppointment?.weddingDate
     ? format(new Date(event.sourceAppointment.weddingDate), "PPP", {
         locale: dateLocale,
       })
     : "-";
+
   const eventStatusLabel = t(`events.status.${event.status}`, {
     defaultValue: event.status,
   });
+
   const venueLocation = [event.venue?.area, event.venue?.city]
     .filter(Boolean)
     .join(" / ");
@@ -61,17 +53,31 @@ export function EventOverviewWorkspace({
           <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
             <p
               className={`text-[11px] font-semibold text-[var(--lux-text-muted)] ${
-                isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.18em] text-left"
+                isRtl
+                  ? "tracking-normal text-right"
+                  : "uppercase tracking-[0.18em] text-left"
               }`}
             >
               {t("events.overviewTab", { defaultValue: "Overview" })}
             </p>
-            <h3 className={cn("text-2xl font-semibold text-[var(--lux-heading)]", isRtl ? "text-right" : "text-left")}>
+
+            <h3
+              className={cn(
+                "text-2xl font-semibold text-[var(--lux-heading)]",
+                isRtl ? "text-right" : "text-left",
+              )}
+            >
               {t("events.overviewMainInfo", {
                 defaultValue: "Main Event Information",
               })}
             </h3>
-            <p className={cn("text-sm leading-7 text-[var(--lux-text-secondary)]", isRtl ? "text-right" : "text-left")}>
+
+            <p
+              className={cn(
+                "text-sm leading-7 text-[var(--lux-text-secondary)]",
+                isRtl ? "text-right" : "text-left",
+              )}
+            >
               {t("events.overviewMainInfoHint", {
                 defaultValue:
                   "Review the customer, wedding details, venue context, guest profile, and notes from one place.",
@@ -104,7 +110,9 @@ export function EventOverviewWorkspace({
               label={t("events.guestCount", { defaultValue: "Guest Count" })}
               value={
                 <span dir="auto">
-                  {typeof event.guestCount === "number" ? String(event.guestCount) : "-"}
+                  {typeof event.guestCount === "number"
+                    ? String(event.guestCount)
+                    : "-"}
                 </span>
               }
             />
@@ -119,13 +127,16 @@ export function EventOverviewWorkspace({
               })}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="space-y-3">
             <EventInfoBlock
               label={t("events.customer", { defaultValue: "Customer" })}
               value={<span dir="auto">{event.customer?.fullName}</span>}
               helper={
                 <span dir="auto">
-                  {[event.customer?.mobile, event.customer?.email].filter(Boolean).join(" / ") ||
+                  {[event.customer?.mobile, event.customer?.email]
+                    .filter(Boolean)
+                    .join(" / ") ||
                     t("events.noCustomerLinked", {
                       defaultValue: "No customer linked",
                     })}
@@ -133,9 +144,14 @@ export function EventOverviewWorkspace({
               }
               compact
             />
+
             <EventInfoBlock
               label={t("common.venue", { defaultValue: "Venue" })}
-              value={<span dir="auto">{event.venue?.name || event.venueNameSnapshot}</span>}
+              value={
+                <span dir="auto">
+                  {event.venue?.name || event.venueNameSnapshot}
+                </span>
+              }
               helper={
                 <span dir="auto">
                   {venueLocation ||
@@ -147,10 +163,19 @@ export function EventOverviewWorkspace({
               }
               compact
             />
+
             <EventInfoBlock
               label={t("common.contact", { defaultValue: "Contact" })}
-              value={<span dir="auto">{event.venue?.contactPerson || event.customer?.mobile}</span>}
-              helper={<span dir="auto">{event.venue?.phone || event.customer?.address}</span>}
+              value={
+                <span dir="auto">
+                  {event.venue?.contactPerson || event.customer?.mobile}
+                </span>
+              }
+              helper={
+                <span dir="auto">
+                  {event.venue?.phone || event.customer?.address}
+                </span>
+              }
               compact
             />
           </CardContent>
@@ -166,6 +191,7 @@ export function EventOverviewWorkspace({
               })}
             </CardTitle>
           </CardHeader>
+
           <CardContent>
             {event.sourceAppointmentId ? (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -173,7 +199,9 @@ export function EventOverviewWorkspace({
                   label={t("events.sourceAppointment", {
                     defaultValue: "Source Appointment",
                   })}
-                  value={<span dir="auto">{`#${event.sourceAppointmentId}`}</span>}
+                  value={
+                    <span dir="auto">{`#${event.sourceAppointmentId}`}</span>
+                  }
                   compact
                 />
                 <EventInfoBlock
@@ -191,7 +219,9 @@ export function EventOverviewWorkspace({
                   compact
                 />
                 <EventInfoBlock
-                  label={t("events.guestCount", { defaultValue: "Guest Count" })}
+                  label={t("events.guestCount", {
+                    defaultValue: "Guest Count",
+                  })}
                   value={
                     <span dir="auto">
                       {typeof event.sourceAppointment?.guestCount === "number"
@@ -219,8 +249,11 @@ export function EventOverviewWorkspace({
 
         <Card className={cn(isRtl && "xl:order-1")}>
           <CardHeader className={isRtl ? "text-right" : "text-left"}>
-            <CardTitle className={isRtl ? "text-right" : "text-left"}>{t("common.notes", { defaultValue: "Notes" })}</CardTitle>
+            <CardTitle className={isRtl ? "text-right" : "text-left"}>
+              {t("common.notes", { defaultValue: "Notes" })}
+            </CardTitle>
           </CardHeader>
+
           <CardContent>
             {event.notes ? (
               <div
@@ -234,7 +267,9 @@ export function EventOverviewWorkspace({
               </div>
             ) : (
               <EventEmptyState
-                title={t("events.noNotes", { defaultValue: "No notes added yet." })}
+                title={t("events.noNotes", {
+                  defaultValue: "No notes added yet.",
+                })}
                 description={t("events.notesPlaceholder", {
                   defaultValue:
                     "Add planning notes, reminders, or internal remarks...",
@@ -245,14 +280,6 @@ export function EventOverviewWorkspace({
           </CardContent>
         </Card>
       </div>
-
-      <EventSectionsPanel
-        sections={sections}
-        t={t}
-        onAdd={onAddSection}
-        onEdit={onEditSection}
-        onDelete={onDeleteSection}
-      />
     </div>
   );
 }

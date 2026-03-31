@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
 import { ar, enUS } from "date-fns/locale";
 import type { CheckedState } from "@radix-ui/react-checkbox";
@@ -26,11 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  useCreateEventSection,
-  useDeleteEventSection,
-  useUpdateEventSection,
-} from "@/hooks/events/useEventSectionMutations";
 import { useUpdateEvent } from "@/hooks/events/useEventMutations";
 import { useEvent } from "@/hooks/events/useEvents";
 import { useContracts } from "@/hooks/contracts/useContracts";
@@ -98,17 +94,7 @@ import type {
   VendorType,
 } from "@/pages/vendors/types";
 
-import { EVENT_SECTION_TYPE_OPTIONS } from "./adapters";
-import type { EventSection, EventSectionType, EventStatus } from "./types";
-
-type SectionFormState = {
-  sectionType: EventSectionType;
-  title: string;
-  sortOrder: string;
-  dataText: string;
-  notes: string;
-  isCompleted: boolean;
-};
+import type { EventStatus } from "./types";
 
 type EventVendorFormState = {
   vendorType: VendorType;
@@ -175,27 +161,20 @@ const textareaClassName =
   "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] sm:min-h-[130px]";
 const fieldGroupClassName = "space-y-2";
 const fieldLabelClassName = "text-sm font-medium text-[var(--lux-text)]";
-const helperTextClassName = "text-xs leading-5 text-[var(--lux-text-secondary)]";
+const helperTextClassName =
+  "text-xs leading-5 text-[var(--lux-text-secondary)]";
 const dialogBodyClassName = "space-y-5";
 const dialogSectionClassName =
   "space-y-4 rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 sm:p-5";
 const dialogSectionHeaderClassName = "space-y-1.5";
-const dialogSectionTitleClassName = "text-sm font-semibold text-[var(--lux-text)]";
+const dialogSectionTitleClassName =
+  "text-sm font-semibold text-[var(--lux-text)]";
 const dialogHintBoxClassName =
   "rounded-[18px] border border-dashed border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] p-3 text-sm text-[var(--lux-text-secondary)]";
 const dialogInsetBoxClassName =
   "rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-3";
 const dialogCheckboxCardClassName =
   "flex items-center gap-3 rounded-[18px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] p-4";
-
-const createDefaultSectionState = (sortOrder = 0): SectionFormState => ({
-  sectionType: "client_info",
-  title: "",
-  sortOrder: String(sortOrder),
-  dataText: "{}",
-  notes: "",
-  isCompleted: false,
-});
 
 const createDefaultEventVendorState = (): EventVendorFormState => ({
   vendorType: "dj",
@@ -320,17 +299,6 @@ export const EventDetailsPage = ({
   const { data: event, isLoading } = useEvent(resolvedEventId);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
 
-  const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<EventSection | null>(
-    null,
-  );
-  const [deleteCandidate, setDeleteCandidate] = useState<EventSection | null>(
-    null,
-  );
-  const [sectionError, setSectionError] = useState("");
-  const [sectionForm, setSectionForm] = useState<SectionFormState>(
-    createDefaultSectionState(),
-  );
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] =
     useState<EventVendorLink | null>(null);
@@ -356,16 +324,15 @@ export const EventDetailsPage = ({
     createDefaultEventEditState(),
   );
   const [editEventError, setEditEventError] = useState("");
-  const [createQuotationDialogOpen, setCreateQuotationDialogOpen] = useState(false);
+  const [createQuotationDialogOpen, setCreateQuotationDialogOpen] =
+    useState(false);
   const [quotationCreateForm, setQuotationCreateForm] =
     useState<QuotationCreateFormState>(createDefaultQuotationCreateState());
-  const [createContractDialogOpen, setCreateContractDialogOpen] = useState(false);
+  const [createContractDialogOpen, setCreateContractDialogOpen] =
+    useState(false);
   const [contractCreateForm, setContractCreateForm] =
     useState<ContractCreateFormState>(createDefaultContractCreateState());
 
-  const createSectionMutation = useCreateEventSection();
-  const updateSectionMutation = useUpdateEventSection(Number(resolvedEventId || 0));
-  const deleteSectionMutation = useDeleteEventSection(Number(resolvedEventId || 0));
   const updateEventMutation = useUpdateEvent(resolvedEventId, {
     navigateOnSuccess: false,
     onSuccess: () => {
@@ -386,11 +353,21 @@ export const EventDetailsPage = ({
     onSuccess: () => setCreateContractDialogOpen(false),
   });
   const createEventServiceMutation = useCreateEventService();
-  const updateEventServiceMutation = useUpdateEventService(Number(resolvedEventId || 0));
-  const deleteEventServiceMutation = useDeleteEventService(Number(resolvedEventId || 0));
-  const createEventVendorMutation = useCreateEventVendor(Number(resolvedEventId || 0));
-  const updateEventVendorMutation = useUpdateEventVendor(Number(resolvedEventId || 0));
-  const deleteEventVendorMutation = useDeleteEventVendor(Number(resolvedEventId || 0));
+  const updateEventServiceMutation = useUpdateEventService(
+    Number(resolvedEventId || 0),
+  );
+  const deleteEventServiceMutation = useDeleteEventService(
+    Number(resolvedEventId || 0),
+  );
+  const createEventVendorMutation = useCreateEventVendor(
+    Number(resolvedEventId || 0),
+  );
+  const updateEventVendorMutation = useUpdateEventVendor(
+    Number(resolvedEventId || 0),
+  );
+  const deleteEventVendorMutation = useDeleteEventVendor(
+    Number(resolvedEventId || 0),
+  );
   const { data: vendorCatalogResponse } = useVendors({
     currentPage: 1,
     itemsPerPage: 200,
@@ -477,6 +454,7 @@ export const EventDetailsPage = ({
     signedDateFrom: "",
     signedDateTo: "",
   });
+
   const vendorCatalog = useMemo(
     () => vendorCatalogResponse?.data ?? [],
     [vendorCatalogResponse?.data],
@@ -502,17 +480,6 @@ export const EventDetailsPage = ({
     [venuesResponse?.data],
   );
 
-  const sortedSections = useMemo(
-    () =>
-      [...(event?.sections ?? [])].sort((left, right) => {
-        if (left.sortOrder !== right.sortOrder) {
-          return left.sortOrder - right.sortOrder;
-        }
-
-        return left.id - right.id;
-      }),
-    [event?.sections],
-  );
   const sortedEventVendorLinks = useMemo(
     () =>
       [...(eventVendorLinksResponse?.data ?? [])].sort((left, right) => {
@@ -666,6 +633,7 @@ export const EventDetailsPage = ({
   );
   const latestQuotation = sortedEventQuotations[0] ?? null;
   const latestContract = sortedEventContracts[0] ?? null;
+
   const operationalReadiness = useMemo(() => {
     const servicesReady = sortedEventServiceItems.filter(
       (item) => item.status === "confirmed" || item.status === "completed",
@@ -673,12 +641,9 @@ export const EventDetailsPage = ({
     const vendorsReady = sortedEventVendorLinks.filter(
       (link) => link.status === "approved" || link.status === "confirmed",
     ).length;
-    const sectionsReady = sortedSections.filter((section) => section.isCompleted).length;
     const total =
-      sortedEventServiceItems.length +
-      sortedEventVendorLinks.length +
-      sortedSections.length;
-    const ready = servicesReady + vendorsReady + sectionsReady;
+      sortedEventServiceItems.length + sortedEventVendorLinks.length;
+    const ready = servicesReady + vendorsReady;
 
     return {
       ready,
@@ -688,33 +653,8 @@ export const EventDetailsPage = ({
       servicesTotal: sortedEventServiceItems.length,
       vendorsReady,
       vendorsTotal: sortedEventVendorLinks.length,
-      sectionsReady,
-      sectionsTotal: sortedSections.length,
     };
-  }, [sortedEventServiceItems, sortedEventVendorLinks, sortedSections]);
-
-  useEffect(() => {
-    if (!sectionDialogOpen) {
-      setEditingSection(null);
-      setSectionError("");
-      setSectionForm(createDefaultSectionState(sortedSections.length));
-      return;
-    }
-
-    if (!editingSection) {
-      setSectionForm(createDefaultSectionState(sortedSections.length));
-      return;
-    }
-
-    setSectionForm({
-      sectionType: editingSection.sectionType,
-      title: editingSection.title ?? "",
-      sortOrder: String(editingSection.sortOrder ?? 0),
-      dataText: JSON.stringify(editingSection.data ?? {}, null, 2),
-      notes: editingSection.notes ?? "",
-      isCompleted: editingSection.isCompleted,
-    });
-  }, [editingSection, sectionDialogOpen, sortedSections.length]);
+  }, [sortedEventServiceItems, sortedEventVendorLinks]);
 
   useEffect(() => {
     if (!vendorDialogOpen) {
@@ -841,7 +781,11 @@ export const EventDetailsPage = ({
       eventServiceIds: sortedEventServiceItems.map((item) => String(item.id)),
       eventVendorIds: sortedEventVendorLinks.map((item) => String(item.id)),
     });
-  }, [createQuotationDialogOpen, sortedEventServiceItems, sortedEventVendorLinks]);
+  }, [
+    createQuotationDialogOpen,
+    sortedEventServiceItems,
+    sortedEventVendorLinks,
+  ]);
 
   useEffect(() => {
     if (!createContractDialogOpen) {
@@ -880,62 +824,6 @@ export const EventDetailsPage = ({
     );
   }
 
-  const handleSectionSave = () => {
-    if (!resolvedEventId) {
-      return;
-    }
-
-    const sortOrder = Number(sectionForm.sortOrder || 0);
-    if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-      setSectionError(
-        t("events.sectionSortOrderInvalid", {
-          defaultValue: "Sort order must be zero or greater.",
-        }),
-      );
-      return;
-    }
-
-    let parsedData: Record<string, unknown>;
-    try {
-      const parsed = JSON.parse(sectionForm.dataText || "{}");
-      if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        throw new Error("invalid");
-      }
-      parsedData = parsed as Record<string, unknown>;
-    } catch {
-      setSectionError(
-        t("events.sectionDataInvalid", {
-          defaultValue: "Section data must be valid JSON object.",
-        }),
-      );
-      return;
-    }
-
-    setSectionError("");
-
-    const payload = {
-      sectionType: sectionForm.sectionType,
-      title: sectionForm.title,
-      sortOrder,
-      data: parsedData,
-      notes: sectionForm.notes,
-      isCompleted: sectionForm.isCompleted,
-    };
-
-    if (editingSection) {
-      updateSectionMutation.mutate(
-        { id: editingSection.id, values: payload },
-        { onSuccess: () => setSectionDialogOpen(false) },
-      );
-      return;
-    }
-
-    createSectionMutation.mutate(
-      { eventId: Number(resolvedEventId), ...payload },
-      { onSuccess: () => setSectionDialogOpen(false) },
-    );
-  };
-
   const handleVendorSave = () => {
     if (!resolvedEventId) {
       return;
@@ -968,10 +856,7 @@ export const EventDetailsPage = ({
       return;
     }
 
-    if (
-      !vendorForm.vendorId &&
-      vendorForm.selectedSubServiceIds.length > 0
-    ) {
+    if (!vendorForm.vendorId && vendorForm.selectedSubServiceIds.length > 0) {
       setVendorError(
         t("vendors.selectVendorForSubServices", {
           defaultValue:
@@ -1158,7 +1043,9 @@ export const EventDetailsPage = ({
     <>
       <ProtectedComponent permission="events.read">
         <PageContainer
-          className={embedded ? "p-0 text-foreground" : "pb-4 pt-4 text-foreground"}
+          className={
+            embedded ? "p-0 text-foreground" : "pb-4 pt-4 text-foreground"
+          }
         >
           <div
             dir={i18n.dir()}
@@ -1178,7 +1065,8 @@ export const EventDetailsPage = ({
                 }
                 onViewSourceAppointment={
                   event.sourceAppointmentId
-                    ? () => navigate(`/appointments/${event.sourceAppointmentId}`)
+                    ? () =>
+                        navigate(`/appointments/${event.sourceAppointmentId}`)
                     : undefined
                 }
               />
@@ -1214,7 +1102,9 @@ export const EventDetailsPage = ({
             <Tabs
               dir={i18n.dir()}
               value={activeTab}
-              onValueChange={(value) => setActiveTab(value as EventDetailsTabValue)}
+              onValueChange={(value) =>
+                setActiveTab(value as EventDetailsTabValue)
+              }
               className="w-full"
             >
               <TabsList>
@@ -1241,15 +1131,7 @@ export const EventDetailsPage = ({
               </TabsList>
 
               <TabsContent value="overview">
-                <EventOverviewPanel
-                  eventId={resolvedEventId ?? ""}
-                  onAddSection={() => setSectionDialogOpen(true)}
-                  onEditSection={(section) => {
-                    setEditingSection(section);
-                    setSectionDialogOpen(true);
-                  }}
-                  onDeleteSection={(section) => setDeleteCandidate(section)}
-                />
+                <EventOverviewPanel eventId={resolvedEventId ?? ""} />
               </TabsContent>
 
               <TabsContent value="items">
@@ -1260,7 +1142,9 @@ export const EventDetailsPage = ({
                     setEditingServiceItem(serviceItem);
                     setServiceEditorOpen(true);
                   }}
-                  onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
+                  onDelete={(serviceItem) =>
+                    setDeleteServiceCandidate(serviceItem)
+                  }
                 />
               </TabsContent>
 
@@ -1272,7 +1156,9 @@ export const EventDetailsPage = ({
                     setEditingVendorLink(vendorLink);
                     setVendorDialogOpen(true);
                   }}
-                  onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
+                  onDelete={(vendorLink) =>
+                    setDeleteVendorCandidate(vendorLink)
+                  }
                 />
               </TabsContent>
 
@@ -1280,7 +1166,9 @@ export const EventDetailsPage = ({
                 <EventQuotationsPanel
                   eventId={resolvedEventId ?? ""}
                   onCreateQuotation={() => setCreateQuotationDialogOpen(true)}
-                  onCreateQuotationFromEvent={() => setCreateQuotationDialogOpen(true)}
+                  onCreateQuotationFromEvent={() =>
+                    setCreateQuotationDialogOpen(true)
+                  }
                   onViewQuotation={undefined}
                 />
               </TabsContent>
@@ -1289,7 +1177,9 @@ export const EventDetailsPage = ({
                 <EventContractsPanel
                   eventId={resolvedEventId ?? ""}
                   onCreateContract={() => setCreateContractDialogOpen(true)}
-                  onCreateContractFromQuotation={() => setCreateContractDialogOpen(true)}
+                  onCreateContractFromQuotation={() =>
+                    setCreateContractDialogOpen(true)
+                  }
                   onViewContract={undefined}
                 />
               </TabsContent>
@@ -1336,7 +1226,10 @@ export const EventDetailsPage = ({
                         })}
                       </SelectItem>
                       {customerCatalog.map((customer) => (
-                        <SelectItem key={customer.id} value={String(customer.id)}>
+                        <SelectItem
+                          key={customer.id}
+                          value={String(customer.id)}
+                        >
                           {customer.fullName}
                         </SelectItem>
                       ))}
@@ -1408,9 +1301,18 @@ export const EventDetailsPage = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {["draft", "designing", "confirmed", "in_progress", "completed", "cancelled"].map((status) => (
+                      {[
+                        "draft",
+                        "designing",
+                        "confirmed",
+                        "in_progress",
+                        "completed",
+                        "cancelled",
+                      ].map((status) => (
                         <SelectItem key={status} value={status}>
-                          {t(`events.status.${status}`, { defaultValue: status })}
+                          {t(`events.status.${status}`, {
+                            defaultValue: status,
+                          })}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1497,12 +1399,17 @@ export const EventDetailsPage = ({
               </label>
 
               {editEventError ? (
-                <p className="text-sm text-[var(--lux-danger)]">{editEventError}</p>
+                <p className="text-sm text-[var(--lux-danger)]">
+                  {editEventError}
+                </p>
               ) : null}
             </div>
           </AppDialogBody>
           <AppDialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setEditEventDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setEditEventDialogOpen(false)}
+            >
               {t("common.cancel", { defaultValue: "Cancel" })}
             </Button>
             <Button
@@ -1551,7 +1458,9 @@ export const EventDetailsPage = ({
                 </label>
                 <label className={fieldGroupClassName}>
                   <span className={fieldLabelClassName}>
-                    {t("quotations.validUntil", { defaultValue: "Valid Until" })}
+                    {t("quotations.validUntil", {
+                      defaultValue: "Valid Until",
+                    })}
                   </span>
                   <Input
                     type="date"
@@ -1568,18 +1477,30 @@ export const EventDetailsPage = ({
 
               <div className="grid gap-3">
                 <p className={fieldLabelClassName}>
-                  {t("services.eventServices", { defaultValue: "Event Services" })}
+                  {t("services.eventServices", {
+                    defaultValue: "Event Services",
+                  })}
                 </p>
                 {sortedEventServiceItems.map((item) => (
                   <label key={item.id} className={dialogCheckboxCardClassName}>
                     <Checkbox
-                      checked={quotationCreateForm.eventServiceIds.includes(String(item.id))}
+                      checked={quotationCreateForm.eventServiceIds.includes(
+                        String(item.id),
+                      )}
                       onCheckedChange={(checked: CheckedState) =>
                         setQuotationCreateForm((current) => ({
                           ...current,
-                          eventServiceIds: checked === true
-                            ? [...new Set([...current.eventServiceIds, String(item.id)])]
-                            : current.eventServiceIds.filter((value) => value !== String(item.id)),
+                          eventServiceIds:
+                            checked === true
+                              ? [
+                                  ...new Set([
+                                    ...current.eventServiceIds,
+                                    String(item.id),
+                                  ]),
+                                ]
+                              : current.eventServiceIds.filter(
+                                  (value) => value !== String(item.id),
+                                ),
                         }))
                       }
                     />
@@ -1597,18 +1518,30 @@ export const EventDetailsPage = ({
                 {sortedEventVendorLinks.map((item) => (
                   <label key={item.id} className={dialogCheckboxCardClassName}>
                     <Checkbox
-                      checked={quotationCreateForm.eventVendorIds.includes(String(item.id))}
+                      checked={quotationCreateForm.eventVendorIds.includes(
+                        String(item.id),
+                      )}
                       onCheckedChange={(checked: CheckedState) =>
                         setQuotationCreateForm((current) => ({
                           ...current,
-                          eventVendorIds: checked === true
-                            ? [...new Set([...current.eventVendorIds, String(item.id)])]
-                            : current.eventVendorIds.filter((value) => value !== String(item.id)),
+                          eventVendorIds:
+                            checked === true
+                              ? [
+                                  ...new Set([
+                                    ...current.eventVendorIds,
+                                    String(item.id),
+                                  ]),
+                                ]
+                              : current.eventVendorIds.filter(
+                                  (value) => value !== String(item.id),
+                                ),
                         }))
                       }
                     />
                     <span className="text-sm text-[var(--lux-text)]">
-                      {item.resolvedCompanyName || item.vendor?.name || item.companyNameSnapshot}
+                      {item.resolvedCompanyName ||
+                        item.vendor?.name ||
+                        item.companyNameSnapshot}
                     </span>
                   </label>
                 ))}
@@ -1616,7 +1549,10 @@ export const EventDetailsPage = ({
             </div>
           </AppDialogBody>
           <AppDialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setCreateQuotationDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateQuotationDialogOpen(false)}
+            >
               {t("common.cancel", { defaultValue: "Cancel" })}
             </Button>
             <Button
@@ -1668,7 +1604,10 @@ export const EventDetailsPage = ({
                       })}
                     </SelectItem>
                     {sortedEventQuotations.map((quotation) => (
-                      <SelectItem key={quotation.id} value={String(quotation.id)}>
+                      <SelectItem
+                        key={quotation.id}
+                        value={String(quotation.id)}
+                      >
                         {quotation.quotationNumber || `QT-${quotation.id}`}
                       </SelectItem>
                     ))}
@@ -1694,7 +1633,10 @@ export const EventDetailsPage = ({
             </div>
           </AppDialogBody>
           <AppDialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setCreateContractDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateContractDialogOpen(false)}
+            >
               {t("common.cancel", { defaultValue: "Cancel" })}
             </Button>
             <Button
@@ -1713,246 +1655,33 @@ export const EventDetailsPage = ({
         </AppDialogShell>
       </Dialog>
 
-        <Dialog
-          open={sectionDialogOpen}
-          onOpenChange={(open) => {
-            setSectionDialogOpen(open);
-            if (!open) {
-              setEditingSection(null);
+      <Dialog
+        open={vendorDialogOpen}
+        onOpenChange={(open) => {
+          setVendorDialogOpen(open);
+          if (!open) {
+            setEditingVendorLink(null);
+          }
+        }}
+      >
+        <AppDialogShell size="lg" className="h-[min(92dvh,920px)]">
+          <AppDialogHeader
+            title={
+              editingVendorLink
+                ? t("vendors.editVendorAssignment", {
+                    defaultValue: "Edit Vendor Assignment",
+                  })
+                : t("vendors.assignVendor", {
+                    defaultValue: "Assign Vendor",
+                  })
             }
-          }}
-        >
-          <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
-            <AppDialogHeader
-              title={
-                editingSection
-                  ? t("events.editSection", { defaultValue: "Edit Section" })
-                  : t("events.addSection", { defaultValue: "Add Section" })
-              }
-              description={t("events.sectionDialogHint", {
-                defaultValue:
-                  "Keep section notes clean and use JSON only for structured planning data.",
-              })}
-            />
+            description={t("vendors.vendorAssignmentHint", {
+              defaultValue:
+                "Link a catalog vendor or record a manual company snapshot for this event.",
+            })}
+          />
 
-            <AppDialogBody className={dialogBodyClassName}>
-              <div className={dialogSectionClassName}>
-                <div className={dialogSectionHeaderClassName}>
-                  <p className={dialogSectionTitleClassName}>
-                    {t("events.sectionSetup", { defaultValue: "Section Setup" })}
-                  </p>
-                  <p className={helperTextClassName}>
-                    {t("events.sectionSetupHint", {
-                      defaultValue:
-                        "Define the section type, title, and ordering before adding structured values.",
-                    })}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("events.sectionTypeLabel", {
-                    defaultValue: "Section Type",
-                  })}
-                </span>
-                <Select
-                  value={sectionForm.sectionType}
-                  onValueChange={(value) =>
-                    setSectionForm((current) => ({
-                      ...current,
-                      sectionType: value as EventSectionType,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_SECTION_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`events.sectionType.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
-
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("events.sortOrder", { defaultValue: "Sort Order" })}
-                </span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={sectionForm.sortOrder}
-                  onChange={(event) =>
-                    setSectionForm((current) => ({
-                      ...current,
-                      sortOrder: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-              {t("events.sectionTitle", { defaultValue: "Title" })}
-              </span>
-              <Input
-                value={sectionForm.title}
-                onChange={(event) =>
-                  setSectionForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder={t("events.sectionTitlePlaceholder", {
-                  defaultValue: "Enter a section title",
-                })}
-              />
-            </label>
-              </div>
-
-              <div className={dialogSectionClassName}>
-                <div className={dialogSectionHeaderClassName}>
-                  <p className={dialogSectionTitleClassName}>
-                    {t("events.sectionContent", { defaultValue: "Section Content" })}
-                  </p>
-                  <p className={helperTextClassName}>
-                    {t("events.sectionContentHint", {
-                      defaultValue:
-                        "Use structured JSON for operational values and plain notes for planner context.",
-                    })}
-                  </p>
-                </div>
-
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-                {t("events.sectionData", { defaultValue: "Structured Data" })}
-              </span>
-              <textarea
-                className={textareaClassName}
-                value={sectionForm.dataText}
-                onChange={(event) =>
-                  setSectionForm((current) => ({
-                    ...current,
-                    dataText: event.target.value,
-                  }))
-                }
-                placeholder='{"notes":"Add structured values here"}'
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </label>
-
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-                {t("common.notes", { defaultValue: "Notes" })}
-              </span>
-              <textarea
-                className={textareaClassName}
-                value={sectionForm.notes}
-                onChange={(event) =>
-                  setSectionForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder={t("events.sectionNotesPlaceholder", {
-                  defaultValue: "Add section notes or planner remarks...",
-                })}
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </label>
-
-            <label className={dialogCheckboxCardClassName}>
-              <Checkbox
-                checked={sectionForm.isCompleted}
-                onCheckedChange={(checked: CheckedState) =>
-                  setSectionForm((current) => ({
-                    ...current,
-                    isCompleted: Boolean(checked),
-                  }))
-                }
-              />
-              <span className="text-sm text-[var(--lux-text)]">
-                {t("events.completed", { defaultValue: "Completed" })}
-              </span>
-            </label>
-              </div>
-
-              {sectionError ? (
-                <p className="text-sm text-[var(--lux-danger)]">{sectionError}</p>
-              ) : null}
-
-            </AppDialogBody>
-
-            <AppDialogFooter className="gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setSectionDialogOpen(false)}
-                disabled={
-                  createSectionMutation.isPending ||
-                  updateSectionMutation.isPending
-                }
-              >
-                {t("common.cancel", { defaultValue: "Cancel" })}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSectionSave}
-                disabled={
-                  createSectionMutation.isPending ||
-                  updateSectionMutation.isPending
-                }
-              >
-                {createSectionMutation.isPending ||
-                updateSectionMutation.isPending
-                  ? t("common.processing", { defaultValue: "Processing..." })
-                  : editingSection
-                    ? t("common.update", { defaultValue: "Update" })
-                  : t("common.create", { defaultValue: "Create" })}
-              </Button>
-            </AppDialogFooter>
-          </AppDialogShell>
-        </Dialog>
-
-        <Dialog
-          open={vendorDialogOpen}
-          onOpenChange={(open) => {
-            setVendorDialogOpen(open);
-            if (!open) {
-              setEditingVendorLink(null);
-            }
-          }}
-        >
-          <AppDialogShell size="lg" className="h-[min(92dvh,920px)]">
-            <AppDialogHeader
-              title={
-                editingVendorLink
-                  ? t("vendors.editVendorAssignment", {
-                      defaultValue: "Edit Vendor Assignment",
-                    })
-                  : t("vendors.assignVendor", {
-                      defaultValue: "Assign Vendor",
-                    })
-              }
-              description={t("vendors.vendorAssignmentHint", {
-                defaultValue:
-                  "Link a catalog vendor or record a manual company snapshot for this event.",
-              })}
-            />
-
-            <AppDialogBody className={dialogBodyClassName}>
+          <AppDialogBody className={dialogBodyClassName}>
             <div className="space-y-5">
               <div className={dialogSectionClassName}>
                 <div className={dialogSectionHeaderClassName}>
@@ -2264,98 +1993,98 @@ export const EventDetailsPage = ({
                   </Badge>
                 </div>
 
-              {vendorForm.providedBy !== "company" ? (
-                <div className={dialogHintBoxClassName}>
-                  {t("vendors.clientModeNoSubServices", {
-                    defaultValue:
-                      "Vendor sub-services are available only when a company vendor is selected.",
-                  })}
-                </div>
-              ) : !vendorForm.vendorId ? (
-                <div className={dialogHintBoxClassName}>
-                  {t("vendors.selectVendorForSubServices", {
-                    defaultValue:
-                      "Select a company vendor to load that vendor's sub-services.",
-                  })}
-                </div>
-              ) : vendorSubServicesLoading ? (
-                <p className="text-sm text-[var(--lux-text-secondary)]">
-                  {t("common.loading", { defaultValue: "Loading..." })}
-                </p>
-              ) : availableVendorSubServices.length ? (
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {availableVendorSubServices.map((subService) => {
-                    const checked = vendorForm.selectedSubServiceIds.includes(
-                      subService.id,
-                    );
+                {vendorForm.providedBy !== "company" ? (
+                  <div className={dialogHintBoxClassName}>
+                    {t("vendors.clientModeNoSubServices", {
+                      defaultValue:
+                        "Vendor sub-services are available only when a company vendor is selected.",
+                    })}
+                  </div>
+                ) : !vendorForm.vendorId ? (
+                  <div className={dialogHintBoxClassName}>
+                    {t("vendors.selectVendorForSubServices", {
+                      defaultValue:
+                        "Select a company vendor to load that vendor's sub-services.",
+                    })}
+                  </div>
+                ) : vendorSubServicesLoading ? (
+                  <p className="text-sm text-[var(--lux-text-secondary)]">
+                    {t("common.loading", { defaultValue: "Loading..." })}
+                  </p>
+                ) : availableVendorSubServices.length ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {availableVendorSubServices.map((subService) => {
+                      const checked = vendorForm.selectedSubServiceIds.includes(
+                        subService.id,
+                      );
 
-                    return (
-                      <label
-                        key={subService.id}
-                        className="flex items-start gap-3 rounded-[18px] border p-3"
-                        style={{
-                          background: checked
-                            ? "var(--lux-control-hover)"
-                            : "var(--lux-panel-surface)",
-                          borderColor: checked
-                            ? "var(--lux-accent)"
-                            : "var(--lux-row-border)",
-                        }}
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(nextChecked: CheckedState) =>
-                            setVendorForm((current) => ({
-                              ...current,
-                              selectedSubServiceIds: nextChecked
-                                ? Array.from(
-                                    new Set([
-                                      ...current.selectedSubServiceIds,
-                                      subService.id,
-                                    ]),
-                                  )
-                                : current.selectedSubServiceIds.filter(
-                                    (id) => id !== subService.id,
-                                  ),
-                            }))
-                          }
-                        />
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-[var(--lux-text)]">
-                            {subService.name}
-                          </p>
-                          <p className={helperTextClassName}>
-                            {subService.description ||
-                              subService.code ||
-                              t("vendors.noDescription", {
-                                defaultValue: "No description",
-                              })}
-                            {!subService.isActive
-                              ? ` - ${t("vendors.status.inactive", {
-                                  defaultValue: "Inactive",
-                                })}`
-                              : ""}
-                          </p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div
-                  className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
-                  style={{
-                    background: "var(--lux-panel-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
-                  {t("vendors.noVendorSubServicesForType", {
-                    defaultValue:
-                      "No vendor sub-services are configured for this vendor yet.",
-                  })}
-                </div>
-              )}
-            </div>
+                      return (
+                        <label
+                          key={subService.id}
+                          className="flex items-start gap-3 rounded-[18px] border p-3"
+                          style={{
+                            background: checked
+                              ? "var(--lux-control-hover)"
+                              : "var(--lux-panel-surface)",
+                            borderColor: checked
+                              ? "var(--lux-accent)"
+                              : "var(--lux-row-border)",
+                          }}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(nextChecked: CheckedState) =>
+                              setVendorForm((current) => ({
+                                ...current,
+                                selectedSubServiceIds: nextChecked
+                                  ? Array.from(
+                                      new Set([
+                                        ...current.selectedSubServiceIds,
+                                        subService.id,
+                                      ]),
+                                    )
+                                  : current.selectedSubServiceIds.filter(
+                                      (id) => id !== subService.id,
+                                    ),
+                              }))
+                            }
+                          />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-[var(--lux-text)]">
+                              {subService.name}
+                            </p>
+                            <p className={helperTextClassName}>
+                              {subService.description ||
+                                subService.code ||
+                                t("vendors.noDescription", {
+                                  defaultValue: "No description",
+                                })}
+                              {!subService.isActive
+                                ? ` - ${t("vendors.status.inactive", {
+                                    defaultValue: "Inactive",
+                                  })})`
+                                : ""}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-[18px] border border-dashed p-4 text-sm text-[var(--lux-text-secondary)]"
+                    style={{
+                      background: "var(--lux-panel-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    {t("vendors.noVendorSubServicesForType", {
+                      defaultValue:
+                        "No vendor sub-services are configured for this vendor yet.",
+                    })}
+                  </div>
+                )}
+              </div>
 
               <div className={dialogSectionClassName}>
                 <div className={dialogSectionHeaderClassName}>
@@ -2391,15 +2120,17 @@ export const EventDetailsPage = ({
                                 "Select a company vendor to load pricing plans",
                             })
                           : vendorPricingPlansLoading
-                        ? t("common.loading", { defaultValue: "Loading..." })
-                        : calculatedVendorPricingPlan?.name ||
-                          (vendorForm.selectedSubServiceIds.length
-                            ? t("vendors.noMatchingPricingPlan", {
-                                defaultValue: "No matching pricing plan",
+                            ? t("common.loading", {
+                                defaultValue: "Loading...",
                               })
-                            : t("vendors.noPricingPlan", {
-                                defaultValue: "No pricing plan selected",
-                              }))}
+                            : calculatedVendorPricingPlan?.name ||
+                              (vendorForm.selectedSubServiceIds.length
+                                ? t("vendors.noMatchingPricingPlan", {
+                                    defaultValue: "No matching pricing plan",
+                                  })
+                                : t("vendors.noPricingPlan", {
+                                    defaultValue: "No pricing plan selected",
+                                  }))}
                     </p>
                   </div>
 
@@ -2501,8 +2232,8 @@ export const EventDetailsPage = ({
                             "Manual override is active. The matched pricing plan remains linked for reference.",
                         })
                       : t("vendors.agreedPriceAutoHint", {
-                      defaultValue:
-                          "Agreed price follows the matched pricing plan until manual override is enabled.",
+                          defaultValue:
+                            "Agreed price follows the matched pricing plan until manual override is enabled.",
                         })}
                   </p>
                 </label>
@@ -2549,74 +2280,74 @@ export const EventDetailsPage = ({
               </div>
             </div>
 
-              {vendorError ? (
-                <p className="text-sm text-[var(--lux-danger)]">{vendorError}</p>
-              ) : null}
-            </AppDialogBody>
+            {vendorError ? (
+              <p className="text-sm text-[var(--lux-danger)]">{vendorError}</p>
+            ) : null}
+          </AppDialogBody>
 
-            <AppDialogFooter className="gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setVendorDialogOpen(false)}
-                disabled={
-                  createEventVendorMutation.isPending ||
-                  updateEventVendorMutation.isPending
-                }
-              >
-                {t("common.cancel", { defaultValue: "Cancel" })}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleVendorSave}
-                disabled={
-                  createEventVendorMutation.isPending ||
-                  updateEventVendorMutation.isPending
-                }
-              >
-                {createEventVendorMutation.isPending ||
+          <AppDialogFooter className="gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setVendorDialogOpen(false)}
+              disabled={
+                createEventVendorMutation.isPending ||
                 updateEventVendorMutation.isPending
-                  ? t("common.processing", { defaultValue: "Processing..." })
-                  : editingVendorLink
-                    ? t("common.update", { defaultValue: "Update" })
-                  : t("common.create", { defaultValue: "Create" })}
-              </Button>
-            </AppDialogFooter>
-          </AppDialogShell>
-        </Dialog>
-
-        <Dialog
-          open={serviceEditorOpen}
-          onOpenChange={(open) => {
-            setServiceEditorOpen(open);
-            if (!open) {
-              setEditingServiceItem(null);
-            }
-          }}
-        >
-          <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
-            <AppDialogHeader
-              title={t("services.editEventService", {
-                defaultValue: "Edit Event Service",
-              })}
-              description={
-                <>
-                  <span>
-                    {t("services.editEventServiceHint", {
-                      defaultValue: "Update the selected event service details.",
-                    })}
-                  </span>
-                  <span className="block">
-                    {t("services.eventServiceHint", {
-                      defaultValue:
-                        "Link a catalog service or record a manual service line for this event.",
-                    })}
-                  </span>
-                </>
               }
-            />
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleVendorSave}
+              disabled={
+                createEventVendorMutation.isPending ||
+                updateEventVendorMutation.isPending
+              }
+            >
+              {createEventVendorMutation.isPending ||
+              updateEventVendorMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : editingVendorLink
+                  ? t("common.update", { defaultValue: "Update" })
+                  : t("common.create", { defaultValue: "Create" })}
+            </Button>
+          </AppDialogFooter>
+        </AppDialogShell>
+      </Dialog>
 
-            <AppDialogBody className={dialogBodyClassName}>
+      <Dialog
+        open={serviceEditorOpen}
+        onOpenChange={(open) => {
+          setServiceEditorOpen(open);
+          if (!open) {
+            setEditingServiceItem(null);
+          }
+        }}
+      >
+        <AppDialogShell size="md" className="h-[min(88dvh,760px)]">
+          <AppDialogHeader
+            title={t("services.editEventService", {
+              defaultValue: "Edit Event Service",
+            })}
+            description={
+              <>
+                <span>
+                  {t("services.editEventServiceHint", {
+                    defaultValue: "Update the selected event service details.",
+                  })}
+                </span>
+                <span className="block">
+                  {t("services.eventServiceHint", {
+                    defaultValue:
+                      "Link a catalog service or record a manual service line for this event.",
+                  })}
+                </span>
+              </>
+            }
+          />
+
+          <AppDialogBody className={dialogBodyClassName}>
             <div className={dialogSectionClassName}>
               <div className={dialogSectionHeaderClassName}>
                 <p className={dialogSectionTitleClassName}>
@@ -2631,295 +2362,277 @@ export const EventDetailsPage = ({
                   })}
                 </p>
               </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("services.categoryLabel", {
-                    defaultValue: "Service Category",
-                  })}
-                </span>
-                <Select
-                  value={serviceForm.category}
-                  onValueChange={(value) =>
-                    setServiceForm((current) => ({
-                      ...current,
-                      category: value as ServiceCategory,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_CATEGORY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`services.category.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("services.categoryLabel", {
+                      defaultValue: "Service Category",
+                    })}
+                  </span>
+                  <Select
+                    value={serviceForm.category}
+                    onValueChange={(value) =>
+                      setServiceForm((current) => ({
+                        ...current,
+                        category: value as ServiceCategory,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SERVICE_CATEGORY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {t(`services.category.${option.value}`, {
+                            defaultValue: option.label,
+                          })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
 
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("services.eventStatusLabel", {
-                    defaultValue: "Item Status",
-                  })}
-                </span>
-                <Select
-                  value={serviceForm.status}
-                  onValueChange={(value) =>
-                    setServiceForm((current) => ({
-                      ...current,
-                      status: value as EventServiceStatus,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_SERVICE_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`services.eventStatus.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("services.eventStatusLabel", {
+                      defaultValue: "Item Status",
+                    })}
+                  </span>
+                  <Select
+                    value={serviceForm.status}
+                    onValueChange={(value) =>
+                      setServiceForm((current) => ({
+                        ...current,
+                        status: value as EventServiceStatus,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EVENT_SERVICE_STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {t(`services.eventStatus.${option.value}`, {
+                            defaultValue: option.label,
+                          })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
 
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("services.sortOrder", { defaultValue: "Sort Order" })}
-                </span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={serviceForm.sortOrder}
-                  onChange={(event) =>
-                    setServiceForm((current) => ({
-                      ...current,
-                      sortOrder: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
+                <label className={fieldGroupClassName}>
+                  <span className={fieldLabelClassName}>
+                    {t("services.sortOrder", { defaultValue: "Sort Order" })}
+                  </span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={serviceForm.sortOrder}
+                    onChange={(event) =>
+                      setServiceForm((current) => ({
+                        ...current,
+                        sortOrder: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
             </div>
 
             <div className={dialogSectionClassName}>
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-                {t("services.serviceSelection", {
-                  defaultValue: "Catalog Service",
-                })}
-              </span>
-              <Select
-                value={serviceForm.serviceId || "none"}
-                onValueChange={(value) =>
-                  setServiceForm((current) => {
-                    const nextValue = value === "none" ? "" : value;
-                    const selectedService = serviceCatalog.find(
-                      (service) => String(service.id) === nextValue,
-                    );
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("services.serviceSelection", {
+                    defaultValue: "Catalog Service",
+                  })}
+                </span>
+                <Select
+                  value={serviceForm.serviceId || "none"}
+                  onValueChange={(value) =>
+                    setServiceForm((current) => {
+                      const nextValue = value === "none" ? "" : value;
+                      const selectedService = serviceCatalog.find(
+                        (service) => String(service.id) === nextValue,
+                      );
 
-                    return {
-                      ...current,
-                      serviceId: nextValue,
-                      serviceNameSnapshot:
-                        selectedService?.name || current.serviceNameSnapshot,
-                      category: selectedService?.category || current.category,
-                    };
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={t("services.selectService", {
-                      defaultValue: "Select service",
-                    })}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    {t("services.noServiceSelected", {
-                      defaultValue: "No catalog service selected",
-                    })}
-                  </SelectItem>
-                  {selectableServiceCatalog.map((service) => (
-                    <SelectItem key={service.id} value={String(service.id)}>
-                      {service.name}
-                      {!service.isActive
-                        ? ` (${t("services.status.inactive", {
-                            defaultValue: "Inactive",
-                          })})`
-                        : ""}
+                      return {
+                        ...current,
+                        serviceId: nextValue,
+                        serviceNameSnapshot:
+                          selectedService?.name || current.serviceNameSnapshot,
+                        category: selectedService?.category || current.category,
+                      };
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t("services.selectService", {
+                        defaultValue: "Select service",
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      {t("services.noServiceSelected", {
+                        defaultValue: "No catalog service selected",
+                      })}
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className={helperTextClassName}>
-                {t("services.serviceSelectionHint", {
-                  defaultValue:
-                    "Choose a service from the catalog when available, or leave it empty and type the service name manually.",
-                })}
-              </p>
-            </label>
+                    {selectableServiceCatalog.map((service) => (
+                      <SelectItem key={service.id} value={String(service.id)}>
+                        {service.name}
+                        {!service.isActive
+                          ? ` (${t("services.status.inactive", {
+                              defaultValue: "Inactive",
+                            })})`
+                          : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className={helperTextClassName}>
+                  {t("services.serviceSelectionHint", {
+                    defaultValue:
+                      "Choose a service from the catalog when available, or leave it empty and type the service name manually.",
+                  })}
+                </p>
+              </label>
 
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-                {t("services.serviceNameSnapshot", {
-                  defaultValue: "Service Name",
-                })}
-              </span>
-              <Input
-                value={serviceForm.serviceNameSnapshot}
-                onChange={(event) =>
-                  setServiceForm((current) => ({
-                    ...current,
-                    serviceNameSnapshot: event.target.value,
-                  }))
-                }
-                placeholder={t("services.serviceNameSnapshotPlaceholder", {
-                  defaultValue:
-                    "Enter service name if the item is not in the catalog",
-                })}
-              />
-            </label>
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("services.serviceNameSnapshot", {
+                    defaultValue: "Service Name",
+                  })}
+                </span>
+                <Input
+                  value={serviceForm.serviceNameSnapshot}
+                  onChange={(event) =>
+                    setServiceForm((current) => ({
+                      ...current,
+                      serviceNameSnapshot: event.target.value,
+                    }))
+                  }
+                  placeholder={t("services.serviceNameSnapshotPlaceholder", {
+                    defaultValue:
+                      "Enter service name if the item is not in the catalog",
+                  })}
+                />
+              </label>
 
-            <label className={fieldGroupClassName}>
-              <span className={fieldLabelClassName}>
-                {t("common.notes", { defaultValue: "Notes" })}
-              </span>
-              <textarea
-                className={textareaClassName}
-                value={serviceForm.notes}
-                onChange={(event) =>
-                  setServiceForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder={t("services.eventNotesPlaceholder", {
-                  defaultValue:
-                    "Add service notes, scope details, or internal coordination remarks...",
-                })}
-                style={{
-                  background: "var(--lux-control-surface)",
-                  borderColor: "var(--lux-control-border)",
-                }}
-              />
-            </label>
+              <label className={fieldGroupClassName}>
+                <span className={fieldLabelClassName}>
+                  {t("common.notes", { defaultValue: "Notes" })}
+                </span>
+                <textarea
+                  className={textareaClassName}
+                  value={serviceForm.notes}
+                  onChange={(event) =>
+                    setServiceForm((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
+                  }
+                  placeholder={t("services.eventNotesPlaceholder", {
+                    defaultValue:
+                      "Add service notes, scope details, or internal coordination remarks...",
+                  })}
+                  style={{
+                    background: "var(--lux-control-surface)",
+                    borderColor: "var(--lux-control-border)",
+                  }}
+                />
+              </label>
             </div>
 
-              {serviceError ? (
-                <p className="text-sm text-[var(--lux-danger)]">{serviceError}</p>
-              ) : null}
-            </AppDialogBody>
+            {serviceError ? (
+              <p className="text-sm text-[var(--lux-danger)]">{serviceError}</p>
+            ) : null}
+          </AppDialogBody>
 
-            <AppDialogFooter className="gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setServiceEditorOpen(false)}
-                disabled={
-                  createEventServiceMutation.isPending ||
-                  updateEventServiceMutation.isPending
-                }
-              >
-                {t("common.cancel", { defaultValue: "Cancel" })}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleServiceSave}
-                disabled={
-                  createEventServiceMutation.isPending ||
-                  updateEventServiceMutation.isPending
-                }
-              >
-                {createEventServiceMutation.isPending ||
+          <AppDialogFooter className="gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setServiceEditorOpen(false)}
+              disabled={
+                createEventServiceMutation.isPending ||
                 updateEventServiceMutation.isPending
-                  ? t("common.processing", { defaultValue: "Processing..." })
-                  : t("common.update", { defaultValue: "Update" })}
-              </Button>
-            </AppDialogFooter>
-          </AppDialogShell>
-        </Dialog>
-        <EventServicesChecklistDialog
-          open={serviceChecklistOpen}
-          onOpenChange={(open) => {
-            setServiceChecklistOpen(open);
-          }}
-          eventId={event.id}
-          existingServiceIds={existingEventServiceIds}
-        />
-        <ConfirmDialog
-          open={deleteCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteCandidate(null)}
-          title={t("events.deleteSectionTitle", {
-            defaultValue: "Delete Section",
-          })}
-          message={t("events.deleteSectionMessage", {
-            defaultValue: "Are you sure you want to delete this section?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-          onConfirm={() =>
-            deleteCandidate &&
-            deleteSectionMutation.mutate(deleteCandidate.id, {
-              onSettled: () => setDeleteCandidate(null),
-            })
-          }
-          isPending={deleteSectionMutation.isPending}
-        />
+              }
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleServiceSave}
+              disabled={
+                createEventServiceMutation.isPending ||
+                updateEventServiceMutation.isPending
+              }
+            >
+              {createEventServiceMutation.isPending ||
+              updateEventServiceMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.update", { defaultValue: "Update" })}
+            </Button>
+          </AppDialogFooter>
+        </AppDialogShell>
+      </Dialog>
 
-        <ConfirmDialog
-          open={deleteVendorCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteVendorCandidate(null)}
-          title={t("vendors.deleteLinkTitle", {
-            defaultValue: "Delete Vendor Assignment",
-          })}
-          message={t("vendors.deleteLinkMessage", {
-            defaultValue:
-              "Are you sure you want to delete this vendor assignment?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-          onConfirm={() =>
-            deleteVendorCandidate &&
-            deleteEventVendorMutation.mutate(deleteVendorCandidate.id, {
-              onSettled: () => setDeleteVendorCandidate(null),
-            })
-          }
-          isPending={deleteEventVendorMutation.isPending}
-        />
+      <EventServicesChecklistDialog
+        open={serviceChecklistOpen}
+        onOpenChange={(open) => {
+          setServiceChecklistOpen(open);
+        }}
+        eventId={event.id}
+        existingServiceIds={existingEventServiceIds}
+      />
 
-        <ConfirmDialog
-          open={deleteServiceCandidate !== null}
-          onOpenChange={(open) => !open && setDeleteServiceCandidate(null)}
-          title={t("services.deleteEventItemTitle", {
-            defaultValue: "Delete Event Service",
-          })}
-          message={t("services.deleteEventItemMessage", {
-            defaultValue:
-              "Are you sure you want to delete this event service item?",
-          })}
-          confirmLabel={t("common.delete", { defaultValue: "Delete" })}
-          cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-          onConfirm={() =>
-            deleteServiceCandidate &&
-            deleteEventServiceMutation.mutate(deleteServiceCandidate.id, {
-              onSettled: () => setDeleteServiceCandidate(null),
-            })
-          }
-          isPending={deleteEventServiceMutation.isPending}
-        />
-      </>
-    );
-  };
+      <ConfirmDialog
+        open={deleteVendorCandidate !== null}
+        onOpenChange={(open) => !open && setDeleteVendorCandidate(null)}
+        title={t("vendors.deleteLinkTitle", {
+          defaultValue: "Delete Vendor Assignment",
+        })}
+        message={t("vendors.deleteLinkMessage", {
+          defaultValue:
+            "Are you sure you want to delete this vendor assignment?",
+        })}
+        confirmLabel={t("common.delete", { defaultValue: "Delete" })}
+        cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+        onConfirm={() =>
+          deleteVendorCandidate &&
+          deleteEventVendorMutation.mutate(deleteVendorCandidate.id, {
+            onSettled: () => setDeleteVendorCandidate(null),
+          })
+        }
+        isPending={deleteEventVendorMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={deleteServiceCandidate !== null}
+        onOpenChange={(open) => !open && setDeleteServiceCandidate(null)}
+        title={t("services.deleteEventItemTitle", {
+          defaultValue: "Delete Event Service",
+        })}
+        message={t("services.deleteEventItemMessage", {
+          defaultValue:
+            "Are you sure you want to delete this event service item?",
+        })}
+        confirmLabel={t("common.delete", { defaultValue: "Delete" })}
+        cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+        onConfirm={() =>
+          deleteServiceCandidate &&
+          deleteEventServiceMutation.mutate(deleteServiceCandidate.id, {
+            onSettled: () => setDeleteServiceCandidate(null),
+          })
+        }
+        isPending={deleteEventServiceMutation.isPending}
+      />
+    </>
+  );
+};
+
 export default EventDetailsPage;
-
