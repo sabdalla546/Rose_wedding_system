@@ -13,6 +13,7 @@ import {
   cancelAppointment,
   rescheduleAppointment,
   confirmAppointment,
+  exportAppointmentsPdf,
 } from "../controllers/appointment.controller";
 
 const router = Router();
@@ -30,7 +31,12 @@ router.get(
   requirePermissions("appointments.read"),
   getAppointments,
 );
-
+router.get(
+  "/export/pdf",
+  authMiddleware,
+  requirePermissions("appointments.read"),
+  exportAppointmentsPdf,
+);
 router.get(
   "/:id",
   authMiddleware,

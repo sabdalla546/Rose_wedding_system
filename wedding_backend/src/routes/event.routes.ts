@@ -9,6 +9,7 @@ import {
   getEventById,
   updateEvent,
   deleteEvent,
+  exportEventsPdf,
 } from "../controllers/event.controller";
 
 const router = Router();
@@ -19,6 +20,12 @@ router.get(
   authMiddleware,
   requirePermissions("events.read"),
   getEventsCalendar,
+);
+router.get(
+  "/export/pdf",
+  authMiddleware,
+  requirePermissions("events.read"),
+  exportEventsPdf,
 );
 router.get(
   "/:id",

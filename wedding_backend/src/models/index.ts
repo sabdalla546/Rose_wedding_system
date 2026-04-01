@@ -23,6 +23,9 @@ import { QuotationItem } from "./quotationItem.model";
 import { Contract } from "./contract.model";
 import { ContractItem } from "./contractItem.model";
 import { PaymentSchedule } from "./paymentSchedule.model";
+import { ExecutionBrief } from "./executionBrief.model";
+import { ExecutionServiceDetail } from "./executionServiceDetail.model";
+import { ExecutionAttachment } from "./executionAttachment.model";
 // علاقات
 User.belongsToMany(Role, { through: UserRole, foreignKey: "userId" });
 Role.belongsToMany(User, { through: UserRole, foreignKey: "roleId" });
@@ -689,6 +692,79 @@ PaymentSchedule.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
 });
+
+// ExecutionBrief relations
+ExecutionBrief.belongsTo(Event, {
+  foreignKey: "eventId",
+  as: "event",
+});
+
+ExecutionBrief.belongsTo(Quotation, {
+  foreignKey: "quotationId",
+  as: "quotation",
+});
+
+ExecutionBrief.belongsTo(Contract, {
+  foreignKey: "contractId",
+  as: "contract",
+});
+
+ExecutionBrief.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "creator",
+});
+
+ExecutionBrief.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updater",
+});
+
+ExecutionBrief.hasMany(ExecutionServiceDetail, {
+  foreignKey: "briefId",
+  as: "serviceDetails",
+});
+
+ExecutionBrief.hasMany(ExecutionAttachment, {
+  foreignKey: "briefId",
+  as: "attachments",
+});
+
+// ExecutionServiceDetail relations
+ExecutionServiceDetail.belongsTo(ExecutionBrief, {
+  foreignKey: "briefId",
+  as: "brief",
+});
+
+ExecutionServiceDetail.belongsTo(Event, {
+  foreignKey: "eventId",
+  as: "event",
+});
+
+ExecutionServiceDetail.belongsTo(Service, {
+  foreignKey: "serviceId",
+  as: "service",
+});
+
+ExecutionServiceDetail.hasMany(ExecutionAttachment, {
+  foreignKey: "serviceDetailId",
+  as: "attachments",
+});
+
+// ExecutionAttachment relations
+ExecutionAttachment.belongsTo(ExecutionBrief, {
+  foreignKey: "briefId",
+  as: "brief",
+});
+
+ExecutionAttachment.belongsTo(ExecutionServiceDetail, {
+  foreignKey: "serviceDetailId",
+  as: "serviceDetail",
+});
+
+ExecutionAttachment.belongsTo(User, {
+  foreignKey: "uploadedBy",
+  as: "uploader",
+});
 export {
   sequelize,
   User,
@@ -714,4 +790,7 @@ export {
   Contract,
   ContractItem,
   PaymentSchedule,
+  ExecutionBrief,
+  ExecutionServiceDetail,
+  ExecutionAttachment,
 };

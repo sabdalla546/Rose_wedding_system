@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, CheckCheck, Filter, Search } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCheck,
+  Download,
+  Filter,
+  Search,
+} from "lucide-react";
+import api from "@/lib/axios";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -81,7 +88,7 @@ export function AppointmentsTableView() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
-
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   useEffect(() => {
     const handle = window.setTimeout(() => {
       setSearchQuery(searchTerm.trim());
@@ -203,7 +210,47 @@ export function AppointmentsTableView() {
     setDateTo("");
     setCurrentPage(1);
   };
+  const handleExportPdf = async () => {
+    try {
+      setIsExportingPdf(true);
 
+      const response = await api.get("/appointments/export/pdf", {
+        params: {
+          status: statusFilter === "all" ? undefined : statusFilter,
+          customerId: customerFilter ? Number(customerFilter) : undefined,
+          search: searchQuery?.trim() ? searchQuery.trim() : undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        },
+        responseType: "blob",
+      });
+
+      const contentDisposition = response.headers["content-disposition"] as
+        | string
+        | undefined;
+
+      const fileNameMatch = contentDisposition?.match(/filename="?(.*?)"?$/i);
+      const fileName =
+        fileNameMatch?.[1] ||
+        `appointments-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export appointments PDF", error);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -297,7 +344,7 @@ export function AppointmentsTableView() {
                   <option key={customer.id} value={String(customer.id)}>
                     {customer.fullName}
                   </option>
-                  ))}
+                ))}
               </select>
             </WorkspaceFilterField>
 
@@ -349,6 +396,20 @@ export function AppointmentsTableView() {
           setItemsPerPage(value);
           setCurrentPage(1);
         }}
+        headerActions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExportingPdf
+              ? t("common.loading", { defaultValue: "Loading..." })
+              : t("appointments.exportPdf", { defaultValue: "Export PDF" })}
+          </Button>
+        }
         className="operations-table-shell"
       >
         <DataTable

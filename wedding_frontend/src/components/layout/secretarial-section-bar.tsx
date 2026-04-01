@@ -97,9 +97,9 @@ export function SecretarialSectionBar() {
   );
   const designerDetailsSecondaryItems = useMemo(
     () =>
-      DESIGNER_DETAILS_CHILD_IDS.map((id) => secretarialLeafById.get(id)).filter(
-        (item): item is NavigationLeaf => Boolean(item),
-      ),
+      DESIGNER_DETAILS_CHILD_IDS.map((id) =>
+        secretarialLeafById.get(id),
+      ).filter((item): item is NavigationLeaf => Boolean(item)),
     [secretarialLeafById],
   );
 
@@ -220,12 +220,8 @@ export function SecretarialSectionBar() {
                 <NavLink
                   className={sharedClassName}
                   style={{
-                    background: isActive
-                      ? "var(--lux-gold)"
-                      : "transparent",
-                    borderColor: isActive
-                      ? "var(--lux-gold)"
-                      : "transparent",
+                    background: isActive ? "var(--lux-gold)" : "transparent",
+                    borderColor: isActive ? "var(--lux-gold)" : "transparent",
                     boxShadow: isActive
                       ? "0 10px 24px color-mix(in srgb, var(--lux-gold) 20%, transparent)"
                       : "none",
@@ -264,14 +260,12 @@ export function SecretarialSectionBar() {
             compact ? "px-1 py-[3px]" : "px-1 py-1",
           )}
           style={{
-            background:
-              compact
-                ? "color-mix(in srgb, var(--lux-shell-chrome-control) 72%, transparent)"
-                : "color-mix(in srgb, var(--lux-shell-chrome-control) 88%, transparent)",
-            borderColor:
-              compact
-                ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 52%, transparent)"
-                : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 72%, transparent)",
+            background: compact
+              ? "color-mix(in srgb, var(--lux-shell-chrome-control) 72%, transparent)"
+              : "color-mix(in srgb, var(--lux-shell-chrome-control) 88%, transparent)",
+            borderColor: compact
+              ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 52%, transparent)"
+              : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 72%, transparent)",
             boxShadow: compact
               ? "inset 0 1px 0 rgba(255,255,255,0.02)"
               : "inset 0 1px 0 rgba(255,255,255,0.03)",
@@ -316,14 +310,12 @@ export function SecretarialSectionBar() {
                       "cursor-not-allowed opacity-45",
                     )}
                     style={{
-                      background:
-                        compact
-                          ? "color-mix(in srgb, var(--lux-shell-chrome-control) 68%, transparent)"
-                          : "color-mix(in srgb, var(--lux-shell-chrome-control) 82%, transparent)",
-                      borderColor:
-                        compact
-                          ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 46%, transparent)"
-                          : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 60%, transparent)",
+                      background: compact
+                        ? "color-mix(in srgb, var(--lux-shell-chrome-control) 68%, transparent)"
+                        : "color-mix(in srgb, var(--lux-shell-chrome-control) 82%, transparent)",
+                      borderColor: compact
+                        ? "color-mix(in srgb, var(--lux-shell-chrome-control-border) 46%, transparent)"
+                        : "color-mix(in srgb, var(--lux-shell-chrome-control-border) 60%, transparent)",
                     }}
                     type="button"
                   >
@@ -386,7 +378,7 @@ export function SecretarialSectionBar() {
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
       }}
-      >
+    >
       {renderPrimaryNavigationRow(
         primaryNavigationItems,
         activePrimaryItem?.id ?? activeLeaf.id,

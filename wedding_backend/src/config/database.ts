@@ -24,9 +24,8 @@ export const initDatabase = async () => {
       force: env.dbSync.force,
     });
     logger.info("âœ… Models synced");
-    const { syncVendorTypesCatalog } = await import(
-      "../seed/syncVendorTypesCatalog"
-    );
+    const { syncVendorTypesCatalog } =
+      await import("../seed/syncVendorTypesCatalog");
     await syncVendorTypesCatalog();
     logger.info("âœ… Vendor types catalog synced");
   } catch (err) {

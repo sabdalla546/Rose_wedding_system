@@ -1,5 +1,12 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { CalendarDays, Filter, Search, ShieldCheck } from "lucide-react";
+import {
+  CalendarDays,
+  Download,
+  Filter,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
+import api from "@/lib/axios";
 import { useTranslation } from "react-i18next";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
@@ -19,9 +26,14 @@ import { useEvents } from "@/hooks/events/useEvents";
 import { useVenues } from "@/hooks/venues/useVenues";
 
 import { useEventsColumns } from "../_components/eventsColumns";
-import { EVENT_STATUS_OPTIONS, toTableEvents, type TableEvent } from "../adapters";
+import {
+  EVENT_STATUS_OPTIONS,
+  toTableEvents,
+  type TableEvent,
+} from "../adapters";
 import type { EventsBusinessFilters } from "@/pages/events/event-query-params";
 import type { EventStatus } from "../types";
+import { Button } from "@/components/ui/button";
 
 const filterFieldClassName =
   "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
@@ -36,13 +48,18 @@ type EventsTableViewProps = {
   onFiltersChange: Dispatch<SetStateAction<EventsBusinessFilters>>;
 };
 
-export function EventsTableView({ filters, onFiltersChange }: EventsTableViewProps) {
+export function EventsTableView({
+  filters,
+  onFiltersChange,
+}: EventsTableViewProps) {
   const { t } = useTranslation();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(null);
-
+  const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(
+    null,
+  );
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const { data, isLoading } = useEvents({
     currentPage,
     itemsPerPage,
@@ -102,8 +119,9 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
       <WorkspaceFilterPill
         key="customer"
         label={
-          customers.find((customer) => String(customer.id) === filters.customerId)
-            ?.fullName ?? filters.customerId
+          customers.find(
+            (customer) => String(customer.id) === filters.customerId,
+          )?.fullName ?? filters.customerId
         }
       />
     ) : null,
@@ -147,7 +165,66 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
     });
     setCurrentPage(1);
   };
+  const handleExportPdf = async () => {
+    try {
+      setIsExportingPdf(true);
 
+      const response = await api.get("/events/export/pdf", {
+        params: {
+          search: filters.search.trim() ? filters.search.trim() : undefined,
+          status: filters.status === "all" ? undefined : filters.status,
+          customerId: filters.customerId
+            ? Number(filters.customerId)
+            : undefined,
+          venueId: filters.venueId ? Number(filters.venueId) : undefined,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+        },
+        responseType: "blob",
+        validateStatus: () => true,
+      });
+
+      const contentType = String(
+        response.headers["content-type"] || "",
+      ).toLowerCase();
+
+      if (!contentType.includes("application/pdf")) {
+        const errorText = await response.data.text();
+        console.error("Events PDF export failed response:", errorText);
+        throw new Error(
+          errorText || "Server did not return a valid PDF document.",
+        );
+      }
+
+      const contentDisposition = response.headers["content-disposition"] as
+        | string
+        | undefined;
+
+      const fileNameMatch = contentDisposition?.match(/filename="?(.*?)"?$/i);
+      const fileName =
+        fileNameMatch?.[1] ||
+        `events-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export events PDF", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to export events PDF",
+      );
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -174,7 +251,8 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
       <WorkspaceFilterBar
         title={t("common.filters", { defaultValue: "Filters" })}
         description={t("events.primaryFiltersHint", {
-          defaultValue: "Use the main filters to narrow the event list quickly.",
+          defaultValue:
+            "Use the main filters to narrow the event list quickly.",
         })}
         activeFiltersLabel={t("events.activeFiltersCount", {
           count: activeFiltersCount,
@@ -186,8 +264,12 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
         activeFiltersCount={activeFiltersCount}
         clearLabel={t("events.clearFilters", { defaultValue: "Clear Filters" })}
         onClear={resetFilters}
-        showFiltersLabel={t("events.showFilters", { defaultValue: "Show Filters" })}
-        hideFiltersLabel={t("events.hideFilters", { defaultValue: "Hide Filters" })}
+        showFiltersLabel={t("events.showFilters", {
+          defaultValue: "Show Filters",
+        })}
+        hideFiltersLabel={t("events.hideFilters", {
+          defaultValue: "Hide Filters",
+        })}
         pills={activeFilterPills.length ? activeFilterPills : undefined}
         quickFilters={
           <>
@@ -265,7 +347,7 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
                   <option key={venue.id} value={String(venue.id)}>
                     {venue.name}
                   </option>
-                  ))}
+                ))}
               </select>
             </WorkspaceFilterField>
 
@@ -349,6 +431,20 @@ export function EventsTableView({ filters, onFiltersChange }: EventsTableViewPro
           setItemsPerPage(value);
           setCurrentPage(1);
         }}
+        headerActions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExportingPdf
+              ? t("common.loading", { defaultValue: "Loading..." })
+              : t("events.exportPdf", { defaultValue: "Export PDF" })}
+          </Button>
+        }
         className="operations-table-shell"
       >
         <DataTable

@@ -688,13 +688,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
           onOpenChange={setServiceChecklistOpen}
           eventId={event.id}
           existingServiceIds={existingServiceIds}
-          onSelectService={(service) => {
-            setSelectedServiceForCreate(service);
-            setEditingServiceItem(null);
-            window.setTimeout(() => {
-              setServiceEditorOpen(true);
-            }, 0);
-          }}
         />
       ) : null}
 

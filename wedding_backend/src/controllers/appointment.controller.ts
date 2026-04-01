@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { Op, Transaction } from "sequelize";
 import { ZodError } from "zod";
+import ejs from "ejs";
+import puppeteer from "puppeteer";
 import { sequelize } from "../config/database";
+
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Appointment, Customer, User, Venue } from "../models";
 import {
@@ -31,7 +34,13 @@ class AppointmentSchedulingError extends Error {
     this.statusCode = statusCode;
   }
 }
-
+const escapeHtml = (value: unknown) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 const appointmentInclude = [
   { model: Customer, as: "customer" },
   { model: Venue, as: "venue" },
@@ -664,4 +673,239 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
   });
 
   return res.json({ data: appointments.map(serializeAppointment) });
+};
+
+export const exportAppointmentsPdf = async (req: Request, res: Response) => {
+  try {
+    const status = String(req.query.status ?? "").trim();
+    const customerId = Number(req.query.customerId) || undefined;
+    const search = String(req.query.search ?? "").trim();
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+
+    if (search) {
+      const like = `%${search}%`;
+      where[Op.or] = [
+        { notes: { [Op.like]: like } },
+        { "$customer.fullName$": { [Op.like]: like } },
+        { "$customer.mobile$": { [Op.like]: like } },
+      ];
+    }
+
+    if (dateFrom || dateTo) {
+      where.appointmentDate = {};
+      if (dateFrom) where.appointmentDate[Op.gte] = dateFrom;
+      if (dateTo) where.appointmentDate[Op.lte] = dateTo;
+    }
+    const appointments = await Appointment.findAll({
+      where,
+      include: appointmentInclude,
+      order: [
+        ["appointmentDate", "ASC"],
+        ["startTime", "ASC"],
+        ["id", "DESC"],
+      ],
+    });
+
+    const rows = appointments.map((item) => serializeAppointment(item));
+
+    const html = await ejs.render(
+      `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Appointments Report</title>
+          <style>
+            body {
+              font-family: Arial, Tahoma, sans-serif;
+              margin: 24px;
+              color: #222;
+              font-size: 12px;
+            }
+
+            .header {
+              margin-bottom: 18px;
+            }
+
+            .title {
+              font-size: 22px;
+              font-weight: 700;
+              margin-bottom: 6px;
+            }
+
+            .subtitle {
+              color: #666;
+              margin-bottom: 4px;
+            }
+
+            .filters {
+              background: #f7f7f7;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 12px;
+              margin-bottom: 18px;
+            }
+
+            .filters-row {
+              margin-bottom: 4px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+            }
+
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: center;
+              vertical-align: top;
+              word-wrap: break-word;
+            }
+
+            th {
+              background: #f0f0f0;
+              font-weight: 700;
+            }
+
+            .footer {
+              margin-top: 16px;
+              font-size: 11px;
+              color: #666;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">تقرير المواعيد</div>
+            <div class="subtitle">عدد النتائج: <%= total %></div>
+            <div class="subtitle">تاريخ الإنشاء: <%= generatedAt %></div>
+          </div>
+
+          <div class="filters">
+            <div class="filters-row"><strong>من:</strong> <%= dateFrom || "الكل" %></div>
+            <div class="filters-row"><strong>إلى:</strong> <%= dateTo || "الكل" %></div>
+            <div class="filters-row"><strong>الحالة:</strong> <%= status || "الكل" %></div>
+            <div class="filters-row"><strong>العميل:</strong> <%= customerId || "الكل" %></div>
+            <div class="filters-row"><strong>البحث:</strong> <%= search || "—" %></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 22%;">العميل</th>
+                <th style="width: 14%;">رقم الهاتف</th>
+                <th style="width: 14%;">تاريخ الموعد</th>
+                <th style="width: 14%;">الوقت</th>
+                <th style="width: 13%;">النوع</th>
+                <th style="width: 10%;">الحالة</th>
+                <th style="width: 18%;">الملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!rows.length) { %>
+                <tr>
+                  <td colspan="8">لا توجد مواعيد ضمن الفلاتر المحددة.</td>
+                </tr>
+              <% } %>
+
+              <% rows.forEach((row, index) => { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= row.customer?.fullName || "—" %></td>
+                  <td><%= row.customer?.mobile || "—" %></td>
+                  <td><%= row.appointmentDate || "—" %></td>
+                  <td>
+                    <%= row.startTime || "—" %>
+                    <% if (row.endTime) { %>
+                      - <%= row.endTime %>
+                    <% } %>
+                  </td>
+                  <td><%= row.type || "—" %></td>
+                  <td><%= row.status || "—" %></td>
+                  <td><%= row.notes || "—" %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Wedding System - Appointments PDF Report
+          </div>
+        </body>
+      </html>
+      `,
+      {
+        rows,
+        total: rows.length,
+        generatedAt: new Date().toLocaleString("en-GB"),
+        dateFrom,
+        dateTo,
+        status,
+        customerId,
+        search,
+      },
+    );
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: puppeteer.executablePath(), // مهم
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html);
+      console.log("HTML LENGTH:", html.length);
+
+      const pdfBytes = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20px",
+          right: "20px",
+          bottom: "20px",
+          left: "20px",
+        },
+      });
+
+      const pdfBuffer = Buffer.from(pdfBytes);
+      console.log("PDF BYTE LENGTH:", pdfBuffer.length);
+
+      const fileName = `appointments-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length.toString());
+
+      return res.end(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  } catch (err) {
+    console.error("EXPORT PDF ERROR:", err);
+
+    if (err instanceof ZodError) {
+      return res.status(400).json({ errors: err.errors });
+    }
+
+    return res.status(500).json({
+      message: "PDF generation failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 };

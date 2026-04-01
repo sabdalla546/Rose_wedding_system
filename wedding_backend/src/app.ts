@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-
+import path from "path";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { initI18n } from "./config/i18n";
@@ -24,6 +24,7 @@ import serviceRoutes from "./routes/service.routes";
 import quotationRoutes from "./routes/quotation.routes";
 import contractRoutes from "./routes/contract.routes";
 import calendarRoutes from "./routes/calendar.routes";
+import executionRoutes from "./routes/execution.routes";
 
 export const createApp = async () => {
   const app = express();
@@ -52,7 +53,7 @@ export const createApp = async () => {
   app.get("/api/v1/health", (req, res) => {
     res.json({ status: "ok", message: req.t("hello") });
   });
-
+  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/roles", roleRoutes);
@@ -69,6 +70,7 @@ export const createApp = async () => {
   app.use("/api/v1/services", serviceRoutes);
   app.use("/api/v1/quotations", quotationRoutes);
   app.use("/api/v1/contracts", contractRoutes);
+  app.use("/api/v1/execution-briefs", executionRoutes);
   app.use(errorHandler);
 
   return app;

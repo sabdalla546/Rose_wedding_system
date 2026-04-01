@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { ZodError } from "zod";
+import ejs from "ejs";
+import puppeteer from "puppeteer";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Appointment, Event, Customer, Venue, User } from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
@@ -484,4 +486,248 @@ export const deleteEvent = async (req: Request, res: Response) => {
   await event.destroy();
 
   return res.json({ message: req.t("common.deleted_successfully") });
+};
+export const exportEventsPdf = async (req: Request, res: Response) => {
+  try {
+    const status = String(req.query.status ?? "").trim();
+    const customerId = Number(req.query.customerId) || undefined;
+    const venueId = Number(req.query.venueId) || undefined;
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    const search = String(req.query.search ?? "").trim();
+
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+    if (venueId) where.venueId = venueId;
+
+    if (dateFrom || dateTo) {
+      where.eventDate = {};
+      if (dateFrom) where.eventDate[Op.gte] = dateFrom;
+      if (dateTo) where.eventDate[Op.lte] = dateTo;
+    }
+
+    if (search) {
+      const like = `%${search}%`;
+      where[Op.or] = [
+        { title: { [Op.like]: like } },
+        { groomName: { [Op.like]: like } },
+        { brideName: { [Op.like]: like } },
+        { venueNameSnapshot: { [Op.like]: like } },
+        { "$customer.fullName$": { [Op.like]: like } },
+      ];
+    }
+
+    const events = await Event.findAll({
+      where,
+      include: [
+        { model: Customer, as: "customer" },
+        { model: Venue, as: "venue" },
+        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
+        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+      ],
+      order: [
+        ["eventDate", "ASC"],
+        ["id", "DESC"],
+      ],
+    });
+
+    const rows = events.map((item) =>
+      typeof item?.toJSON === "function" ? item.toJSON() : item,
+    );
+
+    const html = await ejs.render(
+      `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Events Report</title>
+          <style>
+            body {
+              font-family: Arial, Tahoma, sans-serif;
+              margin: 24px;
+              color: #222;
+              font-size: 12px;
+            }
+
+            .header {
+              margin-bottom: 18px;
+            }
+
+            .title {
+              font-size: 22px;
+              font-weight: 700;
+              margin-bottom: 6px;
+            }
+
+            .subtitle {
+              color: #666;
+              margin-bottom: 4px;
+            }
+
+            .filters {
+              background: #f7f7f7;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 12px;
+              margin-bottom: 18px;
+            }
+
+            .filters-row {
+              margin-bottom: 4px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+            }
+
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: center;
+              vertical-align: top;
+              word-wrap: break-word;
+            }
+
+            th {
+              background: #f0f0f0;
+              font-weight: 700;
+            }
+
+            .footer {
+              margin-top: 16px;
+              font-size: 11px;
+              color: #666;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">تقرير الحفلات</div>
+            <div class="subtitle">عدد النتائج: <%= total %></div>
+            <div class="subtitle">تاريخ الإنشاء: <%= generatedAt %></div>
+          </div>
+
+          <div class="filters">
+            <div class="filters-row"><strong>من:</strong> <%= dateFrom || "الكل" %></div>
+            <div class="filters-row"><strong>إلى:</strong> <%= dateTo || "الكل" %></div>
+            <div class="filters-row"><strong>الحالة:</strong> <%= status || "الكل" %></div>
+            <div class="filters-row"><strong>العميل:</strong> <%= customerId || "الكل" %></div>
+            <div class="filters-row"><strong>القاعة:</strong> <%= venueId || "الكل" %></div>
+            <div class="filters-row"><strong>البحث:</strong> <%= search || "—" %></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 16%;">العنوان</th>
+                <th style="width: 16%;">العميل</th>
+                <th style="width: 14%;">تاريخ الحفل</th>
+                <th style="width: 14%;">القاعة</th>
+                <th style="width: 12%;">العريس</th>
+                <th style="width: 12%;">العروس</th>
+                <th style="width: 11%;">عدد الضيوف</th>
+                <th style="width: 10%;">الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!rows.length) { %>
+                <tr>
+                  <td colspan="9">لا توجد حفلات ضمن الفلاتر المحددة.</td>
+                </tr>
+              <% } %>
+
+              <% rows.forEach((row, index) => { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= row.title || ("Event #" + row.id) %></td>
+                  <td><%= row.customer?.fullName || "—" %></td>
+                  <td><%= row.eventDate || "—" %></td>
+                  <td><%= row.venue?.name || row.venueNameSnapshot || "—" %></td>
+                  <td><%= row.groomName || "—" %></td>
+                  <td><%= row.brideName || "—" %></td>
+                  <td><%= row.guestCount ?? "—" %></td>
+                  <td><%= row.status || "—" %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Wedding System - Events PDF Report
+          </div>
+        </body>
+      </html>
+      `,
+      {
+        rows,
+        total: rows.length,
+        generatedAt: new Date().toLocaleString("en-GB"),
+        dateFrom,
+        dateTo,
+        status,
+        customerId,
+        venueId,
+        search,
+      },
+    );
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: puppeteer.executablePath(),
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html);
+      console.log("EVENTS HTML LENGTH:", html.length);
+
+      const pdfBytes = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20px",
+          right: "20px",
+          bottom: "20px",
+          left: "20px",
+        },
+      });
+
+      const pdfBuffer = Buffer.from(pdfBytes);
+      console.log("EVENTS PDF BYTE LENGTH:", pdfBuffer.length);
+
+      const fileName = `events-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length.toString());
+
+      return res.end(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  } catch (err) {
+    console.error("EXPORT EVENTS PDF ERROR:", err);
+
+    if (err instanceof ZodError) {
+      return res.status(400).json({ errors: err.errors });
+    }
+
+    return res.status(500).json({
+      message: "PDF generation failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 };
