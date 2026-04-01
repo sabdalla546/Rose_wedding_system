@@ -2,14 +2,18 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type ChangeEvent,
   type ReactNode,
 } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, useWatch, type FieldErrors } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type FieldErrors,
+} from "react-hook-form";
 import { z } from "zod";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -35,9 +39,12 @@ import {
   useUpdateQuotation,
 } from "@/hooks/quotations/useQuotationMutations";
 import { useQuotation } from "@/hooks/quotations/useQuotations";
-import { useEventServiceItems, useServices } from "@/hooks/services/useServices";
+import {
+  useEventServiceItems,
+  useServices,
+} from "@/hooks/services/useServices";
 import { useToast } from "@/hooks/use-toast";
-import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
+import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
@@ -78,28 +85,29 @@ const MANUAL_SERVICES_SUMMARY_NAME = "إجمالي الخدمات";
 type QuotationFromEventSubmitPayload = QuotationFromEventFormData & {
   manualServicesTotal: number;
 };
+type CatalogVendorLike = {
+  id: number | string;
+  name: string;
+  type?: string | null;
+  isActive?: boolean | null;
+};
 
 const getFirstErrorMessage = (value: unknown): string | null => {
-  if (!value || typeof value !== "object") {
-    return null;
+  if (!value || typeof value !== "object") return null;
+  if (
+    "message" in value &&
+    typeof (value as any).message === "string" &&
+    (value as any).message.trim()
+  ) {
+    return (value as any).message;
   }
-
-  if ("message" in value && typeof value.message === "string" && value.message.trim()) {
-    return value.message;
-  }
-
   const nestedValues = Array.isArray(value)
     ? value
     : Object.values(value as Record<string, unknown>);
-
   for (const nestedValue of nestedValues) {
     const message = getFirstErrorMessage(nestedValue);
-
-    if (message) {
-      return message;
-    }
+    if (message) return message;
   }
-
   return null;
 };
 
@@ -147,7 +155,10 @@ const quotationFormSchema = (isEditMode: boolean) =>
           category: z.string().max(100).optional(),
           quantity: z
             .string()
-            .refine((value) => Number(value) > 0, "Quantity must be greater than zero"),
+            .refine(
+              (value) => Number(value) > 0,
+              "Quantity must be greater than zero",
+            ),
           unitPrice: z
             .string()
             .refine(
@@ -187,20 +198,25 @@ const quotationFormSchema = (isEditMode: boolean) =>
             message: "Select at least one event service or event vendor",
           });
         }
-
         return;
       }
 
       if (!isEditMode && values.createMode === "manual") {
-        const hasManualServicesTotal = Number(values.manualServicesTotal || 0) > 0;
-        const hasVendorRows = values.items.some((item) => item.itemType === "vendor");
-
-        if (!hasManualServicesTotal && !hasVendorRows) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items"],
-          message: "Add a vendor row or enter a total services amount",
-        });
+        const hasManualServicesTotal =
+          Number(values.manualServicesTotal || 0) > 0;
+        const hasVendorRows = values.items.some(
+          (item) => item.itemType === "vendor",
+        );
+        const hasServiceRows = values.items.some(
+          (item) => item.itemType === "service",
+        );
+        if (!hasManualServicesTotal && !hasVendorRows && !hasServiceRows) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["items"],
+            message:
+              "Select at least one service or vendor, or enter a total services amount",
+          });
         }
       }
 
@@ -212,20 +228,27 @@ const quotationFormSchema = (isEditMode: boolean) =>
             message: "Item name is required",
           });
         }
-
-        if (!isEditMode && item.itemType === "service" && !item.eventServiceId && !item.serviceId) {
+        if (
+          !isEditMode &&
+          item.itemType === "service" &&
+          !item.eventServiceId &&
+          !item.serviceId
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["items", index, "serviceId"],
             message: "Service rows must come from a service or event service",
           });
         }
-
-        if (item.itemType === "vendor" && !item.eventVendorId) {
+        if (
+          item.itemType === "vendor" &&
+          !item.eventVendorId &&
+          !item.vendorId
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            path: ["items", index, "eventVendorId"],
-            message: "Vendor rows must come from an event vendor",
+            path: ["items", index, "vendorId"],
+            message: "Vendor rows must come from an event vendor or vendor",
           });
         }
       });
@@ -283,7 +306,6 @@ const buildVendorItemFromEventVendor = (
   sortOrder: number,
 ): QuotationItemFormData => {
   const agreedPrice = toVendorNumberValue(item.agreedPrice) ?? 0;
-
   return {
     ...createEmptyQuotationItem("vendor", sortOrder),
     eventVendorId: String(item.id),
@@ -298,15 +320,23 @@ const buildVendorItemFromEventVendor = (
   };
 };
 
+const buildVendorItemFromCatalogVendor = (
+  vendor: CatalogVendorLike,
+  sortOrder: number,
+): QuotationItemFormData => ({
+  ...createEmptyQuotationItem("vendor", sortOrder),
+  vendorId: String(vendor.id),
+  itemName: vendor.name,
+  category: vendor.type ?? "vendor",
+  quantity: "1",
+  unitPrice: "0",
+  totalPrice: "0",
+  notes: "",
+});
+
 const getEventVendorDisabledReason = (item: EventVendorLink) => {
-  if (item.status === "cancelled") {
-    return "cancelled";
-  }
-
-  if (toVendorNumberValue(item.agreedPrice) === null) {
-    return "missing_price";
-  }
-
+  if (item.status === "cancelled") return "cancelled";
+  if (toVendorNumberValue(item.agreedPrice) === null) return "missing_price";
   return null;
 };
 
@@ -319,7 +349,6 @@ function buildManualServiceItem(
 ): QuotationItemFormData {
   const amount = getManualServicesTotalValue(manualServicesTotal);
   const amountString = String(amount);
-
   return {
     ...createEmptyQuotationItem("service", sortOrder),
     itemName: MANUAL_SERVICES_SUMMARY_NAME,
@@ -333,7 +362,14 @@ function buildManualServiceItem(
 }
 
 const isManualServicesSummaryItem = (item: Partial<QuotationItemFormData>) =>
-  item.itemType === "service" && item.category === MANUAL_SERVICES_SUMMARY_CATEGORY;
+  item.itemType === "service" &&
+  item.category === MANUAL_SERVICES_SUMMARY_CATEGORY;
+
+const normalizeSortOrder = (items: QuotationItemFormData[]) =>
+  items.map((item, index) => ({
+    ...item,
+    sortOrder: String(index),
+  }));
 
 const buildManualModePayloadItems = (
   items: QuotationItemFormData[],
@@ -343,7 +379,8 @@ const buildManualModePayloadItems = (
   const vendorItems = items.filter((item) => item.itemType === "vendor");
   const serviceReferenceItems = items
     .filter(
-      (item) => item.itemType === "service" && !isManualServicesSummaryItem(item),
+      (item) =>
+        item.itemType === "service" && !isManualServicesSummaryItem(item),
     )
     .map((item) => ({
       ...item,
@@ -355,7 +392,12 @@ const buildManualModePayloadItems = (
   const combinedItems = [
     ...serviceReferenceItems,
     ...(summaryAmount > 0
-      ? [buildManualServiceItem(manualServicesTotal, serviceReferenceItems.length)]
+      ? [
+          buildManualServiceItem(
+            manualServicesTotal,
+            serviceReferenceItems.length,
+          ),
+        ]
       : []),
     ...vendorItems,
   ];
@@ -365,8 +407,8 @@ const buildManualModePayloadItems = (
     sortOrder: String(index),
     totalPrice:
       item.itemType === "vendor"
-        ? item.totalPrice?.trim()
-          || String(computeQuotationItemTotal(item.quantity, item.unitPrice))
+        ? item.totalPrice?.trim() ||
+          String(computeQuotationItemTotal(item.quantity, item.unitPrice))
         : isManualServicesSummaryItem(item)
           ? String(summaryAmount)
           : "0",
@@ -411,8 +453,8 @@ const buildEditModePayloadItems = (
     sortOrder: String(index),
     totalPrice:
       item.itemType === "vendor"
-        ? item.totalPrice?.trim()
-          || String(computeQuotationItemTotal(item.quantity, item.unitPrice))
+        ? item.totalPrice?.trim() ||
+          String(computeQuotationItemTotal(item.quantity, item.unitPrice))
         : isManualServicesSummaryItem(item)
           ? String(summaryAmount)
           : "0",
@@ -439,10 +481,6 @@ const QuotationFormPage = () => {
   const previousAutoSelectSignatureRef = useRef("");
   const serviceSummaryItemIdRef = useRef<number | undefined>(undefined);
 
-  const [selectedEventServiceSourceId, setSelectedEventServiceSourceId] = useState("");
-  const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState("");
-  const [selectedEventVendorSourceId, setSelectedEventVendorSourceId] = useState("");
-
   const { data: quotation, isLoading: quotationLoading } = useQuotation(id);
   const createMutation = useCreateQuotation();
   const createFromEventMutation = useCreateQuotationFromEvent();
@@ -457,6 +495,13 @@ const QuotationFormPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     category: "all",
+    isActive: "all",
+  });
+  const { data: vendorsResponse } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: "all",
     isActive: "all",
   });
 
@@ -480,7 +525,6 @@ const QuotationFormPage = () => {
 
   const {
     fields: itemFields,
-    append: appendItem,
     remove: removeItem,
     replace: replaceItems,
   } = useFieldArray({
@@ -525,9 +569,22 @@ const QuotationFormPage = () => {
   });
 
   const events = eventsResponse?.data ?? [];
-  const services = servicesResponse?.data ?? [];
+  const services = useMemo(
+    () => servicesResponse?.data ?? [],
+    [servicesResponse?.data],
+  );
+  const catalogVendors = useMemo(
+    () =>
+      (vendorsResponse?.data ?? []).filter(
+        (item: CatalogVendorLike) => item.isActive !== false,
+      ),
+    [vendorsResponse?.data],
+  );
   const eventServices = useMemo(
-    () => (eventServicesResponse?.data ?? []).filter((item) => item.status !== "cancelled"),
+    () =>
+      (eventServicesResponse?.data ?? []).filter(
+        (item) => item.status !== "cancelled",
+      ),
     [eventServicesResponse?.data],
   );
   const eventVendors = useMemo(
@@ -537,13 +594,61 @@ const QuotationFormPage = () => {
 
   const selectedEventServices = useMemo(
     () =>
-      eventServices.filter((item) => watchedEventServiceIds.includes(String(item.id))),
+      eventServices.filter((item) =>
+        watchedEventServiceIds.includes(String(item.id)),
+      ),
     [eventServices, watchedEventServiceIds],
   );
   const selectedEventVendors = useMemo(
     () =>
-      eventVendors.filter((item) => watchedEventVendorIds.includes(String(item.id))),
+      eventVendors.filter((item) =>
+        watchedEventVendorIds.includes(String(item.id)),
+      ),
     [eventVendors, watchedEventVendorIds],
+  );
+
+  const selectedManualEventServiceIds = useMemo(
+    () =>
+      watchedItems
+        .filter(
+          (item) => item.itemType === "service" && item.eventServiceId?.trim(),
+        )
+        .map((item) => item.eventServiceId as string),
+    [watchedItems],
+  );
+  const selectedManualCatalogServiceIds = useMemo(
+    () =>
+      watchedItems
+        .filter(
+          (item) =>
+            item.itemType === "service" &&
+            item.serviceId?.trim() &&
+            !item.eventServiceId?.trim() &&
+            !isManualServicesSummaryItem(item),
+        )
+        .map((item) => item.serviceId as string),
+    [watchedItems],
+  );
+  const selectedManualEventVendorIds = useMemo(
+    () =>
+      watchedItems
+        .filter(
+          (item) => item.itemType === "vendor" && item.eventVendorId?.trim(),
+        )
+        .map((item) => item.eventVendorId as string),
+    [watchedItems],
+  );
+  const selectedManualCatalogVendorIds = useMemo(
+    () =>
+      watchedItems
+        .filter(
+          (item) =>
+            item.itemType === "vendor" &&
+            item.vendorId?.trim() &&
+            !item.eventVendorId?.trim(),
+        )
+        .map((item) => item.vendorId as string),
+    [watchedItems],
   );
 
   const fromEventPreviewItems = useMemo(
@@ -566,7 +671,9 @@ const QuotationFormPage = () => {
             item,
             index +
               selectedEventServices.length +
-              (getManualServicesTotalValue(watchedManualServicesTotal) > 0 ? 1 : 0),
+              (getManualServicesTotalValue(watchedManualServicesTotal) > 0
+                ? 1
+                : 0),
           ),
         ),
     ],
@@ -590,12 +697,11 @@ const QuotationFormPage = () => {
   const editorTotals = useMemo(
     () =>
       computeQuotationTotals({
-        items:
-          isEditMode
-            ? editModePayloadItems
-            : watchedCreateMode === "manual"
-              ? manualModePayloadItems
-              : watchedItems,
+        items: isEditMode
+          ? editModePayloadItems
+          : watchedCreateMode === "manual"
+            ? manualModePayloadItems
+            : watchedItems,
         discountAmount: watchedDiscountAmount,
       }),
     [
@@ -616,7 +722,9 @@ const QuotationFormPage = () => {
     [fromEventPreviewItems, watchedDiscountAmount],
   );
   const totals =
-    !isEditMode && watchedCreateMode === "from_event" ? fromEventTotals : editorTotals;
+    !isEditMode && watchedCreateMode === "from_event"
+      ? fromEventTotals
+      : editorTotals;
 
   const isBusy =
     quotationLoading ||
@@ -631,13 +739,12 @@ const QuotationFormPage = () => {
   }, [form, isEditMode, preselectedEventId]);
 
   useEffect(() => {
-    if (!isEditMode || !quotation) {
-      return;
-    }
+    if (!isEditMode || !quotation) return;
 
-    const serviceSummaryItem = (quotation.items ?? []).find((item) =>
-      item.itemType === "service" &&
-      item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
+    const serviceSummaryItem = (quotation.items ?? []).find(
+      (item) =>
+        item.itemType === "service" &&
+        item.category === MANUAL_SERVICES_SUMMARY_CATEGORY,
     );
     const editableItems = (quotation.items ?? []).filter(
       (item) =>
@@ -684,7 +791,9 @@ const QuotationFormPage = () => {
       issueDate: quotation.issueDate,
       validUntil: quotation.validUntil ?? "",
       discountAmount:
-        quotation.discountAmount != null ? String(quotation.discountAmount) : "0",
+        quotation.discountAmount != null
+          ? String(quotation.discountAmount)
+          : "0",
       manualServicesTotal: String(serviceSummaryItem?.totalPrice ?? 0),
       notes: quotation.notes ?? "",
       status: quotation.status,
@@ -696,18 +805,13 @@ const QuotationFormPage = () => {
   }, [form, isEditMode, quotation, replaceItems]);
 
   useEffect(() => {
-    if (isEditMode) {
-      return;
-    }
+    if (isEditMode) return;
 
     if (!watchedEventId) {
       previousEventIdRef.current = "";
       replaceItems([]);
       form.setValue("eventServiceIds", []);
       form.setValue("eventVendorIds", []);
-      setSelectedEventServiceSourceId("");
-      setSelectedCatalogServiceId("");
-      setSelectedEventVendorSourceId("");
       return;
     }
 
@@ -720,9 +824,6 @@ const QuotationFormPage = () => {
       replaceItems([]);
       form.setValue("eventServiceIds", [], { shouldDirty: true });
       form.setValue("eventVendorIds", [], { shouldDirty: true });
-      setSelectedEventServiceSourceId("");
-      setSelectedCatalogServiceId("");
-      setSelectedEventVendorSourceId("");
     }
 
     previousEventIdRef.current = watchedEventId;
@@ -733,16 +834,10 @@ const QuotationFormPage = () => {
       previousAutoSelectSignatureRef.current = "";
       return;
     }
-
-    if (!eventServicesResponse || !eventVendorsResponse) {
-      return;
-    }
+    if (!eventServicesResponse || !eventVendorsResponse) return;
 
     const signature = `${watchedCreateMode}:${watchedEventId}`;
-
-    if (previousAutoSelectSignatureRef.current === signature) {
-      return;
-    }
+    if (previousAutoSelectSignatureRef.current === signature) return;
 
     form.setValue(
       "eventServiceIds",
@@ -756,7 +851,6 @@ const QuotationFormPage = () => {
         .map((item) => String(item.id)),
       { shouldDirty: true, shouldValidate: true },
     );
-
     previousAutoSelectSignatureRef.current = signature;
   }, [
     eventServices,
@@ -774,10 +868,7 @@ const QuotationFormPage = () => {
     nextQuantity: string,
     nextUnitPrice: string,
   ) => {
-    if (form.getValues(`items.${index}.isTotalManual`)) {
-      return;
-    }
-
+    if (form.getValues(`items.${index}.isTotalManual`)) return;
     form.setValue(
       `items.${index}.totalPrice`,
       String(computeQuotationItemTotal(nextQuantity, nextUnitPrice)),
@@ -791,7 +882,11 @@ const QuotationFormPage = () => {
     onChange: (...event: any[]) => void,
   ) => {
     onChange(event);
-    syncComputedTotal(index, event.target.value, form.getValues(`items.${index}.unitPrice`));
+    syncComputedTotal(
+      index,
+      event.target.value,
+      form.getValues(`items.${index}.unitPrice`),
+    );
   };
 
   const handleUnitPriceChange = (
@@ -800,7 +895,11 @@ const QuotationFormPage = () => {
     onChange: (...event: any[]) => void,
   ) => {
     onChange(event);
-    syncComputedTotal(index, form.getValues(`items.${index}.quantity`), event.target.value);
+    syncComputedTotal(
+      index,
+      form.getValues(`items.${index}.quantity`),
+      event.target.value,
+    );
   };
 
   const handleTotalPriceChange = (
@@ -810,9 +909,10 @@ const QuotationFormPage = () => {
   ) => {
     onChange(event);
     const nextValue = event.target.value.trim();
-
     if (!nextValue) {
-      form.setValue(`items.${index}.isTotalManual`, false, { shouldDirty: true });
+      form.setValue(`items.${index}.isTotalManual`, false, {
+        shouldDirty: true,
+      });
       form.setValue(
         `items.${index}.totalPrice`,
         String(
@@ -825,60 +925,135 @@ const QuotationFormPage = () => {
       );
       return;
     }
-
     form.setValue(`items.${index}.isTotalManual`, true, { shouldDirty: true });
   };
 
-  const appendManualItem = (item: QuotationItemFormData) => {
-    appendItem({
-      ...item,
-      sortOrder: String(form.getValues("items").length),
-    });
+  const replaceManualItems = (nextItems: QuotationItemFormData[]) => {
+    replaceItems(normalizeSortOrder(nextItems));
   };
 
-  const handleAddEventServiceItem = () => {
-    const selectedItem = eventServices.find(
-      (item) => String(item.id) === selectedEventServiceSourceId,
-    );
-
-    if (!selectedItem) {
+  const toggleManualEventService = (
+    item: EventServiceItem,
+    checked: boolean,
+  ) => {
+    const current = form.getValues("items");
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "service" &&
+            row.eventServiceId === String(item.id),
+        )
+      )
+        return;
+      replaceManualItems([
+        ...current,
+        buildServiceItemFromEventService(item, current.length),
+      ]);
       return;
     }
-
-    appendManualItem(
-      buildServiceItemFromEventService(selectedItem, form.getValues("items").length),
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "service" && row.eventServiceId === String(item.id)
+          ),
+      ),
     );
-    setSelectedEventServiceSourceId("");
   };
 
-  const handleAddCatalogServiceItem = () => {
-    const selectedItem = services.find(
-      (item) => String(item.id) === selectedCatalogServiceId,
-    );
-
-    if (!selectedItem) {
+  const toggleManualCatalogService = (service: Service, checked: boolean) => {
+    const current = form.getValues("items");
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "service" &&
+            row.serviceId === String(service.id) &&
+            !row.eventServiceId,
+        )
+      )
+        return;
+      replaceManualItems([
+        ...current,
+        buildServiceItemFromService(service, current.length),
+      ]);
       return;
     }
-
-    appendManualItem(
-      buildServiceItemFromService(selectedItem, form.getValues("items").length),
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "service" &&
+            row.serviceId === String(service.id) &&
+            !row.eventServiceId
+          ),
+      ),
     );
-    setSelectedCatalogServiceId("");
   };
 
-  const handleAddEventVendorItem = () => {
-    const selectedItem = eventVendors.find(
-      (item) => String(item.id) === selectedEventVendorSourceId,
-    );
-
-    if (!selectedItem || getEventVendorDisabledReason(selectedItem)) {
+  const toggleManualEventVendor = (item: EventVendorLink, checked: boolean) => {
+    if (getEventVendorDisabledReason(item)) return;
+    const current = form.getValues("items");
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "vendor" && row.eventVendorId === String(item.id),
+        )
+      )
+        return;
+      replaceManualItems([
+        ...current,
+        buildVendorItemFromEventVendor(item, current.length),
+      ]);
       return;
     }
-
-    appendManualItem(
-      buildVendorItemFromEventVendor(selectedItem, form.getValues("items").length),
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(row.itemType === "vendor" && row.eventVendorId === String(item.id)),
+      ),
     );
-    setSelectedEventVendorSourceId("");
+  };
+
+  const toggleManualCatalogVendor = (
+    vendor: CatalogVendorLike,
+    checked: boolean,
+  ) => {
+    const current = form.getValues("items");
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "vendor" &&
+            row.vendorId === String(vendor.id) &&
+            !row.eventVendorId,
+        )
+      )
+        return;
+      replaceManualItems([
+        ...current,
+        buildVendorItemFromCatalogVendor(vendor, current.length),
+      ]);
+      return;
+    }
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "vendor" &&
+            row.vendorId === String(vendor.id) &&
+            !row.eventVendorId
+          ),
+      ),
+    );
+  };
+
+  const handleRemoveManualRow = (index: number) => {
+    const current = [...form.getValues("items")];
+    current.splice(index, 1);
+    replaceManualItems(current);
   };
 
   const toggleEventService = (serviceId: string, checked: boolean) => {
@@ -914,7 +1089,6 @@ const QuotationFormPage = () => {
         items: editPayloadItems,
         discountAmount: values.discountAmount,
       });
-
       const payload: QuotationUpdateFormData = {
         quotationNumber: values.quotationNumber,
         issueDate: values.issueDate,
@@ -925,7 +1099,6 @@ const QuotationFormPage = () => {
         status: values.status,
         items: editPayloadItems,
       };
-
       updateMutation.mutate(payload);
       return;
     }
@@ -946,7 +1119,6 @@ const QuotationFormPage = () => {
         eventVendorIds: values.eventVendorIds,
         status: values.status,
       };
-
       createFromEventMutation.mutate(payload);
       return;
     }
@@ -955,7 +1127,6 @@ const QuotationFormPage = () => {
       values.items,
       values.manualServicesTotal,
     );
-
     const payload: QuotationFormData = {
       eventId: values.eventId,
       quotationNumber: values.quotationNumber,
@@ -972,7 +1143,6 @@ const QuotationFormPage = () => {
       status: values.status,
       items: manualPayloadItems,
     };
-
     createMutation.mutate(payload);
   };
 
@@ -980,8 +1150,9 @@ const QuotationFormPage = () => {
     toast({
       variant: "error",
       title: t("common.error", { defaultValue: "Error" }),
-      description: getFirstErrorMessage(errors)
-        ?? t("common.invalidForm", {
+      description:
+        getFirstErrorMessage(errors) ??
+        t("common.invalidForm", {
           defaultValue: "Please review the quotation form and try again.",
         }),
     });
@@ -996,7 +1167,9 @@ const QuotationFormPage = () => {
   }
 
   return (
-    <ProtectedComponent permission={isEditMode ? "quotations.update" : "quotations.create"}>
+    <ProtectedComponent
+      permission={isEditMode ? "quotations.update" : "quotations.create"}
+    >
       <PageContainer className="pb-4 pt-4 text-foreground">
         <div dir={i18n.dir()} className="mx-auto w-full max-w-7xl space-y-6">
           <button
@@ -1008,8 +1181,12 @@ const QuotationFormPage = () => {
           >
             {"<-"}{" "}
             {isEditMode
-              ? t("quotations.backToQuotation", { defaultValue: "Back to Quotation" })
-              : t("quotations.backToQuotations", { defaultValue: "Back to Quotations" })}
+              ? t("quotations.backToQuotation", {
+                  defaultValue: "Back to Quotation",
+                })
+              : t("quotations.backToQuotations", {
+                  defaultValue: "Back to Quotations",
+                })}
           </button>
 
           <div
@@ -1033,8 +1210,12 @@ const QuotationFormPage = () => {
               <div>
                 <h1 className="text-xl font-bold text-[var(--lux-heading)]">
                   {isEditMode
-                    ? t("quotations.editTitle", { defaultValue: "Edit Quotation" })
-                    : t("quotations.createTitle", { defaultValue: "Create Quotation" })}
+                    ? t("quotations.editTitle", {
+                        defaultValue: "Edit Quotation",
+                      })
+                    : t("quotations.createTitle", {
+                        defaultValue: "Create Quotation",
+                      })}
                 </h1>
                 <p className="text-sm text-[var(--lux-text-secondary)]">
                   {isEditMode
@@ -1084,7 +1265,9 @@ const QuotationFormPage = () => {
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
                           )}
                           onClick={() =>
-                            form.setValue("createMode", "manual", { shouldDirty: true })
+                            form.setValue("createMode", "manual", {
+                              shouldDirty: true,
+                            })
                           }
                         >
                           <div className="font-semibold text-[var(--lux-heading)]">
@@ -1095,7 +1278,7 @@ const QuotationFormPage = () => {
                           <p className="mt-2 text-sm text-[var(--lux-text-secondary)]">
                             {t("quotations.manualModeHint", {
                               defaultValue:
-                                "Add service and vendor rows into one mixed quotation document.",
+                                "Choose services and companies from checklists, even when the event is still empty.",
                             })}
                           </p>
                         </button>
@@ -1109,7 +1292,9 @@ const QuotationFormPage = () => {
                               : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]",
                           )}
                           onClick={() =>
-                            form.setValue("createMode", "from_event", { shouldDirty: true })
+                            form.setValue("createMode", "from_event", {
+                              shouldDirty: true,
+                            })
                           }
                         >
                           <div className="font-semibold text-[var(--lux-heading)]">
@@ -1136,10 +1321,14 @@ const QuotationFormPage = () => {
                       <Select
                         value={form.watch("eventId") || "none"}
                         onValueChange={(value) =>
-                          form.setValue("eventId", value === "none" ? "" : value, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                          })
+                          form.setValue(
+                            "eventId",
+                            value === "none" ? "" : value,
+                            {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            },
+                          )
                         }
                         disabled={isEditMode}
                       >
@@ -1243,9 +1432,6 @@ const QuotationFormPage = () => {
                         type="number"
                         min="0"
                         step="0.001"
-                        placeholder={t("quotations.discount", {
-                          defaultValue: "Discount",
-                        })}
                         {...form.register("discountAmount")}
                       />
                     </FieldBlock>
@@ -1255,22 +1441,21 @@ const QuotationFormPage = () => {
                         label={t("quotations.totalServicesAmount", {
                           defaultValue: "Total Services Amount",
                         })}
-                        error={form.formState.errors.manualServicesTotal?.message}
+                        error={
+                          form.formState.errors.manualServicesTotal?.message
+                        }
                       >
                         <div className="space-y-2">
                           <Input
                             type="number"
                             min="0"
                             step="0.001"
-                            placeholder={t("quotations.totalServicesAmount", {
-                              defaultValue: "Total Services Amount",
-                            })}
                             {...form.register("manualServicesTotal")}
                           />
                           <p className="text-xs text-[var(--lux-text-secondary)]">
                             {t("quotations.totalServicesAmountHint", {
                               defaultValue:
-                                "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
+                                "Service pricing is entered here as one overall amount. Company/vendor costs are added as separate rows.",
                             })}
                           </p>
                         </div>
@@ -1278,7 +1463,9 @@ const QuotationFormPage = () => {
                     </div>
                   </section>
 
-                  <FieldBlock label={t("common.notes", { defaultValue: "Notes" })}>
+                  <FieldBlock
+                    label={t("common.notes", { defaultValue: "Notes" })}
+                  >
                     <textarea
                       {...form.register("notes")}
                       className={textAreaClass}
@@ -1294,193 +1481,277 @@ const QuotationFormPage = () => {
                     <section className="space-y-6">
                       <div className="space-y-1">
                         <h2 className={sectionTitleClass}>
-                          {t("quotations.mixedQuotationItems", {
-                            defaultValue: "Mixed quotation items",
+                          {t("quotations.manualChecklistTitle", {
+                            defaultValue: "Select services and companies",
                           })}
                         </h2>
                         <p className={sectionHintClass}>
-                          {t("quotations.mixedQuotationItemsHint", {
+                          {t("quotations.manualChecklistHint", {
                             defaultValue:
-                              "Choose service and vendor sources first, then review everything together in one quotation items table.",
+                              "Use event-linked items when they exist, or choose from the full system catalogs when the event is empty.",
                           })}
                         </p>
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                        <SourceCard
-                          title={t("quotations.companyServices", {
-                            defaultValue: "Company Services",
+                        <SelectionCard
+                          title={t("quotations.servicesChecklistTitle", {
+                            defaultValue: "Services",
                           })}
-                          hint={t("quotations.companyServicesHint", {
+                          hint={t("quotations.servicesChecklistHint", {
                             defaultValue:
-                              "Add rows from event services or the service catalog for scope/reference. Pricing comes from the Total Services Amount field.",
-                            })}
-                        >
-                          {!watchedEventId ? (
-                            <EmptyHint
-                              text={t("quotations.selectEventBeforeServices", {
-                                defaultValue:
-                                  "Select an event first to load its service sources.",
-                              })}
-                            />
-                          ) : (
-                            <div className="space-y-3">
-                              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                                <Select
-                                  value={selectedEventServiceSourceId || "none"}
-                                  onValueChange={(value) =>
-                                    setSelectedEventServiceSourceId(
-                                      value === "none" ? "" : value,
-                                    )
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue
-                                      placeholder={t("quotations.selectEventService", {
-                                        defaultValue: "Select event service",
-                                      })}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">
-                                      {t("quotations.selectEventService", {
-                                        defaultValue: "Select event service",
-                                      })}
-                                    </SelectItem>
-                                    {eventServices.map((item) => (
-                                      <SelectItem key={item.id} value={String(item.id)}>
-                                        {item.serviceNameSnapshot}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={handleAddEventServiceItem}
-                                  disabled={!selectedEventServiceSourceId}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  {t("quotations.addServiceItem", {
-                                    defaultValue: "Add service item",
-                                  })}
-                                </Button>
-                              </div>
-
-                              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                                <Select
-                                  value={selectedCatalogServiceId || "none"}
-                                  onValueChange={(value) =>
-                                    setSelectedCatalogServiceId(value === "none" ? "" : value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue
-                                      placeholder={t("quotations.selectService", {
-                                        defaultValue: "Select service",
-                                      })}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">
-                                      {t("quotations.selectService", {
-                                        defaultValue: "Select service",
-                                      })}
-                                    </SelectItem>
-                                    {services.map((service) => (
-                                      <SelectItem key={service.id} value={String(service.id)}>
-                                        {service.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={handleAddCatalogServiceItem}
-                                  disabled={!selectedCatalogServiceId}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  {t("quotations.addServiceItem", {
-                                    defaultValue: "Add service item",
-                                  })}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </SourceCard>
-
-                        <SourceCard
-                          title={t("quotations.companyVendors", {
-                            defaultValue: "Company Vendors",
-                          })}
-                          hint={t("quotations.companyVendorsHint", {
-                            defaultValue:
-                              "Vendor quotation rows come from event vendors and use agreed price as the default snapshot.",
+                              "Choose from event services or from the service catalog. Selected items are added directly to the quotation rows.",
                           })}
                         >
-                          {!watchedEventId ? (
-                            <EmptyHint
-                              text={t("quotations.selectEventBeforeVendors", {
-                                defaultValue:
-                                  "Select an event first to load its event vendors.",
-                              })}
-                            />
-                          ) : (
-                            <div className="space-y-3">
-                              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                                <Select
-                                  value={selectedEventVendorSourceId || "none"}
-                                  onValueChange={(value) =>
-                                    setSelectedEventVendorSourceId(
-                                      value === "none" ? "" : value,
-                                    )
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue
-                                      placeholder={t("quotations.selectEventVendor", {
-                                        defaultValue: "Select event vendor",
-                                      })}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">
-                                      {t("quotations.selectEventVendor", {
-                                        defaultValue: "Select event vendor",
-                                      })}
-                                    </SelectItem>
-                                    {eventVendors
-                                      .filter((item) => !getEventVendorDisabledReason(item))
-                                      .map((item) => (
-                                        <SelectItem key={item.id} value={String(item.id)}>
-                                          {`${getEventVendorDisplayName(item)} • ${formatVendorMoney(item.agreedPrice)}`}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={handleAddEventVendorItem}
-                                  disabled={!selectedEventVendorSourceId}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  {t("quotations.addVendorItem", {
-                                    defaultValue: "Add vendor item",
-                                  })}
-                                </Button>
-                              </div>
-
-                              <p className="text-xs text-[var(--lux-text-secondary)]">
-                                {t("quotations.snapshotOnlyHint", {
-                                  defaultValue:
-                                    "This changes the quotation snapshot only. It does not change the original vendor pricing on the event.",
+                          <div className="space-y-4">
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("quotations.eventServices", {
+                                  defaultValue: "Event Services",
                                 })}
-                              </p>
+                              </div>
+                              {!watchedEventId ? (
+                                <EmptyHint
+                                  text={t(
+                                    "quotations.selectEventBeforeServices",
+                                    { defaultValue: "Select an event first." },
+                                  )}
+                                />
+                              ) : eventServices.length === 0 ? (
+                                <EmptyHint
+                                  text={t(
+                                    "quotations.noEventServicesForEvent",
+                                    {
+                                      defaultValue:
+                                        "This event has no services yet.",
+                                    },
+                                  )}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {eventServices.map((item) => (
+                                    <SelectableCard
+                                      key={`event-service-${item.id}`}
+                                      checked={selectedManualEventServiceIds.includes(
+                                        String(item.id),
+                                      )}
+                                      onCheckedChange={(value) =>
+                                        toggleManualEventService(item, value)
+                                      }
+                                      title={item.serviceNameSnapshot}
+                                      subtitle={t(
+                                        `services.category.${item.category}`,
+                                        {
+                                          defaultValue:
+                                            formatQuotationItemCategory(
+                                              item.category,
+                                            ),
+                                        },
+                                      )}
+                                      meta={[
+                                        `${t("quotations.quantity", { defaultValue: "Quantity" })}: ${item.quantity ?? 1}`,
+                                        t(
+                                          "quotations.totalServicesAmountHintShort",
+                                          {
+                                            defaultValue:
+                                              "Pricing handled by Total Services Amount",
+                                          },
+                                        ),
+                                      ]}
+                                      helperText={item.notes ?? undefined}
+                                    />
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </SourceCard>
+
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("quotations.catalogServices", {
+                                  defaultValue: "Catalog Services",
+                                })}
+                              </div>
+                              {services.length === 0 ? (
+                                <EmptyHint
+                                  text={t("quotations.noCatalogServices", {
+                                    defaultValue: "No catalog services found.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {services.map((service) => (
+                                    <SelectableCard
+                                      key={`catalog-service-${service.id}`}
+                                      checked={selectedManualCatalogServiceIds.includes(
+                                        String(service.id),
+                                      )}
+                                      onCheckedChange={(value) =>
+                                        toggleManualCatalogService(
+                                          service,
+                                          value,
+                                        )
+                                      }
+                                      title={service.name}
+                                      subtitle={t(
+                                        `services.category.${service.category}`,
+                                        {
+                                          defaultValue:
+                                            formatQuotationItemCategory(
+                                              service.category,
+                                            ),
+                                        },
+                                      )}
+                                      meta={[
+                                        t("quotations.catalogServiceSource", {
+                                          defaultValue:
+                                            "Source: service catalog",
+                                        }),
+                                        t(
+                                          "quotations.totalServicesAmountHintShort",
+                                          {
+                                            defaultValue:
+                                              "Pricing handled by Total Services Amount",
+                                          },
+                                        ),
+                                      ]}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </SelectionCard>
+
+                        <SelectionCard
+                          title={t("quotations.companiesChecklistTitle", {
+                            defaultValue: "Companies / Vendors",
+                          })}
+                          hint={t("quotations.companiesChecklistHint", {
+                            defaultValue:
+                              "Choose from event companies when they exist, or from the vendor catalog when the event is empty.",
+                          })}
+                        >
+                          <div className="space-y-4">
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("quotations.eventVendors", {
+                                  defaultValue: "Event Companies",
+                                })}
+                              </div>
+                              {!watchedEventId ? (
+                                <EmptyHint
+                                  text={t(
+                                    "quotations.selectEventBeforeVendors",
+                                    { defaultValue: "Select an event first." },
+                                  )}
+                                />
+                              ) : eventVendors.length === 0 ? (
+                                <EmptyHint
+                                  text={t("quotations.noEventVendorsForEvent", {
+                                    defaultValue:
+                                      "This event has no companies yet.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {eventVendors.map((item) => {
+                                    const disabledReason =
+                                      getEventVendorDisabledReason(item);
+                                    return (
+                                      <SelectableCard
+                                        key={`event-vendor-${item.id}`}
+                                        checked={selectedManualEventVendorIds.includes(
+                                          String(item.id),
+                                        )}
+                                        disabled={Boolean(disabledReason)}
+                                        onCheckedChange={(value) =>
+                                          toggleManualEventVendor(item, value)
+                                        }
+                                        title={getEventVendorDisplayName(item)}
+                                        subtitle={t(
+                                          `vendors.type.${item.vendorType}`,
+                                          {
+                                            defaultValue: formatVendorType(
+                                              item.vendorType,
+                                            ),
+                                          },
+                                        )}
+                                        meta={[
+                                          `${t("quotations.agreedPrice", { defaultValue: "Agreed Price" })}: ${safeMoney(item.agreedPrice)}`,
+                                          `${t("quotations.itemStatus", { defaultValue: "Status" })}: ${item.status}`,
+                                        ]}
+                                        helperText={
+                                          disabledReason === "cancelled"
+                                            ? t(
+                                                "quotations.cannotSelectCancelledVendor",
+                                                {
+                                                  defaultValue:
+                                                    "Cannot select cancelled vendor",
+                                                },
+                                              )
+                                            : disabledReason === "missing_price"
+                                              ? t(
+                                                  "quotations.vendorHasNoAgreedPrice",
+                                                  {
+                                                    defaultValue:
+                                                      "Vendor has no agreed price",
+                                                  },
+                                                )
+                                              : item.notes || undefined
+                                        }
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("quotations.catalogVendors", {
+                                  defaultValue: "Vendor Catalog",
+                                })}
+                              </div>
+                              {catalogVendors.length === 0 ? (
+                                <EmptyHint
+                                  text={t("quotations.noCatalogVendors", {
+                                    defaultValue: "No catalog vendors found.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {catalogVendors.map((vendor) => (
+                                    <SelectableCard
+                                      key={`catalog-vendor-${vendor.id}`}
+                                      checked={selectedManualCatalogVendorIds.includes(
+                                        String(vendor.id),
+                                      )}
+                                      onCheckedChange={(value) =>
+                                        toggleManualCatalogVendor(vendor, value)
+                                      }
+                                      title={vendor.name}
+                                      subtitle={
+                                        vendor.type
+                                          ? formatVendorType(vendor.type)
+                                          : undefined
+                                      }
+                                      meta={[
+                                        t("quotations.catalogVendorSource", {
+                                          defaultValue:
+                                            "Source: vendor catalog",
+                                        }),
+                                        t("quotations.vendorPriceNeedsReview", {
+                                          defaultValue:
+                                            "Set the price manually after selection",
+                                        }),
+                                      ]}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </SelectionCard>
                       </div>
 
                       <EditableItemsSection
@@ -1488,19 +1759,25 @@ const QuotationFormPage = () => {
                         fields={itemFields}
                         items={watchedItems}
                         manualServiceSummaryItem={
-                          getManualServicesTotalValue(watchedManualServicesTotal) > 0
-                            ? buildManualServiceItem(watchedManualServicesTotal, 0)
+                          getManualServicesTotalValue(
+                            watchedManualServicesTotal,
+                          ) > 0
+                            ? buildManualServiceItem(
+                                watchedManualServicesTotal,
+                                0,
+                              )
                             : null
                         }
                         form={form}
                         isEditMode={false}
-                        onRemove={removeItem}
+                        onRemove={handleRemoveManualRow}
                         onQuantityChange={handleQuantityChange}
                         onUnitPriceChange={handleUnitPriceChange}
                         onTotalPriceChange={handleTotalPriceChange}
                       />
                     </section>
                   ) : null}
+
                   {!isEditMode && watchedCreateMode === "from_event" ? (
                     <section className="space-y-6">
                       <div className="space-y-1">
@@ -1530,7 +1807,8 @@ const QuotationFormPage = () => {
                           {!watchedEventId ? (
                             <EmptyHint
                               text={t("quotations.selectEventBeforeServices", {
-                                defaultValue: "Select an event first to preview its service lines.",
+                                defaultValue:
+                                  "Select an event first to preview its service lines.",
                               })}
                             />
                           ) : eventServices.length === 0 ? (
@@ -1543,7 +1821,9 @@ const QuotationFormPage = () => {
                           ) : (
                             <div className="space-y-3">
                               {eventServices.map((item) => {
-                                const checked = watchedEventServiceIds.includes(String(item.id));
+                                const checked = watchedEventServiceIds.includes(
+                                  String(item.id),
+                                );
                                 return (
                                   <SelectableCard
                                     key={item.id}
@@ -1552,17 +1832,24 @@ const QuotationFormPage = () => {
                                       toggleEventService(String(item.id), value)
                                     }
                                     title={item.serviceNameSnapshot}
-                                    subtitle={t(`services.category.${item.category}`, {
-                                      defaultValue: formatQuotationItemCategory(item.category),
-                                    })}
-                                    meta={[
-                                      `${t("quotations.quantity", {
-                                        defaultValue: "Quantity",
-                                      })}: ${item.quantity ?? 1}`,
-                                      t("quotations.totalServicesAmountHintShort", {
+                                    subtitle={t(
+                                      `services.category.${item.category}`,
+                                      {
                                         defaultValue:
-                                          "Pricing handled by Total Services Amount",
-                                      }),
+                                          formatQuotationItemCategory(
+                                            item.category,
+                                          ),
+                                      },
+                                    )}
+                                    meta={[
+                                      `${t("quotations.quantity", { defaultValue: "Quantity" })}: ${item.quantity ?? 1}`,
+                                      t(
+                                        "quotations.totalServicesAmountHintShort",
+                                        {
+                                          defaultValue:
+                                            "Pricing handled by Total Services Amount",
+                                        },
+                                      ),
                                     ]}
                                     helperText={item.notes ?? undefined}
                                   />
@@ -1598,8 +1885,11 @@ const QuotationFormPage = () => {
                           ) : (
                             <div className="space-y-3">
                               {eventVendors.map((item) => {
-                                const checked = watchedEventVendorIds.includes(String(item.id));
-                                const disabledReason = getEventVendorDisabledReason(item);
+                                const checked = watchedEventVendorIds.includes(
+                                  String(item.id),
+                                );
+                                const disabledReason =
+                                  getEventVendorDisabledReason(item);
                                 return (
                                   <SelectableCard
                                     key={item.id}
@@ -1609,37 +1899,38 @@ const QuotationFormPage = () => {
                                       toggleEventVendor(String(item.id), value)
                                     }
                                     title={getEventVendorDisplayName(item)}
-                                    subtitle={t(`vendors.type.${item.vendorType}`, {
-                                      defaultValue: formatVendorType(item.vendorType),
-                                    })}
+                                    subtitle={t(
+                                      `vendors.type.${item.vendorType}`,
+                                      {
+                                        defaultValue: formatVendorType(
+                                          item.vendorType,
+                                        ),
+                                      },
+                                    )}
                                     meta={[
-                                      `${t("quotations.agreedPrice", {
-                                        defaultValue: "Agreed Price",
-                                      })}: ${safeMoney(item.agreedPrice)}`,
-                                      `${t("quotations.pricingPlan", {
-                                        defaultValue: "Pricing Plan",
-                                      })}: ${item.pricingPlan?.name || "-"}`,
-                                      `${t("quotations.vendorType", {
-                                        defaultValue: "Vendor Type",
-                                      })}: ${t(`vendors.type.${item.vendorType}`, {
-                                        defaultValue: formatVendorType(item.vendorType),
-                                      })}`,
-                                      `${t("quotations.selectedSubServicesCount", {
-                                        defaultValue: "Selected Sub-Services",
-                                      })}: ${item.selectedSubServicesCount ?? 0}`,
-                                      `${t("quotations.itemStatus", {
-                                        defaultValue: "Status",
-                                      })}: ${item.status}`,
+                                      `${t("quotations.agreedPrice", { defaultValue: "Agreed Price" })}: ${safeMoney(item.agreedPrice)}`,
+                                      `${t("quotations.pricingPlan", { defaultValue: "Pricing Plan" })}: ${item.pricingPlan?.name || "-"}`,
+                                      `${t("quotations.vendorType", { defaultValue: "Vendor Type" })}: ${t(`vendors.type.${item.vendorType}`, { defaultValue: formatVendorType(item.vendorType) })}`,
+                                      `${t("quotations.selectedSubServicesCount", { defaultValue: "Selected Sub-Services" })}: ${item.selectedSubServicesCount ?? 0}`,
+                                      `${t("quotations.itemStatus", { defaultValue: "Status" })}: ${item.status}`,
                                     ]}
                                     helperText={
                                       disabledReason === "cancelled"
-                                        ? t("quotations.cannotSelectCancelledVendor", {
-                                            defaultValue: "Cannot select cancelled vendor",
-                                          })
+                                        ? t(
+                                            "quotations.cannotSelectCancelledVendor",
+                                            {
+                                              defaultValue:
+                                                "Cannot select cancelled vendor",
+                                            },
+                                          )
                                         : disabledReason === "missing_price"
-                                          ? t("quotations.vendorHasNoAgreedPrice", {
-                                              defaultValue: "Vendor has no agreed price",
-                                            })
+                                          ? t(
+                                              "quotations.vendorHasNoAgreedPrice",
+                                              {
+                                                defaultValue:
+                                                  "Vendor has no agreed price",
+                                              },
+                                            )
                                           : item.notes || undefined
                                     }
                                   />
@@ -1652,7 +1943,9 @@ const QuotationFormPage = () => {
 
                       {form.formState.errors.eventServiceIds ? (
                         <p className="text-sm font-medium text-[var(--lux-danger)]">
-                          {String(form.formState.errors.eventServiceIds.message)}
+                          {String(
+                            form.formState.errors.eventServiceIds.message,
+                          )}
                         </p>
                       ) : null}
 
@@ -1691,14 +1984,19 @@ const QuotationFormPage = () => {
                         fields={itemFields}
                         items={watchedItems}
                         manualServiceSummaryItem={
-                          getManualServicesTotalValue(watchedManualServicesTotal) > 0 ||
+                          getManualServicesTotalValue(
+                            watchedManualServicesTotal,
+                          ) > 0 ||
                           typeof serviceSummaryItemIdRef.current === "number"
-                            ? buildManualServiceItem(watchedManualServicesTotal, 0)
+                            ? buildManualServiceItem(
+                                watchedManualServicesTotal,
+                                0,
+                              )
                             : null
                         }
                         form={form}
                         isEditMode
-                        onRemove={removeItem}
+                        onRemove={handleRemoveManualRow}
                         onQuantityChange={handleQuantityChange}
                         onUnitPriceChange={handleUnitPriceChange}
                         onTotalPriceChange={handleTotalPriceChange}
@@ -1708,11 +2006,15 @@ const QuotationFormPage = () => {
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <SummaryTile
-                      label={t("quotations.subtotal", { defaultValue: "Subtotal" })}
+                      label={t("quotations.subtotal", {
+                        defaultValue: "Subtotal",
+                      })}
                       value={formatMoney(totals.subtotal)}
                     />
                     <SummaryTile
-                      label={t("quotations.discount", { defaultValue: "Discount" })}
+                      label={t("quotations.discount", {
+                        defaultValue: "Discount",
+                      })}
                       value={formatMoney(totals.discountAmount)}
                     />
                     <SummaryTile
@@ -1732,7 +2034,11 @@ const QuotationFormPage = () => {
                       type="button"
                       variant="outline"
                       onClick={() =>
-                        navigate(isEditMode && id ? `/quotations/${id}` : "/quotations")
+                        navigate(
+                          isEditMode && id
+                            ? `/quotations/${id}`
+                            : "/quotations",
+                        )
                       }
                       disabled={isBusy}
                     >
@@ -1740,7 +2046,9 @@ const QuotationFormPage = () => {
                     </Button>
                     <Button type="submit" disabled={isBusy}>
                       {isBusy
-                        ? t("common.processing", { defaultValue: "Processing..." })
+                        ? t("common.processing", {
+                            defaultValue: "Processing...",
+                          })
                         : isEditMode
                           ? t("common.update", { defaultValue: "Update" })
                           : t("common.create", { defaultValue: "Create" })}
@@ -1755,32 +2063,6 @@ const QuotationFormPage = () => {
     </ProtectedComponent>
   );
 };
-
-function SourceCard({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint: string;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className="rounded-[4px] border p-5"
-      style={{
-        background: "var(--lux-panel-surface)",
-        borderColor: "var(--lux-row-border)",
-      }}
-    >
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold text-[var(--lux-heading)]">{title}</h3>
-        <p className="text-sm text-[var(--lux-text-secondary)]">{hint}</p>
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
 
 function SelectionCard({
   title,
@@ -1800,7 +2082,9 @@ function SelectionCard({
       }}
     >
       <div className="space-y-1">
-        <h3 className="text-base font-semibold text-[var(--lux-heading)]">{title}</h3>
+        <h3 className="text-base font-semibold text-[var(--lux-heading)]">
+          {title}
+        </h3>
         <p className="text-sm text-[var(--lux-text-secondary)]">{hint}</p>
       </div>
       <div className="mt-4">{children}</div>
@@ -1857,7 +2141,9 @@ function SelectableCard({
       <div className="min-w-0 flex-1 space-y-2">
         <div className="font-semibold text-[var(--lux-heading)]">{title}</div>
         {subtitle ? (
-          <div className="text-xs text-[var(--lux-text-secondary)]">{subtitle}</div>
+          <div className="text-xs text-[var(--lux-text-secondary)]">
+            {subtitle}
+          </div>
         ) : null}
         <div className="grid grid-cols-1 gap-2 text-xs text-[var(--lux-text-secondary)] md:grid-cols-2">
           {meta.map((item) => (
@@ -1865,7 +2151,9 @@ function SelectableCard({
           ))}
         </div>
         {helperText ? (
-          <div className="text-xs text-[var(--lux-text-secondary)]">{helperText}</div>
+          <div className="text-xs text-[var(--lux-text-secondary)]">
+            {helperText}
+          </div>
         ) : null}
       </div>
     </label>
@@ -1889,12 +2177,16 @@ function PreviewSummary({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 text-sm">
         <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
-          {t("quotations.selectedServices", { defaultValue: "Selected Services" })}:{" "}
-          {selectedServicesCount}
+          {t("quotations.selectedServices", {
+            defaultValue: "Selected Services",
+          })}
+          : {selectedServicesCount}
         </span>
         <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
-          {t("quotations.selectedVendors", { defaultValue: "Selected Vendors" })}:{" "}
-          {selectedVendorsCount}
+          {t("quotations.selectedVendors", {
+            defaultValue: "Selected Vendors",
+          })}
+          : {selectedVendorsCount}
         </span>
         <span className="rounded-[4px] border px-3 py-1 text-[var(--lux-text-secondary)]">
           {t("quotations.totalServicesAmount", {
@@ -1954,19 +2246,38 @@ function EditableItemsSection({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[4px] border" style={{ borderColor: "var(--lux-row-border)" }}>
+    <div
+      className="overflow-x-auto rounded-[4px] border"
+      style={{ borderColor: "var(--lux-row-border)" }}
+    >
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
-            <th className="px-3 py-3 text-start">{t("quotations.type", { defaultValue: "Type" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.itemName", { defaultValue: "Item Name" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.category", { defaultValue: "Category" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.quantity", { defaultValue: "Quantity" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.unitPrice", { defaultValue: "Unit Price" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.totalPrice", { defaultValue: "Total Price" })}</th>
-            <th className="px-3 py-3 text-start">{t("common.notes", { defaultValue: "Notes" })}</th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.type", { defaultValue: "Type" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.itemName", { defaultValue: "Item Name" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.category", { defaultValue: "Category" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.quantity", { defaultValue: "Quantity" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.unitPrice", { defaultValue: "Unit Price" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.totalPrice", { defaultValue: "Total Price" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("common.notes", { defaultValue: "Notes" })}
+            </th>
             {!isEditMode ? (
-              <th className="px-3 py-3 text-start">{t("common.actions", { defaultValue: "Actions" })}</th>
+              <th className="px-3 py-3 text-start">
+                {t("common.actions", { defaultValue: "Actions" })}
+              </th>
             ) : null}
           </tr>
         </thead>
@@ -1976,9 +2287,9 @@ function EditableItemsSection({
               className="border-b border-[var(--lux-row-border)] align-top"
               style={{ background: "var(--lux-panel-surface)" }}
             >
-                <td className="min-w-[120px] px-3 py-3">
-                  <TypeBadge item={manualServiceSummaryItem} t={t} />
-                </td>
+              <td className="min-w-[120px] px-3 py-3">
+                <TypeBadge item={manualServiceSummaryItem} t={t} />
+              </td>
               <td className="min-w-[220px] px-3 py-3">
                 <div className="font-medium text-[var(--lux-text)]">
                   {manualServiceSummaryItem.itemName}
@@ -1986,7 +2297,7 @@ function EditableItemsSection({
                 <div className="mt-2 text-xs text-[var(--lux-text-secondary)]">
                   {t("quotations.totalServicesAmountHint", {
                     defaultValue:
-                      "Service pricing is entered here as one overall amount. Vendor/company costs are added as separate rows.",
+                      "Service pricing is entered here as one overall amount. Company/vendor costs are added as separate rows.",
                   })}
                 </div>
               </td>
@@ -2008,6 +2319,7 @@ function EditableItemsSection({
               {!isEditMode ? <td className="w-[80px] px-3 py-3" /> : null}
             </tr>
           ) : null}
+
           {fields.map((field, index) => {
             const itemValues = items[index];
             const isServiceReferenceItem = itemValues?.itemType === "service";
@@ -2033,39 +2345,37 @@ function EditableItemsSection({
                   <TypeBadge item={itemValues} t={t} />
                 </td>
                 <td className="min-w-[220px] px-3 py-3">
-                  <Input {...itemNameField} placeholder={t("quotations.itemName", { defaultValue: "Item Name" })} />
+                  <Input
+                    {...itemNameField}
+                    placeholder={t("quotations.itemName", {
+                      defaultValue: "Item Name",
+                    })}
+                  />
                   <div className="mt-2 text-xs text-[var(--lux-text-secondary)]">
                     {itemValues?.itemType === "vendor" ? (
                       <>
                         {itemValues.eventVendorId
-                          ? `${t("quotations.linkedEventVendor", {
-                              defaultValue: "Event Vendor",
-                            })}: #${itemValues.eventVendorId}`
-                          : null}
+                          ? `${t("quotations.linkedEventVendor", { defaultValue: "Event Vendor" })}: #${itemValues.eventVendorId}`
+                          : itemValues.vendorId
+                            ? `${t("quotations.linkedVendor", { defaultValue: "Vendor" })}: #${itemValues.vendorId}`
+                            : null}
                         {itemValues.pricingPlanId
-                          ? ` • ${t("quotations.pricingPlan", {
-                              defaultValue: "Pricing Plan",
-                            })}: #${itemValues.pricingPlanId}`
+                          ? ` • ${t("quotations.pricingPlan", { defaultValue: "Pricing Plan" })}: #${itemValues.pricingPlanId}`
                           : null}
                         <div className="mt-1">
                           {t("quotations.snapshotOnlyHint", {
                             defaultValue:
-                              "This changes the quotation snapshot only. It does not change the original vendor pricing on the event.",
+                              "This changes the quotation snapshot only. It does not change the original event or vendor setup.",
                           })}
                         </div>
                       </>
                     ) : (
                       <>
                         {itemValues?.eventServiceId
-                          ? `${t("quotations.linkedEventService", {
-                              defaultValue: "Event Service",
-                            })}: #${itemValues.eventServiceId}`
+                          ? `${t("quotations.linkedEventService", { defaultValue: "Event Service" })}: #${itemValues.eventServiceId}`
                           : null}
                         {itemValues?.serviceId
-                          ? `${itemValues.eventServiceId ? " • " : ""}${t(
-                              "quotations.linkedService",
-                              { defaultValue: "Catalog Service" },
-                            )}: #${itemValues.serviceId}`
+                          ? `${itemValues.eventServiceId ? " • " : ""}${t("quotations.linkedService", { defaultValue: "Catalog Service" })}: #${itemValues.serviceId}`
                           : null}
                         {isServiceReferenceItem ? (
                           <div className="mt-1">
@@ -2080,7 +2390,12 @@ function EditableItemsSection({
                   </div>
                 </td>
                 <td className="min-w-[160px] px-3 py-3">
-                  <Input {...categoryField} placeholder={t("quotations.category", { defaultValue: "Category" })} />
+                  <Input
+                    {...categoryField}
+                    placeholder={t("quotations.category", {
+                      defaultValue: "Category",
+                    })}
+                  />
                 </td>
                 <td className="min-w-[120px] px-3 py-3">
                   <Input
@@ -2088,7 +2403,9 @@ function EditableItemsSection({
                     min="0.001"
                     step="0.001"
                     {...quantityField}
-                    onChange={(event) => onQuantityChange(index, event, quantityField.onChange)}
+                    onChange={(event) =>
+                      onQuantityChange(index, event, quantityField.onChange)
+                    }
                   />
                 </td>
                 <td className="min-w-[140px] px-3 py-3">
@@ -2102,7 +2419,11 @@ function EditableItemsSection({
                       isServiceReferenceItem
                         ? undefined
                         : (event) =>
-                            onUnitPriceChange(index, event, unitPriceField.onChange)
+                            onUnitPriceChange(
+                              index,
+                              event,
+                              unitPriceField.onChange,
+                            )
                     }
                   />
                 </td>
@@ -2117,7 +2438,11 @@ function EditableItemsSection({
                       isServiceReferenceItem
                         ? undefined
                         : (event) =>
-                            onTotalPriceChange(index, event, totalPriceField.onChange)
+                            onTotalPriceChange(
+                              index,
+                              event,
+                              totalPriceField.onChange,
+                            )
                     }
                   />
                 </td>
@@ -2134,7 +2459,12 @@ function EditableItemsSection({
                 </td>
                 {!isEditMode ? (
                   <td className="w-[80px] px-3 py-3">
-                    <Button type="button" variant="outline" size="icon" onClick={() => onRemove(index)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onRemove(index)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </td>
@@ -2166,22 +2496,37 @@ function PreviewTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[4px] border" style={{ borderColor: "var(--lux-row-border)" }}>
+    <div
+      className="overflow-x-auto rounded-[4px] border"
+      style={{ borderColor: "var(--lux-row-border)" }}
+    >
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
-            <th className="px-3 py-3 text-start">{t("quotations.type", { defaultValue: "Type" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.itemName", { defaultValue: "Item Name" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.category", { defaultValue: "Category" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.quantity", { defaultValue: "Quantity" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.unitPrice", { defaultValue: "Unit Price" })}</th>
-            <th className="px-3 py-3 text-start">{t("quotations.totalPrice", { defaultValue: "Total Price" })}</th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.type", { defaultValue: "Type" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.itemName", { defaultValue: "Item Name" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.category", { defaultValue: "Category" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.quantity", { defaultValue: "Quantity" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.unitPrice", { defaultValue: "Unit Price" })}
+            </th>
+            <th className="px-3 py-3 text-start">
+              {t("quotations.totalPrice", { defaultValue: "Total Price" })}
+            </th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, index) => (
             <tr
-              key={`${item.itemType}-${index}-${item.eventServiceId || item.eventVendorId || item.serviceId || item.itemName}`}
+              key={`${item.itemType}-${index}-${item.eventServiceId || item.eventVendorId || item.serviceId || item.vendorId || item.itemName}`}
               className="border-b border-[var(--lux-row-border)] last:border-b-0"
             >
               <td className="px-3 py-3">
@@ -2200,11 +2545,16 @@ function PreviewTable({
                     })
                   : "-"}
               </td>
-              <td className="px-3 py-3 text-[var(--lux-text-secondary)]">{item.quantity}</td>
-              <td className="px-3 py-3 text-[var(--lux-text-secondary)]">{safeMoney(item.unitPrice)}</td>
+              <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                {item.quantity}
+              </td>
+              <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
+                {safeMoney(item.unitPrice)}
+              </td>
               <td className="px-3 py-3 text-[var(--lux-text-secondary)]">
                 {safeMoney(
-                  item.totalPrice || computeQuotationItemTotal(item.quantity, item.unitPrice),
+                  item.totalPrice ||
+                    computeQuotationItemTotal(item.quantity, item.unitPrice),
                 )}
               </td>
             </tr>
@@ -2225,7 +2575,6 @@ function TypeBadge({
   const type = item?.itemType ?? "service";
   const isVendor = type === "vendor";
   const isSummary = isManualServicesSummaryItem(item ?? {});
-
   return (
     <span
       className={cn(
@@ -2287,7 +2636,9 @@ function FieldBlock({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-medium text-[var(--lux-text)]">{label}</span>
+      <span className="text-sm font-medium text-[var(--lux-text)]">
+        {label}
+      </span>
       {children}
       {error ? (
         <p className="text-[0.8rem] font-medium text-[var(--lux-danger)]">

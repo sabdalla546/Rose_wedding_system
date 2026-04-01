@@ -51,7 +51,10 @@ import {
   EventMetaChip,
 } from "@/pages/events/_components/EventDetailsPrimitives";
 import { EventWorkspaceSummary } from "@/pages/events/_components/EventWorkspaceSummary";
-import { EVENT_STATUS_OPTIONS, getEventDisplayTitle } from "@/pages/events/adapters";
+import {
+  EVENT_STATUS_OPTIONS,
+  getEventDisplayTitle,
+} from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import type { EventStatus } from "@/pages/events/types";
 import {
@@ -89,7 +92,9 @@ const WORKSPACE_TAB_VALUES: WorkspaceTabValue[] = [
 ];
 
 function isWorkspaceTabValue(value: string | null): value is WorkspaceTabValue {
-  return Boolean(value && WORKSPACE_TAB_VALUES.includes(value as WorkspaceTabValue));
+  return Boolean(
+    value && WORKSPACE_TAB_VALUES.includes(value as WorkspaceTabValue),
+  );
 }
 
 type EventEditFormState = {
@@ -183,9 +188,8 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const [selectedServiceForCreate, setSelectedServiceForCreate] =
     useState<Service | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
-  const [editingVendorLink, setEditingVendorLink] = useState<EventVendorLink | null>(
-    null,
-  );
+  const [editingVendorLink, setEditingVendorLink] =
+    useState<EventVendorLink | null>(null);
   const [deleteVendorCandidate, setDeleteVendorCandidate] =
     useState<EventVendorLink | null>(null);
   const [deleteServiceCandidate, setDeleteServiceCandidate] =
@@ -210,7 +214,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     () => customersResponse?.data ?? [],
     [customersResponse?.data],
   );
-  const venues = useMemo(() => venuesResponse?.data ?? [], [venuesResponse?.data]);
+  const venues = useMemo(
+    () => venuesResponse?.data ?? [],
+    [venuesResponse?.data],
+  );
   const serviceItems = useMemo(
     () =>
       [...(eventServiceItemsResponse?.data ?? [])].sort((left, right) => {
@@ -279,7 +286,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       (link) => link.status === "approved" || link.status === "confirmed",
     ).length;
     const sections = event?.sections ?? [];
-    const sectionsReady = sections.filter((section) => section.isCompleted).length;
+    const sectionsReady = sections.filter(
+      (section) => section.isCompleted,
+    ).length;
     const total = serviceItems.length + vendorLinks.length + sections.length;
     const ready = servicesReady + vendorsReady + sectionsReady;
 
@@ -296,7 +305,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     };
   }, [event?.sections, serviceItems, vendorLinks]);
   const requestedTab = searchParams.get("tab");
-  const activeTab = isWorkspaceTabValue(requestedTab) ? requestedTab : "overview";
+  const activeTab = isWorkspaceTabValue(requestedTab)
+    ? requestedTab
+    : "overview";
 
   useEffect(() => {
     if (!requestedTab) {
@@ -342,26 +353,12 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       value: "overview",
       label: t("common.overview", { defaultValue: "Overview" }),
     },
-    {
-      value: "services",
-      label: t("events.services"),
-    },
-    {
-      value: "vendors",
-      label: t("events.vendors"),
-    },
-    {
-      value: "quotations",
-      label: t("events.quotations"),
-    },
-    {
-      value: "contracts",
-      label: t("events.contracts"),
-    },
-    {
-      value: "execution",
-      label: t("events.executionTab"),
-    },
+    // { value: "execution", label: t("events.executionTab") },
+
+    { value: "contracts", label: t("events.contracts") },
+    { value: "quotations", label: t("events.quotations") },
+    { value: "services", label: t("events.services") },
+    { value: "vendors", label: t("events.vendors") },
   ];
 
   const setActiveTab = (value: WorkspaceTabValue) => {
@@ -494,11 +491,23 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <EventMetaChip label={t("designerDetails.customerField")} value={resolvedCustomerName} />
-              <EventMetaChip label={t("designerDetails.eventDateField")} value={eventDateLabel} />
-              <EventMetaChip label={t("designerDetails.venueField")} value={resolvedVenueName} />
+              <EventMetaChip
+                label={t("designerDetails.customerField")}
+                value={resolvedCustomerName}
+              />
+              <EventMetaChip
+                label={t("designerDetails.eventDateField")}
+                value={eventDateLabel}
+              />
+              <EventMetaChip
+                label={t("designerDetails.venueField")}
+                value={resolvedVenueName}
+              />
               {typeof event.guestCount === "number" ? (
-                <EventMetaChip label={t("designerDetails.guestCountField")} value={event.guestCount} />
+                <EventMetaChip
+                  label={t("designerDetails.guestCountField")}
+                  value={event.guestCount}
+                />
               ) : null}
             </div>
           </div>
@@ -545,9 +554,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
           }
         }}
       >
-        <SectionCard
-          className="space-y-4 border border-[var(--lux-row-border)]"
-        >
+        <SectionCard className="space-y-4 border border-[var(--lux-row-border)]">
           <div
             className={cn(
               "flex flex-col gap-3 lg:items-center lg:justify-between",
@@ -636,7 +643,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             eventId={eventId}
             onCreateQuotation={handleCreateQuotation}
             onCreateQuotationFromEvent={handleCreateQuotation}
-            onViewQuotation={(quotationId) => navigate(`/quotations/${quotationId}`)}
+            onViewQuotation={(quotationId) =>
+              navigate(`/quotations/${quotationId}`)
+            }
           />
         </TabsContent>
 
@@ -645,7 +654,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             eventId={eventId}
             onCreateContract={handleCreateContract}
             onCreateContractFromQuotation={handleCreateContract}
-            onViewContract={(contractId) => navigate(`/contracts/${contractId}`)}
+            onViewContract={(contractId) =>
+              navigate(`/contracts/${contractId}`)
+            }
           />
         </TabsContent>
 
@@ -731,7 +742,8 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
           defaultValue: "Delete linked vendor",
         })}
         message={t("vendors.deleteEventVendorMessage", {
-          defaultValue: "This vendor will be unlinked from the event. Do you want to continue?",
+          defaultValue:
+            "This vendor will be unlinked from the event. Do you want to continue?",
         })}
         confirmLabel={t("common.delete")}
         cancelLabel={t("designerDetails.cancel")}
@@ -764,7 +776,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
                     <SelectValue placeholder={t("events.selectCustomer")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("designerDetails.noCustomer")}</SelectItem>
+                    <SelectItem value="none">
+                      {t("designerDetails.noCustomer")}
+                    </SelectItem>
                     {customers.map((customer) => (
                       <SelectItem key={customer.id} value={String(customer.id)}>
                         {customer.fullName}
@@ -807,7 +821,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
                     <SelectValue placeholder={t("events.selectVenue")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("designerDetails.noVenue")}</SelectItem>
+                    <SelectItem value="none">
+                      {t("designerDetails.noVenue")}
+                    </SelectItem>
                     {venues.map((venue) => (
                       <SelectItem key={venue.id} value={String(venue.id)}>
                         {venue.name}
@@ -980,15 +996,18 @@ export default function DesignerDetailsPage() {
       }),
     [eventsResponse?.data],
   );
-  const effectiveSelectedEventId =
-    availableEvents.find((event) => String(event.id) === selectedEventId)
-      ? selectedEventId
-      : availableEvents[0]
-        ? String(availableEvents[0].id)
-        : "";
+  const effectiveSelectedEventId = availableEvents.find(
+    (event) => String(event.id) === selectedEventId,
+  )
+    ? selectedEventId
+    : availableEvents[0]
+      ? String(availableEvents[0].id)
+      : "";
 
   return (
-    <ProtectedComponent anyOf={["events.read", "vendors.read", "services.read"]}>
+    <ProtectedComponent
+      anyOf={["events.read", "vendors.read", "services.read"]}
+    >
       <PageContainer className="pb-4 pt-4 text-foreground">
         <div dir={i18n.dir()} className="mx-auto w-full max-w-7xl space-y-6">
           <SectionCard
@@ -1004,7 +1023,12 @@ export default function DesignerDetailsPage() {
                 "lg:flex-row",
               )}
             >
-              <div className={cn("max-w-3xl space-y-4", isRtl ? "text-right" : "text-left")}>
+              <div
+                className={cn(
+                  "max-w-3xl space-y-4",
+                  isRtl ? "text-right" : "text-left",
+                )}
+              >
                 <div className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-4 py-2 text-xs font-semibold text-[var(--lux-gold)]">
                   <Sparkles className="h-4 w-4" />
                   {t("designerDetails.title")}
@@ -1032,7 +1056,9 @@ export default function DesignerDetailsPage() {
                 "xl:flex-row",
               )}
             >
-              <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
+              <div
+                className={cn("space-y-2", isRtl ? "text-right" : "text-left")}
+              >
                 <h2 className="text-xl font-semibold text-[var(--lux-heading)]">
                   {t("designerDetails.selectorTitle")}
                 </h2>
@@ -1051,7 +1077,9 @@ export default function DesignerDetailsPage() {
                     dir={i18n.dir()}
                     className={cn(
                       "h-12",
-                      isRtl ? "text-right [&_span]:text-right" : "text-left [&_span]:text-left",
+                      isRtl
+                        ? "text-right [&_span]:text-right"
+                        : "text-left [&_span]:text-left",
                     )}
                   >
                     <SelectValue
@@ -1084,7 +1112,9 @@ export default function DesignerDetailsPage() {
                 <p
                   className={cn(
                     "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                    isRtl
+                      ? "tracking-normal text-right"
+                      : "uppercase tracking-[0.16em] text-left",
                   )}
                 >
                   {t("designerDetails.capabilityEvent")}
@@ -1097,7 +1127,9 @@ export default function DesignerDetailsPage() {
                 <p
                   className={cn(
                     "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                    isRtl
+                      ? "tracking-normal text-right"
+                      : "uppercase tracking-[0.16em] text-left",
                   )}
                 >
                   {t("designerDetails.capabilityVendors")}
@@ -1110,7 +1142,9 @@ export default function DesignerDetailsPage() {
                 <p
                   className={cn(
                     "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl ? "tracking-normal text-right" : "uppercase tracking-[0.16em] text-left",
+                    isRtl
+                      ? "tracking-normal text-right"
+                      : "uppercase tracking-[0.16em] text-left",
                   )}
                 >
                   {t("designerDetails.capabilityServices")}

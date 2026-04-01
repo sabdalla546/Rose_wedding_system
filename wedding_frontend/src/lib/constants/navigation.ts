@@ -363,7 +363,7 @@ if (secretarialRootItem?.children) {
               id: "settings-team-vendors",
               labelKey: "sidebar.nav.vendors",
               label: "Vendors",
-              labelAr: "الشركات",
+              labelAr: "الشركات الخارجه",
               href: "/settings/vendors",
               icon: Handshake,
               subtitle:
@@ -392,9 +392,9 @@ if (secretarialRootItem?.children) {
 function hasAccessRule(item: NavigationItem) {
   return Boolean(
     item.permission ||
-      item.anyOf?.length ||
-      item.allOf?.length ||
-      item.roles?.length,
+    item.anyOf?.length ||
+    item.allOf?.length ||
+    item.roles?.length,
   );
 }
 
@@ -467,7 +467,9 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
 })();
 
 export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
-  const reportsRoot = navigationItems.find((item) => item.id === REPORTS_ROOT_ID);
+  const reportsRoot = navigationItems.find(
+    (item) => item.id === REPORTS_ROOT_ID,
+  );
 
   if (!reportsRoot?.children?.length) {
     return [];

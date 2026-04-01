@@ -1108,12 +1108,10 @@ export const EventDetailsPage = ({
               className="w-full"
             >
               <TabsList>
-                <TabsTrigger value="overview">
-                  {t("events.overviewTab", { defaultValue: "Overview" })}
-                </TabsTrigger>
                 <TabsTrigger value="items">
                   {t("events.itemsTab", { defaultValue: "Items / Services" })}
                 </TabsTrigger>
+
                 <TabsTrigger value="vendors">
                   {t("events.externalVendorsTab", {
                     defaultValue: "External Vendors",
@@ -1125,9 +1123,15 @@ export const EventDetailsPage = ({
                 <TabsTrigger value="contracts">
                   {t("events.contracts", { defaultValue: "Contracts" })}
                 </TabsTrigger>
-                <TabsTrigger value="execution">
+                <TabsTrigger value="overview">
+                  {t("events.overviewTab", { defaultValue: "Overview" })}
+                </TabsTrigger>
+
+                {/**
+   *                 <TabsTrigger value="execution">
                   {t("events.executionTab", { defaultValue: "Execution" })}
                 </TabsTrigger>
+   */}
               </TabsList>
 
               <TabsContent value="overview">

@@ -40,7 +40,7 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
         search
           ? {
               ...search,
-              submitLabel: t("search") || "Search",
+              submitLabel: "بحث",
             }
           : undefined
       }
