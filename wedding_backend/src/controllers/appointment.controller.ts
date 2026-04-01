@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import { ZodError } from "zod";
 import { sequelize } from "../config/database";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -17,6 +17,21 @@ import {
   rescheduleAppointmentSchema,
 } from "../validation/appointment-action.schemas";
 
+const APPOINTMENT_CONFLICT_MESSAGE =
+  "This appointment overlaps with another appointment.";
+const APPOINTMENT_END_TIME_REQUIRED_MESSAGE =
+  "endTime is required for scheduling conflict checks.";
+
+class AppointmentSchedulingError extends Error {
+  public readonly statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = "AppointmentSchedulingError";
+    this.statusCode = statusCode;
+  }
+}
+
 const appointmentInclude = [
   { model: Customer, as: "customer" },
   { model: Venue, as: "venue" },
@@ -26,6 +41,85 @@ const appointmentInclude = [
 
 const serializeAppointment = (instance: any) =>
   typeof instance?.toJSON === "function" ? instance.toJSON() : instance;
+
+const normalizeOptionalTime = (value?: string | null) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+const requireEndTimeForConflictChecks = (value?: string | null) => {
+  const normalized = normalizeOptionalTime(value);
+
+  if (!normalized) {
+    throw new AppointmentSchedulingError(
+      APPOINTMENT_END_TIME_REQUIRED_MESSAGE,
+      400,
+    );
+  }
+
+  return normalized;
+};
+
+const assertNoAppointmentTimeConflict = async ({
+  appointmentDate,
+  startTime,
+  endTime,
+  ignoreAppointmentId,
+  transaction,
+}: {
+  appointmentDate: string;
+  startTime: string;
+  endTime?: string | null;
+  ignoreAppointmentId?: number;
+  transaction?: Transaction;
+}) => {
+  const normalizedStartTime = startTime.trim();
+  const normalizedEndTime = requireEndTimeForConflictChecks(endTime);
+
+  const where: any = {
+    appointmentDate,
+    status: {
+      [Op.notIn]: ["cancelled", "no_show"],
+    },
+    startTime: {
+      [Op.lt]: normalizedEndTime,
+    },
+    endTime: {
+      [Op.gt]: normalizedStartTime,
+    },
+  };
+
+  if (ignoreAppointmentId) {
+    where.id = {
+      [Op.ne]: ignoreAppointmentId,
+    };
+  }
+
+  const conflictingAppointment = await Appointment.findOne({
+    where,
+    transaction,
+  });
+
+  if (conflictingAppointment) {
+    throw new AppointmentSchedulingError(APPOINTMENT_CONFLICT_MESSAGE, 409);
+  }
+};
+
+const handleAppointmentError = (req: Request, res: Response, err: unknown) => {
+  if (err instanceof ZodError) {
+    return res.status(400).json({ errors: err.errors });
+  }
+
+  if (err instanceof AppointmentSchedulingError) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
+
+  return res.status(500).json({ message: req.t("common.unexpected_error") });
+};
 
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -42,6 +136,12 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({ message: "Venue not found" });
       }
     }
+
+    await assertNoAppointmentTimeConflict({
+      appointmentDate: data.appointmentDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    });
 
     const appointment = await Appointment.create({
       customerId: data.customerId,
@@ -67,11 +167,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       data: created ? serializeAppointment(created) : created,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -135,6 +231,13 @@ export const createAppointmentWithCustomer = async (
         }
       }
 
+      await assertNoAppointmentTimeConflict({
+        appointmentDate: data.appointment.appointmentDate,
+        startTime: data.appointment.startTime,
+        endTime: data.appointment.endTime,
+        transaction,
+      });
+
       const appointment = await Appointment.create(
         {
           customerId: customer.id,
@@ -168,11 +271,7 @@ export const createAppointmentWithCustomer = async (
       throw transactionError;
     }
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -285,11 +384,7 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
       data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -329,11 +424,7 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
       data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -375,11 +466,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
       data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -407,13 +494,20 @@ export const rescheduleAppointment = async (
       });
     }
 
+    const nextEndTime =
+      typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime;
+
+    await assertNoAppointmentTimeConflict({
+      appointmentDate: data.appointmentDate,
+      startTime: data.startTime,
+      endTime: nextEndTime,
+      ignoreAppointmentId: appointment.id,
+    });
+
     await appointment.update({
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
-      endTime:
-        typeof data.endTime !== "undefined"
-          ? data.endTime
-          : appointment.endTime,
+      endTime: nextEndTime,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
       status: "rescheduled",
       updatedBy: req.user?.id ?? null,
@@ -428,11 +522,7 @@ export const rescheduleAppointment = async (
       data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -465,17 +555,27 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const nextAppointmentDate =
+      data.appointmentDate ?? appointment.appointmentDate;
+    const nextStartTime = data.startTime ?? appointment.startTime;
+    const nextEndTime =
+      typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime;
+
+    await assertNoAppointmentTimeConflict({
+      appointmentDate: nextAppointmentDate,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
+      ignoreAppointmentId: appointment.id,
+    });
+
     await appointment.update({
       customerId:
         typeof data.customerId !== "undefined"
           ? data.customerId
           : appointment.customerId,
-      appointmentDate: data.appointmentDate ?? appointment.appointmentDate,
-      startTime: data.startTime ?? appointment.startTime,
-      endTime:
-        typeof data.endTime !== "undefined"
-          ? data.endTime
-          : appointment.endTime,
+      appointmentDate: nextAppointmentDate,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
       type: data.type ?? appointment.type,
       weddingDate:
         typeof data.weddingDate !== "undefined"
@@ -503,11 +603,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       data: updated ? serializeAppointment(updated) : updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
+    return handleAppointmentError(req, res, err);
   }
 };
 
@@ -536,13 +632,11 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
     return res.status(400).json({ errors: parsed.error.errors });
   }
 
-  const { dateFrom, dateTo, status, assignedUserId, customerId, search } =
-    parsed.data;
+  const { dateFrom, dateTo, status, customerId, search } = parsed.data;
 
   const where: any = {};
 
   if (status) where.status = status;
-  if (assignedUserId) where.createdBy = assignedUserId;
   if (customerId) where.customerId = customerId;
 
   if (search) {

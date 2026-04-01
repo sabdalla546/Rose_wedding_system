@@ -21,11 +21,7 @@ const queryString = z.preprocess((value) => {
   return trimmed || undefined;
 }, z.string().optional());
 
-export const calendarSourceTypeEnum = z.enum([
-  "all",
-  "appointment",
-  "event",
-]);
+export const calendarSourceTypeEnum = z.enum(["all", "appointment", "event"]);
 
 const calendarStatusEnum = z.union([appointmentStatusEnum, eventStatusEnum]);
 
@@ -45,7 +41,6 @@ export const calendarFeedQuerySchema = z.object({
   status: calendarStatusEnum.optional(),
   venueId: queryNumber,
   customerId: queryNumber,
-  assignedUserId: queryNumber,
   search: queryString,
 });
 

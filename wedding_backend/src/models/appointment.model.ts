@@ -132,7 +132,7 @@ Appointment.init(
         "no_show",
       ),
       allowNull: false,
-      defaultValue: "confirmed",
+      defaultValue: "scheduled",
     },
     createdBy: {
       type: DataTypes.INTEGER.UNSIGNED,

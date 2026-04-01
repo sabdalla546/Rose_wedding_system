@@ -326,10 +326,7 @@ export const getEvents = async (req: Request, res: Response) => {
 export const getEventsCalendar = async (req: Request, res: Response) => {
   try {
     const query = eventCalendarQuerySchema.parse(req.query);
-    const data = await listEventsCalendarRecords({
-      ...query,
-      assignedUserId: undefined,
-    });
+    const data = await listEventsCalendarRecords(query);
 
     return res.json({ data });
   } catch (error) {

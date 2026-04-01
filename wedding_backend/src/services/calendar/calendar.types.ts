@@ -10,8 +10,6 @@ export type AppointmentCalendarRecord = {
   notes: string | null;
   status: string;
   customerName: string | null;
-  assignedUserId: number | null;
-  assignedUserName: string | null;
 };
 
 export type EventCalendarRecord = {
@@ -27,8 +25,6 @@ export type EventCalendarRecord = {
   notes: string | null;
   status: string;
   customerName: string | null;
-  assignedUserId: number | null;
-  assignedUserName: string | null;
 };
 
 export type CalendarFeedItem = {
@@ -44,8 +40,6 @@ export type CalendarFeedItem = {
   venueName?: string | null;
   customerId?: number | null;
   customerName?: string | null;
-  assignedUserId?: number | null;
-  assignedUserName?: string | null;
   subtitle?: string | null;
   notes?: string | null;
   colorToken?: string | null;
@@ -59,6 +53,5 @@ export type CalendarFeedFilters = {
   status?: string;
   venueId?: number;
   customerId?: number;
-  assignedUserId?: number;
   search?: string;
 };

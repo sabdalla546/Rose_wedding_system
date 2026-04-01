@@ -1,6 +1,6 @@
 import { Op, type WhereOptions } from "sequelize";
 
-import { Appointment, Customer, Event, User, Venue } from "../../models";
+import { Appointment, Customer, Event, Venue } from "../../models";
 import type {
   AppointmentCalendarRecord,
   CalendarFeedFilters,
@@ -11,13 +11,11 @@ import type {
 
 type AppointmentInstance = Appointment & {
   customer?: Customer | null;
-  createdByUser?: User | null;
 };
 
 type EventInstance = Event & {
   customer?: Customer | null;
   venue?: Venue | null;
-  createdByUser?: User | null;
 };
 
 const buildDateWhere = (
@@ -95,14 +93,12 @@ const buildConflictPreparationMeta = (item: {
   sourceType: CalendarSourceType;
   customerId?: number | null;
   venueId?: number | null;
-  assignedUserId?: number | null;
   startAt: string;
   endAt: string | null;
 }) => ({
   conflictScope: {
     customerId: item.customerId ?? null,
     venueId: item.venueId ?? null,
-    assignedUserId: item.assignedUserId ?? null,
   },
   conflictWindow: {
     startAt: item.startAt,
@@ -117,7 +113,6 @@ export const listAppointmentsCalendarRecords = async (
   const where: WhereOptions = {
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.customerId ? { customerId: filters.customerId } : {}),
-    ...(filters.assignedUserId ? { createdBy: filters.assignedUserId } : {}),
     ...buildDateWhere("appointmentDate", filters.dateFrom, filters.dateTo),
   };
 
@@ -132,17 +127,11 @@ export const listAppointmentsCalendarRecords = async (
       "type",
       "notes",
       "status",
-      "createdBy",
     ],
     include: [
       {
         model: Customer,
         as: "customer",
-        attributes: ["id", "fullName"],
-      },
-      {
-        model: User,
-        as: "createdByUser",
         attributes: ["id", "fullName"],
       },
     ],
@@ -166,8 +155,6 @@ export const listAppointmentsCalendarRecords = async (
       notes: appointment.notes ?? null,
       status: appointment.status,
       customerName: appointment.customer?.fullName ?? null,
-      assignedUserId: appointment.createdByUser?.id ?? null,
-      assignedUserName: appointment.createdByUser?.fullName ?? null,
     }))
     .filter((appointment) => {
       if (!matchesSearch) {
@@ -189,7 +176,6 @@ export const listEventsCalendarRecords = async (
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.customerId ? { customerId: filters.customerId } : {}),
     ...(filters.venueId ? { venueId: filters.venueId } : {}),
-    ...(filters.assignedUserId ? { createdBy: filters.assignedUserId } : {}),
     ...buildDateWhere("eventDate", filters.dateFrom, filters.dateTo),
   };
 
@@ -207,7 +193,6 @@ export const listEventsCalendarRecords = async (
       "guestCount",
       "notes",
       "status",
-      "createdBy",
     ],
     include: [
       {
@@ -219,11 +204,6 @@ export const listEventsCalendarRecords = async (
         model: Venue,
         as: "venue",
         attributes: ["id", "name"],
-      },
-      {
-        model: User,
-        as: "createdByUser",
-        attributes: ["id", "fullName"],
       },
     ],
     order: [
@@ -248,8 +228,6 @@ export const listEventsCalendarRecords = async (
       notes: event.notes ?? null,
       status: event.status,
       customerName: event.customer?.fullName ?? null,
-      assignedUserId: event.createdByUser?.id ?? null,
-      assignedUserName: event.createdByUser?.fullName ?? null,
     }))
     .filter((event) => {
       if (!matchesSearch) {
@@ -292,8 +270,6 @@ export const appointmentToCalendarFeedItem = (
     status: appointment.status,
     customerId: appointment.customerId,
     customerName: appointment.customerName,
-    assignedUserId: appointment.assignedUserId,
-    assignedUserName: appointment.assignedUserName,
     subtitle: formatAppointmentType(appointment.type),
     notes: appointment.notes,
     colorToken: `appointment.${appointment.status}`,
@@ -323,8 +299,6 @@ export const eventToCalendarFeedItem = (
     venueName: event.venueName,
     customerId: event.customerId,
     customerName: event.customerName,
-    assignedUserId: event.assignedUserId,
-    assignedUserName: event.assignedUserName,
     subtitle:
       [event.groomName, event.brideName].filter(Boolean).join(" / ") ||
       event.customerName ||
