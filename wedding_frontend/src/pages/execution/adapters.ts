@@ -1,11 +1,18 @@
 import type { TFunction } from "i18next";
 
 import type {
+  ExecutionAttachment,
   ExecutionBriefStatus,
   ExecutionServiceDetail,
   ExecutionServiceDetailStatus,
 } from "./types";
 import type { ExecutionTemplateKey } from "./templateFields";
+
+const rawApiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const normalizedApiHost = rawApiBaseUrl
+  .replace(/\/+$/, "")
+  .replace(/\/api\/v1$/, "");
 
 export const getExecutionBriefStatusLabel = (
   status: ExecutionBriefStatus,
@@ -28,8 +35,102 @@ export const getExecutionTemplateLabel = (templateKey: string, t: TFunction) =>
     defaultValue: templateKey,
   });
 
+export const isExecutionServiceDetailReady = (
+  status: ExecutionServiceDetailStatus,
+) => status === "ready" || status === "done";
+
 const containsAny = (source: string, terms: string[]) =>
   terms.some((term) => source.includes(term));
+
+const normalizeStructuredPreviewValue = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = normalizeStructuredPreviewValue(item);
+
+      if (resolved) {
+        return resolved;
+      }
+    }
+
+    return null;
+  }
+
+  if (value && typeof value === "object") {
+    for (const nestedValue of Object.values(value)) {
+      const resolved = normalizeStructuredPreviewValue(nestedValue);
+
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+
+  return null;
+};
+
+export const getExecutionServiceDetailPreview = (
+  detail: Pick<ExecutionServiceDetail, "notes" | "executorNotes" | "detailsJson">,
+  t: TFunction,
+) =>
+  normalizeStructuredPreviewValue(detail.notes) ??
+  normalizeStructuredPreviewValue(detail.executorNotes) ??
+  normalizeStructuredPreviewValue(detail.detailsJson) ??
+  t("execution.previewFallback", {
+    defaultValue: "Execution details available",
+  });
+
+const getUploadsPath = (value?: string | null): string | null => {
+  if (!value) return null;
+
+  const normalizedValue = value.replace(/\\/g, "/");
+  const uploadsIndex = normalizedValue.indexOf("/uploads/");
+
+  if (uploadsIndex >= 0) {
+    return normalizedValue.slice(uploadsIndex);
+  }
+
+  if (normalizedValue.startsWith("uploads/")) {
+    return `/${normalizedValue}`;
+  }
+
+  if (normalizedValue.startsWith("/uploads/")) {
+    return normalizedValue;
+  }
+
+  return null;
+};
+
+export const resolveExecutionAttachmentUrl = (
+  attachment: Pick<ExecutionAttachment, "fileUrl" | "filePath">,
+): string | null => {
+  const uploadsPath =
+    getUploadsPath(attachment.fileUrl) ?? getUploadsPath(attachment.filePath);
+
+  if (!uploadsPath) {
+    return attachment.fileUrl ?? null;
+  }
+
+  // Prefer relative uploads paths so the app can use same-origin hosting
+  // or the Vite /uploads proxy during local development.
+  if (uploadsPath.startsWith("/uploads/")) {
+    return uploadsPath;
+  }
+
+  try {
+    return new URL(uploadsPath, `${normalizedApiHost}/`).toString();
+  } catch {
+    return `${normalizedApiHost}${uploadsPath}`;
+  }
+};
 
 export const resolveExecutionTemplateKey = (
   detail: Pick<

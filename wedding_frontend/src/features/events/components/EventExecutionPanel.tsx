@@ -174,6 +174,7 @@ export function EventExecutionPanel({ eventId }: Props) {
   const [briefForm, setBriefForm] = useState<BriefFormState>(() =>
     createBriefFormState(null),
   );
+  const [expandedDetailId, setExpandedDetailId] = useState<number | null>(null);
 
   useEffect(() => {
     setBriefForm(createBriefFormState(executionBrief));
@@ -204,6 +205,15 @@ export function EventExecutionPanel({ eventId }: Props) {
   const completedServiceDetailsCount = serviceDetails.filter(
     (item) => item.status === "ready" || item.status === "done",
   ).length;
+
+  useEffect(() => {
+    if (
+      expandedDetailId !== null &&
+      !serviceDetails.some((detail) => detail.id === expandedDetailId)
+    ) {
+      setExpandedDetailId(null);
+    }
+  }, [expandedDetailId, serviceDetails]);
 
   const handleCreateExecutionBrief = () => {
     if (!numericEventId) return;
@@ -699,14 +709,26 @@ export function EventExecutionPanel({ eventId }: Props) {
                 "Fill each service block with the detailed instructions and upload the visual references the executor needs.",
             })}
           </p>
+          <p className="text-xs text-[var(--lux-text-muted)]">
+            {t("execution.serviceBoardHint", {
+              defaultValue:
+                "Open a card to edit one execution block at a time while keeping the rest of the board visual and compact.",
+            })}
+          </p>
         </div>
 
         {serviceDetails.length ? (
-          <div className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-2">
             {serviceDetails.map((detail) => (
               <ServiceDetailEditorCard
                 key={detail.id}
                 detail={detail}
+                expanded={expandedDetailId === detail.id}
+                onToggle={() =>
+                  setExpandedDetailId((current) =>
+                    current === detail.id ? null : detail.id,
+                  )
+                }
                 saving={updateExecutionServiceDetailMutation.isPending}
                 onSave={handleSaveServiceDetail}
                 onUploadAttachment={handleUploadServiceDetailAttachment}
