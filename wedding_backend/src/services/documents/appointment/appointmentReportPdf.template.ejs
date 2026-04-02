@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>جدول المواعيد</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        font-family: Arial, Tahoma, sans-serif;
+        margin: 0;
+        font-size: 12px;
+        color: #f4e6c2;
+        background: #000;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .page {
+        position: relative;
+        width: 210mm;
+        min-height: 297mm;
+        overflow: hidden;
+        page-break-after: always;
+        background: #000;
+      }
+
+      .page:last-child {
+        page-break-after: auto;
+      }
+
+      .brand-mark {
+        color: #fff;
+        font-size: 18mm;
+        line-height: 1;
+        letter-spacing: 0.8mm;
+        font-weight: 700;
+      }
+
+      .sheet-inner {
+        position: relative;
+        padding: 14mm 6mm 10mm;
+        min-height: 297mm;
+      }
+
+      .sheet-logo {
+        text-align: center;
+        margin-top: 1mm;
+        margin-bottom: 2mm;
+      }
+
+      .sheet-logo .brand-mark {
+        font-size: 10mm;
+        letter-spacing: 0.3mm;
+      }
+
+      .sheet-header {
+        width: 82%;
+        margin: 0 auto 4mm;
+        background: #c49a55;
+        color: #fff;
+        border-radius: 16mm 16mm 0 0;
+        text-align: center;
+        padding: 3mm 8mm 2.5mm;
+        font-size: 7mm;
+        font-weight: 700;
+      }
+
+      .sheet-submeta {
+        text-align: center;
+        color: #f4e6c2;
+        font-size: 3.3mm;
+        margin-bottom: 3mm;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        direction: rtl;
+        background: #ead6b5;
+        color: #111;
+      }
+
+      thead th {
+        background: #c49a55;
+        color: #1a140d;
+        font-weight: 700;
+        font-size: 4mm;
+        border: 0.6mm solid #15110d;
+        padding: 3mm 2mm;
+      }
+
+      tbody td {
+        border: 0.6mm solid #15110d;
+        padding: 2.2mm 1.5mm;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 3.7mm;
+        height: 13mm;
+        line-height: 1.35;
+        background: #ead6b5;
+        color: #111;
+      }
+
+      .serial-col { width: 7%; }
+      .name-col { width: 20%; }
+      .wedding-col { width: 18%; }
+      .venue-col { width: 19%; }
+      .phone-col { width: 18%; }
+      .appointment-col { width: 18%; }
+
+      .row-empty td {
+        color: transparent;
+      }
+
+      .sheet-footer {
+        margin-top: 3mm;
+        text-align: center;
+        color: #ead8b5;
+        font-size: 3.1mm;
+        line-height: 1.8;
+      }
+    </style>
+  </head>
+  <body>
+    <% pagedRows.forEach((pageRows, pageIndex) => { %>
+      <section class="page">
+        <div class="sheet-inner">
+          <div class="sheet-logo">
+            <div class="brand-mark">ROSES</div>
+          </div>
+
+          <div class="sheet-header">جدول مواعيد شهر ( <%= reportMonth %> )</div>
+          <div class="sheet-submeta">صفحة <%= pageIndex + 1 %> من <%= pagedRows.length %></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="serial-col">م</th>
+                <th class="name-col">الاسم</th>
+                <th class="wedding-col">تاريخ الحفلة</th>
+                <th class="venue-col">مكان الحفلة</th>
+                <th class="phone-col">رقم الهاتف</th>
+                <th class="appointment-col">الموعد الجديد</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pageRows.forEach((row) => { %>
+                <tr class="<%= row.index ? '' : 'row-empty' %>">
+                  <td><%= row.index || '' %></td>
+                  <td><%= row.customerName || '' %></td>
+                  <td><%= row.weddingDate || '' %></td>
+                  <td><%= row.venueName || '' %></td>
+                  <td><%= row.customerPhone || '' %></td>
+                  <td><%= row.appointmentSlot || '' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <div class="sheet-footer">
+            <% if (status || dateFrom || dateTo || search || customerId) { %>
+              <div>
+                الفلاتر:
+                من <%= dateFrom || "الكل" %>
+                إلى <%= dateTo || "الكل" %>
+                | الحالة: <%= status || "الكل" %>
+                | العميل: <%= customerId || "الكل" %>
+                | البحث: <%= search || "—" %>
+              </div>
+            <% } %>
+            <div>Wedding System - Appointments Report</div>
+          </div>
+        </div>
+      </section>
+    <% }) %>
+  </body>
+</html>

@@ -19,6 +19,7 @@ import {
   confirmAppointmentSchema,
   rescheduleAppointmentSchema,
 } from "../validation/appointment-action.schemas";
+import { renderAppointmentReportHtml } from "../services/documents/appointment/appointmentReportPdf.service";
 
 const APPOINTMENT_CONFLICT_MESSAGE =
   "This appointment overlaps with another appointment.";
@@ -675,7 +676,7 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
   return res.json({ data: appointments.map(serializeAppointment) });
 };
 
-export const exportAppointmentsPdf = async (req: Request, res: Response) => {
+const exportAppointmentsPdfLegacy = async (req: Request, res: Response) => {
   try {
     const status = String(req.query.status ?? "").trim();
     const customerId = Number(req.query.customerId) || undefined;
@@ -881,6 +882,209 @@ export const exportAppointmentsPdf = async (req: Request, res: Response) => {
       const pdfBuffer = Buffer.from(pdfBytes);
       console.log("PDF BYTE LENGTH:", pdfBuffer.length);
 
+      const fileName = `appointments-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length.toString());
+
+      return res.end(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  } catch (err) {
+    console.error("EXPORT PDF ERROR:", err);
+
+    if (err instanceof ZodError) {
+      return res.status(400).json({ errors: err.errors });
+    }
+
+    return res.status(500).json({
+      message: "PDF generation failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const exportAppointmentsPdf = async (req: Request, res: Response) => {
+  try {
+    const status = String(req.query.status ?? "").trim();
+    const customerId = Number(req.query.customerId) || undefined;
+    const search = String(req.query.search ?? "").trim();
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+
+    if (search) {
+      const like = `%${search}%`;
+      where[Op.or] = [
+        { notes: { [Op.like]: like } },
+        { "$customer.fullName$": { [Op.like]: like } },
+        { "$customer.mobile$": { [Op.like]: like } },
+      ];
+    }
+
+    if (dateFrom || dateTo) {
+      where.appointmentDate = {};
+      if (dateFrom) where.appointmentDate[Op.gte] = dateFrom;
+      if (dateTo) where.appointmentDate[Op.lte] = dateTo;
+    }
+
+    const appointments = await Appointment.findAll({
+      where,
+      include: appointmentInclude,
+      order: [
+        ["appointmentDate", "ASC"],
+        ["startTime", "ASC"],
+        ["id", "DESC"],
+      ],
+    });
+
+    const rows = appointments.map((item) => serializeAppointment(item));
+
+    const formatArabicDate = (value?: string | null) => {
+      if (!value) return "—";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      return new Intl.DateTimeFormat("ar-KW", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(date);
+    };
+
+    const formatArabicDateTimeRange = (
+      appointmentDate?: string | null,
+      startTime?: string | null,
+      endTime?: string | null,
+    ) => {
+      const datePart = formatArabicDate(appointmentDate);
+      const timePart = [startTime, endTime].filter(Boolean).join(" - ");
+
+      if (datePart === "—" && !timePart) return "—";
+      if (datePart === "—") return timePart || "—";
+      if (!timePart) return datePart;
+      return `${datePart} / ${timePart}`;
+    };
+
+    const resolveReportMonth = () => {
+      const seed =
+        dateFrom || rows[0]?.appointmentDate || rows[0]?.weddingDate || null;
+
+      if (!seed) {
+        return "................";
+      }
+
+      const date = new Date(seed);
+      if (Number.isNaN(date.getTime())) {
+        return "................";
+      }
+
+      return new Intl.DateTimeFormat("ar-KW", {
+        month: "long",
+        year: "numeric",
+      }).format(date);
+    };
+
+    const printableRows: Array<{
+      index: number | string;
+      customerName: string;
+      weddingDate: string;
+      venueName: string;
+      customerPhone: string;
+      appointmentSlot: string;
+    }> = rows.map((row, index) => ({
+      index: index + 1,
+      customerName: row.customer?.fullName || "—",
+      weddingDate: formatArabicDate(row.weddingDate || row.appointmentDate),
+      venueName: row.venue?.name || "—",
+      customerPhone: row.customer?.mobile || "—",
+      appointmentSlot: formatArabicDateTimeRange(
+        row.appointmentDate,
+        row.startTime,
+        row.endTime,
+      ),
+    }));
+
+    const rowsPerPage = 14;
+    const pagedRows = Array.from(
+      { length: Math.max(1, Math.ceil(printableRows.length / rowsPerPage)) },
+      (_, pageIndex) => {
+        const slice = printableRows.slice(
+          pageIndex * rowsPerPage,
+          (pageIndex + 1) * rowsPerPage,
+        );
+
+        while (slice.length < rowsPerPage) {
+          slice.push({
+            index: "",
+            customerName: "",
+            weddingDate: "",
+            venueName: "",
+            customerPhone: "",
+            appointmentSlot: "",
+          });
+        }
+
+        return slice;
+      },
+    );
+
+    const generatedAt = new Intl.DateTimeFormat("ar-KW", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date());
+    const reportMonth = resolveReportMonth();
+
+    const html = await renderAppointmentReportHtml({
+      pagedRows,
+      generatedAt,
+      reportMonth,
+      dateFrom,
+      dateTo,
+      status,
+      customerId,
+      search,
+    });
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: puppeteer.executablePath(),
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+
+      const pdfBytes = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "0",
+          right: "0",
+          bottom: "0",
+          left: "0",
+        },
+      });
+
+      const pdfBuffer = Buffer.from(pdfBytes);
       const fileName = `appointments-report-${new Date()
         .toISOString()
         .slice(0, 10)}.pdf`;

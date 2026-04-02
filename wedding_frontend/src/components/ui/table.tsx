@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
+import { useTheme } from "@/app/providers/use-theme";
 import { cn } from "@/lib/utils";
 
 const useTableDirection = () => {
@@ -29,12 +30,18 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+  const { theme } = useTheme();
+
   return (
     <thead
       data-slot="table-header"
       className={cn("table-grid__header [&_tr]:border-b", className)}
       style={{
         borderColor: "var(--color-border)",
+        background:
+          theme === "light"
+            ? "linear-gradient(180deg, #dbeafe, #bfdbfe)"
+            : undefined,
       }}
       {...props}
     />
@@ -78,6 +85,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   const direction = useTableDirection();
+  const { theme } = useTheme();
 
   return (
     <th
@@ -90,6 +98,10 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       )}
       style={{
         color: "var(--color-text-muted)",
+        background:
+          theme === "light"
+            ? "#ffffff"
+            : undefined,
       }}
       {...props}
     />

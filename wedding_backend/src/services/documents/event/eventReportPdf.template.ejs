@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>جدول الحفلات</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        font-family: Arial, Tahoma, sans-serif;
+        margin: 0;
+        font-size: 12px;
+        color: #f4e6c2;
+        background: #000;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .page {
+        position: relative;
+        width: 210mm;
+        height: 297mm;
+        overflow: hidden;
+        page-break-after: always;
+        background: #000;
+      }
+
+      .page:last-child {
+        page-break-after: auto;
+      }
+
+      .sheet-inner {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 14mm 6mm 10mm;
+      }
+
+      .sheet-logo {
+        text-align: center;
+        margin-top: 1mm;
+        margin-bottom: 2mm;
+      }
+
+      .brand-mark {
+        color: #fff;
+        font-size: 10mm;
+        line-height: 1;
+        letter-spacing: 0.3mm;
+        font-weight: 700;
+      }
+
+      .sheet-header {
+        width: 82%;
+        margin: 0 auto 4mm;
+        background: #c49a55;
+        color: #fff;
+        border-radius: 16mm 16mm 0 0;
+        text-align: center;
+        padding: 3mm 8mm 2.5mm;
+        font-size: 7mm;
+        font-weight: 700;
+      }
+
+      .sheet-submeta {
+        text-align: center;
+        color: #f4e6c2;
+        font-size: 3.3mm;
+        margin-bottom: 3mm;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        direction: rtl;
+        background: #ead6b5;
+        color: #111;
+        flex: 0 0 auto;
+      }
+
+      thead th {
+        background: #c49a55;
+        color: #1a140d;
+        font-weight: 700;
+        font-size: 4mm;
+        border: 0.6mm solid #15110d;
+        padding: 3mm 2mm;
+      }
+
+      tbody td {
+        border: 0.6mm solid #15110d;
+        padding: 2.2mm 1.5mm;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 3.7mm;
+        height: 13mm;
+        line-height: 1.35;
+        background: #ead6b5;
+        color: #111;
+      }
+
+      .serial-col { width: 7%; }
+      .title-col { width: 20%; }
+      .customer-col { width: 18%; }
+      .date-col { width: 16%; }
+      .venue-col { width: 18%; }
+      .couple-col { width: 13%; }
+      .guest-col { width: 8%; }
+
+      .row-empty td {
+        color: transparent;
+      }
+
+      .sheet-footer {
+        margin-top: 3mm;
+        text-align: center;
+        color: #ead8b5;
+        font-size: 3.1mm;
+        line-height: 1.8;
+      }
+    </style>
+  </head>
+  <body>
+    <% pagedRows.forEach((pageRows, pageIndex) => { %>
+      <section class="page">
+        <div class="sheet-inner">
+          <div class="sheet-logo">
+            <div class="brand-mark">ROSES</div>
+          </div>
+
+          <div class="sheet-header">جدول الحفلات لشهر ( <%= reportMonth %> )</div>
+          <div class="sheet-submeta">صفحة <%= pageIndex + 1 %> من <%= pagedRows.length %></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="serial-col">م</th>
+                <th class="title-col">عنوان الحفل</th>
+                <th class="customer-col">العميل</th>
+                <th class="date-col">تاريخ الحفل</th>
+                <th class="venue-col">مكان الحفل</th>
+                <th class="couple-col">العريس / العروس</th>
+                <th class="guest-col">الضيوف</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pageRows.forEach((row) => { %>
+                <tr class="<%= row.index ? '' : 'row-empty' %>">
+                  <td><%= row.index || '' %></td>
+                  <td><%= row.eventTitle || '' %></td>
+                  <td><%= row.customerName || '' %></td>
+                  <td><%= row.eventDate || '' %></td>
+                  <td><%= row.venueName || '' %></td>
+                  <td><%= row.coupleNames || '' %></td>
+                  <td><%= row.guestCount || '' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <div class="sheet-footer">
+            <% if (status || dateFrom || dateTo || search || customerId || venueId) { %>
+              <div>
+                الفلاتر:
+                من <%= dateFrom || "الكل" %>
+                إلى <%= dateTo || "الكل" %>
+                | الحالة: <%= status || "الكل" %>
+                | العميل: <%= customerId || "الكل" %>
+                | القاعة: <%= venueId || "الكل" %>
+                | البحث: <%= search || "—" %>
+              </div>
+            <% } %>
+            <div>Wedding System - Events Report</div>
+            <div>تاريخ الإصدار: <%= generatedAt %></div>
+          </div>
+        </div>
+      </section>
+    <% }) %>
+  </body>
+</html>

@@ -6,6 +6,7 @@ import puppeteer from "puppeteer";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Appointment, Event, Customer, Venue, User } from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
+import { renderEventReportHtml } from "../services/documents/event/eventReportPdf.service";
 import {
   createEventSchema,
   updateEventSchema,
@@ -487,7 +488,7 @@ export const deleteEvent = async (req: Request, res: Response) => {
 
   return res.json({ message: req.t("common.deleted_successfully") });
 };
-export const exportEventsPdf = async (req: Request, res: Response) => {
+const exportEventsPdfLegacy = async (req: Request, res: Response) => {
   try {
     const status = String(req.query.status ?? "").trim();
     const customerId = Number(req.query.customerId) || undefined;
@@ -533,7 +534,7 @@ export const exportEventsPdf = async (req: Request, res: Response) => {
       ],
     });
 
-    const rows = events.map((item) =>
+    const rows: any[] = events.map((item) =>
       typeof item?.toJSON === "function" ? item.toJSON() : item,
     );
 
@@ -703,6 +704,206 @@ export const exportEventsPdf = async (req: Request, res: Response) => {
       const pdfBuffer = Buffer.from(pdfBytes);
       console.log("EVENTS PDF BYTE LENGTH:", pdfBuffer.length);
 
+      const fileName = `events-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length.toString());
+
+      return res.end(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  } catch (err) {
+    console.error("EXPORT EVENTS PDF ERROR:", err);
+
+    if (err instanceof ZodError) {
+      return res.status(400).json({ errors: err.errors });
+    }
+
+    return res.status(500).json({
+      message: "PDF generation failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const exportEventsPdf = async (req: Request, res: Response) => {
+  try {
+    const status = String(req.query.status ?? "").trim();
+    const customerId = Number(req.query.customerId) || undefined;
+    const venueId = Number(req.query.venueId) || undefined;
+    const dateFrom = String(req.query.dateFrom ?? "").trim();
+    const dateTo = String(req.query.dateTo ?? "").trim();
+    const search = String(req.query.search ?? "").trim();
+
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+    if (venueId) where.venueId = venueId;
+
+    if (dateFrom || dateTo) {
+      where.eventDate = {};
+      if (dateFrom) where.eventDate[Op.gte] = dateFrom;
+      if (dateTo) where.eventDate[Op.lte] = dateTo;
+    }
+
+    if (search) {
+      const like = `%${search}%`;
+      where[Op.or] = [
+        { title: { [Op.like]: like } },
+        { groomName: { [Op.like]: like } },
+        { brideName: { [Op.like]: like } },
+        { venueNameSnapshot: { [Op.like]: like } },
+        { "$customer.fullName$": { [Op.like]: like } },
+      ];
+    }
+
+    const events = await Event.findAll({
+      where,
+      include: [
+        { model: Customer, as: "customer" },
+        { model: Venue, as: "venue" },
+        { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
+        { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
+      ],
+      order: [
+        ["eventDate", "ASC"],
+        ["id", "DESC"],
+      ],
+    });
+
+    const rows: any[] = events.map((item) =>
+      typeof item?.toJSON === "function" ? item.toJSON() : item,
+    );
+
+    const formatArabicDate = (value?: string | null) => {
+      if (!value) return "—";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      return new Intl.DateTimeFormat("ar-KW", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(date);
+    };
+
+    const resolveReportMonth = () => {
+      const seed = dateFrom || rows[0]?.eventDate || null;
+
+      if (!seed) {
+        return "................";
+      }
+
+      const date = new Date(seed);
+      if (Number.isNaN(date.getTime())) {
+        return "................";
+      }
+
+      return new Intl.DateTimeFormat("ar-KW", {
+        month: "long",
+        year: "numeric",
+      }).format(date);
+    };
+
+    const printableRows: Array<{
+      index: number | string;
+      eventTitle: string;
+      customerName: string;
+      eventDate: string;
+      venueName: string;
+      coupleNames: string;
+      guestCount: string;
+    }> = rows.map((row: any, index) => ({
+      index: index + 1,
+      eventTitle: row.title || `Event #${row.id}`,
+      customerName: row.customer?.fullName || "—",
+      eventDate: formatArabicDate(row.eventDate),
+      venueName: row.venue?.name || row.venueNameSnapshot || "—",
+      coupleNames:
+        [row.groomName, row.brideName].filter(Boolean).join(" / ") || "—",
+      guestCount:
+        typeof row.guestCount === "number" ? String(row.guestCount) : "—",
+    }));
+
+    const rowsPerPage = 14;
+    const pagedRows = Array.from(
+      { length: Math.max(1, Math.ceil(printableRows.length / rowsPerPage)) },
+      (_, pageIndex) => {
+        const slice = printableRows.slice(
+          pageIndex * rowsPerPage,
+          (pageIndex + 1) * rowsPerPage,
+        );
+
+        while (slice.length < rowsPerPage) {
+          slice.push({
+            index: "",
+            eventTitle: "",
+            customerName: "",
+            eventDate: "",
+            venueName: "",
+            coupleNames: "",
+            guestCount: "",
+          });
+        }
+
+        return slice;
+      },
+    );
+
+    const generatedAt = new Intl.DateTimeFormat("ar-KW", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date());
+    const reportMonth = resolveReportMonth();
+
+    const html = await renderEventReportHtml({
+      pagedRows,
+      reportMonth,
+      generatedAt,
+      dateFrom,
+      dateTo,
+      status,
+      customerId,
+      venueId,
+      search,
+    });
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: puppeteer.executablePath(),
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+
+      const pdfBytes = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "0",
+          right: "0",
+          bottom: "0",
+          left: "0",
+        },
+      });
+
+      const pdfBuffer = Buffer.from(pdfBytes);
       const fileName = `events-report-${new Date()
         .toISOString()
         .slice(0, 10)}.pdf`;
