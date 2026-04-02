@@ -88,13 +88,13 @@ const buildExecutionBriefInclude = (search?: string): Includeable[] => {
       model: User,
       as: "creator",
       required: false,
-      attributes: ["id", "name", "email"],
+      attributes: ["id", "fullName", "email"],
     },
     {
       model: User,
       as: "updater",
       required: false,
-      attributes: ["id", "name", "email"],
+      attributes: ["id", "fullName", "email"],
     },
     {
       model: ExecutionServiceDetail,

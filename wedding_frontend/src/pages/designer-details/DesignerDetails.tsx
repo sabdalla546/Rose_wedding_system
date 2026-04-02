@@ -353,7 +353,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       value: "overview",
       label: t("common.overview", { defaultValue: "Overview" }),
     },
-    // { value: "execution", label: t("events.executionTab") },
+    { value: "execution", label: t("events.executionTab") },
 
     { value: "contracts", label: t("events.contracts") },
     { value: "quotations", label: t("events.quotations") },

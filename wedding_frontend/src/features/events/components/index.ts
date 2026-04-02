@@ -6,3 +6,8 @@ export * from "./EventServiceEditorDialog";
 export * from "./EventServicesPanel";
 export * from "./EventVendorAssignmentDialog";
 export * from "./EventVendorsPanel";
+export * from "./AttachmentGallery";
+export * from "./AttachmentUploader";
+export * from "./ExecutionMetricCard";
+export * from "./ServiceDetailEditorCard";
+export * from "./StructuredFieldRenderer";
