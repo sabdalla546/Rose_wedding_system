@@ -41,11 +41,12 @@ const baseContractItemSchema = z.object({
 
 export const contractItemSchema = baseContractItemSchema.superRefine(
   (item, ctx) => {
-    if (item.itemType === "vendor" && !item.eventVendorId) {
+    if (item.itemType === "vendor" && !item.eventVendorId && !item.vendorId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "eventVendorId is required for vendor contract items",
-        path: ["eventVendorId"],
+        message:
+          "eventVendorId or vendorId is required for vendor contract items",
+        path: ["vendorId"],
       });
     }
   },
@@ -111,11 +112,21 @@ export const updateContractItemSchema = z.object({
   notes: z.string().optional().nullable(),
   sortOrder: z.number().int().min(0).optional(),
 }).superRefine((item, ctx) => {
-  if (item.itemType === "vendor" && item.eventVendorId === null) {
+  const nextEventVendorId =
+    typeof item.eventVendorId === "undefined" ? undefined : item.eventVendorId;
+  const nextVendorId =
+    typeof item.vendorId === "undefined" ? undefined : item.vendorId;
+
+  if (
+    item.itemType === "vendor" &&
+    nextEventVendorId === null &&
+    (typeof nextVendorId === "undefined" || nextVendorId === null)
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "eventVendorId cannot be null for vendor contract items",
-      path: ["eventVendorId"],
+      message:
+        "eventVendorId cannot be null for vendor contract items unless vendorId is provided",
+      path: ["vendorId"],
     });
   }
 });

@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ChangeEvent,
   type ReactNode,
 } from "react";
@@ -44,6 +45,8 @@ import {
   useServices,
 } from "@/hooks/services/useServices";
 import { useToast } from "@/hooks/use-toast";
+import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
+import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
@@ -54,7 +57,12 @@ import {
   toNumberValue as toVendorNumberValue,
 } from "@/pages/vendors/adapters";
 import type { EventServiceItem, Service } from "@/pages/services/types";
-import type { EventVendorLink } from "@/pages/vendors/types";
+import type {
+  EventVendorLink,
+  VendorPricingPlan,
+  VendorSubService,
+  VendorType,
+} from "@/pages/vendors/types";
 
 import {
   computeQuotationItemTotal,
@@ -88,8 +96,70 @@ type QuotationFromEventSubmitPayload = QuotationFromEventFormData & {
 type CatalogVendorLike = {
   id: number | string;
   name: string;
-  type?: string | null;
+  type?: VendorType | null;
   isActive?: boolean | null;
+};
+type SelectedCatalogVendorConfig = {
+  vendorId: string;
+  selectedSubServiceIds: number[];
+  pricingPlanId: string;
+  calculatedPrice: string;
+  agreedPrice: string;
+  isPriceOverride: boolean;
+};
+
+const createDefaultCatalogVendorConfig = (
+  vendorId: string | number,
+): SelectedCatalogVendorConfig => ({
+  vendorId: String(vendorId),
+  selectedSubServiceIds: [],
+  pricingPlanId: "",
+  calculatedPrice: "",
+  agreedPrice: "",
+  isPriceOverride: false,
+});
+
+const formatDecimalInput = (value?: number | string | null) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return "";
+  return parsed.toFixed(3);
+};
+
+const findMatchingVendorPricingPlan = (
+  plans: VendorPricingPlan[],
+  count: number,
+) => {
+  if (count <= 0) return null;
+
+  return (
+    [...plans]
+      .sort((a, b) => {
+        if (a.minSubServices !== b.minSubServices) {
+          return b.minSubServices - a.minSubServices;
+        }
+
+        const aMax =
+          typeof a.maxSubServices === "number"
+            ? a.maxSubServices
+            : Number.MAX_SAFE_INTEGER;
+        const bMax =
+          typeof b.maxSubServices === "number"
+            ? b.maxSubServices
+            : Number.MAX_SAFE_INTEGER;
+
+        if (aMax !== bMax) {
+          return aMax - bMax;
+        }
+
+        return a.id - b.id;
+      })
+      .find((plan) => {
+        const matchesMin = plan.minSubServices <= count;
+        const matchesMax =
+          !plan.maxSubServices || plan.maxSubServices >= count;
+        return matchesMin && matchesMax;
+      }) ?? null
+  );
 };
 
 const getFirstErrorMessage = (value: unknown): string | null => {
@@ -322,15 +392,17 @@ const buildVendorItemFromEventVendor = (
 
 const buildVendorItemFromCatalogVendor = (
   vendor: CatalogVendorLike,
+  config: SelectedCatalogVendorConfig,
   sortOrder: number,
 ): QuotationItemFormData => ({
   ...createEmptyQuotationItem("vendor", sortOrder),
   vendorId: String(vendor.id),
+  pricingPlanId: config.pricingPlanId || "",
   itemName: vendor.name,
   category: vendor.type ?? "vendor",
   quantity: "1",
-  unitPrice: "0",
-  totalPrice: "0",
+  unitPrice: config.agreedPrice || config.calculatedPrice || "0",
+  totalPrice: config.agreedPrice || config.calculatedPrice || "0",
   notes: "",
 });
 
@@ -480,6 +552,9 @@ const QuotationFormPage = () => {
   const previousEventIdRef = useRef("");
   const previousAutoSelectSignatureRef = useRef("");
   const serviceSummaryItemIdRef = useRef<number | undefined>(undefined);
+  const [catalogVendorConfigs, setCatalogVendorConfigs] = useState<
+    Record<string, SelectedCatalogVendorConfig>
+  >({});
 
   const { data: quotation, isLoading: quotationLoading } = useQuotation(id);
   const createMutation = useCreateQuotation();
@@ -732,11 +807,129 @@ const QuotationFormPage = () => {
     createFromEventMutation.isPending ||
     updateMutation.isPending;
 
+  const updateCatalogVendorConfig = (
+    vendorId: string,
+    updater: (
+      current: SelectedCatalogVendorConfig,
+    ) => SelectedCatalogVendorConfig,
+  ) => {
+    setCatalogVendorConfigs((current) => ({
+      ...current,
+      [vendorId]: updater(
+        current[vendorId] ?? createDefaultCatalogVendorConfig(vendorId),
+      ),
+    }));
+  };
+
   useEffect(() => {
     if (!isEditMode && preselectedEventId) {
       form.setValue("eventId", preselectedEventId, { shouldDirty: false });
     }
   }, [form, isEditMode, preselectedEventId]);
+
+  useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "manual") {
+      return;
+    }
+
+    const selectedVendorIds = new Set(selectedManualCatalogVendorIds);
+
+    setCatalogVendorConfigs((current) => {
+      let changed = false;
+      const nextConfigs: Record<string, SelectedCatalogVendorConfig> = {};
+
+      selectedManualCatalogVendorIds.forEach((vendorId) => {
+        if (current[vendorId]) {
+          nextConfigs[vendorId] = current[vendorId];
+          return;
+        }
+
+        changed = true;
+        nextConfigs[vendorId] = createDefaultCatalogVendorConfig(vendorId);
+      });
+
+      Object.keys(current).forEach((vendorId) => {
+        if (!selectedVendorIds.has(vendorId)) {
+          changed = true;
+        }
+      });
+
+      return changed ? nextConfigs : current;
+    });
+  }, [isEditMode, selectedManualCatalogVendorIds, watchedCreateMode]);
+
+  useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "manual") {
+      return;
+    }
+
+    const currentItems = form.getValues("items");
+    let hasChanges = false;
+
+    const nextItems = currentItems.map((item, index) => {
+      if (
+        item.itemType !== "vendor" ||
+        !item.vendorId?.trim() ||
+        item.eventVendorId?.trim()
+      ) {
+        return item;
+      }
+
+      const vendor = catalogVendors.find(
+        (entry) => String(entry.id) === item.vendorId,
+      );
+
+      if (!vendor) {
+        return item;
+      }
+
+      const config =
+        catalogVendorConfigs[item.vendorId] ??
+        createDefaultCatalogVendorConfig(item.vendorId);
+      const nextVendorItem = buildVendorItemFromCatalogVendor(
+        vendor,
+        config,
+        index,
+      );
+      const mergedItem: QuotationItemFormData = {
+        ...item,
+        vendorId: nextVendorItem.vendorId,
+        pricingPlanId: nextVendorItem.pricingPlanId,
+        itemName: nextVendorItem.itemName,
+        category: nextVendorItem.category,
+        quantity: nextVendorItem.quantity,
+        unitPrice: nextVendorItem.unitPrice,
+        totalPrice: nextVendorItem.totalPrice,
+        sortOrder: String(index),
+      };
+
+      if (
+        mergedItem.pricingPlanId !== item.pricingPlanId ||
+        mergedItem.unitPrice !== item.unitPrice ||
+        mergedItem.totalPrice !== item.totalPrice ||
+        mergedItem.itemName !== item.itemName ||
+        mergedItem.category !== item.category ||
+        mergedItem.quantity !== item.quantity ||
+        mergedItem.sortOrder !== item.sortOrder
+      ) {
+        hasChanges = true;
+      }
+
+      return mergedItem;
+    });
+
+    if (hasChanges) {
+      replaceItems(nextItems);
+    }
+  }, [
+    catalogVendorConfigs,
+    catalogVendors,
+    form,
+    isEditMode,
+    replaceItems,
+    watchedCreateMode,
+    watchedItems,
+  ]);
 
   useEffect(() => {
     if (!isEditMode || !quotation) return;
@@ -1022,28 +1215,54 @@ const QuotationFormPage = () => {
     checked: boolean,
   ) => {
     const current = form.getValues("items");
+    const vendorId = String(vendor.id);
+
     if (checked) {
       if (
         current.some(
           (row) =>
             row.itemType === "vendor" &&
-            row.vendorId === String(vendor.id) &&
+            row.vendorId === vendorId &&
             !row.eventVendorId,
         )
       )
         return;
+
+      const config =
+        catalogVendorConfigs[vendorId] ?? createDefaultCatalogVendorConfig(vendorId);
+
+      setCatalogVendorConfigs((previous) =>
+        previous[vendorId]
+          ? previous
+          : {
+              ...previous,
+              [vendorId]: config,
+            },
+      );
+
       replaceManualItems([
         ...current,
-        buildVendorItemFromCatalogVendor(vendor, current.length),
+        buildVendorItemFromCatalogVendor(vendor, config, current.length),
       ]);
       return;
     }
+
+    setCatalogVendorConfigs((previous) => {
+      if (!previous[vendorId]) {
+        return previous;
+      }
+
+      const next = { ...previous };
+      delete next[vendorId];
+      return next;
+    });
+
     replaceManualItems(
       current.filter(
         (row) =>
           !(
             row.itemType === "vendor" &&
-            row.vendorId === String(vendor.id) &&
+            row.vendorId === vendorId &&
             !row.eventVendorId
           ),
       ),
@@ -1721,30 +1940,20 @@ const QuotationFormPage = () => {
                               ) : (
                                 <div className="space-y-3">
                                   {catalogVendors.map((vendor) => (
-                                    <SelectableCard
+                                    <CatalogVendorSelectionCard
                                       key={`catalog-vendor-${vendor.id}`}
+                                      vendor={vendor}
                                       checked={selectedManualCatalogVendorIds.includes(
                                         String(vendor.id),
                                       )}
+                                      config={
+                                        catalogVendorConfigs[String(vendor.id)]
+                                      }
+                                      t={t}
                                       onCheckedChange={(value) =>
                                         toggleManualCatalogVendor(vendor, value)
                                       }
-                                      title={vendor.name}
-                                      subtitle={
-                                        vendor.type
-                                          ? formatVendorType(vendor.type)
-                                          : undefined
-                                      }
-                                      meta={[
-                                        t("quotations.catalogVendorSource", {
-                                          defaultValue:
-                                            "Source: vendor catalog",
-                                        }),
-                                        t("quotations.vendorPriceNeedsReview", {
-                                          defaultValue:
-                                            "Set the price manually after selection",
-                                        }),
-                                      ]}
+                                      onConfigChange={updateCatalogVendorConfig}
                                     />
                                   ))}
                                 </div>
@@ -2157,6 +2366,406 @@ function SelectableCard({
         ) : null}
       </div>
     </label>
+  );
+}
+
+function CatalogVendorSelectionCard({
+  vendor,
+  checked,
+  config,
+  t,
+  onCheckedChange,
+  onConfigChange,
+}: {
+  vendor: CatalogVendorLike;
+  checked: boolean;
+  config?: SelectedCatalogVendorConfig;
+  t: (key: string, options?: Record<string, unknown>) => string;
+  onCheckedChange: (checked: boolean) => void;
+  onConfigChange: (
+    vendorId: string,
+    updater: (
+      current: SelectedCatalogVendorConfig,
+    ) => SelectedCatalogVendorConfig,
+  ) => void;
+}) {
+  const vendorId = String(vendor.id);
+  const resolvedConfig = config ?? createDefaultCatalogVendorConfig(vendorId);
+  const { data: subServicesResponse, isLoading: subServicesLoading } =
+    useVendorSubServices({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      vendorId: Number(vendor.id),
+      vendorType: vendor.type ?? "all",
+      isActive: "all",
+      enabled: checked,
+    });
+  const { data: pricingPlansResponse, isLoading: pricingPlansLoading } =
+    useVendorPricingPlans({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      vendorId: Number(vendor.id),
+      vendorType: vendor.type ?? "all",
+      isActive: "all",
+      enabled: checked,
+    });
+
+  const subServices = useMemo(
+    () =>
+      [...(subServicesResponse?.data ?? [])].sort((left, right) => {
+        if (left.isActive !== right.isActive) {
+          return left.isActive ? -1 : 1;
+        }
+
+        if (left.sortOrder !== right.sortOrder) {
+          return left.sortOrder - right.sortOrder;
+        }
+
+        return left.name.localeCompare(right.name);
+      }),
+    [subServicesResponse?.data],
+  );
+  const pricingPlans = useMemo(
+    () => pricingPlansResponse?.data ?? [],
+    [pricingPlansResponse?.data],
+  );
+  const matchedPricingPlan = useMemo(
+    () =>
+      findMatchingVendorPricingPlan(
+        pricingPlans,
+        resolvedConfig.selectedSubServiceIds.length,
+      ),
+    [pricingPlans, resolvedConfig.selectedSubServiceIds.length],
+  );
+  const calculatedPrice = useMemo(
+    () => formatDecimalInput(matchedPricingPlan?.price),
+    [matchedPricingPlan?.price],
+  );
+
+  useEffect(() => {
+    if (!checked || resolvedConfig.isPriceOverride) {
+      return;
+    }
+
+    const nextPricingPlanId = matchedPricingPlan
+      ? String(matchedPricingPlan.id)
+      : "";
+    const nextCalculatedPrice = calculatedPrice;
+
+    if (
+      resolvedConfig.pricingPlanId === nextPricingPlanId &&
+      resolvedConfig.calculatedPrice === nextCalculatedPrice &&
+      resolvedConfig.agreedPrice === nextCalculatedPrice
+    ) {
+      return;
+    }
+
+    onConfigChange(vendorId, (current) => ({
+      ...current,
+      pricingPlanId: nextPricingPlanId,
+      calculatedPrice: nextCalculatedPrice,
+      agreedPrice: nextCalculatedPrice,
+    }));
+  }, [
+    calculatedPrice,
+    checked,
+    matchedPricingPlan,
+    onConfigChange,
+    resolvedConfig.agreedPrice,
+    resolvedConfig.calculatedPrice,
+    resolvedConfig.isPriceOverride,
+    resolvedConfig.pricingPlanId,
+    vendorId,
+  ]);
+
+  return (
+    <div className="space-y-3">
+      <SelectableCard
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        title={vendor.name}
+        subtitle={vendor.type ? formatVendorType(vendor.type) : undefined}
+        meta={[
+          t("quotations.catalogVendorSource", {
+            defaultValue: "Source: vendor catalog",
+          }),
+          checked
+            ? resolvedConfig.pricingPlanId
+              ? `${t("quotations.pricingPlan", {
+                  defaultValue: "Pricing Plan",
+                })}: ${matchedPricingPlan?.name ?? resolvedConfig.pricingPlanId}`
+              : t("quotations.vendorPriceAutoMatched", {
+                  defaultValue: "Price updates from matched pricing plans",
+                })
+            : t("quotations.vendorPriceNeedsReview", {
+                defaultValue: "Set the price manually after selection",
+              }),
+        ]}
+        helperText={
+          checked
+            ? t("quotations.catalogVendorSelectionHint", {
+                defaultValue:
+                  "Choose sub-services to match the vendor pricing plan, then override the agreed amount only if needed.",
+              })
+            : undefined
+        }
+      />
+
+      {checked ? (
+        <div
+          className="space-y-4 rounded-[4px] border px-4 py-4"
+          style={{
+            background: "var(--lux-panel-surface)",
+            borderColor: "var(--lux-row-border)",
+          }}
+        >
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr,1fr]">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-[var(--lux-heading)]">
+                  {t("quotations.vendorSubServices", {
+                    defaultValue: "Vendor Sub-Services",
+                  })}
+                </h4>
+                <p className="text-xs text-[var(--lux-text-secondary)]">
+                  {t("quotations.vendorSubServicesHint", {
+                    defaultValue:
+                      "Select the sub-services included for this vendor in the quotation.",
+                  })}
+                </p>
+              </div>
+
+              {subServicesLoading ? (
+                <EmptyHint
+                  text={t("quotations.loadingVendorSubServices", {
+                    defaultValue: "Loading vendor sub-services...",
+                  })}
+                />
+              ) : subServices.length ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {subServices.map((subService: VendorSubService) => {
+                    const isSelected =
+                      resolvedConfig.selectedSubServiceIds.includes(
+                        subService.id,
+                      );
+
+                    return (
+                      <label
+                        key={subService.id}
+                        className="flex items-start gap-3 rounded-[4px] border p-3"
+                        style={{
+                          background: isSelected
+                            ? "var(--lux-control-hover)"
+                            : "var(--lux-control-surface)",
+                          borderColor: isSelected
+                            ? "var(--lux-gold-border)"
+                            : "var(--lux-row-border)",
+                        }}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(value) =>
+                            onConfigChange(vendorId, (current) => ({
+                              ...current,
+                              selectedSubServiceIds: Boolean(value)
+                                ? Array.from(
+                                    new Set([
+                                      ...current.selectedSubServiceIds,
+                                      subService.id,
+                                    ]),
+                                  )
+                                : current.selectedSubServiceIds.filter(
+                                    (id) => id !== subService.id,
+                                  ),
+                            }))
+                          }
+                        />
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-sm font-medium text-[var(--lux-text)]">
+                            {subService.name}
+                          </p>
+                          <p className="text-xs text-[var(--lux-text-secondary)]">
+                            {subService.description ||
+                              subService.code ||
+                              t("quotations.noDescription", {
+                                defaultValue: "No description",
+                              })}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyHint
+                  text={t("quotations.noVendorSubServicesConfigured", {
+                    defaultValue:
+                      "No vendor sub-services are configured for this vendor yet.",
+                  })}
+                />
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-[var(--lux-heading)]">
+                  {t("quotations.vendorPricingSummary", {
+                    defaultValue: "Pricing Summary",
+                  })}
+                </h4>
+                <p className="text-xs text-[var(--lux-text-secondary)]">
+                  {t("quotations.vendorPricingSummaryHint", {
+                    defaultValue:
+                      "Pricing plans are matched from the selected sub-service count and remain linked even when the agreed amount is overridden.",
+                  })}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div
+                  className="rounded-[4px] border px-4 py-3"
+                  style={{
+                    background: "var(--lux-control-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  <div className="text-xs text-[var(--lux-text-secondary)]">
+                    {t("quotations.pricingPlan", {
+                      defaultValue: "Pricing Plan",
+                    })}
+                  </div>
+                  <div className="mt-1 text-sm font-medium text-[var(--lux-heading)]">
+                    {pricingPlansLoading
+                      ? t("common.loading", { defaultValue: "Loading..." })
+                      : matchedPricingPlan?.name ||
+                        (resolvedConfig.selectedSubServiceIds.length
+                          ? t("quotations.noMatchingPricingPlan", {
+                              defaultValue: "No matching pricing plan",
+                            })
+                          : t("quotations.noPricingPlanSelected", {
+                              defaultValue: "No pricing plan selected",
+                            }))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div
+                    className="rounded-[4px] border px-4 py-3"
+                    style={{
+                      background: "var(--lux-control-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    <div className="text-xs text-[var(--lux-text-secondary)]">
+                      {t("quotations.selectedSubServicesCount", {
+                        defaultValue: "Selected Count",
+                      })}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
+                      {resolvedConfig.selectedSubServiceIds.length}
+                    </div>
+                  </div>
+
+                  <div
+                    className="rounded-[4px] border px-4 py-3"
+                    style={{
+                      background: "var(--lux-control-surface)",
+                      borderColor: "var(--lux-row-border)",
+                    }}
+                  >
+                    <div className="text-xs text-[var(--lux-text-secondary)]">
+                      {t("quotations.calculatedPrice", {
+                        defaultValue: "Calculated Price",
+                      })}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
+                      {resolvedConfig.calculatedPrice
+                        ? formatVendorMoney(resolvedConfig.calculatedPrice)
+                        : "-"}
+                    </div>
+                  </div>
+                </div>
+
+                <label
+                  className="flex items-start gap-3 rounded-[4px] border p-3"
+                  style={{
+                    background: "var(--lux-control-surface)",
+                    borderColor: "var(--lux-row-border)",
+                  }}
+                >
+                  <Checkbox
+                    checked={resolvedConfig.isPriceOverride}
+                    onCheckedChange={(value) =>
+                      onConfigChange(vendorId, (current) => {
+                        const nextChecked = Boolean(value);
+
+                        return {
+                          ...current,
+                          isPriceOverride: nextChecked,
+                          agreedPrice: nextChecked
+                            ? current.agreedPrice || current.calculatedPrice
+                            : current.calculatedPrice,
+                        };
+                      })
+                    }
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[var(--lux-text)]">
+                      {t("quotations.manualPriceOverride", {
+                        defaultValue: "Manual Price Override",
+                      })}
+                    </p>
+                    <p className="text-xs text-[var(--lux-text-secondary)]">
+                      {t("quotations.manualPriceOverrideHint", {
+                        defaultValue:
+                          "Enable this only when the final agreed amount differs from the matched pricing plan.",
+                      })}
+                    </p>
+                  </div>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-[var(--lux-text)]">
+                    {t("quotations.agreedPrice", {
+                      defaultValue: "Agreed Price",
+                    })}
+                  </span>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={resolvedConfig.agreedPrice}
+                    disabled={!resolvedConfig.isPriceOverride}
+                    onChange={(event) =>
+                      onConfigChange(vendorId, (current) => ({
+                        ...current,
+                        agreedPrice: event.target.value,
+                      }))
+                    }
+                    placeholder={t("quotations.agreedPricePlaceholder", {
+                      defaultValue: "Calculated automatically when available",
+                    })}
+                  />
+                  <p className="text-xs text-[var(--lux-text-secondary)]">
+                    {resolvedConfig.isPriceOverride
+                      ? t("quotations.manualPriceOverrideActiveHint", {
+                          defaultValue:
+                            "Manual override is active. The matched pricing plan remains linked for reference.",
+                        })
+                      : t("quotations.agreedPriceAutoHint", {
+                          defaultValue:
+                            "Agreed price follows the matched pricing plan until manual override is enabled.",
+                        })}
+                  </p>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

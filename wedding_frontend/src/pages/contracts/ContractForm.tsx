@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,7 +35,9 @@ import {
   useEventServiceItems,
   useServices,
 } from "@/hooks/services/useServices";
-import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
+import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
+import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
+import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
@@ -45,7 +48,13 @@ import type { QuotationItem } from "@/pages/quotations/types";
 import {
   formatVendorType,
   getEventVendorDisplayName,
+  formatMoney as formatVendorMoney,
 } from "@/pages/vendors/adapters";
+import type {
+  VendorPricingPlan,
+  VendorSubService,
+  VendorType,
+} from "@/pages/vendors/types";
 
 import {
   computeContractItemTotal,
@@ -74,6 +83,74 @@ const textareaClassName =
   "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
+type ContractVendorSource = "event_vendor" | "catalog_vendor";
+type CatalogVendorLike = {
+  id: number | string;
+  name: string;
+  type?: VendorType | null;
+  isActive?: boolean | null;
+};
+type SelectedCatalogVendorConfig = {
+  vendorId: string;
+  selectedSubServiceIds: number[];
+  pricingPlanId: string;
+  calculatedPrice: string;
+  agreedPrice: string;
+  isPriceOverride: boolean;
+};
+
+const createDefaultCatalogVendorConfig = (
+  vendorId: string | number,
+): SelectedCatalogVendorConfig => ({
+  vendorId: String(vendorId),
+  selectedSubServiceIds: [],
+  pricingPlanId: "",
+  calculatedPrice: "",
+  agreedPrice: "",
+  isPriceOverride: false,
+});
+
+const formatDecimalInput = (value?: number | string | null) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return "";
+  return parsed.toFixed(3);
+};
+
+const findMatchingVendorPricingPlan = (
+  plans: VendorPricingPlan[],
+  count: number,
+) => {
+  if (count <= 0) return null;
+
+  return (
+    [...plans]
+      .sort((a, b) => {
+        if (a.minSubServices !== b.minSubServices) {
+          return b.minSubServices - a.minSubServices;
+        }
+
+        const aMax =
+          typeof a.maxSubServices === "number"
+            ? a.maxSubServices
+            : Number.MAX_SAFE_INTEGER;
+        const bMax =
+          typeof b.maxSubServices === "number"
+            ? b.maxSubServices
+            : Number.MAX_SAFE_INTEGER;
+
+        if (aMax !== bMax) {
+          return aMax - bMax;
+        }
+
+        return a.id - b.id;
+      })
+      .find((plan) => {
+        const matchesMin = plan.minSubServices <= count;
+        const matchesMax = !plan.maxSubServices || plan.maxSubServices >= count;
+        return matchesMin && matchesMax;
+      }) ?? null
+  );
+};
 
 const isServiceSummaryItem = (
   item?: { itemType?: string; category?: string } | null,
@@ -260,11 +337,15 @@ const createContractFormSchema = (isEditMode: boolean) =>
             });
           }
 
-          if (item.itemType === "vendor" && !item.eventVendorId?.trim()) {
+          if (
+            item.itemType === "vendor" &&
+            !item.eventVendorId?.trim() &&
+            !item.vendorId?.trim()
+          ) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              path: ["items", index, "eventVendorId"],
-              message: "Vendor rows must come from an event vendor",
+              path: ["items", index, "vendorId"],
+              message: "Vendor rows must come from an event vendor or vendor",
             });
           }
         });
@@ -325,6 +406,12 @@ const ContractFormPage = () => {
     searchParams.get("mode") === "from-quotation" ? "from_quotation" : "manual";
   const preselectedEventId = searchParams.get("eventId") ?? "";
   const preselectedQuotationId = searchParams.get("quotationId") ?? "";
+  const [catalogVendorConfigs, setCatalogVendorConfigs] = useState<
+    Record<string, SelectedCatalogVendorConfig>
+  >({});
+  const [vendorSources, setVendorSources] = useState<
+    Record<string, ContractVendorSource>
+  >({});
 
   const { data: contract, isLoading: contractLoading } = useContract(id);
   const createMutation = useCreateContract();
@@ -359,6 +446,13 @@ const ContractFormPage = () => {
     itemsPerPage: 200,
     searchQuery: "",
     category: "all",
+    isActive: "all",
+  });
+  const { data: vendorsResponse } = useVendors({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    type: "all",
     isActive: "all",
   });
 
@@ -452,6 +546,13 @@ const ContractFormPage = () => {
   const services = useMemo(
     () => servicesResponse?.data ?? [],
     [servicesResponse?.data],
+  );
+  const catalogVendors = useMemo(
+    () =>
+      (vendorsResponse?.data ?? []).filter(
+        (item: CatalogVendorLike) => item.isActive !== false,
+      ),
+    [vendorsResponse?.data],
   );
   const availableEventServices = useMemo(
     () => eventServicesResponse?.data ?? [],
@@ -668,6 +769,31 @@ const ContractFormPage = () => {
     createFromQuotationMutation.isPending ||
     updateMutation.isPending;
 
+  const updateCatalogVendorConfig = (
+    rowKey: string,
+    updater: (
+      current: SelectedCatalogVendorConfig,
+    ) => SelectedCatalogVendorConfig,
+  ) => {
+    setCatalogVendorConfigs((current) => ({
+      ...current,
+      [rowKey]: updater(
+        current[rowKey] ?? createDefaultCatalogVendorConfig(""),
+      ),
+    }));
+  };
+
+  const getVendorSource = (
+    rowKey: string,
+    item?: Partial<ContractItemFormData> | null,
+  ): ContractVendorSource =>
+    vendorSources[rowKey] ??
+    (item?.eventVendorId?.trim()
+      ? "event_vendor"
+      : item?.vendorId?.trim()
+        ? "catalog_vendor"
+        : "event_vendor");
+
   const updateItemValues = (
     index: number,
     values: Partial<Omit<ContractItemFormData, "id">>,
@@ -685,6 +811,16 @@ const ContractFormPage = () => {
     nextItemType: ContractItemType,
   ) => {
     const currentItem = form.getValues(`items.${index}`);
+    const rowKey = itemFields[index]?.id;
+
+    if (rowKey && nextItemType !== "vendor") {
+      setVendorSources((current) => {
+        if (!(rowKey in current)) return current;
+        const next = { ...current };
+        delete next[rowKey];
+        return next;
+      });
+    }
 
     form.setValue(
       `items.${index}`,
@@ -707,6 +843,7 @@ const ContractFormPage = () => {
     index: number,
     nextQuotationItemId: string,
   ) => {
+    const rowKey = itemFields[index]?.id;
     const selectedItem = linkedQuotationItems.find(
       (item) => String(item.id) === nextQuotationItemId,
     );
@@ -717,6 +854,34 @@ const ContractFormPage = () => {
 
     if (!selectedItem) {
       return;
+    }
+
+    if (rowKey && selectedItem.itemType === "vendor") {
+      setVendorSources((current) => ({
+        ...current,
+        [rowKey]: selectedItem.eventVendorId
+          ? "event_vendor"
+          : selectedItem.vendorId
+            ? "catalog_vendor"
+            : "event_vendor",
+      }));
+
+      if (!selectedItem.eventVendorId && selectedItem.vendorId) {
+        setCatalogVendorConfigs((current) => ({
+          ...current,
+          [rowKey]: {
+            ...(current[rowKey] ??
+              createDefaultCatalogVendorConfig(selectedItem.vendorId)),
+            vendorId: String(selectedItem.vendorId),
+            pricingPlanId: selectedItem.pricingPlanId
+              ? String(selectedItem.pricingPlanId)
+              : "",
+            calculatedPrice: formatDecimalInput(selectedItem.unitPrice),
+            agreedPrice: formatDecimalInput(selectedItem.unitPrice),
+            isPriceOverride: true,
+          },
+        }));
+      }
     }
 
     updateItemValues(index, {
@@ -824,16 +989,29 @@ const ContractFormPage = () => {
     index: number,
     nextEventVendorId: string,
   ) => {
+    const rowKey = itemFields[index]?.id;
     const selectedEventVendor = availableEventVendors.find(
       (item) => String(item.id) === nextEventVendorId,
     );
 
+    if (rowKey) {
+      setVendorSources((current) => ({
+        ...current,
+        [rowKey]: "event_vendor",
+      }));
+    }
+
     if (!selectedEventVendor) {
       updateItemValues(index, {
         itemType: "vendor",
+        quotationItemId: "",
         eventVendorId: nextEventVendorId,
         vendorId: "",
         pricingPlanId: "",
+        itemName: "",
+        category: "",
+        unitPrice: "0",
+        totalPrice: "0",
       });
       return;
     }
@@ -859,6 +1037,122 @@ const ContractFormPage = () => {
       totalPrice: String(agreedPrice),
       notes: "",
     });
+  };
+
+  const handleVendorSourceChange = (
+    index: number,
+    rowKey: string,
+    nextSource: ContractVendorSource,
+  ) => {
+    setVendorSources((current) => ({
+      ...current,
+      [rowKey]: nextSource,
+    }));
+
+    if (nextSource === "catalog_vendor") {
+      const existingConfig =
+        catalogVendorConfigs[rowKey] ?? createDefaultCatalogVendorConfig("");
+
+      updateItemValues(index, {
+        itemType: "vendor",
+        quotationItemId: "",
+        eventServiceId: "",
+        serviceId: "",
+        eventVendorId: "",
+        vendorId: existingConfig.vendorId || "",
+        pricingPlanId: existingConfig.pricingPlanId || "",
+        itemName: existingConfig.vendorId
+          ? catalogVendors.find(
+              (vendor) => String(vendor.id) === existingConfig.vendorId,
+            )?.name || ""
+          : "",
+        category: existingConfig.vendorId
+          ? catalogVendors.find(
+              (vendor) => String(vendor.id) === existingConfig.vendorId,
+            )?.type || ""
+          : "",
+        quantity: "1",
+        unitPrice:
+          existingConfig.agreedPrice || existingConfig.calculatedPrice || "0",
+        totalPrice:
+          existingConfig.agreedPrice || existingConfig.calculatedPrice || "0",
+      });
+      return;
+    }
+
+    updateItemValues(index, {
+      itemType: "vendor",
+      quotationItemId: "",
+      eventServiceId: "",
+      serviceId: "",
+      eventVendorId: "",
+      vendorId: "",
+      pricingPlanId: "",
+      itemName: "",
+      category: "",
+      quantity: "1",
+      unitPrice: "0",
+      totalPrice: "0",
+    });
+  };
+
+  const handleCatalogVendorSelect = (
+    index: number,
+    rowKey: string,
+    nextVendorId: string,
+  ) => {
+    const selectedVendor = catalogVendors.find(
+      (vendor) => String(vendor.id) === nextVendorId,
+    );
+    const nextConfig = nextVendorId
+      ? {
+          ...(catalogVendorConfigs[rowKey] ??
+            createDefaultCatalogVendorConfig(nextVendorId)),
+          vendorId: nextVendorId,
+        }
+      : createDefaultCatalogVendorConfig("");
+
+    setVendorSources((current) => ({
+      ...current,
+      [rowKey]: "catalog_vendor",
+    }));
+    setCatalogVendorConfigs((current) => ({
+      ...current,
+      [rowKey]: nextConfig,
+    }));
+
+    updateItemValues(index, {
+      itemType: "vendor",
+      quotationItemId: "",
+      eventServiceId: "",
+      serviceId: "",
+      eventVendorId: "",
+      vendorId: nextVendorId,
+      pricingPlanId: nextConfig.pricingPlanId || "",
+      itemName: selectedVendor?.name ?? "",
+      category: selectedVendor?.type ?? "",
+      quantity: "1",
+      unitPrice: nextConfig.agreedPrice || nextConfig.calculatedPrice || "0",
+      totalPrice: nextConfig.agreedPrice || nextConfig.calculatedPrice || "0",
+    });
+  };
+
+  const handleCatalogVendorResolvedValues = (
+    index: number,
+    values: Partial<Omit<ContractItemFormData, "id">>,
+  ) => {
+    const currentItem = form.getValues(`items.${index}`);
+    const changedEntries = Object.entries(values).filter(
+      ([key, value]) => (currentItem as Record<string, unknown>)[key] !== value,
+    );
+
+    if (!changedEntries.length) {
+      return;
+    }
+
+    updateItemValues(index, Object.fromEntries(changedEntries) as Partial<
+      Omit<ContractItemFormData, "id">
+    >);
   };
 
   const onSubmit = (values: ContractFormValues) => {
@@ -1436,6 +1730,11 @@ const ContractFormPage = () => {
                           const itemValues = watchedItems?.[index];
                           const itemType = itemValues?.itemType ?? "service";
                           const isVendorItem = itemType === "vendor";
+                          const rowKey = field.id;
+                          const currentVendorSource = getVendorSource(
+                            rowKey,
+                            itemValues,
+                          );
                           const itemTotal =
                             computeContractItemTotal(
                               itemValues?.quantity,
@@ -1580,6 +1879,43 @@ const ContractFormPage = () => {
                                   </label>
 
                                   {isVendorItem ? (
+                                    <label className="space-y-2">
+                                      <span className="text-sm font-medium text-[var(--lux-text)]">
+                                        {t("contracts.vendorSource", {
+                                          defaultValue: "Vendor Source",
+                                        })}
+                                      </span>
+                                      <Select
+                                        value={currentVendorSource}
+                                        onValueChange={(value) =>
+                                          handleVendorSourceChange(
+                                            index,
+                                            rowKey,
+                                            value as ContractVendorSource,
+                                          )
+                                        }
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="event_vendor">
+                                            {t("contracts.eventVendorSource", {
+                                              defaultValue: "Event Vendor",
+                                            })}
+                                          </SelectItem>
+                                          <SelectItem value="catalog_vendor">
+                                            {t("contracts.catalogVendorSource", {
+                                              defaultValue: "Catalog Vendor",
+                                            })}
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </label>
+                                  ) : null}
+
+                                  {isVendorItem ? (
+                                    currentVendorSource === "event_vendor" ? (
                                     <FieldInput
                                       label={t("contracts.linkedEventVendor", {
                                         defaultValue: "Event Vendor",
@@ -1643,6 +1979,60 @@ const ContractFormPage = () => {
                                         </SelectContent>
                                       </Select>
                                     </FieldInput>
+                                    ) : (
+                                      <FieldInput
+                                        label={t("contracts.linkedVendor", {
+                                          defaultValue: "Catalog Vendor",
+                                        })}
+                                        error={
+                                          form.formState.errors.items?.[index]
+                                            ?.vendorId?.message
+                                        }
+                                      >
+                                        <Select
+                                          value={
+                                            form.watch(
+                                              `items.${index}.vendorId`,
+                                            ) || "none"
+                                          }
+                                          onValueChange={(value) =>
+                                            handleCatalogVendorSelect(
+                                              index,
+                                              rowKey,
+                                              value === "none" ? "" : value,
+                                            )
+                                          }
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue
+                                              placeholder={t(
+                                                "contracts.selectVendor",
+                                                {
+                                                  defaultValue:
+                                                    "Select vendor",
+                                                },
+                                              )}
+                                            />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">
+                                              {t("contracts.noVendorSelected", {
+                                                defaultValue:
+                                                  "No vendor selected",
+                                              })}
+                                            </SelectItem>
+                                            {catalogVendors.map((vendor) => (
+                                              <SelectItem
+                                                key={vendor.id}
+                                                value={String(vendor.id)}
+                                              >
+                                                {vendor.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </FieldInput>
+                                    )
                                   ) : (
                                     <label className="space-y-2">
                                       <span className="text-sm font-medium text-[var(--lux-text)]">
@@ -1715,7 +2105,13 @@ const ContractFormPage = () => {
                                         })}
                                       </p>
                                       <p className="mt-1 text-xs">
-                                        {itemValues?.pricingPlanId
+                                        {currentVendorSource ===
+                                        "catalog_vendor"
+                                          ? t("contracts.catalogVendorPricingHint", {
+                                              defaultValue:
+                                                "Catalog vendor rows can match pricing plans from the selected sub-services, then allow a manual override when needed.",
+                                            })
+                                          : itemValues?.pricingPlanId
                                           ? `${t("contracts.pricingPlan", {
                                               defaultValue: "Pricing Plan",
                                             })}: #${itemValues.pricingPlanId}`
@@ -1725,7 +2121,7 @@ const ContractFormPage = () => {
                                                 defaultValue:
                                                   "Vendor rows use the event vendor agreed price as the default contract amount.",
                                               },
-                                            )}
+                                        )}
                                       </p>
                                     </div>
                                   ) : (
@@ -1777,6 +2173,25 @@ const ContractFormPage = () => {
                                       </Select>
                                     </label>
                                   )}
+
+                                  {isVendorItem &&
+                                  currentVendorSource === "catalog_vendor" ? (
+                                    <ContractCatalogVendorConfigurator
+                                      rowKey={rowKey}
+                                      vendorId={itemValues?.vendorId || ""}
+                                      currentItem={itemValues}
+                                      config={catalogVendorConfigs[rowKey]}
+                                      vendors={catalogVendors}
+                                      onConfigChange={updateCatalogVendorConfig}
+                                      onResolvedValuesChange={(values) =>
+                                        handleCatalogVendorResolvedValues(
+                                          index,
+                                          values,
+                                        )
+                                      }
+                                      t={t}
+                                    />
+                                  ) : null}
                                 </div>
 
                                 <div
@@ -2577,6 +2992,410 @@ const ContractFormPage = () => {
   );
 };
 
+function ContractCatalogVendorConfigurator({
+  rowKey,
+  vendorId,
+  currentItem,
+  config,
+  vendors,
+  onConfigChange,
+  onResolvedValuesChange,
+  t,
+}: {
+  rowKey: string;
+  vendorId: string;
+  currentItem?: Partial<ContractItemFormData>;
+  config?: SelectedCatalogVendorConfig;
+  vendors: CatalogVendorLike[];
+  onConfigChange: (
+    rowKey: string,
+    updater: (
+      current: SelectedCatalogVendorConfig,
+    ) => SelectedCatalogVendorConfig,
+  ) => void;
+  onResolvedValuesChange: (
+    values: Partial<Omit<ContractItemFormData, "id">>,
+  ) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const selectedVendor = useMemo(
+    () => vendors.find((vendor) => String(vendor.id) === vendorId),
+    [vendorId, vendors],
+  );
+  const resolvedConfig =
+    config ??
+    (vendorId
+      ? {
+          vendorId,
+          selectedSubServiceIds: [],
+          pricingPlanId: currentItem?.pricingPlanId || "",
+          calculatedPrice: currentItem?.unitPrice || "",
+          agreedPrice: currentItem?.unitPrice || "",
+          isPriceOverride: true,
+        }
+      : createDefaultCatalogVendorConfig(""));
+  const { data: subServicesResponse, isLoading: subServicesLoading } =
+    useVendorSubServices({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      vendorId: vendorId ? Number(vendorId) : undefined,
+      vendorType: selectedVendor?.type ?? "all",
+      isActive: "all",
+      enabled: Boolean(vendorId),
+    });
+  const { data: pricingPlansResponse, isLoading: pricingPlansLoading } =
+    useVendorPricingPlans({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      vendorId: vendorId ? Number(vendorId) : undefined,
+      vendorType: selectedVendor?.type ?? "all",
+      isActive: "all",
+      enabled: Boolean(vendorId),
+    });
+
+  const subServices = useMemo(
+    () =>
+      [...(subServicesResponse?.data ?? [])].sort((left, right) => {
+        if (left.isActive !== right.isActive) {
+          return left.isActive ? -1 : 1;
+        }
+
+        if (left.sortOrder !== right.sortOrder) {
+          return left.sortOrder - right.sortOrder;
+        }
+
+        return left.name.localeCompare(right.name);
+      }),
+    [subServicesResponse?.data],
+  );
+  const pricingPlans = useMemo(
+    () => pricingPlansResponse?.data ?? [],
+    [pricingPlansResponse?.data],
+  );
+  const matchedPricingPlan = useMemo(
+    () =>
+      findMatchingVendorPricingPlan(
+        pricingPlans,
+        resolvedConfig.selectedSubServiceIds.length,
+      ),
+    [pricingPlans, resolvedConfig.selectedSubServiceIds.length],
+  );
+  const calculatedPrice = useMemo(
+    () => formatDecimalInput(matchedPricingPlan?.price),
+    [matchedPricingPlan?.price],
+  );
+
+  useEffect(() => {
+    if (!vendorId || resolvedConfig.isPriceOverride) {
+      return;
+    }
+
+    const nextPricingPlanId = matchedPricingPlan
+      ? String(matchedPricingPlan.id)
+      : "";
+    const nextCalculatedPrice = calculatedPrice;
+
+    if (
+      resolvedConfig.vendorId === vendorId &&
+      resolvedConfig.pricingPlanId === nextPricingPlanId &&
+      resolvedConfig.calculatedPrice === nextCalculatedPrice &&
+      resolvedConfig.agreedPrice === nextCalculatedPrice
+    ) {
+      return;
+    }
+
+    onConfigChange(rowKey, (current) => ({
+      ...current,
+      vendorId,
+      pricingPlanId: nextPricingPlanId,
+      calculatedPrice: nextCalculatedPrice,
+      agreedPrice: nextCalculatedPrice,
+    }));
+  }, [
+    calculatedPrice,
+    matchedPricingPlan,
+    onConfigChange,
+    resolvedConfig.agreedPrice,
+    resolvedConfig.calculatedPrice,
+    resolvedConfig.isPriceOverride,
+    resolvedConfig.pricingPlanId,
+    resolvedConfig.vendorId,
+    rowKey,
+    vendorId,
+  ]);
+
+  useEffect(() => {
+    if (!selectedVendor) {
+      return;
+    }
+
+    const nextPrice = resolvedConfig.isPriceOverride
+      ? resolvedConfig.agreedPrice || resolvedConfig.calculatedPrice || "0"
+      : resolvedConfig.calculatedPrice || "0";
+
+    onResolvedValuesChange({
+      itemType: "vendor",
+      eventVendorId: "",
+      vendorId: String(selectedVendor.id),
+      pricingPlanId:
+        resolvedConfig.pricingPlanId ||
+        (matchedPricingPlan ? String(matchedPricingPlan.id) : ""),
+      itemName: selectedVendor.name,
+      category: selectedVendor.type ?? "vendor",
+      quantity: "1",
+      unitPrice: nextPrice,
+      totalPrice: nextPrice,
+    });
+  }, [
+    matchedPricingPlan,
+    onResolvedValuesChange,
+    resolvedConfig.agreedPrice,
+    resolvedConfig.calculatedPrice,
+    resolvedConfig.isPriceOverride,
+    resolvedConfig.pricingPlanId,
+    selectedVendor,
+  ]);
+
+  return (
+    <div
+      className="space-y-4 rounded-[4px] border p-4"
+      style={{
+        background: "var(--lux-panel-surface)",
+        borderColor: "var(--lux-row-border)",
+      }}
+    >
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr,1fr]">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold text-[var(--lux-heading)]">
+              {t("contracts.vendorSubServices", {
+                defaultValue: "Vendor Sub-Services",
+              })}
+            </h4>
+            <p className="text-xs text-[var(--lux-text-secondary)]">
+              {t("contracts.vendorSubServicesHint", {
+                defaultValue:
+                  "Select the vendor sub-services that should shape the contract pricing for this row.",
+              })}
+            </p>
+          </div>
+
+          {!vendorId ? (
+            <EmptyInlineHint
+              text={t("contracts.selectVendorFirstForSubServices", {
+                defaultValue:
+                  "Select a catalog vendor first to load sub-services.",
+              })}
+            />
+          ) : subServicesLoading ? (
+            <EmptyInlineHint
+              text={t("contracts.loadingVendorSubServices", {
+                defaultValue: "Loading vendor sub-services...",
+              })}
+            />
+          ) : subServices.length ? (
+            <div className="grid grid-cols-1 gap-2">
+              {subServices.map((subService: VendorSubService) => {
+                const checked = resolvedConfig.selectedSubServiceIds.includes(
+                  subService.id,
+                );
+
+                return (
+                  <label
+                    key={subService.id}
+                    className="flex items-start gap-3 rounded-[4px] border p-3"
+                    style={{
+                      background: checked
+                        ? "var(--lux-control-hover)"
+                        : "var(--lux-control-surface)",
+                      borderColor: checked
+                        ? "var(--lux-gold-border)"
+                        : "var(--lux-row-border)",
+                    }}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(value) =>
+                        onConfigChange(rowKey, (current) => ({
+                          ...current,
+                          vendorId,
+                          selectedSubServiceIds: Boolean(value)
+                            ? Array.from(
+                                new Set([
+                                  ...current.selectedSubServiceIds,
+                                  subService.id,
+                                ]),
+                              )
+                            : current.selectedSubServiceIds.filter(
+                                (id) => id !== subService.id,
+                              ),
+                        }))
+                      }
+                    />
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-sm font-medium text-[var(--lux-text)]">
+                        {subService.name}
+                      </p>
+                      <p className="text-xs text-[var(--lux-text-secondary)]">
+                        {subService.description ||
+                          subService.code ||
+                          t("contracts.noDescription", {
+                            defaultValue: "No description",
+                          })}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyInlineHint
+              text={t("contracts.noVendorSubServicesConfigured", {
+                defaultValue:
+                  "No vendor sub-services are configured for this vendor yet.",
+              })}
+            />
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold text-[var(--lux-heading)]">
+              {t("contracts.vendorPricingSummary", {
+                defaultValue: "Pricing Summary",
+              })}
+            </h4>
+            <p className="text-xs text-[var(--lux-text-secondary)]">
+              {t("contracts.vendorPricingSummaryHint", {
+                defaultValue:
+                  "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+              })}
+            </p>
+          </div>
+
+          <InfoMiniTile
+            label={t("contracts.pricingPlan", {
+              defaultValue: "Pricing Plan",
+            })}
+            value={
+              !vendorId
+                ? t("contracts.noVendorSelected", {
+                    defaultValue: "No vendor selected",
+                  })
+                : pricingPlansLoading
+                  ? t("common.loading", { defaultValue: "Loading..." })
+                  : matchedPricingPlan?.name ||
+                    (resolvedConfig.selectedSubServiceIds.length
+                      ? t("contracts.noMatchingPricingPlan", {
+                          defaultValue: "No matching pricing plan",
+                        })
+                      : t("contracts.noPricingPlanSelected", {
+                          defaultValue: "No pricing plan selected",
+                        }))
+            }
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <InfoMiniTile
+              label={t("contracts.selectedSubServicesCount", {
+                defaultValue: "Selected Count",
+              })}
+              value={String(resolvedConfig.selectedSubServiceIds.length)}
+            />
+            <InfoMiniTile
+              label={t("contracts.calculatedPrice", {
+                defaultValue: "Calculated Price",
+              })}
+              value={
+                resolvedConfig.calculatedPrice
+                  ? formatVendorMoney(resolvedConfig.calculatedPrice)
+                  : "-"
+              }
+            />
+          </div>
+
+          <label
+            className="flex items-start gap-3 rounded-[4px] border p-3"
+            style={{
+              background: "var(--lux-control-surface)",
+              borderColor: "var(--lux-row-border)",
+            }}
+          >
+            <Checkbox
+              checked={resolvedConfig.isPriceOverride}
+              onCheckedChange={(value) =>
+                onConfigChange(rowKey, (current) => {
+                  const nextChecked = Boolean(value);
+
+                  return {
+                    ...current,
+                    vendorId,
+                    isPriceOverride: nextChecked,
+                    agreedPrice: nextChecked
+                      ? current.agreedPrice || current.calculatedPrice
+                      : current.calculatedPrice,
+                  };
+                })
+              }
+            />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-[var(--lux-text)]">
+                {t("contracts.manualPriceOverride", {
+                  defaultValue: "Manual Price Override",
+                })}
+              </p>
+              <p className="text-xs text-[var(--lux-text-secondary)]">
+                {t("contracts.manualPriceOverrideHint", {
+                  defaultValue:
+                    "Enable this only when the final contract amount differs from the matched pricing plan.",
+                })}
+              </p>
+            </div>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-[var(--lux-text)]">
+              {t("contracts.agreedPrice", {
+                defaultValue: "Agreed Price",
+              })}
+            </span>
+            <Input
+              type="number"
+              min="0"
+              step="0.001"
+              value={resolvedConfig.agreedPrice}
+              disabled={!resolvedConfig.isPriceOverride}
+              onChange={(event) =>
+                onConfigChange(rowKey, (current) => ({
+                  ...current,
+                  vendorId,
+                  agreedPrice: event.target.value,
+                }))
+              }
+              placeholder={t("contracts.agreedPricePlaceholder", {
+                defaultValue: "Calculated automatically when available",
+              })}
+            />
+            <p className="text-xs text-[var(--lux-text-secondary)]">
+              {resolvedConfig.isPriceOverride
+                ? t("contracts.manualPriceOverrideActiveHint", {
+                    defaultValue:
+                      "Manual override is active. The matched pricing plan stays linked for reference.",
+                  })
+                : t("contracts.agreedPriceAutoHint", {
+                    defaultValue:
+                      "The contract amount follows the matched pricing plan until manual override is enabled.",
+                  })}
+            </p>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReadonlyInfo({ label, value }: { label: string; value: string }) {
   return (
     <div
@@ -2590,6 +3409,37 @@ function ReadonlyInfo({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 text-sm text-[var(--lux-text)]">{value || "-"}</p>
+    </div>
+  );
+}
+
+function InfoMiniTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="rounded-[4px] border px-4 py-3"
+      style={{
+        background: "var(--lux-control-surface)",
+        borderColor: "var(--lux-row-border)",
+      }}
+    >
+      <div className="text-xs text-[var(--lux-text-secondary)]">{label}</div>
+      <div className="mt-1 text-sm font-medium text-[var(--lux-heading)]">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function EmptyInlineHint({ text }: { text: string }) {
+  return (
+    <div
+      className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+      style={{
+        background: "var(--lux-control-surface)",
+        borderColor: "var(--lux-row-border)",
+      }}
+    >
+      {text}
     </div>
   );
 }

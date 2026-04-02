@@ -263,6 +263,36 @@ async function loadEventVendorForEvent(eventId: number, eventVendorId: number) {
   return eventVendor;
 }
 
+async function loadVendorById(vendorId: number) {
+  const vendor = await Vendor.findByPk(vendorId);
+
+  if (!vendor) {
+    throw new HttpError(400, "Vendor not found");
+  }
+
+  if (vendor.isActive === false) {
+    throw new HttpError(400, "Inactive vendor cannot be used");
+  }
+
+  return vendor;
+}
+
+async function loadVendorPricingPlanById(pricingPlanId: number) {
+  const pricingPlan = await VendorPricingPlan.findByPk(pricingPlanId, {
+    include: [buildVendorSummaryInclude()],
+  });
+
+  if (!pricingPlan) {
+    throw new HttpError(400, "Vendor pricing plan not found");
+  }
+
+  if (pricingPlan.isActive === false) {
+    throw new HttpError(400, "Inactive vendor pricing plan cannot be used");
+  }
+
+  return pricingPlan;
+}
+
 async function prepareContractItem(
   item: ContractRequestItem,
   eventId: number,
@@ -281,28 +311,64 @@ async function prepareContractItem(
   const unitPrice = round3(item.unitPrice);
 
   if (itemType === "vendor") {
-    if (!item.eventVendorId) {
-      throw new HttpError(400, "eventVendorId is required for vendor contract items");
+    if (item.eventVendorId) {
+      const eventVendor = await loadEventVendorForEvent(eventId, item.eventVendorId);
+
+      if (
+        typeof item.vendorId !== "undefined"
+        && item.vendorId !== null
+        && item.vendorId !== (eventVendor.vendorId ?? null)
+      ) {
+        throw new HttpError(400, "vendorId must match the selected event vendor");
+      }
+
+      if (
+        typeof item.pricingPlanId !== "undefined"
+        && item.pricingPlanId !== null
+        && item.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
+      ) {
+        throw new HttpError(
+          400,
+          "pricingPlanId must match the selected event vendor",
+        );
+      }
+
+      return {
+        itemType: "vendor",
+        quotationItemId: item.quotationItemId ?? null,
+        eventServiceId: null,
+        serviceId: null,
+        eventVendorId: eventVendor.id,
+        vendorId: eventVendor.vendorId ?? null,
+        pricingPlanId: eventVendor.pricingPlanId ?? null,
+        itemName: item.itemName,
+        category: item.category ?? eventVendor.vendorType ?? null,
+        quantity,
+        unitPrice,
+        totalPrice: computeItemTotal(quantity, unitPrice, item.totalPrice),
+        notes: item.notes ?? null,
+        sortOrder,
+        createdBy: userId,
+        updatedBy: userId,
+      };
     }
 
-    const eventVendor = await loadEventVendorForEvent(eventId, item.eventVendorId);
-
-    if (
-      typeof item.vendorId !== "undefined"
-      && item.vendorId !== null
-      && item.vendorId !== (eventVendor.vendorId ?? null)
-    ) {
-      throw new HttpError(400, "vendorId must match the selected event vendor");
-    }
-
-    if (
-      typeof item.pricingPlanId !== "undefined"
-      && item.pricingPlanId !== null
-      && item.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-    ) {
+    if (!item.vendorId) {
       throw new HttpError(
         400,
-        "pricingPlanId must match the selected event vendor",
+        "vendorId is required for vendor contract items when eventVendorId is not provided",
+      );
+    }
+
+    const vendor = await loadVendorById(item.vendorId);
+    const pricingPlan = item.pricingPlanId
+      ? await loadVendorPricingPlanById(item.pricingPlanId)
+      : null;
+
+    if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
+      throw new HttpError(
+        400,
+        "pricingPlanId must belong to the selected vendor",
       );
     }
 
@@ -311,11 +377,11 @@ async function prepareContractItem(
       quotationItemId: item.quotationItemId ?? null,
       eventServiceId: null,
       serviceId: null,
-      eventVendorId: eventVendor.id,
-      vendorId: eventVendor.vendorId ?? null,
-      pricingPlanId: eventVendor.pricingPlanId ?? null,
+      eventVendorId: null,
+      vendorId: vendor.id,
+      pricingPlanId: pricingPlan?.id ?? null,
       itemName: item.itemName,
-      category: item.category ?? eventVendor.vendorType ?? null,
+      category: item.category ?? vendor.type ?? null,
       quantity,
       unitPrice,
       totalPrice: computeItemTotal(quantity, unitPrice, item.totalPrice),
@@ -841,34 +907,8 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
         typeof data.eventVendorId !== "undefined"
           ? data.eventVendorId
           : item.eventVendorId;
-
-      if (!nextEventVendorId) {
-        throw new HttpError(400, "eventVendorId is required for vendor contract items");
-      }
-
-      const eventVendor = await loadEventVendorForEvent(
-        contract.eventId,
-        nextEventVendorId,
-      );
-
-      if (
-        typeof data.vendorId !== "undefined"
-        && data.vendorId !== null
-        && data.vendorId !== (eventVendor.vendorId ?? null)
-      ) {
-        throw new HttpError(400, "vendorId must match the selected event vendor");
-      }
-
-      if (
-        typeof data.pricingPlanId !== "undefined"
-        && data.pricingPlanId !== null
-        && data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-      ) {
-        throw new HttpError(
-          400,
-          "pricingPlanId must match the selected event vendor",
-        );
-      }
+      const nextVendorId =
+        typeof data.vendorId !== "undefined" ? data.vendorId : item.vendorId;
 
       const quantity =
         typeof data.quantity === "number"
@@ -879,28 +919,106 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
           ? round3(data.unitPrice)
           : round3(Number(item.unitPrice || 0));
 
-      await item.update({
-        itemType: "vendor",
-        quotationItemId:
-          typeof data.quotationItemId !== "undefined"
-            ? data.quotationItemId
-            : item.quotationItemId,
-        eventServiceId: null,
-        serviceId: null,
-        eventVendorId: eventVendor.id,
-        vendorId: eventVendor.vendorId ?? null,
-        pricingPlanId: eventVendor.pricingPlanId ?? null,
-        itemName: data.itemName ?? item.itemName,
-        category:
-          typeof data.category !== "undefined" ? data.category : item.category,
-        quantity,
-        unitPrice,
-        totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
-        notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
-        sortOrder:
-          typeof data.sortOrder !== "undefined" ? data.sortOrder : item.sortOrder,
-        updatedBy: req.user?.id ?? null,
-      });
+      if (nextEventVendorId) {
+        const eventVendor = await loadEventVendorForEvent(
+          contract.eventId,
+          nextEventVendorId,
+        );
+
+        if (
+          typeof data.vendorId !== "undefined"
+          && data.vendorId !== null
+          && data.vendorId !== (eventVendor.vendorId ?? null)
+        ) {
+          throw new HttpError(400, "vendorId must match the selected event vendor");
+        }
+
+        if (
+          typeof data.pricingPlanId !== "undefined"
+          && data.pricingPlanId !== null
+          && data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
+        ) {
+          throw new HttpError(
+            400,
+            "pricingPlanId must match the selected event vendor",
+          );
+        }
+
+        await item.update({
+          itemType: "vendor",
+          quotationItemId:
+            typeof data.quotationItemId !== "undefined"
+              ? data.quotationItemId
+              : item.quotationItemId,
+          eventServiceId: null,
+          serviceId: null,
+          eventVendorId: eventVendor.id,
+          vendorId: eventVendor.vendorId ?? null,
+          pricingPlanId: eventVendor.pricingPlanId ?? null,
+          itemName: data.itemName ?? item.itemName,
+          category:
+            typeof data.category !== "undefined" ? data.category : item.category,
+          quantity,
+          unitPrice,
+          totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
+          notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
+          sortOrder:
+            typeof data.sortOrder !== "undefined"
+              ? data.sortOrder
+              : item.sortOrder,
+          updatedBy: req.user?.id ?? null,
+        });
+      } else {
+        if (!nextVendorId) {
+          throw new HttpError(
+            400,
+            "vendorId is required for vendor contract items when eventVendorId is not provided",
+          );
+        }
+
+        const vendor = await loadVendorById(nextVendorId);
+        const nextPricingPlanId =
+          typeof data.pricingPlanId !== "undefined"
+            ? data.pricingPlanId
+            : item.pricingPlanId;
+        const pricingPlan = nextPricingPlanId
+          ? await loadVendorPricingPlanById(nextPricingPlanId)
+          : null;
+
+        if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
+          throw new HttpError(
+            400,
+            "pricingPlanId must belong to the selected vendor",
+          );
+        }
+
+        await item.update({
+          itemType: "vendor",
+          quotationItemId:
+            typeof data.quotationItemId !== "undefined"
+              ? data.quotationItemId
+              : item.quotationItemId,
+          eventServiceId: null,
+          serviceId: null,
+          eventVendorId: null,
+          vendorId: vendor.id,
+          pricingPlanId: pricingPlan?.id ?? null,
+          itemName: data.itemName ?? item.itemName,
+          category:
+            typeof data.category !== "undefined"
+              ? data.category
+              : (item.category ?? vendor.type),
+          quantity,
+          unitPrice,
+          totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
+          notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
+          sortOrder:
+            typeof data.sortOrder !== "undefined"
+              ? data.sortOrder
+              : item.sortOrder,
+          updatedBy: req.user?.id ?? null,
+        });
+      }
     } else {
       if (typeof data.eventServiceId !== "undefined" && data.eventServiceId) {
         await loadEventServiceForEvent(contract.eventId, data.eventServiceId);
