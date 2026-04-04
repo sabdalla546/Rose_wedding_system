@@ -6,6 +6,8 @@ import type { CalendarEvent } from "@/types/calendar";
 const EVENT_STATUS_ACCENTS: Record<EventStatus, AppCalendarAccent> = {
   draft: "slate",
   designing: "rose",
+  quotation_pending: "gold",
+  quoted: "blue",
   confirmed: "emerald",
   in_progress: "blue",
   completed: "gold",

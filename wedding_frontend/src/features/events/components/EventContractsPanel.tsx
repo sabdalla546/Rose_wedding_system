@@ -7,12 +7,15 @@ import {
   EventContractsPanel as EventContractsPanelContent,
 } from "@/pages/events/_components/EventWorkflowPanels";
 import { toNumberValue } from "@/pages/services/adapters";
+import type { Contract } from "@/pages/contracts/types";
 
 type Props = {
   eventId: number | string;
   onCreateContract?: () => void;
   onCreateContractFromQuotation?: () => void;
   onViewContract?: (contractId: number) => void;
+  contracts?: Contract[];
+  loading?: boolean;
 };
 
 export function EventContractsPanel({
@@ -20,6 +23,8 @@ export function EventContractsPanel({
   onCreateContract,
   onCreateContractFromQuotation,
   onViewContract,
+  contracts: contractsOverride,
+  loading: loadingOverride,
 }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
@@ -36,7 +41,7 @@ export function EventContractsPanel({
 
   const contracts = useMemo(
     () =>
-      [...(data?.data ?? [])].sort((left, right) => {
+      [...(contractsOverride ?? data?.data ?? [])].sort((left, right) => {
         const leftTime = new Date(left.signedDate).getTime();
         const rightTime = new Date(right.signedDate).getTime();
 
@@ -46,7 +51,7 @@ export function EventContractsPanel({
 
         return right.id - left.id;
       }),
-    [data?.data],
+    [contractsOverride, data?.data],
   );
   const totalAmount = useMemo(
     () =>
@@ -65,7 +70,7 @@ export function EventContractsPanel({
   return (
     <EventContractsPanelContent
       contracts={contracts}
-      loading={isLoading}
+      loading={loadingOverride ?? isLoading}
       latestContract={contracts[0] ?? null}
       totalAmount={totalAmount}
       dateLocale={dateLocale}

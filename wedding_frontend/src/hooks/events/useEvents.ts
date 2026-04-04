@@ -1,11 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import api from "@/lib/axios";
-import {
-  buildEventsListQueryParams,
-  type EventsBusinessFilters,
-} from "@/pages/events/event-query-params";
-import type { Event, EventResponse, EventsResponse } from "@/pages/events/types";
+import { eventsApi } from "@/lib/api/events";
+import { type EventsBusinessFilters } from "@/pages/events/event-query-params";
+import type { Event, EventsResponse } from "@/pages/events/types";
 
 export const useEvents = ({
   currentPage,
@@ -28,26 +25,14 @@ export const useEvents = ({
       filters.dateFrom,
       filters.dateTo,
     ],
-    queryFn: async () => {
-      const res = await api.get("/events", {
-        params: buildEventsListQueryParams(filters, {
-          page: currentPage,
-          limit: itemsPerPage,
-        }),
-      });
-
-      return res.data;
-    },
+    queryFn: () => eventsApi.list({ currentPage, itemsPerPage, filters }),
   });
 };
 
 export const useEvent = (id?: string) => {
   return useQuery<Event>({
     queryKey: ["event", id],
-    queryFn: async () => {
-      const res = await api.get<EventResponse>(`/events/${id}`);
-      return res.data.data;
-    },
+    queryFn: () => eventsApi.get(id as string),
     enabled: !!id,
   });
 };

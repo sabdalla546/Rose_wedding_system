@@ -11,6 +11,8 @@ import type { EventCalendarRecord } from "@/pages/events/types";
 const EVENT_ACCENTS: Record<EventCalendarRecord["status"], AppCalendarAccent> = {
   draft: "slate",
   designing: "rose",
+  quotation_pending: "gold",
+  quoted: "blue",
   confirmed: "emerald",
   in_progress: "blue",
   completed: "gold",

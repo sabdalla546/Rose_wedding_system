@@ -57,6 +57,8 @@ export const routeAccessByHref: Record<string, RouteAccess> = {
   "/contracts/create": { permission: "contracts.create" },
   "/contracts/edit/:id": { permission: "contracts.update" },
   "/contracts/:id": { permission: "contracts.read" },
+  "/execution-briefs": { permission: "events.read" },
+  "/execution-briefs/:id": { permission: "events.read" },
   "/appointments": { permission: "appointments.read" },
   "/appointments/create": { permission: "appointments.create" },
   "/appointments/edit/:id": { permission: "appointments.update" },

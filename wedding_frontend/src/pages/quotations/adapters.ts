@@ -211,5 +211,6 @@ export const QUOTATION_STATUS_OPTIONS: Array<{
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
   { value: "expired", label: "Expired" },
+  { value: "superseded", label: "Superseded" },
   { value: "converted_to_contract", label: "Converted To Contract" },
 ];

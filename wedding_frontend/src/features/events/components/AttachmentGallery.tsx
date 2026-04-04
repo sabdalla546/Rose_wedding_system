@@ -10,6 +10,7 @@ type Props = {
   emptyText: string;
   deleting: boolean;
   onDelete: (attachmentId: number) => void;
+  allowDelete?: boolean;
 };
 
 export function AttachmentGallery({
@@ -18,6 +19,7 @@ export function AttachmentGallery({
   emptyText,
   deleting,
   onDelete,
+  allowDelete = true,
 }: Props) {
   return (
     <div className="space-y-3">
@@ -73,20 +75,22 @@ export function AttachmentGallery({
                       </span>
                     )}
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onDelete(attachment.id)}
-                      disabled={deleting}
-                    >
-                      {deleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      Delete
-                    </Button>
+                    {allowDelete ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onDelete(attachment.id)}
+                        disabled={deleting}
+                      >
+                        {deleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        Delete
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </div>

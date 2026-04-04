@@ -20,6 +20,7 @@ export const APPOINTMENT_ACCENTS: Record<
   scheduled: "gold",
   confirmed: "emerald",
   completed: "blue",
+  converted: "blue",
   rescheduled: "gold",
   cancelled: "rose",
   no_show: "slate",

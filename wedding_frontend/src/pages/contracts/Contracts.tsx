@@ -12,6 +12,7 @@ import {
 import CompactHeader from "@/components/common/CompactHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
@@ -26,6 +27,7 @@ import { useDeleteContract } from "@/hooks/contracts/useDeleteContract";
 import { useEvents } from "@/hooks/events/useEvents";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
+import { useContractWorkflowSummary } from "@/hooks/workflow/useWorkflowSummaries";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
 
@@ -50,6 +52,7 @@ const ContractsPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isArabic = i18n.language === "ar";
+  const workflowSummary = useContractWorkflowSummary();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -261,6 +264,138 @@ const ContractsPage = () => {
               </Button>
             </ProtectedComponent>
           }
+        />
+
+        <WorkflowModuleDashboard
+          title={t("contracts.workflowDashboard", {
+            defaultValue: "Contract Workflow Visibility",
+          })}
+          description={t("contracts.workflowDashboardHint", {
+            defaultValue:
+              "Keep an eye on issued, signed, active, and blocked commitments without leaving the contracts workspace.",
+          })}
+          metrics={[
+            {
+              id: "total",
+              label: t("common.total", { defaultValue: "Total" }),
+              value: workflowSummary.total,
+              helper: t("contracts.totalContracts", {
+                defaultValue: "total contracts",
+              }),
+            },
+            {
+              id: "active",
+              label: t("contracts.activeQueue", {
+                defaultValue: "Active Queue",
+              }),
+              value: workflowSummary.metrics.active,
+              helper: t("contracts.activeQueueHint", {
+                defaultValue: "Issued, signed, and active contracts still need operational follow-up.",
+              }),
+            },
+            {
+              id: "completed",
+              label: t("contracts.completedLabel", {
+                defaultValue: "Completed",
+              }),
+              value: workflowSummary.metrics.completed,
+              helper: t("contracts.completedLabelHint", {
+                defaultValue: "Contracts already fulfilled.",
+              }),
+            },
+            {
+              id: "blocked",
+              label: t("contracts.blockedLabel", {
+                defaultValue: "Blocked",
+              }),
+              value: workflowSummary.metrics.blocked,
+              helper: t("contracts.blockedLabelHint", {
+                defaultValue: "Cancelled and terminated contracts are surfaced separately.",
+              }),
+            },
+          ]}
+          statuses={[
+            {
+              key: "all",
+              label: t("contracts.allStatuses", { defaultValue: "All Statuses" }),
+              count: workflowSummary.total,
+              active: statusFilter === "all",
+              onClick: () => {
+                setStatusFilter("all");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "draft",
+              label: t("contracts.status.draft", { defaultValue: "Draft" }),
+              count: workflowSummary.statusCounts.draft,
+              active: statusFilter === "draft",
+              onClick: () => {
+                setStatusFilter("draft");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "issued",
+              label: t("contracts.status.issued", { defaultValue: "Issued" }),
+              count: workflowSummary.statusCounts.issued,
+              active: statusFilter === "issued",
+              onClick: () => {
+                setStatusFilter("issued");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "signed",
+              label: t("contracts.status.signed", { defaultValue: "Signed" }),
+              count: workflowSummary.statusCounts.signed,
+              active: statusFilter === "signed",
+              onClick: () => {
+                setStatusFilter("signed");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "active",
+              label: t("contracts.status.active", { defaultValue: "Active" }),
+              count: workflowSummary.statusCounts.active,
+              active: statusFilter === "active",
+              onClick: () => {
+                setStatusFilter("active");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "completed",
+              label: t("contracts.status.completed", { defaultValue: "Completed" }),
+              count: workflowSummary.statusCounts.completed,
+              active: statusFilter === "completed",
+              onClick: () => {
+                setStatusFilter("completed");
+                setCurrentPage(1);
+              },
+            },
+          ]}
+          footer={
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("active");
+                  setCurrentPage(1);
+                }}
+              >
+                {t("contracts.focusActiveContracts", {
+                  defaultValue: "Focus active contracts",
+                })}
+              </Button>
+              <Button type="button" variant="outline" onClick={resetFilters}>
+                {t("contracts.clearFilters", { defaultValue: "Clear Filters" })}
+              </Button>
+            </div>
+          }
+          loading={workflowSummary.isLoading}
         />
 
         <CalendarFilterPanel

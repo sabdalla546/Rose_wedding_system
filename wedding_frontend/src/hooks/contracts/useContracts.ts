@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import api from "@/lib/axios";
+import { contractsApi } from "@/lib/api/contracts";
 import type {
   Contract,
-  ContractResponse,
   ContractsResponse,
   ContractStatus,
 } from "@/pages/contracts/types";
@@ -41,32 +40,24 @@ export const useContracts = ({
       signedDateFrom,
       signedDateTo,
     ],
-    queryFn: async () => {
-      const res = await api.get("/contracts", {
-        params: {
-          page: currentPage,
-          limit: itemsPerPage,
-          search: searchQuery || undefined,
-          quotationId: quotationId ? Number(quotationId) : undefined,
-          eventId: eventId ? Number(eventId) : undefined,
-          status: status === "all" ? undefined : status,
-          signedDateFrom: signedDateFrom || undefined,
-          signedDateTo: signedDateTo || undefined,
-        },
-      });
-
-      return res.data;
-    },
+    queryFn: () =>
+      contractsApi.list({
+        currentPage,
+        itemsPerPage,
+        searchQuery,
+        quotationId,
+        eventId,
+        status,
+        signedDateFrom,
+        signedDateTo,
+      }),
   });
 };
 
 export const useContract = (id?: string) => {
   return useQuery<Contract>({
     queryKey: ["contract", id],
-    queryFn: async () => {
-      const res = await api.get<ContractResponse>(`/contracts/${id}`);
-      return res.data.data;
-    },
+    queryFn: () => contractsApi.get(id as string),
     enabled: !!id,
   });
 };

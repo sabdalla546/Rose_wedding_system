@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { SectionCard } from "@/components/shared/section-card";
+import { FormFeedbackBanner } from "@/components/shared/form-feedback-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +26,7 @@ import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
 import { useContracts } from "@/hooks/contracts/useContracts";
 import { useEvent } from "@/hooks/events/useEvents";
 import { useExecutionBriefByEvent } from "@/hooks/execution/useExecutionBriefs";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import {
   useCreateExecutionBrief,
   useDeleteExecutionAttachment,
@@ -35,6 +37,7 @@ import {
 } from "@/hooks/execution/useExecutionMutations";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { getExecutionBriefStatusLabel } from "@/pages/execution/adapters";
+import { getExecutionLockMessage } from "@/lib/workflow/workflow";
 import type {
   ExecutionBriefStatus,
   ExecutionServiceDetailStatus,
@@ -62,7 +65,7 @@ type BriefFormState = {
 };
 
 const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] read-only:cursor-default read-only:border-dashed read-only:border-[var(--lux-row-border)] read-only:bg-[var(--lux-row-surface)] read-only:text-[var(--lux-text-secondary)] read-only:focus:border-[var(--lux-control-border)] read-only:focus:ring-0";
 
 const createBriefFormState = (
   brief?: {
@@ -89,6 +92,7 @@ const createBriefFormState = (
 export function EventExecutionPanel({ eventId }: Props) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
+  const canManageExecution = useHasPermission("events.update");
 
   const numericEventId =
     typeof eventId === "number" ? eventId : Number(eventId || 0);
@@ -207,6 +211,10 @@ export function EventExecutionPanel({ eventId }: Props) {
   const completedServiceDetailsCount = serviceDetails.filter(
     (item) => item.status === "ready" || item.status === "done",
   ).length;
+  const briefLockMessage = executionBrief
+    ? getExecutionLockMessage(executionBrief.status)
+    : null;
+  const canEditBrief = canManageExecution && !briefLockMessage;
 
   useEffect(() => {
     if (
@@ -416,7 +424,7 @@ export function EventExecutionPanel({ eventId }: Props) {
         <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={handleCreateExecutionBrief}
-            disabled={createExecutionBriefMutation.isPending}
+            disabled={!canManageExecution || createExecutionBriefMutation.isPending}
           >
             {createExecutionBriefMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -449,6 +457,28 @@ export function EventExecutionPanel({ eventId }: Props) {
   return (
     <div className="space-y-6">
       <SectionCard className="space-y-5">
+        {!canManageExecution ? (
+          <FormFeedbackBanner
+            title={t("execution.readOnlyAccessTitle", {
+              defaultValue: "Read-only execution access",
+            })}
+            message={t("execution.readOnlyAccessHint", {
+              defaultValue:
+                "You can review the execution brief here, but structural edits, uploads, and workflow changes require event update permission.",
+            })}
+          />
+        ) : null}
+
+        {briefLockMessage ? (
+          <FormFeedbackBanner
+            tone="warning"
+            title={t("execution.lockedTitle", {
+              defaultValue: "Execution brief locked",
+            })}
+            message={briefLockMessage}
+          />
+        ) : null}
+
         <div
           className={cn(
             "flex flex-col gap-4 xl:items-start xl:justify-between",
@@ -571,6 +601,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                 </span>
                 <Select
                   value={briefForm.status}
+                  disabled={!canEditBrief}
                   onValueChange={(value) =>
                     setBriefForm((current) => ({
                       ...current,
@@ -619,6 +650,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                   lang={isRtl ? "ar" : "en"}
                   className={isRtl ? "text-right" : "text-left"}
                   value={briefForm.approvedByClientAt}
+                  readOnly={!canEditBrief}
                   onChange={(event) =>
                     setBriefForm((current) => ({
                       ...current,
@@ -640,6 +672,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                   lang={isRtl ? "ar" : "en"}
                   className={isRtl ? "text-right" : "text-left"}
                   value={briefForm.handedToExecutorAt}
+                  readOnly={!canEditBrief}
                   onChange={(event) =>
                     setBriefForm((current) => ({
                       ...current,
@@ -663,6 +696,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                     isRtl ? "text-right" : "text-left",
                   )}
                   value={briefForm.generalNotes}
+                  readOnly={!canEditBrief}
                   placeholder={t("execution.generalNotesPlaceholder", {
                     defaultValue:
                       "Overall execution notes, wedding flow, and shared context...",
@@ -688,6 +722,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                     isRtl ? "text-right" : "text-left",
                   )}
                   value={briefForm.clientNotes}
+                  readOnly={!canEditBrief}
                   placeholder={t("execution.clientNotesPlaceholder", {
                     defaultValue:
                       "Client preferences, approvals, and special requests...",
@@ -714,6 +749,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                   isRtl ? "text-right" : "text-left",
                 )}
                 value={briefForm.designerNotes}
+                readOnly={!canEditBrief}
                 placeholder={t("execution.designerNotesPlaceholder", {
                   defaultValue:
                     "Internal design notes, execution intent, and setup direction...",
@@ -733,23 +769,25 @@ export function EventExecutionPanel({ eventId }: Props) {
                 isRtl ? "justify-start" : "justify-end",
               )}
             >
-              <Button
-                onClick={handleSaveBrief}
-                disabled={updateExecutionBriefMutation.isPending}
-              >
-                {updateExecutionBriefMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {updateExecutionBriefMutation.isPending
-                  ? t("common.processing", {
-                      defaultValue: "Processing...",
-                    })
-                  : t("common.saveChanges", {
-                      defaultValue: "Save Changes",
-                    })}
-              </Button>
+              {canEditBrief ? (
+                <Button
+                  onClick={handleSaveBrief}
+                  disabled={updateExecutionBriefMutation.isPending}
+                >
+                  {updateExecutionBriefMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  {updateExecutionBriefMutation.isPending
+                    ? t("common.processing", {
+                        defaultValue: "Processing...",
+                      })
+                    : t("common.saveChanges", {
+                        defaultValue: "Save Changes",
+                      })}
+                </Button>
+              ) : null}
             </div>
 
             <AttachmentUploader
@@ -760,6 +798,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                 defaultValue: "Upload attachment",
               })}
               pending={uploadExecutionBriefAttachmentMutation.isPending}
+              readOnly={!canEditBrief}
               onUpload={handleUploadBriefAttachment}
             />
 
@@ -772,6 +811,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                 defaultValue: "No general attachments uploaded yet.",
               })}
               deleting={deleteExecutionAttachmentMutation.isPending}
+              allowDelete={canEditBrief}
               onDelete={handleDeleteAttachment}
             />
           </div>
@@ -819,6 +859,7 @@ export function EventExecutionPanel({ eventId }: Props) {
                 }
                 onDeleteAttachment={handleDeleteAttachment}
                 deletingAttachment={deleteExecutionAttachmentMutation.isPending}
+                readOnly={!canEditBrief}
               />
             ))}
           </div>

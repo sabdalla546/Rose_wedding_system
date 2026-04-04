@@ -150,7 +150,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     providedBy: "all",
     status: "all",
   });
-  const { data: eventQuotationsResponse } = useQuotations({
+  const {
+    data: eventQuotationsResponse,
+    isLoading: quotationsLoading,
+  } = useQuotations({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
@@ -159,7 +162,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     issueDateFrom: "",
     issueDateTo: "",
   });
-  const { data: eventContractsResponse } = useContracts({
+  const {
+    data: eventContractsResponse,
+    isLoading: contractsLoading,
+  } = useContracts({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
@@ -642,6 +648,8 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         <TabsContent value="quotations">
           <EventQuotationsPanel
             eventId={eventId}
+            quotations={quotations}
+            loading={quotationsLoading}
             onCreateQuotation={handleCreateQuotation}
             onCreateQuotationFromEvent={handleCreateQuotation}
             onViewQuotation={(quotationId) =>
@@ -653,6 +661,8 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         <TabsContent value="contracts">
           <EventContractsPanel
             eventId={eventId}
+            contracts={contracts}
+            loading={contractsLoading}
             onCreateContract={handleCreateContract}
             onCreateContractFromQuotation={handleCreateContract}
             onViewContract={(contractId) =>

@@ -3,75 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useToast } from "@/hooks/use-toast";
-import api, { getApiErrorMessage } from "@/lib/axios";
+import { getApiErrorMessage } from "@/lib/axios";
+import { eventsApi } from "@/lib/api/events";
 import type { EventFormData } from "@/pages/events/types";
-
-const normalizeOptionalString = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-};
-
-const normalizeNullableString = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-};
-
-const normalizeGuestCountForCreate = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : undefined;
-};
-
-const normalizeGuestCountForUpdate = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? Number(trimmed) : null;
-};
-
-const buildCreateEventPayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
-  eventDate: values.eventDate,
-  venueId: values.venueId ? Number(values.venueId) : null,
-  venueNameSnapshot: normalizeOptionalString(values.venueNameSnapshot),
-  groomName: normalizeOptionalString(values.groomName),
-  brideName: normalizeOptionalString(values.brideName),
-  guestCount: normalizeGuestCountForCreate(values.guestCount),
-  title: normalizeOptionalString(values.title),
-  notes: normalizeOptionalString(values.notes),
-  status: values.status || undefined,
-});
-
-const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
-  eventDate: normalizeOptionalString(values.eventDate),
-  venueId: values.venueId ? Number(values.venueId) : null,
-  venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
-  groomName: normalizeNullableString(values.groomName),
-  brideName: normalizeNullableString(values.brideName),
-  guestCount: normalizeGuestCountForCreate(values.guestCount),
-  title: normalizeNullableString(values.title),
-  notes: normalizeNullableString(values.notes),
-});
-
-const buildUpdateEventPayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
-  eventDate: normalizeOptionalString(values.eventDate),
-  venueId: values.venueId ? Number(values.venueId) : null,
-  venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
-  groomName: normalizeNullableString(values.groomName),
-  brideName: normalizeNullableString(values.brideName),
-  guestCount: normalizeGuestCountForUpdate(values.guestCount),
-  title: normalizeNullableString(values.title),
-  notes: normalizeNullableString(values.notes),
-  status: values.status || undefined,
-});
 
 export const useCreateEvent = () => {
   const queryClient = useQueryClient();
@@ -80,8 +14,7 @@ export const useCreateEvent = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (values: EventFormData) =>
-      api.post("/events", buildCreateEventPayload(values)),
+    mutationFn: (values: EventFormData) => eventsApi.create(values),
     onSuccess: () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
@@ -117,11 +50,7 @@ export const useCreateEventFromSource = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (values: EventFormData) =>
-      api.post(
-        "/events/create-from-source",
-        buildCreateEventFromSourcePayload(values),
-      ),
+    mutationFn: (values: EventFormData) => eventsApi.createFromSource(values),
     onSuccess: () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
@@ -163,8 +92,7 @@ export const useUpdateEvent = (
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (values: EventFormData) =>
-      api.put(`/events/${id}`, buildUpdateEventPayload(values)),
+    mutationFn: (values: EventFormData) => eventsApi.update(id as string, values),
     onSuccess: () => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),

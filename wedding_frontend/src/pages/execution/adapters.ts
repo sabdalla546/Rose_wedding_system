@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 
 import type {
   ExecutionAttachment,
+  ExecutionBrief,
   ExecutionBriefStatus,
   ExecutionServiceDetail,
   ExecutionServiceDetailStatus,
@@ -34,6 +35,59 @@ export const getExecutionTemplateLabel = (templateKey: string, t: TFunction) =>
   t(`execution.templates.${templateKey}`, {
     defaultValue: templateKey,
   });
+
+export const EXECUTION_BRIEF_STATUS_OPTIONS: Array<{
+  value: ExecutionBriefStatus;
+  label: string;
+}> = [
+  { value: "draft", label: "Draft" },
+  { value: "under_review", label: "Under Review" },
+  { value: "approved", label: "Approved" },
+  { value: "handed_off", label: "Handed Off" },
+  { value: "handed_to_executor", label: "Handed To Executor" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export type TableExecutionBrief = ExecutionBrief & {
+  briefDisplay: string;
+  eventDisplay: string;
+  commercialDisplay: string;
+  statusDisplay: string;
+  updatedAtDisplay: string;
+};
+
+export const getExecutionBriefDisplayNumber = (
+  brief: Pick<ExecutionBrief, "id">,
+) => `EB-${brief.id}`;
+
+export const toTableExecutionBriefs = (
+  briefs?: ExecutionBrief[],
+): TableExecutionBrief[] =>
+  (briefs ?? []).map((brief) => ({
+    ...brief,
+    briefDisplay: getExecutionBriefDisplayNumber(brief),
+    eventDisplay:
+      typeof brief.event === "object" &&
+      brief.event !== null &&
+      "id" in brief.event
+        ? `Event #${String((brief.event as { id: number }).id)}`
+        : `Event #${brief.eventId}`,
+    commercialDisplay: brief.contractId
+      ? `Contract #${brief.contractId}`
+      : brief.quotationId
+        ? `Quotation #${brief.quotationId}`
+        : "No contract or quotation linked",
+    statusDisplay: formatWorkflowStatusLabel(brief.status),
+    updatedAtDisplay: brief.updatedAt ?? brief.createdAt ?? "-",
+  }));
+
+const formatWorkflowStatusLabel = (value: string) =>
+  value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 export const isExecutionServiceDetailReady = (
   status: ExecutionServiceDetailStatus,

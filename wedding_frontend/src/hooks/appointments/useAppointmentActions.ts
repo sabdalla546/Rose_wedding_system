@@ -4,7 +4,8 @@ import {
   type MutateOptions,
 } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import api, { getApiErrorMessage } from "@/lib/axios";
+import { getApiErrorMessage } from "@/lib/axios";
+import { appointmentsApi } from "@/lib/api/appointments";
 import { useToast } from "@/hooks/use-toast";
 import type {
   CancelAppointmentData,
@@ -31,7 +32,20 @@ function useAppointmentActionMutation<TPayload>(
     }: {
       id: number;
       values: TPayload;
-    }) => api.patch(endpointBuilder(id), values),
+    }) => {
+      const endpoint = endpointBuilder(id);
+      if (endpoint.endsWith("/confirm")) {
+        return appointmentsApi.confirm(id, values as ConfirmAppointmentData);
+      }
+      if (endpoint.endsWith("/complete")) {
+        return appointmentsApi.complete(id, values as CompleteAppointmentData);
+      }
+      if (endpoint.endsWith("/cancel")) {
+        return appointmentsApi.cancel(id, values as CancelAppointmentData);
+      }
+
+      return appointmentsApi.reschedule(id, values as RescheduleAppointmentData);
+    },
     onSuccess: (_res, variables) => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),

@@ -17,7 +17,7 @@ type Props = {
 export function ExecutionServiceCardPreview({
   detail,
   serviceTitle,
-  previewText,
+  previewText: _previewText,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";

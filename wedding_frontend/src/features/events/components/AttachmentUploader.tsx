@@ -10,6 +10,7 @@ type Props = {
   buttonLabel: string;
   pending: boolean;
   onUpload: (payload: UploadExecutionAttachmentPayload) => Promise<void> | void;
+  readOnly?: boolean;
 };
 
 export function AttachmentUploader({
@@ -17,6 +18,7 @@ export function AttachmentUploader({
   buttonLabel,
   pending,
   onUpload,
+  readOnly = false,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [label, setLabel] = useState("");
@@ -57,6 +59,7 @@ export function AttachmentUploader({
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp"
+            disabled={readOnly}
             onChange={(event) =>
               setSelectedFile(event.target.files?.[0] ?? null)
             }
@@ -71,6 +74,7 @@ export function AttachmentUploader({
             type="number"
             min="0"
             value={sortOrder}
+            readOnly={readOnly}
             onChange={(event) => setSortOrder(event.target.value)}
           />
         </label>
@@ -82,6 +86,7 @@ export function AttachmentUploader({
         </span>
         <Input
           value={label}
+          readOnly={readOnly}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="kosha_reference / hall_sketch / entrance_reference"
         />
@@ -91,7 +96,7 @@ export function AttachmentUploader({
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={pending || !selectedFile}
+          disabled={readOnly || pending || !selectedFile}
         >
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />

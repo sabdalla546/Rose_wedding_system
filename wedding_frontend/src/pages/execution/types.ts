@@ -2,9 +2,11 @@ export type ExecutionBriefStatus =
   | "draft"
   | "under_review"
   | "approved"
+  | "handed_off"
   | "handed_to_executor"
   | "in_progress"
-  | "completed";
+  | "completed"
+  | "cancelled";
 
 export type ExecutionServiceDetailStatus =
   | "pending"

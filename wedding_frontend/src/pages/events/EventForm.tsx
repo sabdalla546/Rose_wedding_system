@@ -15,6 +15,10 @@ import { z } from "zod";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import {
+  FormFeedbackBanner,
+  getFirstFormErrorMessage,
+} from "@/components/shared/form-feedback-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -611,6 +615,10 @@ const EventFormPage = () => {
     createMutation.isPending ||
     createFromSourceMutation.isPending ||
     updateMutation.isPending;
+  const formErrorMessage =
+    form.formState.submitCount > 0
+      ? getFirstFormErrorMessage(form.formState.errors)
+      : null;
 
   const onSubmit: SubmitHandler<EventFormValues> = (values) => {
     const selectedVenueOption = venueOptions.find(
@@ -759,14 +767,31 @@ const EventFormPage = () => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-8"
                 >
-                  {fromAppointmentId ? (
-                    <div className="rounded-[4px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] px-4 py-3 text-sm text-[var(--lux-text-secondary)]">
-                      {t("events.sourceAppointmentPrefillHint", {
-                        defaultValue:
-                          "This event was prefilled from the selected appointment. Customer, event date, guest count, and venue came from that exact appointment and can still be edited.",
+                  {formErrorMessage ? (
+                    <FormFeedbackBanner
+                      tone="error"
+                      title={t("common.validationError", {
+                        defaultValue: "Review the highlighted fields",
                       })}
-                    </div>
+                      message={formErrorMessage}
+                    />
                   ) : null}
+
+                  {fromAppointmentId ? (
+                    <FormFeedbackBanner
+                      title={t("events.sourceAppointmentPrefill", {
+                        defaultValue: "Prefilled from appointment",
+                      })}
+                      message={t("events.sourceAppointmentPrefillHint", {
+                        defaultValue:
+                          "This event was prefilled from the selected appointment. Customer, event date, guest count, and venue came from that exact appointment and can still be adjusted before saving.",
+                      })}
+                    />
+                  ) : null}
+                  <fieldset
+                    disabled={isBusy}
+                    className="space-y-8 [&_textarea:disabled]:border-dashed [&_textarea:disabled]:border-[var(--lux-row-border)] [&_textarea:disabled]:bg-[var(--lux-row-surface)] [&_textarea:disabled]:text-[var(--lux-text-secondary)]"
+                  >
                   <section className="space-y-4">
                     <SectionIntro
                       title={t("events.linkedRecords", {
@@ -912,7 +937,7 @@ const EventFormPage = () => {
                           })}
                         />
                       ) : null}
-                      {effectiveMode !== "source" || isEditMode ? (
+                      {effectiveMode !== "source" && !isEditMode ? (
                         <SelectField
                           control={form.control}
                           name="status"
@@ -932,6 +957,16 @@ const EventFormPage = () => {
                             }),
                           }))}
                         />
+                      ) : isEditMode ? (
+                        <FormFeedbackBanner
+                          title={t("events.statusManagedByWorkflow", {
+                            defaultValue: "Status managed by workflow",
+                          })}
+                          message={t("events.workflowEditHint", {
+                            defaultValue:
+                              "Use workflow actions from the event detail page to move this event through its lifecycle. The form only updates operational details.",
+                          })}
+                        />
                       ) : null}
                     </div>
                     <TextAreaField
@@ -944,6 +979,7 @@ const EventFormPage = () => {
                       })}
                     />
                   </section>
+                  </fieldset>
 
                   <div
                     className="flex flex-col justify-end gap-3 pt-6 sm:flex-row"

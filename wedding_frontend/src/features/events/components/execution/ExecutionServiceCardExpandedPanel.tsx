@@ -23,7 +23,7 @@ import { AttachmentUploader } from "../AttachmentUploader";
 import { StructuredFieldRenderer } from "../StructuredFieldRenderer";
 
 const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] read-only:cursor-default read-only:border-dashed read-only:border-[var(--lux-row-border)] read-only:bg-[var(--lux-row-surface)] read-only:text-[var(--lux-text-secondary)] read-only:focus:border-[var(--lux-control-border)] read-only:focus:ring-0";
 
 type TemplateOption = {
   value: string;
@@ -44,6 +44,7 @@ type Props = {
   saving: boolean;
   uploadingAttachment: boolean;
   deletingAttachment: boolean;
+  readOnly?: boolean;
   onTemplateKeyChange: (value: string) => void;
   onStatusChange: (value: ExecutionServiceDetailStatus) => void;
   onSortOrderChange: (value: string) => void;
@@ -72,6 +73,7 @@ export function ExecutionServiceCardExpandedPanel({
   saving,
   uploadingAttachment,
   deletingAttachment,
+  readOnly = false,
   onTemplateKeyChange,
   onStatusChange,
   onSortOrderChange,
@@ -98,7 +100,11 @@ export function ExecutionServiceCardExpandedPanel({
           <span className="text-sm font-medium text-[var(--lux-text)]">
             {t("execution.templateKey", { defaultValue: "Template Key" })}
           </span>
-          <Select value={templateKey} onValueChange={onTemplateKeyChange}>
+          <Select
+            value={templateKey}
+            onValueChange={onTemplateKeyChange}
+            disabled={readOnly}
+          >
             <SelectTrigger
               dir={i18n.dir()}
               className={isRtl ? "text-right [&_span]:text-right" : "text-left [&_span]:text-left"}
@@ -124,6 +130,7 @@ export function ExecutionServiceCardExpandedPanel({
             onValueChange={(value) =>
               onStatusChange(value as ExecutionServiceDetailStatus)
             }
+            disabled={readOnly}
           >
             <SelectTrigger
               dir={i18n.dir()}
@@ -151,6 +158,7 @@ export function ExecutionServiceCardExpandedPanel({
             type="number"
             min="0"
             value={sortOrder}
+            readOnly={readOnly}
             className={isRtl ? "text-right" : "text-left"}
             onChange={(event) => onSortOrderChange(event.target.value)}
           />
@@ -169,6 +177,7 @@ export function ExecutionServiceCardExpandedPanel({
             <StructuredFieldRenderer
               field={field}
               value={structuredValues[field.key]}
+              readOnly={readOnly}
               onChange={(value) => onStructuredFieldChange(field.key, value)}
             />
           </label>
@@ -183,6 +192,7 @@ export function ExecutionServiceCardExpandedPanel({
           <textarea
             className={cn(textareaClassName, isRtl ? "text-right" : "text-left")}
             value={notes}
+            readOnly={readOnly}
             onChange={(event) => onNotesChange(event.target.value)}
             placeholder={t("execution.notesPlaceholder", {
               defaultValue:
@@ -200,6 +210,7 @@ export function ExecutionServiceCardExpandedPanel({
           <textarea
             className={cn(textareaClassName, isRtl ? "text-right" : "text-left")}
             value={executorNotes}
+            readOnly={readOnly}
             onChange={(event) => onExecutorNotesChange(event.target.value)}
             placeholder={t("execution.executorNotesPlaceholder", {
               defaultValue:
@@ -215,18 +226,20 @@ export function ExecutionServiceCardExpandedPanel({
         </div>
       ) : null}
 
-      <div className={cn("flex items-center", isRtl ? "justify-start" : "justify-end")}>
-        <Button onClick={onSave} disabled={saving}>
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {saving
-            ? t("common.processing", { defaultValue: "Processing..." })
-            : t("common.saveChanges", { defaultValue: "Save Changes" })}
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className={cn("flex items-center", isRtl ? "justify-start" : "justify-end")}>
+          <Button onClick={onSave} disabled={saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {saving
+              ? t("common.processing", { defaultValue: "Processing..." })
+              : t("common.saveChanges", { defaultValue: "Save Changes" })}
+          </Button>
+        </div>
+      ) : null}
 
       <AttachmentUploader
         title={t("execution.serviceAttachmentsUploader", {
@@ -236,6 +249,7 @@ export function ExecutionServiceCardExpandedPanel({
           defaultValue: "Upload attachment",
         })}
         pending={uploadingAttachment}
+        readOnly={readOnly}
         onUpload={(values) => onUploadAttachment(detail.id, values)}
       />
 
@@ -248,6 +262,7 @@ export function ExecutionServiceCardExpandedPanel({
           defaultValue: "No attachments uploaded for this service yet.",
         })}
         deleting={deletingAttachment}
+        allowDelete={!readOnly}
         onDelete={onDeleteAttachment}
       />
     </div>

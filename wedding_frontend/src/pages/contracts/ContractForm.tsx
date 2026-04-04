@@ -9,6 +9,11 @@ import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import {
+  FormFeedbackBanner,
+  getFirstFormErrorMessage,
+} from "@/components/shared/form-feedback-banner";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,6 +43,7 @@ import {
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
+import { getContractLockMessage } from "@/lib/workflow/workflow";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
@@ -82,7 +88,7 @@ import type {
 } from "./types";
 
 const textareaClassName =
-  "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] read-only:cursor-default read-only:border-dashed read-only:border-[var(--lux-row-border)] read-only:bg-[var(--lux-row-surface)] read-only:text-[var(--lux-text-secondary)] read-only:focus:border-[var(--lux-control-border)] read-only:focus:ring-0";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 type ContractVendorSource = "event_vendor" | "catalog_vendor";
@@ -905,6 +911,13 @@ const ContractFormPage = () => {
     createMutation.isPending ||
     createFromQuotationMutation.isPending ||
     updateMutation.isPending;
+  const contractLockMessage =
+    isEditMode && contract ? getContractLockMessage(contract.status) : null;
+  const isWorkflowLocked = Boolean(contractLockMessage);
+  const formErrorMessage =
+    form.formState.submitCount > 0
+      ? getFirstFormErrorMessage(form.formState.errors)
+      : null;
 
   const updateCatalogVendorConfig = (
     rowKey: string,
@@ -1733,6 +1746,35 @@ const ContractFormPage = () => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-8"
                 >
+                  {formErrorMessage ? (
+                    <FormFeedbackBanner
+                      tone="error"
+                      title={t("common.validationError", {
+                        defaultValue: "Review the highlighted fields",
+                      })}
+                      message={formErrorMessage}
+                    />
+                  ) : null}
+
+                  {isWorkflowLocked ? (
+                    <WorkflowLockBanner
+                      title={t("contracts.editLockedTitle", {
+                        defaultValue: "Contract Editing Locked",
+                      })}
+                      message={
+                        contractLockMessage ??
+                        t("contracts.editLockedHint", {
+                          defaultValue:
+                            "This contract is locked by workflow state. Review it from the detail page and use workflow actions there instead of editing the commitment form.",
+                        })
+                      }
+                    />
+                  ) : null}
+
+                  <fieldset
+                    disabled={isBusy || isWorkflowLocked}
+                    className="space-y-8 [&_textarea:disabled]:border-dashed [&_textarea:disabled]:border-[var(--lux-row-border)] [&_textarea:disabled]:bg-[var(--lux-row-surface)] [&_textarea:disabled]:text-[var(--lux-text-secondary)]"
+                  >
                   {!isEditMode ? (
                     <section className="space-y-4">
                       <div
@@ -2032,37 +2074,17 @@ const ContractFormPage = () => {
                         </label>
                       ) : null}
 
-                      <label className="space-y-2">
-                        <span className="text-sm font-medium text-[var(--lux-text)]">
-                          {t("contracts.statusLabel", {
-                            defaultValue: "Status",
+                      <div className="md:col-span-2">
+                        <WorkflowLockBanner
+                          title={t("contracts.statusManagedByWorkflow", {
+                            defaultValue: "Status Managed by Workflow",
                           })}
-                        </span>
-                        <Select
-                          value={form.watch("status")}
-                          onValueChange={(value) =>
-                            form.setValue("status", value as ContractStatus, {
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CONTRACT_STATUS_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {t(`contracts.status.${option.value}`, {
-                                  defaultValue: option.label,
-                                })}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
+                          message={t("contracts.statusManagedByWorkflowHint", {
+                            defaultValue:
+                              "Contracts start in draft. Use the contract detail screen workflow actions to issue, sign, activate, complete, cancel, or terminate the commitment.",
+                          })}
+                        />
+                      </div>
                     </div>
 
                     {selectedQuotation &&
@@ -3648,6 +3670,7 @@ const ContractFormPage = () => {
                       />
                     </div>
                   </section>
+                  </fieldset>
 
                   <div
                     className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-end"
@@ -3665,15 +3688,30 @@ const ContractFormPage = () => {
                     >
                       {t("common.cancel", { defaultValue: "Cancel" })}
                     </Button>
-                    <Button type="submit" disabled={isBusy}>
-                      {isBusy
-                        ? t("common.processing", {
-                            defaultValue: "Processing...",
-                          })
-                        : isEditMode
-                          ? t("common.update", { defaultValue: "Update" })
-                          : t("common.create", { defaultValue: "Create" })}
-                    </Button>
+                    {isWorkflowLocked ? (
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            isEditMode && id ? `/contracts/${id}` : "/contracts",
+                          )
+                        }
+                      >
+                        {t("contracts.returnToDetails", {
+                          defaultValue: "Return to Contract",
+                        })}
+                      </Button>
+                    ) : (
+                      <Button type="submit" disabled={isBusy}>
+                        {isBusy
+                          ? t("common.processing", {
+                              defaultValue: "Processing...",
+                            })
+                          : isEditMode
+                            ? t("common.update", { defaultValue: "Update" })
+                            : t("common.create", { defaultValue: "Create" })}
+                      </Button>
+                    )}
                   </div>
                 </form>
               </Form>

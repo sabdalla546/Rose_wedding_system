@@ -7,12 +7,15 @@ import {
   EventQuotationsPanel as EventQuotationsPanelContent,
 } from "@/pages/events/_components/EventWorkflowPanels";
 import { toNumberValue } from "@/pages/services/adapters";
+import type { Quotation } from "@/pages/quotations/types";
 
 type Props = {
   eventId: number | string;
   onCreateQuotation?: () => void;
   onCreateQuotationFromEvent?: () => void;
   onViewQuotation?: (quotationId: number) => void;
+  quotations?: Quotation[];
+  loading?: boolean;
 };
 
 export function EventQuotationsPanel({
@@ -20,6 +23,8 @@ export function EventQuotationsPanel({
   onCreateQuotation,
   onCreateQuotationFromEvent,
   onViewQuotation,
+  quotations: quotationsOverride,
+  loading: loadingOverride,
 }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
@@ -35,7 +40,7 @@ export function EventQuotationsPanel({
 
   const quotations = useMemo(
     () =>
-      [...(data?.data ?? [])].sort((left, right) => {
+      [...(quotationsOverride ?? data?.data ?? [])].sort((left, right) => {
         const leftTime = new Date(left.issueDate).getTime();
         const rightTime = new Date(right.issueDate).getTime();
 
@@ -45,7 +50,7 @@ export function EventQuotationsPanel({
 
         return right.id - left.id;
       }),
-    [data?.data],
+    [data?.data, quotationsOverride],
   );
   const totalAmount = useMemo(
     () =>
@@ -64,7 +69,7 @@ export function EventQuotationsPanel({
   return (
     <EventQuotationsPanelContent
       quotations={quotations}
-      loading={isLoading}
+      loading={loadingOverride ?? isLoading}
       latestQuotation={quotations[0] ?? null}
       totalAmount={totalAmount}
       dateLocale={dateLocale}

@@ -7,6 +7,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { AppCalendar } from "@/components/calendar/app-calendar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -16,6 +17,7 @@ import { SummaryCard } from "@/components/dashboard/summary-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import { Button } from "@/components/ui/button";
 import type { AppCalendarEvent } from "@/components/calendar/types";
 import {
@@ -30,6 +32,13 @@ import {
   reportSeries,
   todaysSchedule,
 } from "@/data/mock/dashboard";
+import {
+  useAppointmentWorkflowSummary,
+  useContractWorkflowSummary,
+  useEventWorkflowSummary,
+  useExecutionWorkflowSummary,
+  useQuotationWorkflowSummary,
+} from "@/hooks/workflow/useWorkflowSummaries";
 import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
 const metricTrends = {
@@ -41,9 +50,15 @@ const metricTrends = {
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [selectedBookingId, setSelectedBookingId] = useState<string>(
     recentBookings[0]?.id ?? "",
   );
+  const appointmentsSummary = useAppointmentWorkflowSummary();
+  const eventsSummary = useEventWorkflowSummary();
+  const quotationsSummary = useQuotationWorkflowSummary();
+  const contractsSummary = useContractWorkflowSummary();
+  const executionSummary = useExecutionWorkflowSummary();
 
   const dashboardCalendarEvents = useMemo<AppCalendarEvent[]>(
     () =>
@@ -94,6 +109,355 @@ export function DashboardPage() {
           </>
         }
       />
+
+      <section className="space-y-4">
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
+            Workflow Overview
+          </p>
+          <h2 className="text-2xl font-semibold text-[var(--lux-heading)]">
+            Operational visibility across the core workflow
+          </h2>
+          <p className="max-w-4xl text-sm text-[var(--lux-text-secondary)]">
+            Track workload, blockers, approvals, and downstream handoffs across
+            appointments, events, quotations, contracts, and execution briefs.
+          </p>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <WorkflowModuleDashboard
+            title={t("appointments.title", { defaultValue: "Appointments" })}
+            description="Monitor upcoming appointments, conversion-ready meetings, and blocked intake records."
+            metrics={[
+              {
+                id: "total",
+                label: "Total",
+                value: appointmentsSummary.total,
+                helper: "All appointments in the intake workflow.",
+              },
+              {
+                id: "upcoming",
+                label: "Upcoming",
+                value: appointmentsSummary.metrics.upcoming,
+                helper: "Scheduled, confirmed, and rescheduled appointments.",
+              },
+              {
+                id: "ready",
+                label: "Ready To Convert",
+                value: appointmentsSummary.metrics.readyToConvert,
+                helper: "Completed appointments that can move into events.",
+              },
+              {
+                id: "blocked",
+                label: "Blocked",
+                value: appointmentsSummary.metrics.blocked,
+                helper: "Cancelled or no-show appointments.",
+              },
+            ]}
+            statuses={[
+              {
+                key: "scheduled",
+                label: t("appointments.status.scheduled", { defaultValue: "Scheduled" }),
+                count: appointmentsSummary.statusCounts.scheduled,
+              },
+              {
+                key: "confirmed",
+                label: t("appointments.status.confirmed", { defaultValue: "Confirmed" }),
+                count: appointmentsSummary.statusCounts.confirmed,
+              },
+              {
+                key: "completed",
+                label: t("appointments.status.completed", { defaultValue: "Completed" }),
+                count: appointmentsSummary.statusCounts.completed,
+              },
+              {
+                key: "converted",
+                label: t("appointments.status.converted", { defaultValue: "Converted" }),
+                count: appointmentsSummary.statusCounts.converted,
+              },
+              {
+                key: "cancelled",
+                label: t("appointments.status.cancelled", { defaultValue: "Cancelled" }),
+                count: appointmentsSummary.statusCounts.cancelled,
+              },
+            ]}
+            footer={
+              <Button variant="outline" onClick={() => navigate("/appointments")}>
+                Open appointments workspace
+              </Button>
+            }
+            loading={appointmentsSummary.isLoading}
+          />
+
+          <WorkflowModuleDashboard
+            title={t("events.title", { defaultValue: "Events" })}
+            description="See where operational work is active, where commercial work is pending, and where execution is blocked."
+            metrics={[
+              {
+                id: "total",
+                label: "Total",
+                value: eventsSummary.total,
+                helper: "All event records in the active workflow.",
+              },
+              {
+                id: "active",
+                label: "Active",
+                value: eventsSummary.metrics.active,
+                helper: "Designing, quotation, confirmation, and execution stages.",
+              },
+              {
+                id: "completed",
+                label: "Completed",
+                value: eventsSummary.metrics.completed,
+                helper: "Events fully delivered.",
+              },
+              {
+                id: "blocked",
+                label: "Blocked",
+                value: eventsSummary.metrics.blocked,
+                helper: "Cancelled events.",
+              },
+            ]}
+            statuses={[
+              {
+                key: "draft",
+                label: t("events.status.draft", { defaultValue: "Draft" }),
+                count: eventsSummary.statusCounts.draft,
+              },
+              {
+                key: "quotation_pending",
+                label: t("events.status.quotation_pending", {
+                  defaultValue: "Quotation Pending",
+                }),
+                count: eventsSummary.statusCounts.quotation_pending,
+              },
+              {
+                key: "quoted",
+                label: t("events.status.quoted", { defaultValue: "Quoted" }),
+                count: eventsSummary.statusCounts.quoted,
+              },
+              {
+                key: "confirmed",
+                label: t("events.status.confirmed", { defaultValue: "Confirmed" }),
+                count: eventsSummary.statusCounts.confirmed,
+              },
+              {
+                key: "in_progress",
+                label: t("events.status.in_progress", { defaultValue: "In Progress" }),
+                count: eventsSummary.statusCounts.in_progress,
+              },
+            ]}
+            footer={
+              <Button variant="outline" onClick={() => navigate("/events")}>
+                Open events workspace
+              </Button>
+            }
+            loading={eventsSummary.isLoading}
+          />
+
+          <WorkflowModuleDashboard
+            title={t("quotations.title", { defaultValue: "Quotations" })}
+            description="Review commercial workload, pending approvals, and quotations that no longer need follow-up."
+            metrics={[
+              {
+                id: "total",
+                label: "Total",
+                value: quotationsSummary.total,
+                helper: "All commercial quotations.",
+              },
+              {
+                id: "pending",
+                label: "Pending Review",
+                value: quotationsSummary.metrics.pending,
+                helper: "Draft and sent quotations still in circulation.",
+              },
+              {
+                id: "approved",
+                label: "Approved",
+                value: quotationsSummary.metrics.approved,
+                helper: "Approved quotations ready for contract follow-up.",
+              },
+              {
+                id: "blocked",
+                label: "Closed Out",
+                value: quotationsSummary.metrics.blocked,
+                helper: "Rejected, expired, and superseded quotations.",
+              },
+            ]}
+            statuses={[
+              {
+                key: "draft",
+                label: t("quotations.status.draft", { defaultValue: "Draft" }),
+                count: quotationsSummary.statusCounts.draft,
+              },
+              {
+                key: "sent",
+                label: t("quotations.status.sent", { defaultValue: "Sent" }),
+                count: quotationsSummary.statusCounts.sent,
+              },
+              {
+                key: "approved",
+                label: t("quotations.status.approved", { defaultValue: "Approved" }),
+                count: quotationsSummary.statusCounts.approved,
+              },
+              {
+                key: "converted_to_contract",
+                label: t("quotations.status.converted_to_contract", {
+                  defaultValue: "Converted To Contract",
+                }),
+                count: quotationsSummary.statusCounts.converted_to_contract,
+              },
+              {
+                key: "rejected",
+                label: t("quotations.status.rejected", { defaultValue: "Rejected" }),
+                count: quotationsSummary.statusCounts.rejected,
+              },
+            ]}
+            footer={
+              <Button variant="outline" onClick={() => navigate("/quotations")}>
+                Open quotations workspace
+              </Button>
+            }
+            loading={quotationsSummary.isLoading}
+          />
+
+          <WorkflowModuleDashboard
+            title={t("contracts.title", { defaultValue: "Contracts" })}
+            description="Track issued commitments, activation progress, and contracts that are complete or blocked."
+            metrics={[
+              {
+                id: "total",
+                label: "Total",
+                value: contractsSummary.total,
+                helper: "All contract records.",
+              },
+              {
+                id: "active",
+                label: "Active Queue",
+                value: contractsSummary.metrics.active,
+                helper: "Issued, signed, and active contracts.",
+              },
+              {
+                id: "completed",
+                label: "Completed",
+                value: contractsSummary.metrics.completed,
+                helper: "Contracts fully fulfilled.",
+              },
+              {
+                id: "blocked",
+                label: "Blocked",
+                value: contractsSummary.metrics.blocked,
+                helper: "Cancelled and terminated contracts.",
+              },
+            ]}
+            statuses={[
+              {
+                key: "draft",
+                label: t("contracts.status.draft", { defaultValue: "Draft" }),
+                count: contractsSummary.statusCounts.draft,
+              },
+              {
+                key: "issued",
+                label: t("contracts.status.issued", { defaultValue: "Issued" }),
+                count: contractsSummary.statusCounts.issued,
+              },
+              {
+                key: "signed",
+                label: t("contracts.status.signed", { defaultValue: "Signed" }),
+                count: contractsSummary.statusCounts.signed,
+              },
+              {
+                key: "active",
+                label: t("contracts.status.active", { defaultValue: "Active" }),
+                count: contractsSummary.statusCounts.active,
+              },
+              {
+                key: "completed",
+                label: t("contracts.status.completed", { defaultValue: "Completed" }),
+                count: contractsSummary.statusCounts.completed,
+              },
+            ]}
+            footer={
+              <Button variant="outline" onClick={() => navigate("/contracts")}>
+                Open contracts workspace
+              </Button>
+            }
+            loading={contractsSummary.isLoading}
+          />
+
+          <WorkflowModuleDashboard
+            title={t("execution.title", { defaultValue: "Execution Briefs" })}
+            description="Watch review, handoff, and live-delivery stages so operations can see what is still waiting on action."
+            metrics={[
+              {
+                id: "total",
+                label: "Total",
+                value: executionSummary.total,
+                helper: "All execution briefs.",
+              },
+              {
+                id: "active",
+                label: "Active Queue",
+                value: executionSummary.metrics.active,
+                helper: "Under review, approved, handed off, and in progress.",
+              },
+              {
+                id: "completed",
+                label: "Completed",
+                value: executionSummary.metrics.completed,
+                helper: "Execution briefs fully delivered.",
+              },
+              {
+                id: "blocked",
+                label: "Blocked",
+                value: executionSummary.metrics.blocked,
+                helper: "Cancelled execution briefs.",
+              },
+            ]}
+            statuses={[
+              {
+                key: "draft",
+                label: t("execution.briefStatusOptions.draft", { defaultValue: "Draft" }),
+                count: executionSummary.statusCounts.draft,
+              },
+              {
+                key: "under_review",
+                label: t("execution.briefStatusOptions.under_review", {
+                  defaultValue: "Under Review",
+                }),
+                count: executionSummary.statusCounts.under_review,
+              },
+              {
+                key: "approved",
+                label: t("execution.briefStatusOptions.approved", {
+                  defaultValue: "Approved",
+                }),
+                count: executionSummary.statusCounts.approved,
+              },
+              {
+                key: "handed_off",
+                label: t("execution.briefStatusOptions.handed_off", {
+                  defaultValue: "Handed Off",
+                }),
+                count: executionSummary.statusCounts.handed_off,
+              },
+              {
+                key: "in_progress",
+                label: t("execution.briefStatusOptions.in_progress", {
+                  defaultValue: "In Progress",
+                }),
+                count: executionSummary.statusCounts.in_progress,
+              },
+            ]}
+            footer={
+              <Button variant="outline" onClick={() => navigate("/execution-briefs")}>
+                Open execution workspace
+              </Button>
+            }
+            loading={executionSummary.isLoading}
+          />
+        </div>
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboardMetrics.map((metric) => (

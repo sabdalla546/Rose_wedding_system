@@ -14,9 +14,39 @@ export interface EventSourceAppointmentSummary {
   venue?: Venue | null;
 }
 
+export type EventSectionType =
+  | "client_info"
+  | "stage"
+  | "chairs"
+  | "floor"
+  | "hall_sides"
+  | "entrance"
+  | "vip_front"
+  | "back_seating"
+  | "buffet"
+  | "flowers"
+  | "groom_stage"
+  | "external_companies"
+  | "summary"
+  | "designer_notes"
+  | "general_notes";
+
+export interface EventSection {
+  id: number;
+  eventId?: number;
+  sectionType: EventSectionType;
+  title?: string | null;
+  sortOrder: number;
+  isCompleted?: boolean;
+  data?: Record<string, unknown> | null;
+  notes?: string | null;
+}
+
 export type EventStatus =
   | "draft"
   | "designing"
+  | "quotation_pending"
+  | "quoted"
   | "confirmed"
   | "in_progress"
   | "completed"
@@ -43,6 +73,7 @@ export interface Event {
   customer?: Customer | null;
   venue?: Venue | null;
   sourceAppointment?: EventSourceAppointmentSummary | null;
+  sections?: EventSection[];
   createdByUser?: EventUserSummary | null;
   updatedByUser?: EventUserSummary | null;
   createdAt?: string;

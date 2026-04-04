@@ -65,6 +65,8 @@ export const EVENT_STATUS_OPTIONS: Array<{
 }> = [
   { value: "draft", label: "Draft" },
   { value: "designing", label: "Designing" },
+  { value: "quotation_pending", label: "Quotation Pending" },
+  { value: "quoted", label: "Quoted" },
   { value: "confirmed", label: "Confirmed" },
   { value: "in_progress", label: "In Progress" },
   { value: "completed", label: "Completed" },

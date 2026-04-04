@@ -9,20 +9,27 @@ import {
 import type { DynamicFieldDefinition } from "@/pages/execution/templateFields";
 
 const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] read-only:cursor-default read-only:border-dashed read-only:border-[var(--lux-row-border)] read-only:bg-[var(--lux-row-surface)] read-only:text-[var(--lux-text-secondary)] read-only:focus:border-[var(--lux-control-border)] read-only:focus:ring-0";
 
 type Props = {
   field: DynamicFieldDefinition;
   value: unknown;
   onChange: (value: unknown) => void;
+  readOnly?: boolean;
 };
 
-export function StructuredFieldRenderer({ field, value, onChange }: Props) {
+export function StructuredFieldRenderer({
+  field,
+  value,
+  onChange,
+  readOnly = false,
+}: Props) {
   if (field.type === "textarea") {
     return (
       <textarea
         className={textareaClassName}
         value={typeof value === "string" ? value : ""}
+        readOnly={readOnly}
         onChange={(event) => onChange(event.target.value)}
         placeholder={field.placeholder}
       />
@@ -33,6 +40,7 @@ export function StructuredFieldRenderer({ field, value, onChange }: Props) {
     return (
       <Input
         type="number"
+        readOnly={readOnly}
         value={
           typeof value === "number"
             ? String(value)
@@ -53,6 +61,7 @@ export function StructuredFieldRenderer({ field, value, onChange }: Props) {
       <Select
         value={typeof value === "string" ? value : ""}
         onValueChange={(next) => onChange(next)}
+        disabled={readOnly}
       >
         <SelectTrigger>
           <SelectValue placeholder={field.placeholder || "Select"} />
@@ -76,6 +85,7 @@ export function StructuredFieldRenderer({ field, value, onChange }: Props) {
         <input
           type="checkbox"
           checked={checked}
+          disabled={readOnly}
           onChange={(event) => onChange(event.target.checked)}
           className="h-4 w-4"
         />
@@ -86,6 +96,7 @@ export function StructuredFieldRenderer({ field, value, onChange }: Props) {
 
   return (
     <Input
+      readOnly={readOnly}
       value={typeof value === "string" ? value : ""}
       onChange={(event) => onChange(event.target.value)}
       placeholder={field.placeholder}

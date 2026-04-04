@@ -1,13 +1,31 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Download, Edit, FileText, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCheck,
+  Download,
+  Edit,
+  FileText,
+  Plus,
+  Slash,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import { WorkflowActionBar } from "@/components/workflow/workflow-action-bar";
+import { WorkflowEntityHeader } from "@/components/workflow/workflow-entity-header";
+import { WorkflowLineageCard } from "@/components/workflow/workflow-lineage-card";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
+import {
+  WorkflowNextStepPanel,
+  type WorkflowNextStepItem,
+} from "@/components/workflow/workflow-next-step-panel";
+import { WorkflowTimeline, type WorkflowTimelineItem } from "@/components/workflow/workflow-timeline";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,6 +53,7 @@ import {
 } from "@/components/ui/select";
 import { useContract } from "@/hooks/contracts/useContracts";
 import { useDeleteContract } from "@/hooks/contracts/useDeleteContract";
+import { useContractWorkflowAction } from "@/hooks/contracts/useContractWorkflowActions";
 import {
   useCreatePaymentSchedule,
   useDeletePaymentSchedule,
@@ -42,6 +61,11 @@ import {
 } from "@/hooks/contracts/usePaymentScheduleMutations";
 import { useToast } from "@/hooks/use-toast";
 import api, { getApiErrorMessage } from "@/lib/axios";
+import {
+  getContractLockMessage,
+  getContractWorkflowActions,
+  type WorkflowActionDefinition,
+} from "@/lib/workflow/workflow";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getQuotationDisplayNumber } from "@/pages/quotations/adapters";
 
@@ -163,6 +187,12 @@ const ContractDetailsPage = () => {
     createDefaultPaymentScheduleState(),
   );
   const [scheduleError, setScheduleError] = useState("");
+  const [pendingWorkflowAction, setPendingWorkflowAction] =
+    useState<WorkflowActionDefinition | null>(null);
+  const workflowActionMutation = useContractWorkflowAction(contract?.id, {
+    eventId: contract?.eventId,
+    quotationId: contract?.quotationId ?? undefined,
+  });
 
   const createPaymentScheduleMutation = useCreatePaymentSchedule(
     contract?.id ?? undefined,
@@ -269,6 +299,179 @@ const ContractDetailsPage = () => {
         </div>
       </div>
     );
+  }
+
+  const contractLockMessage = getContractLockMessage(contract.status);
+  const workflowActionIcons = {
+    issued: <ArrowRight className="h-4 w-4" />,
+    signed: <CheckCheck className="h-4 w-4" />,
+    active: <ArrowRight className="h-4 w-4" />,
+    completed: <CheckCheck className="h-4 w-4" />,
+    cancelled: <XCircle className="h-4 w-4" />,
+    terminated: <Slash className="h-4 w-4" />,
+  } as const;
+  const workflowActions = getContractWorkflowActions(contract.status).map(
+    (action) => ({
+      ...action,
+      icon: action.nextStatus
+        ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
+        : undefined,
+      loading:
+        workflowActionMutation.isPending &&
+        action.nextStatus === workflowActionMutation.variables?.status,
+      onClick: () => {
+        if (action.confirmTitle || action.confirmMessage) {
+          setPendingWorkflowAction(action);
+          return;
+        }
+
+        if (action.nextStatus) {
+          workflowActionMutation.mutate({
+            status: action.nextStatus as typeof contract.status,
+          });
+        }
+      },
+    }),
+  );
+  const nextSteps: WorkflowNextStepItem[] = [];
+  const timelineItems: WorkflowTimelineItem[] = [
+    {
+      id: "created",
+      title: t("contracts.timelineCreated", {
+        defaultValue: "Contract record created",
+      }),
+      description: t("contracts.timelineCreatedHint", {
+        defaultValue: "The commitment record was created from the commercial workflow.",
+      }),
+      timestamp: contract.createdAt ?? contract.signedDate,
+      status: "done",
+    },
+    {
+      id: "signature-date",
+      title: t("contracts.timelineSignedDate", {
+        defaultValue: "Contract signed date recorded",
+      }),
+      description: t("contracts.timelineSignedDateHint", {
+        defaultValue: "This is the main commitment date currently stored on the contract.",
+      }),
+      timestamp: contract.signedDate,
+      status: contract.status === "draft" ? "warning" : "done",
+    },
+  ];
+
+  if (contract.status === "draft") {
+    nextSteps.push({
+      id: "issue-contract",
+      title: t("contracts.nextIssueTitle", {
+        defaultValue: "Issue the contract",
+      }),
+      description: t("contracts.nextIssueHint", {
+        defaultValue:
+          "This commitment is still in draft. Issue it before signature and activation can begin.",
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (contract.status === "issued") {
+    nextSteps.push({
+      id: "capture-signature",
+      title: t("contracts.nextSignatureTitle", {
+        defaultValue: "Capture the signature",
+      }),
+      description: t("contracts.nextSignatureHint", {
+        defaultValue:
+          "Use the workflow actions above once the client signs so the record can move into the committed stage.",
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (contract.status === "signed") {
+    nextSteps.push({
+      id: "activate-contract",
+      title: t("contracts.nextActivateTitle", {
+        defaultValue: "Activate the contract",
+      }),
+      description: t("contracts.nextActivateHint", {
+        defaultValue:
+          "The contract is signed. Activate it when the commitment becomes operationally live.",
+      }),
+      tone: "default",
+    });
+  }
+
+  if (contract.status === "active") {
+    nextSteps.push({
+      id: "execution-follow-up",
+      title: t("contracts.nextExecutionTitle", {
+        defaultValue: "Continue into execution planning",
+      }),
+      description: t("contracts.nextExecutionHint", {
+        defaultValue:
+          "An active contract should now hand off into execution preparation from the source event workspace.",
+      }),
+      tone: "default",
+      action: (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(`/events/${contract.eventId}`)}
+        >
+          <FileText className="h-4 w-4" />
+          {t("contracts.openSourceEvent", {
+            defaultValue: "Open Source Event",
+          })}
+        </Button>
+      ),
+    });
+  }
+
+  if (plannedRemaining > 0) {
+    nextSteps.push({
+      id: "payment-schedule-gap",
+      title: t("contracts.nextPaymentPlanTitle", {
+        defaultValue: "Complete the payment schedule",
+      }),
+      description: t("contracts.nextPaymentPlanHint", {
+        defaultValue:
+          "There is still {{amount}} left to schedule across payment installments.",
+        amount: formatMoney(plannedRemaining),
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (contract.quotation) {
+    timelineItems.push({
+      id: "quotation-linked",
+      title: t("contracts.timelineQuotationLinked", {
+        defaultValue: "Linked to approved quotation",
+      }),
+      description: getQuotationDisplayNumber(contract.quotation),
+      timestamp: contract.quotation.updatedAt ?? contract.quotation.issueDate,
+      status: "done",
+    });
+  }
+
+  if (contract.status !== "draft") {
+    timelineItems.push({
+      id: "status-update",
+      title: t("contracts.timelineStatusUpdate", {
+        defaultValue: "Commitment status updated",
+      }),
+      description: t("contracts.timelineStatusUpdateHint", {
+        defaultValue: "Current status: {{status}}",
+        status: t(`contracts.status.${contract.status}`, {
+          defaultValue: contract.status,
+        }),
+      }),
+      timestamp: contract.updatedAt ?? contract.signedDate,
+      status:
+        contract.status === "cancelled" || contract.status === "terminated"
+          ? "warning"
+          : "current",
+    });
   }
 
   const handleSavePaymentSchedule = () => {
@@ -408,38 +611,21 @@ const ContractDetailsPage = () => {
             })}
           </button>
 
-          <SectionCard className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
-                  style={{
-                    background: "var(--lux-control-hover)",
-                    borderColor: "var(--lux-control-border)",
-                    color: "var(--lux-gold)",
-                  }}
-                >
-                  <FileText className="h-6 w-6" />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-                      {getContractDisplayNumber(contract)}
-                    </h1>
-                    <ContractStatusBadge status={contract.status} />
-                  </div>
-                  <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {contract.event
-                      ? getEventDisplayTitle(contract.event)
-                      : `${t("contracts.event", {
-                          defaultValue: "Event",
-                        })} #${contract.eventId}`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
+          <WorkflowEntityHeader
+            eyebrow={t("contracts.workflowStage", {
+              defaultValue: "Commitment Snapshot",
+            })}
+            title={getContractDisplayNumber(contract)}
+            description={
+              contract.event
+                ? getEventDisplayTitle(contract.event)
+                : `${t("contracts.event", {
+                    defaultValue: "Event",
+                  })} #${contract.eventId}`
+            }
+            status={<ContractStatusBadge status={contract.status} />}
+            actions={
+              <>
                 <Button
                   variant="outline"
                   onClick={handleDownloadPdf}
@@ -454,7 +640,11 @@ const ContractDetailsPage = () => {
                 </Button>
 
                 <ProtectedComponent permission="contracts.update">
-                  <Button onClick={() => navigate(`/contracts/edit/${contract.id}`)}>
+                  <Button
+                    disabled={Boolean(contractLockMessage)}
+                    title={contractLockMessage ?? undefined}
+                    onClick={() => navigate(`/contracts/edit/${contract.id}`)}
+                  >
                     <Edit className="h-4 w-4" />
                     {t("common.edit", { defaultValue: "Edit" })}
                   </Button>
@@ -466,9 +656,135 @@ const ContractDetailsPage = () => {
                     {t("common.delete", { defaultValue: "Delete" })}
                   </Button>
                 </ProtectedComponent>
-              </div>
-            </div>
-          </SectionCard>
+              </>
+            }
+          />
+
+          <WorkflowLineageCard
+            title={t("contracts.workflowLineage", {
+              defaultValue: "Workflow Lineage",
+            })}
+            items={[
+              {
+                label: t("contracts.sourceQuotation", {
+                  defaultValue: "Source Quotation",
+                }),
+                value: contract.quotationId ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/quotations/${contract.quotationId}`)}
+                    className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                  >
+                    {contract.quotation
+                      ? getQuotationDisplayNumber(contract.quotation)
+                      : `QT-${contract.quotationId}`}
+                  </button>
+                ) : (
+                  t("contracts.noQuotationLinked", {
+                    defaultValue: "No quotation linked",
+                  })
+                ),
+                helper: contract.quotation?.status
+                  ? t(`quotations.status.${contract.quotation.status}`, {
+                      defaultValue: contract.quotation.status,
+                    })
+                  : undefined,
+              },
+              {
+                label: t("contracts.sourceEvent", {
+                  defaultValue: "Source Event",
+                }),
+                value: (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/events/${contract.eventId}`)}
+                    className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                  >
+                    {contract.event
+                      ? getEventDisplayTitle(contract.event)
+                      : `Event #${contract.eventId}`}
+                  </button>
+                ),
+                helper:
+                  contract.event?.customer?.fullName ||
+                  contract.customer?.fullName ||
+                  undefined,
+              },
+              {
+                label: t("contracts.commitmentTotals", {
+                  defaultValue: "Commitment Totals",
+                }),
+                value: formatMoney(contract.totalAmount),
+                helper: `${t("contracts.subtotal", {
+                  defaultValue: "Subtotal",
+                })}: ${formatMoney(contract.subtotal)} • ${t("contracts.discount", {
+                  defaultValue: "Discount",
+                })}: ${formatMoney(contract.discountAmount)}`,
+              },
+              {
+                label: t("contracts.paymentPlan", {
+                  defaultValue: "Payment Plan",
+                }),
+                value: `${sortedPaymentSchedules.length} ${t("contracts.installments", {
+                  defaultValue: "installments",
+                })}`,
+                helper: `${t("contracts.scheduledAmount", {
+                  defaultValue: "Scheduled Amount",
+                })}: ${formatMoney(scheduledTotal)}`,
+              },
+            ]}
+          />
+
+          <ProtectedComponent permission="contracts.update">
+            <WorkflowActionBar
+              title={t("contracts.workflowActions", {
+                defaultValue: "Workflow Actions",
+              })}
+              description={t("contracts.workflowActionsHint", {
+                defaultValue:
+                  "Move this contract through the commitment lifecycle with explicit actions instead of editing status directly.",
+              })}
+              actions={workflowActions}
+            />
+          </ProtectedComponent>
+
+          {contractLockMessage ? (
+            <WorkflowLockBanner
+              title={t("contracts.lockedTitle", {
+                defaultValue: "Contract Locked",
+              })}
+              message={contractLockMessage}
+            />
+          ) : null}
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <WorkflowNextStepPanel
+              title={t("contracts.nextStepsTitle", {
+                defaultValue: "Next Step Guidance",
+              })}
+              description={t("contracts.nextStepsHint", {
+                defaultValue:
+                  "This panel highlights the next operational action and flags incomplete planning work.",
+              })}
+              items={nextSteps}
+            />
+
+            <WorkflowTimeline
+              title={t("contracts.timelineTitle", {
+                defaultValue: "Timeline & Action History",
+              })}
+              description={t("contracts.timelineHint", {
+                defaultValue:
+                  "This history is based on the timestamps currently exposed by the contract and linked quotation records.",
+              })}
+              partialHistoryLabel={t("contracts.timelinePartial", {
+                defaultValue:
+                  "A full contract audit trail is not available yet, so later status changes are shown from the latest reliable timestamps only.",
+              })}
+              items={timelineItems}
+              locale={dateLocale}
+            />
+          </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <Card>
@@ -748,6 +1064,8 @@ const ContractDetailsPage = () => {
 
                 <ProtectedComponent permission="contracts.update">
                   <Button
+                    disabled={Boolean(contractLockMessage)}
+                    title={contractLockMessage ?? undefined}
                     onClick={() => {
                       setEditingSchedule(null);
                       setScheduleDialogOpen(true);
@@ -826,6 +1144,8 @@ const ContractDetailsPage = () => {
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 variant="outline"
+                                disabled={Boolean(contractLockMessage)}
+                                title={contractLockMessage ?? undefined}
                                 onClick={() => {
                                   setEditingSchedule(schedule);
                                   setScheduleDialogOpen(true);
@@ -836,6 +1156,8 @@ const ContractDetailsPage = () => {
                               </Button>
                               <Button
                                 variant="destructive"
+                                disabled={Boolean(contractLockMessage)}
+                                title={contractLockMessage ?? undefined}
                                 onClick={() => setScheduleDeleteCandidate(schedule)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -974,6 +1296,42 @@ const ContractDetailsPage = () => {
           });
         }}
         isPending={deletePaymentScheduleMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingWorkflowAction)}
+        onOpenChange={(open) => !open && setPendingWorkflowAction(null)}
+        title={
+          pendingWorkflowAction?.confirmTitle ||
+          t("contracts.confirmWorkflowAction", {
+            defaultValue: "Confirm Contract Action",
+          })
+        }
+        message={
+          pendingWorkflowAction?.confirmMessage ||
+          pendingWorkflowAction?.description ||
+          t("contracts.confirmWorkflowActionHint", {
+            defaultValue: "This contract will move to the selected workflow stage.",
+          })
+        }
+        confirmLabel={
+          pendingWorkflowAction?.label ||
+          t("common.confirm", { defaultValue: "Confirm" })
+        }
+        cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+        onConfirm={() => {
+          if (!pendingWorkflowAction?.nextStatus) {
+            return;
+          }
+
+          workflowActionMutation.mutate(
+            { status: pendingWorkflowAction.nextStatus as typeof contract.status },
+            {
+              onSettled: () => setPendingWorkflowAction(null),
+            },
+          );
+        }}
+        isPending={workflowActionMutation.isPending}
       />
 
       <Dialog

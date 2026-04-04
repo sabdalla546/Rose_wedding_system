@@ -7,6 +7,11 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import {
+  FormFeedbackBanner,
+  getFirstFormErrorMessage,
+} from "@/components/shared/form-feedback-banner";
+import { FormSection } from "@/components/shared/form-section";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -39,7 +44,7 @@ import { useAppointment } from "@/hooks/appointments/useAppointments";
 import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
 import { useVenue, useVenues } from "@/hooks/venues/useVenues";
 import {
-  APPOINTMENT_STATUS_OPTIONS,
+  APPOINTMENT_FORM_STATUS_OPTIONS,
   APPOINTMENT_TYPE_OPTIONS,
 } from "./adapters";
 import type {
@@ -112,7 +117,7 @@ const buildAppointmentSchema = (
         .max(10),
       endTime: z.string().max(10).optional(),
       status: z.enum(
-        APPOINTMENT_STATUS_OPTIONS.map((item) => item.value) as [
+        APPOINTMENT_FORM_STATUS_OPTIONS.map((item) => item.value) as [
           AppointmentStatus,
           ...AppointmentStatus[],
         ],
@@ -455,6 +460,10 @@ const AppointmentFormPage = () => {
     createMutation.isPending ||
     createWithCustomerMutation.isPending ||
     updateMutation.isPending;
+  const formErrorMessage =
+    form.formState.submitCount > 0
+      ? getFirstFormErrorMessage(form.formState.errors)
+      : null;
 
   return (
     <ProtectedComponent
@@ -517,250 +526,302 @@ const AppointmentFormPage = () => {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                {!isEditMode ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-[var(--lux-text)]">
-                        {t("appointments.customerMode", {
-                          defaultValue: "Customer Selection",
-                        })}
-                      </label>
-                      <Select
-                        value={mode}
-                        onValueChange={(value) =>
-                          setMode(value as AppointmentMode)
-                        }
-                      >
-                        <SelectTrigger className="rounded-[4px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="existing">
-                            {t("appointments.useExistingCustomer", {
-                              defaultValue: "Use Existing Customer",
-                            })}
-                          </SelectItem>
-                          <SelectItem value="new">
-                            {t("appointments.createNewCustomer", {
-                              defaultValue: "Create New Customer",
-                            })}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                {formErrorMessage ? (
+                  <FormFeedbackBanner
+                    tone="error"
+                    title={t("common.validationError", {
+                      defaultValue: "Review the highlighted fields",
+                    })}
+                    message={formErrorMessage}
+                  />
                 ) : null}
 
-                {isEditMode || mode === "existing" ? (
-                  <FormField
-                    control={form.control}
-                    name="customerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.customer", {
-                            defaultValue: "Customer",
-                          })}
-                        </FormLabel>
-                        <FormControl>
-                          <SearchableSelect
-                            key={`customer-select-${field.value || EMPTY_VALUE}-${customerOptions.length}`}
-                            value={field.value || EMPTY_VALUE}
+                <fieldset
+                  disabled={isBusy}
+                  className="space-y-6 [&_textarea:disabled]:border-dashed [&_textarea:disabled]:border-[var(--lux-row-border)] [&_textarea:disabled]:bg-[var(--lux-row-surface)] [&_textarea:disabled]:text-[var(--lux-text-secondary)]"
+                >
+                  <FormSection
+                    title={t("appointments.customerSection", {
+                      defaultValue: "Customer Information",
+                    })}
+                    description={t("appointments.customerSectionHint", {
+                      defaultValue:
+                        "Choose an existing customer for a faster booking flow, or create the customer together with the appointment.",
+                    })}
+                  >
+                    {!isEditMode ? (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-[var(--lux-text)]">
+                            {t("appointments.customerMode", {
+                              defaultValue: "Customer Selection",
+                            })}
+                          </label>
+                          <Select
+                            value={mode}
                             onValueChange={(value) =>
-                              field.onChange(value === EMPTY_VALUE ? "" : value)
+                              setMode(value as AppointmentMode)
                             }
-                            triggerClassName="rounded-[4px]"
-                            placeholder={t("appointments.selectCustomer", {
-                              defaultValue: "Select customer",
-                            })}
-                            searchPlaceholder={t(
-                              "appointments.searchCustomers",
-                              {
-                                defaultValue: "Search customers...",
-                              },
-                            )}
-                            emptyMessage={t("common.noResultsTitle", {
-                              defaultValue: "No results found",
-                            })}
+                            disabled={isBusy}
                           >
-                            <SearchableSelectItem value={EMPTY_VALUE}>
-                              {t("appointments.selectCustomer", {
-                                defaultValue: "Select customer",
-                              })}
-                            </SearchableSelectItem>
-                            {customerOptions.length === 0 ? (
-                              <SearchableSelectEmpty
-                                message={t("common.noResultsTitle", {
-                                  defaultValue: "No results found",
+                            <SelectTrigger className="rounded-[4px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="existing">
+                                {t("appointments.useExistingCustomer", {
+                                  defaultValue: "Use Existing Customer",
                                 })}
-                              />
-                            ) : (
-                              customerOptions.map((customer) => (
-                                <SearchableSelectItem
-                                  key={customer.value}
-                                  value={customer.value}
-                                >
-                                  {customer.label}
-                                </SearchableSelectItem>
-                              ))
-                            )}
-                          </SearchableSelect>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="customerFullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.fullName", {
-                              defaultValue: "Full Name",
-                            })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} className="rounded-[4px]" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="customerEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.email", { defaultValue: "Email" })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              {...field}
-                              className="rounded-[4px]"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="customerMobile"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.mobile", {
-                              defaultValue: "Primary Mobile",
-                            })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} className="rounded-[4px]" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="customerMobile2"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.mobile2", {
-                              defaultValue: "Secondary Mobile",
-                            })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} className="rounded-[4px]" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="customerNationalId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.nationalId", {
-                              defaultValue: "National ID",
-                            })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              className="rounded-[4px]"
-                              inputMode="numeric"
-                              maxLength={12}
-                              placeholder={t(
-                                "customers.nationalIdPlaceholder",
-                                {
-                                  defaultValue: "Enter 12-digit national ID",
-                                },
-                              )}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="customerAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("customers.address", {
-                              defaultValue: "Address",
-                            })}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              className="rounded-[4px]"
-                              placeholder={t("customers.addressPlaceholder", {
-                                defaultValue: "Enter customer address",
-                              })}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="md:col-span-2">
+                              </SelectItem>
+                              <SelectItem value="new">
+                                {t("appointments.createNewCustomer", {
+                                  defaultValue: "Create New Customer",
+                                })}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="mt-2 text-xs text-[var(--lux-text-secondary)]">
+                            {mode === "existing"
+                              ? t("appointments.useExistingCustomerHint", {
+                                  defaultValue:
+                                    "Best for repeat customers or when the customer profile already exists.",
+                                })
+                              : t("appointments.createNewCustomerHint", {
+                                  defaultValue:
+                                    "Creates a new customer record first, then stores the appointment under that customer.",
+                                })}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {isEditMode || mode === "existing" ? (
                       <FormField
                         control={form.control}
-                        name="customerNotes"
+                        name="customerId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              {t("common.notes", { defaultValue: "Notes" })}
+                              {t("appointments.customer", {
+                                defaultValue: "Customer",
+                              })}
                             </FormLabel>
                             <FormControl>
-                              <textarea
-                                {...field}
-                                className="app-textarea min-h-[120px] rounded-[4px]"
-                                style={{
-                                  background: "var(--lux-control-surface)",
-                                  borderColor: "var(--lux-control-border)",
-                                }}
-                              />
+                              <SearchableSelect
+                                key={`customer-select-${field.value || EMPTY_VALUE}-${customerOptions.length}`}
+                                value={field.value || EMPTY_VALUE}
+                                onValueChange={(value) =>
+                                  field.onChange(value === EMPTY_VALUE ? "" : value)
+                                }
+                                triggerClassName="rounded-[4px]"
+                                placeholder={t("appointments.selectCustomer", {
+                                  defaultValue: "Select customer",
+                                })}
+                                searchPlaceholder={t(
+                                  "appointments.searchCustomers",
+                                  {
+                                    defaultValue: "Search customers...",
+                                  },
+                                )}
+                                emptyMessage={t("common.noResultsTitle", {
+                                  defaultValue: "No results found",
+                                })}
+                                disabled={isBusy}
+                              >
+                                <SearchableSelectItem value={EMPTY_VALUE}>
+                                  {t("appointments.selectCustomer", {
+                                    defaultValue: "Select customer",
+                                  })}
+                                </SearchableSelectItem>
+                                {customerOptions.length === 0 ? (
+                                  <SearchableSelectEmpty
+                                    message={t("common.noResultsTitle", {
+                                      defaultValue: "No results found",
+                                    })}
+                                  />
+                                ) : (
+                                  customerOptions.map((customer) => (
+                                    <SearchableSelectItem
+                                      key={customer.value}
+                                      value={customer.value}
+                                    >
+                                      {customer.label}
+                                    </SearchableSelectItem>
+                                  ))
+                                )}
+                              </SearchableSelect>
                             </FormControl>
+                            <p className="text-xs text-[var(--lux-text-secondary)]">
+                              {t("appointments.customerLinkHint", {
+                                defaultValue:
+                                  "Appointments are now customer-linked records. Use the customer profile for contact edits.",
+                              })}
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                  </div>
-                )}
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="customerFullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.fullName", {
+                                  defaultValue: "Full Name",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input {...field} className="rounded-[4px]" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerEmail"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.email", { defaultValue: "Email" })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="email"
+                                  {...field}
+                                  className="rounded-[4px]"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerMobile"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.mobile", {
+                                  defaultValue: "Primary Mobile",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input {...field} className="rounded-[4px]" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerMobile2"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.mobile2", {
+                                  defaultValue: "Secondary Mobile",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input {...field} className="rounded-[4px]" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerNationalId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.nationalId", {
+                                  defaultValue: "National ID",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  className="rounded-[4px]"
+                                  inputMode="numeric"
+                                  maxLength={12}
+                                  placeholder={t(
+                                    "customers.nationalIdPlaceholder",
+                                    {
+                                      defaultValue: "Enter 12-digit national ID",
+                                    },
+                                  )}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.address", {
+                                  defaultValue: "Address",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  className="rounded-[4px]"
+                                  placeholder={t("customers.addressPlaceholder", {
+                                    defaultValue: "Enter customer address",
+                                  })}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="md:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="customerNotes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  {t("common.notes", { defaultValue: "Notes" })}
+                                </FormLabel>
+                                <FormControl>
+                                  <textarea
+                                    {...field}
+                                    className="app-textarea min-h-[120px] rounded-[4px]"
+                                    style={{
+                                      background: "var(--lux-control-surface)",
+                                      borderColor: "var(--lux-control-border)",
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </FormSection>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormSection
+                    title={t("appointments.appointmentSection", {
+                      defaultValue: "Appointment Details",
+                    })}
+                    description={t("appointments.appointmentSectionHint", {
+                      defaultValue:
+                        "Capture the visit schedule, wedding date, venue context, and appointment type.",
+                    })}
+                  >
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="appointmentDate"
@@ -801,42 +862,51 @@ const AppointmentFormPage = () => {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.statusLabel", {
-                            defaultValue: "Status",
-                          })}
-                        </FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="rounded-[4px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {APPOINTMENT_STATUS_OPTIONS.map((status) => (
-                              <SelectItem
-                                key={status.value}
-                                value={status.value}
-                              >
-                                {t(`appointments.status.${status.value}`, {
-                                  defaultValue: status.label,
-                                })}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("appointments.statusLabel", {
+                              defaultValue: "Status",
+                            })}
+                          </FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="rounded-[4px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {APPOINTMENT_FORM_STATUS_OPTIONS.map((status) => (
+                                <SelectItem
+                                  key={status.value}
+                                  value={status.value}
+                                >
+                                  {t(`appointments.status.${status.value}`, {
+                                    defaultValue: status.label,
+                                  })}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <div className="rounded-[16px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
+                      {t("appointments.workflowEditHint", {
+                        defaultValue:
+                          "Use appointment workflow actions from the detail page to change status safely.",
+                      })}
+                    </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="guestCount"
@@ -980,38 +1050,51 @@ const AppointmentFormPage = () => {
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </div>
+                      )}
+                    />
+                    </div>
+                  </FormSection>
 
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {t("common.notes", { defaultValue: "Notes" })}
-                      </FormLabel>
-                      <FormControl>
-                        <textarea
-                          {...field}
-                          className="app-textarea min-h-[140px] rounded-[4px]"
-                          style={{
-                            background: "var(--lux-control-surface)",
-                            borderColor: "var(--lux-control-border)",
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormSection
+                    title={t("appointments.notesSection", {
+                      defaultValue: "Operational Notes",
+                    })}
+                    description={t("appointments.notesSectionHint", {
+                      defaultValue:
+                        "Use notes for call context, rescheduling remarks, or anything the next team member should see.",
+                    })}
+                  >
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("common.notes", { defaultValue: "Notes" })}
+                          </FormLabel>
+                          <FormControl>
+                            <textarea
+                              {...field}
+                              className="app-textarea min-h-[140px] rounded-[4px]"
+                              style={{
+                                background: "var(--lux-control-surface)",
+                                borderColor: "var(--lux-control-border)",
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FormSection>
+                </fieldset>
 
                 <div className="flex justify-end gap-3">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => navigate("/appointments")}
+                    disabled={isBusy}
                   >
                     {t("common.cancel", { defaultValue: "Cancel" })}
                   </Button>

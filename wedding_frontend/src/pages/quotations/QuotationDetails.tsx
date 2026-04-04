@@ -1,13 +1,31 @@
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Download, Edit, FilePlus2, FileText, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCheck,
+  Clock3,
+  Download,
+  Edit,
+  FilePlus2,
+  FileText,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import { SectionCard } from "@/components/shared/section-card";
+import { WorkflowActionBar } from "@/components/workflow/workflow-action-bar";
+import { WorkflowEntityHeader } from "@/components/workflow/workflow-entity-header";
+import { WorkflowLineageCard } from "@/components/workflow/workflow-lineage-card";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
+import {
+  WorkflowNextStepPanel,
+  type WorkflowNextStepItem,
+} from "@/components/workflow/workflow-next-step-panel";
+import { WorkflowTimeline, type WorkflowTimelineItem } from "@/components/workflow/workflow-timeline";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,10 +35,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import ConfirmDialog from "@/components/ui/confirmDialog";
+import { useContracts } from "@/hooks/contracts/useContracts";
 import { useDeleteQuotation } from "@/hooks/quotations/useDeleteQuotation";
+import { useQuotationWorkflowAction } from "@/hooks/quotations/useQuotationWorkflowActions";
 import { useQuotation } from "@/hooks/quotations/useQuotations";
 import { useToast } from "@/hooks/use-toast";
 import api, { getApiErrorMessage } from "@/lib/axios";
+import {
+  canCreateContractFromQuotation,
+  getQuotationLockMessage,
+  getQuotationWorkflowActions,
+  type WorkflowActionDefinition,
+} from "@/lib/workflow/workflow";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 
 import {
@@ -103,9 +129,25 @@ const QuotationDetailsPage = () => {
   const { toast } = useToast();
   const { id } = useParams();
   const { data: quotation, isLoading } = useQuotation(id);
+  const { data: downstreamContractsResponse } = useContracts({
+    currentPage: 1,
+    itemsPerPage: 200,
+    searchQuery: "",
+    quotationId: id ?? "",
+    eventId: "",
+    status: "all",
+    signedDateFrom: "",
+    signedDateTo: "",
+  });
   const deleteMutation = useDeleteQuotation();
+  const workflowActionMutation = useQuotationWorkflowAction(
+    quotation?.id,
+    quotation?.eventId,
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pendingWorkflowAction, setPendingWorkflowAction] =
+    useState<WorkflowActionDefinition | null>(null);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const sortedItems = [...(quotation?.items ?? [])].sort(
     (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
@@ -122,6 +164,19 @@ const QuotationDetailsPage = () => {
       vendorItem: vendorItems[index],
     }),
   );
+  const downstreamContracts = [...(downstreamContractsResponse?.data ?? [])].sort(
+    (left, right) => {
+      const leftTime = new Date(left.signedDate).getTime();
+      const rightTime = new Date(right.signedDate).getTime();
+
+      if (leftTime !== rightTime) {
+        return rightTime - leftTime;
+      }
+
+      return right.id - left.id;
+    },
+  );
+  const latestDownstreamContract = downstreamContracts[0] ?? null;
 
   const handleDownloadPdf = async () => {
     if (!quotation || isDownloadingPdf) {
@@ -194,6 +249,173 @@ const QuotationDetailsPage = () => {
     );
   }
 
+  const quotationLockMessage = getQuotationLockMessage(quotation.status);
+  const canCreateContract = canCreateContractFromQuotation(quotation.status);
+  const workflowActionIcons = {
+    sent: <ArrowRight className="h-4 w-4" />,
+    approved: <CheckCheck className="h-4 w-4" />,
+    rejected: <XCircle className="h-4 w-4" />,
+    expired: <Clock3 className="h-4 w-4" />,
+    superseded: <ArrowRight className="h-4 w-4" />,
+  } as const;
+  const workflowActions = getQuotationWorkflowActions(quotation.status).map(
+    (action) => ({
+      ...action,
+      icon: action.nextStatus
+        ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
+        : undefined,
+      loading:
+        workflowActionMutation.isPending &&
+        action.nextStatus === workflowActionMutation.variables?.status,
+      onClick: () => {
+        if (action.confirmTitle || action.confirmMessage) {
+          setPendingWorkflowAction(action);
+          return;
+        }
+
+        if (action.nextStatus) {
+          workflowActionMutation.mutate({
+            status: action.nextStatus as typeof quotation.status,
+          });
+        }
+      },
+    }),
+  );
+  const nextSteps: WorkflowNextStepItem[] = [];
+  const timelineItems: WorkflowTimelineItem[] = [
+    {
+      id: "prepared",
+      title: t("quotations.timelinePrepared", {
+        defaultValue: "Quotation prepared",
+      }),
+      description: t("quotations.timelinePreparedHint", {
+        defaultValue: "The commercial document was created for this event.",
+      }),
+      timestamp: quotation.createdAt ?? quotation.issueDate,
+      status: "done",
+    },
+  ];
+
+  if (latestDownstreamContract) {
+    nextSteps.push({
+      id: "contract-open",
+      title: t("quotations.contractLinkedNext", {
+        defaultValue: "Continue from the linked contract",
+      }),
+      description: t("quotations.contractLinkedNextHint", {
+        defaultValue:
+          "This quotation already has a downstream contract. Continue commitment and execution follow-up there.",
+      }),
+      tone: "success",
+      action: (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(`/contracts/${latestDownstreamContract.id}`)}
+        >
+          <FileText className="h-4 w-4" />
+          {t("quotations.openContract", {
+            defaultValue: "Open Contract",
+          })}
+        </Button>
+      ),
+    });
+    timelineItems.push({
+      id: "contract-created",
+      title: t("quotations.timelineContractCreated", {
+        defaultValue: "Contract created from quotation",
+      }),
+      description: t("quotations.timelineContractCreatedHint", {
+        defaultValue: "Downstream contract {{contract}} now carries the commitment workflow.",
+        contract: latestDownstreamContract.contractNumber || `#${latestDownstreamContract.id}`,
+      }),
+      timestamp:
+        latestDownstreamContract.createdAt ?? latestDownstreamContract.signedDate,
+      status: "done",
+    });
+  } else if (canCreateContract) {
+    nextSteps.push({
+      id: "create-contract",
+      title: t("quotations.createContractNext", {
+        defaultValue: "Create the contract",
+      }),
+      description: t("quotations.createContractNextHint", {
+        defaultValue:
+          "The quotation is approved, so the next operational step is to issue a contract from this commercial version.",
+      }),
+      tone: "default",
+      action: (
+        <Button
+          type="button"
+          onClick={() =>
+            navigate(`/contracts/create?mode=from-quotation&quotationId=${quotation.id}`)
+          }
+        >
+          <FilePlus2 className="h-4 w-4" />
+          {t("quotations.createContract", {
+            defaultValue: "Create Contract",
+          })}
+        </Button>
+      ),
+    });
+  } else if (quotation.status === "sent") {
+    nextSteps.push({
+      id: "review-response",
+      title: t("quotations.awaitingDecisionNext", {
+        defaultValue: "Capture the customer decision",
+      }),
+      description: t("quotations.awaitingDecisionNextHint", {
+        defaultValue:
+          "Use the workflow actions above to approve, reject, expire, or supersede this quotation once the customer responds.",
+      }),
+      tone: "warning",
+    });
+  } else if (quotation.status === "draft") {
+    nextSteps.push({
+      id: "send-quotation",
+      title: t("quotations.sendNext", {
+        defaultValue: "Send the quotation",
+      }),
+      description: t("quotations.sendNextHint", {
+        defaultValue:
+          "This quotation is still a draft. Send it before it can move into approval or rejection.",
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (quotation.event) {
+    timelineItems.push({
+      id: "event-linked",
+      title: t("quotations.timelineEventLinked", {
+        defaultValue: "Linked to source event",
+      }),
+      description: getEventDisplayTitle(quotation.event),
+      timestamp: quotation.event.createdAt ?? quotation.event.eventDate,
+      status: "done",
+    });
+  }
+
+  if (quotation.status !== "draft") {
+    timelineItems.push({
+      id: "status-update",
+      title: t("quotations.timelineStatusUpdate", {
+        defaultValue: "Commercial status updated",
+      }),
+      description: t("quotations.timelineStatusUpdateHint", {
+        defaultValue: "Current status: {{status}}",
+        status: t(`quotations.status.${quotation.status}`, {
+          defaultValue: quotation.status,
+        }),
+      }),
+      timestamp: quotation.updatedAt ?? quotation.issueDate,
+      status:
+        quotation.status === "rejected" || quotation.status === "expired"
+          ? "warning"
+          : "current",
+    });
+  }
+
   return (
     <ProtectedComponent permission="quotations.read">
       <PageContainer className="pb-4 pt-4 text-foreground">
@@ -209,38 +431,21 @@ const QuotationDetailsPage = () => {
             })}
           </button>
 
-          <SectionCard className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-[18px] border"
-                  style={{
-                    background: "var(--lux-control-hover)",
-                    borderColor: "var(--lux-control-border)",
-                    color: "var(--lux-gold)",
-                  }}
-                >
-                  <FileText className="h-6 w-6" />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-bold text-[var(--lux-heading)]">
-                      {getQuotationDisplayNumber(quotation)}
-                    </h1>
-                    <QuotationStatusBadge status={quotation.status} />
-                  </div>
-                  <p className="text-sm text-[var(--lux-text-secondary)]">
-                    {quotation.event
-                      ? getEventDisplayTitle(quotation.event)
-                      : `${t("quotations.event", {
-                          defaultValue: "Event",
-                        })} #${quotation.eventId}`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
+          <WorkflowEntityHeader
+            eyebrow={t("quotations.workflowStage", {
+              defaultValue: "Commercial Snapshot",
+            })}
+            title={getQuotationDisplayNumber(quotation)}
+            description={
+              quotation.event
+                ? getEventDisplayTitle(quotation.event)
+                : `${t("quotations.event", {
+                    defaultValue: "Event",
+                  })} #${quotation.eventId}`
+            }
+            status={<QuotationStatusBadge status={quotation.status} />}
+            actions={
+              <>
                 <Button
                   variant="outline"
                   onClick={handleDownloadPdf}
@@ -253,37 +458,182 @@ const QuotationDetailsPage = () => {
                         defaultValue: "Download PDF",
                       })}
                 </Button>
-
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    navigate(
-                      `/contracts/create?mode=from-quotation&quotationId=${quotation.id}`,
-                    )
-                  }
-                >
-                  <FilePlus2 className="h-4 w-4" />
-                  {t("quotations.createContract", {
-                    defaultValue: "Create Contract",
-                  })}
-                </Button>
-
+                <ProtectedComponent permission="contracts.create">
+                  <Button
+                    variant="secondary"
+                    disabled={!canCreateContract}
+                    title={
+                      canCreateContract
+                        ? undefined
+                        : t("quotations.contractRequiresApprovedQuote", {
+                            defaultValue:
+                              "Only approved quotations can create a contract.",
+                          })
+                    }
+                    onClick={() =>
+                      navigate(
+                        `/contracts/create?mode=from-quotation&quotationId=${quotation.id}`,
+                      )
+                    }
+                  >
+                    <FilePlus2 className="h-4 w-4" />
+                    {t("quotations.createContract", {
+                      defaultValue: "Create Contract",
+                    })}
+                  </Button>
+                </ProtectedComponent>
                 <ProtectedComponent permission="quotations.update">
-                  <Button onClick={() => navigate(`/quotations/edit/${quotation.id}`)}>
+                  <Button
+                    disabled={Boolean(quotationLockMessage)}
+                    title={quotationLockMessage ?? undefined}
+                    onClick={() => navigate(`/quotations/edit/${quotation.id}`)}
+                  >
                     <Edit className="h-4 w-4" />
                     {t("common.edit", { defaultValue: "Edit" })}
                   </Button>
                 </ProtectedComponent>
-
                 <ProtectedComponent permission="quotations.delete">
                   <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
                     <Trash2 className="h-4 w-4" />
                     {t("common.delete", { defaultValue: "Delete" })}
                   </Button>
                 </ProtectedComponent>
-              </div>
-            </div>
-          </SectionCard>
+              </>
+            }
+          />
+
+          <WorkflowLineageCard
+            title={t("quotations.workflowLineage", {
+              defaultValue: "Workflow Lineage",
+            })}
+            items={[
+              {
+                label: t("quotations.sourceEvent", {
+                  defaultValue: "Source Event",
+                }),
+                value: (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/events/${quotation.eventId}`)}
+                    className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                  >
+                    {quotation.event
+                      ? getEventDisplayTitle(quotation.event)
+                      : `Event #${quotation.eventId}`}
+                  </button>
+                ),
+                helper: quotation.event?.eventDate
+                  ? format(new Date(quotation.event.eventDate), "MMM d, yyyy", {
+                      locale: dateLocale,
+                    })
+                  : undefined,
+              },
+              {
+                label: t("quotations.customer", { defaultValue: "Customer" }),
+                value:
+                  quotation.event?.customer?.fullName ||
+                  quotation.customer?.fullName ||
+                  t("quotations.noCustomerLinked", {
+                    defaultValue: "No customer linked",
+                  }),
+                helper:
+                  quotation.event?.venue?.name ||
+                  quotation.event?.venueNameSnapshot ||
+                  undefined,
+              },
+              {
+                label: t("quotations.commercialTotals", {
+                  defaultValue: "Commercial Totals",
+                }),
+                value: formatMoney(quotation.totalAmount),
+                helper: `${t("quotations.subtotal", {
+                  defaultValue: "Subtotal",
+                })}: ${formatMoney(quotation.subtotal)} • ${t("quotations.discount", {
+                  defaultValue: "Discount",
+                })}: ${formatMoney(quotation.discountAmount)}`,
+              },
+              {
+                label: t("quotations.downstreamCommitment", {
+                  defaultValue: "Downstream Commitment",
+                }),
+                value: latestDownstreamContract ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/contracts/${latestDownstreamContract.id}`)}
+                    className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                  >
+                    {latestDownstreamContract.contractNumber ||
+                      `Contract #${latestDownstreamContract.id}`}
+                  </button>
+                ) : canCreateContract
+                  ? t("quotations.readyToCreateContract", {
+                      defaultValue: "Ready to create a contract from this quotation.",
+                    })
+                  : t("quotations.noDownstreamCommitment", {
+                      defaultValue:
+                        "Contract creation becomes available only after approval.",
+                    }),
+                helper: latestDownstreamContract
+                  ? t(`contracts.status.${latestDownstreamContract.status}`, {
+                      defaultValue: latestDownstreamContract.status,
+                    })
+                  : t(`quotations.status.${quotation.status}`, {
+                      defaultValue: quotation.status,
+                    }),
+              },
+            ]}
+          />
+
+          <ProtectedComponent permission="quotations.update">
+            <WorkflowActionBar
+              title={t("quotations.workflowActions", {
+                defaultValue: "Workflow Actions",
+              })}
+              description={t("quotations.workflowActionsHint", {
+                defaultValue:
+                  "Move this quotation through the commercial lifecycle with explicit actions instead of editing status directly.",
+              })}
+              actions={workflowActions}
+            />
+          </ProtectedComponent>
+
+          {quotationLockMessage ? (
+            <WorkflowLockBanner
+              title={t("quotations.lockedTitle", {
+                defaultValue: "Quotation Locked",
+              })}
+              message={quotationLockMessage}
+            />
+          ) : null}
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <WorkflowNextStepPanel
+              title={t("quotations.nextStepsTitle", {
+                defaultValue: "Next Step Guidance",
+              })}
+              description={t("quotations.nextStepsHint", {
+                defaultValue:
+                  "The panel below highlights the most relevant follow-up based on the quotation's current workflow state.",
+              })}
+              items={nextSteps}
+            />
+
+            <WorkflowTimeline
+              title={t("quotations.timelineTitle", {
+                defaultValue: "Timeline & Action History",
+              })}
+              description={t("quotations.timelineHint", {
+                defaultValue:
+                  "This timeline uses the timestamps currently exposed by the backend and linked records.",
+              })}
+              partialHistoryLabel={t("quotations.timelinePartial", {
+                defaultValue:
+                  "Full audit history is not available yet, so status transitions are shown from the latest reliable timestamps only.",
+              })}
+              items={timelineItems}
+              locale={dateLocale}
+            />
+          </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <Card>
@@ -587,6 +937,42 @@ const QuotationDetailsPage = () => {
           })
         }
         isPending={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingWorkflowAction)}
+        onOpenChange={(open) => !open && setPendingWorkflowAction(null)}
+        title={
+          pendingWorkflowAction?.confirmTitle ||
+          t("quotations.confirmWorkflowAction", {
+            defaultValue: "Confirm Quotation Action",
+          })
+        }
+        message={
+          pendingWorkflowAction?.confirmMessage ||
+          pendingWorkflowAction?.description ||
+          t("quotations.confirmWorkflowActionHint", {
+            defaultValue: "This quotation will move to the selected workflow stage.",
+          })
+        }
+        confirmLabel={
+          pendingWorkflowAction?.label ||
+          t("common.confirm", { defaultValue: "Confirm" })
+        }
+        cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+        onConfirm={() => {
+          if (!pendingWorkflowAction?.nextStatus) {
+            return;
+          }
+
+          workflowActionMutation.mutate(
+            { status: pendingWorkflowAction.nextStatus as typeof quotation.status },
+            {
+              onSettled: () => setPendingWorkflowAction(null),
+            },
+          );
+        }}
+        isPending={workflowActionMutation.isPending}
       />
     </ProtectedComponent>
   );

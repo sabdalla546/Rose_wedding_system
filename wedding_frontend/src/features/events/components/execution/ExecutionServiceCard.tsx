@@ -73,6 +73,7 @@ type Props = {
   uploadingAttachment: boolean;
   onDeleteAttachment: (attachmentId: number) => Promise<void> | void;
   deletingAttachment: boolean;
+  readOnly?: boolean;
 };
 
 export function ExecutionServiceCard({
@@ -85,6 +86,7 @@ export function ExecutionServiceCard({
   uploadingAttachment,
   onDeleteAttachment,
   deletingAttachment,
+  readOnly = false,
 }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState<DetailFormState>(() =>
@@ -172,6 +174,7 @@ export function ExecutionServiceCard({
           saving={saving}
           uploadingAttachment={uploadingAttachment}
           deletingAttachment={deletingAttachment}
+          readOnly={readOnly}
           onTemplateKeyChange={(value) =>
             setForm((current) => ({
               ...current,

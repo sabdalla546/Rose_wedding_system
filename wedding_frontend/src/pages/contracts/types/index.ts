@@ -11,6 +11,8 @@ import type {
 
 export type ContractStatus =
   | "draft"
+  | "issued"
+  | "signed"
   | "active"
   | "completed"
   | "cancelled"

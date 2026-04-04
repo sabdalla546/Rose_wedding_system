@@ -12,6 +12,7 @@ import {
 import CompactHeader from "@/components/common/CompactHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
@@ -25,6 +26,7 @@ import { useEvents } from "@/hooks/events/useEvents";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import { useDeleteQuotation } from "@/hooks/quotations/useDeleteQuotation";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
+import { useQuotationWorkflowSummary } from "@/hooks/workflow/useWorkflowSummaries";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 
 import {
@@ -48,6 +50,7 @@ const QuotationsPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isArabic = i18n.language === "ar";
+  const workflowSummary = useQuotationWorkflowSummary();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,6 +221,140 @@ const QuotationsPage = () => {
               </Button>
             </ProtectedComponent>
           }
+        />
+
+        <WorkflowModuleDashboard
+          title={t("quotations.workflowDashboard", {
+            defaultValue: "Quotation Workflow Visibility",
+          })}
+          description={t("quotations.workflowDashboardHint", {
+            defaultValue:
+              "See which quotations still need review, which ones are approved, and which records are no longer active.",
+          })}
+          metrics={[
+            {
+              id: "total",
+              label: t("common.total", { defaultValue: "Total" }),
+              value: workflowSummary.total,
+              helper: t("quotations.totalQuotations", {
+                defaultValue: "total quotations",
+              }),
+            },
+            {
+              id: "pending",
+              label: t("quotations.pendingReview", {
+                defaultValue: "Pending Review",
+              }),
+              value: workflowSummary.metrics.pending,
+              helper: t("quotations.pendingReviewHint", {
+                defaultValue: "Draft and sent quotations still need a commercial decision.",
+              }),
+            },
+            {
+              id: "approved",
+              label: t("quotations.approvedReady", {
+                defaultValue: "Approved",
+              }),
+              value: workflowSummary.metrics.approved,
+              helper: t("quotations.approvedReadyHint", {
+                defaultValue: "Approved quotations are ready for contract follow-up.",
+              }),
+            },
+            {
+              id: "blocked",
+              label: t("quotations.closedOut", {
+                defaultValue: "Closed Out",
+              }),
+              value: workflowSummary.metrics.blocked,
+              helper: t("quotations.closedOutHint", {
+                defaultValue: "Rejected, expired, and superseded quotations no longer need action.",
+              }),
+            },
+          ]}
+          statuses={[
+            {
+              key: "all",
+              label: t("quotations.allStatuses", { defaultValue: "All Statuses" }),
+              count: workflowSummary.total,
+              active: statusFilter === "all",
+              onClick: () => {
+                setStatusFilter("all");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "draft",
+              label: t("quotations.status.draft", { defaultValue: "Draft" }),
+              count: workflowSummary.statusCounts.draft,
+              active: statusFilter === "draft",
+              onClick: () => {
+                setStatusFilter("draft");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "sent",
+              label: t("quotations.status.sent", { defaultValue: "Sent" }),
+              count: workflowSummary.statusCounts.sent,
+              active: statusFilter === "sent",
+              onClick: () => {
+                setStatusFilter("sent");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "approved",
+              label: t("quotations.status.approved", { defaultValue: "Approved" }),
+              count: workflowSummary.statusCounts.approved,
+              active: statusFilter === "approved",
+              onClick: () => {
+                setStatusFilter("approved");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "converted_to_contract",
+              label: t("quotations.status.converted_to_contract", {
+                defaultValue: "Converted",
+              }),
+              count: workflowSummary.statusCounts.converted_to_contract,
+              active: statusFilter === "converted_to_contract",
+              onClick: () => {
+                setStatusFilter("converted_to_contract");
+                setCurrentPage(1);
+              },
+            },
+            {
+              key: "rejected",
+              label: t("quotations.status.rejected", { defaultValue: "Rejected" }),
+              count: workflowSummary.statusCounts.rejected,
+              active: statusFilter === "rejected",
+              onClick: () => {
+                setStatusFilter("rejected");
+                setCurrentPage(1);
+              },
+            },
+          ]}
+          footer={
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("approved");
+                  setCurrentPage(1);
+                }}
+              >
+                {t("quotations.focusApproved", {
+                  defaultValue: "Focus approved quotations",
+                })}
+              </Button>
+              <Button type="button" variant="outline" onClick={resetFilters}>
+                {t("quotations.clearFilters", { defaultValue: "Clear Filters" })}
+              </Button>
+            </div>
+          }
+          loading={workflowSummary.isLoading}
         />
 
         <CalendarFilterPanel

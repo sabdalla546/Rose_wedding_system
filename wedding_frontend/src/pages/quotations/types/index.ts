@@ -14,6 +14,7 @@ export type QuotationStatus =
   | "approved"
   | "rejected"
   | "expired"
+  | "superseded"
   | "converted_to_contract";
 
 export type DecimalValue = number | string;

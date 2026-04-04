@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +28,6 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
   right,
   className,
 }) => {
-  const { t } = useTranslation("common");
   return (
     <PageHeader
       icon={icon}

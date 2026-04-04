@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import {
   WorkspaceFilterBar,
   WorkspaceFilterField,
@@ -38,6 +39,7 @@ import {
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useDeleteAppointment } from "@/hooks/appointments/useDeleteAppointment";
 import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useAppointmentWorkflowSummary } from "@/hooks/workflow/useWorkflowSummaries";
 
 import { useAppointmentsColumns } from "../_components/appointmentsColumns";
 import {
@@ -60,6 +62,7 @@ const fieldStyle = {
 export function AppointmentsTableView() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const workflowSummary = useAppointmentWorkflowSummary();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -253,6 +256,138 @@ export function AppointmentsTableView() {
   };
   return (
     <>
+      <WorkflowModuleDashboard
+        title={t("appointments.workflowDashboard", {
+          defaultValue: "Appointment Workflow Visibility",
+        })}
+        description={t("appointments.workflowDashboardHint", {
+          defaultValue:
+            "Track intake load, completed appointments ready for conversion, and blocked appointments before they disappear into the table.",
+        })}
+        metrics={[
+          {
+            id: "total",
+            label: t("common.total", { defaultValue: "Total" }),
+            value: workflowSummary.total,
+            helper: t("appointments.totalAppointments", {
+              defaultValue: "all appointments in the intake pipeline",
+            }),
+          },
+          {
+            id: "upcoming",
+            label: t("appointments.upcomingLabel", {
+              defaultValue: "Upcoming",
+            }),
+            value: workflowSummary.metrics.upcoming,
+            helper: t("appointments.upcomingLabelHint", {
+              defaultValue: "Scheduled, confirmed, and rescheduled appointments.",
+            }),
+          },
+          {
+            id: "ready",
+            label: t("appointments.readyToConvertLabel", {
+              defaultValue: "Ready To Convert",
+            }),
+            value: workflowSummary.metrics.readyToConvert,
+            helper: t("appointments.readyToConvertLabelHint", {
+              defaultValue: "Completed appointments can move into the event workflow.",
+            }),
+          },
+          {
+            id: "blocked",
+            label: t("appointments.blockedLabel", {
+              defaultValue: "Blocked",
+            }),
+            value: workflowSummary.metrics.blocked,
+            helper: t("appointments.blockedLabelHint", {
+              defaultValue: "Cancelled and no-show appointments.",
+            }),
+          },
+        ]}
+        statuses={[
+          {
+            key: "all",
+            label: t("appointments.allStatuses", { defaultValue: "All Statuses" }),
+            count: workflowSummary.total,
+            active: statusFilter === "all",
+            onClick: () => {
+              setStatusFilter("all");
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "scheduled",
+            label: t("appointments.status.scheduled", { defaultValue: "Scheduled" }),
+            count: workflowSummary.statusCounts.scheduled,
+            active: statusFilter === "scheduled",
+            onClick: () => {
+              setStatusFilter("scheduled");
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "confirmed",
+            label: t("appointments.status.confirmed", { defaultValue: "Confirmed" }),
+            count: workflowSummary.statusCounts.confirmed,
+            active: statusFilter === "confirmed",
+            onClick: () => {
+              setStatusFilter("confirmed");
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "completed",
+            label: t("appointments.status.completed", { defaultValue: "Completed" }),
+            count: workflowSummary.statusCounts.completed,
+            active: statusFilter === "completed",
+            onClick: () => {
+              setStatusFilter("completed");
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "converted",
+            label: t("appointments.status.converted", { defaultValue: "Converted" }),
+            count: workflowSummary.statusCounts.converted,
+            active: statusFilter === "converted",
+            onClick: () => {
+              setStatusFilter("converted");
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "cancelled",
+            label: t("appointments.status.cancelled", { defaultValue: "Cancelled" }),
+            count: workflowSummary.statusCounts.cancelled,
+            active: statusFilter === "cancelled",
+            onClick: () => {
+              setStatusFilter("cancelled");
+              setCurrentPage(1);
+            },
+          },
+        ]}
+        footer={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setStatusFilter("completed");
+                setCurrentPage(1);
+              }}
+            >
+              {t("appointments.focusReadyConversions", {
+                defaultValue: "Focus ready conversions",
+              })}
+            </Button>
+            <Button type="button" variant="outline" onClick={resetFilters}>
+              {t("appointments.clearFilters", { defaultValue: "Clear Filters" })}
+            </Button>
+          </div>
+        }
+        loading={workflowSummary.isLoading}
+      />
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((summary) => (
           <SummaryCard

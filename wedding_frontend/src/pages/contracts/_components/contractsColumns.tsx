@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
+import { isContractLocked } from "@/lib/workflow/workflow";
 import type { TableContract } from "@/pages/contracts/adapters";
 
 import { ContractStatusBadge } from "./contractStatusBadge";
@@ -173,6 +174,15 @@ export const useContractsColumns = ({
             <Button
               size="sm"
               variant="outline"
+              disabled={isContractLocked(row.original.status)}
+              title={
+                isContractLocked(row.original.status)
+                  ? t("contracts.lockedEditHint", {
+                      defaultValue:
+                        "Signed or active contracts are read-only.",
+                    })
+                  : undefined
+              }
               onClick={() => navigate(`/contracts/edit/${row.original.id}`)}
             >
               <Edit className="h-3.5 w-3.5" />

@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
+import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import {
   WorkspaceFilterBar,
   WorkspaceFilterField,
@@ -24,6 +25,7 @@ import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
 import { useEvents } from "@/hooks/events/useEvents";
 import { useVenues } from "@/hooks/venues/useVenues";
+import { useEventWorkflowSummary } from "@/hooks/workflow/useWorkflowSummaries";
 
 import { useEventsColumns } from "../_components/eventsColumns";
 import {
@@ -53,6 +55,7 @@ export function EventsTableView({
   onFiltersChange,
 }: EventsTableViewProps) {
   const { t } = useTranslation();
+  const workflowSummary = useEventWorkflowSummary();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -227,6 +230,146 @@ export function EventsTableView({
   };
   return (
     <>
+      <WorkflowModuleDashboard
+        title={t("events.workflowDashboard", {
+          defaultValue: "Event Workflow Visibility",
+        })}
+        description={t("events.workflowDashboardHint", {
+          defaultValue:
+            "See which events are still being designed, waiting on commercial progress, confirmed, or already blocked.",
+        })}
+        metrics={[
+          {
+            id: "total",
+            label: t("common.total", { defaultValue: "Total" }),
+            value: workflowSummary.total,
+            helper: t("events.totalEventsHint", {
+              defaultValue: "All event records in the current workflow.",
+            }),
+          },
+          {
+            id: "active",
+            label: t("events.activeQueue", {
+              defaultValue: "Active Queue",
+            }),
+            value: workflowSummary.metrics.active,
+            helper: t("events.activeQueueHint", {
+              defaultValue: "Designing, quotation, confirmation, and execution stages.",
+            }),
+          },
+          {
+            id: "completed",
+            label: t("events.completedLabel", {
+              defaultValue: "Completed",
+            }),
+            value: workflowSummary.metrics.completed,
+            helper: t("events.completedLabelHint", {
+              defaultValue: "Events already delivered.",
+            }),
+          },
+          {
+            id: "blocked",
+            label: t("events.blockedLabel", {
+              defaultValue: "Blocked",
+            }),
+            value: workflowSummary.metrics.blocked,
+            helper: t("events.blockedLabelHint", {
+              defaultValue: "Cancelled events stop downstream creation.",
+            }),
+          },
+        ]}
+        statuses={[
+          {
+            key: "all",
+            label: t("events.allStatuses", { defaultValue: "All Statuses" }),
+            count: workflowSummary.total,
+            active: filters.status === "all",
+            onClick: () => {
+              onFiltersChange((current) => ({ ...current, status: "all" }));
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "draft",
+            label: t("events.status.draft", { defaultValue: "Draft" }),
+            count: workflowSummary.statusCounts.draft,
+            active: filters.status === "draft",
+            onClick: () => {
+              onFiltersChange((current) => ({ ...current, status: "draft" }));
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "designing",
+            label: t("events.status.designing", { defaultValue: "Designing" }),
+            count: workflowSummary.statusCounts.designing,
+            active: filters.status === "designing",
+            onClick: () => {
+              onFiltersChange((current) => ({ ...current, status: "designing" }));
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "quotation_pending",
+            label: t("events.status.quotation_pending", {
+              defaultValue: "Quotation Pending",
+            }),
+            count: workflowSummary.statusCounts.quotation_pending,
+            active: filters.status === "quotation_pending",
+            onClick: () => {
+              onFiltersChange((current) => ({
+                ...current,
+                status: "quotation_pending",
+              }));
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "confirmed",
+            label: t("events.status.confirmed", { defaultValue: "Confirmed" }),
+            count: workflowSummary.statusCounts.confirmed,
+            active: filters.status === "confirmed",
+            onClick: () => {
+              onFiltersChange((current) => ({ ...current, status: "confirmed" }));
+              setCurrentPage(1);
+            },
+          },
+          {
+            key: "in_progress",
+            label: t("events.status.in_progress", { defaultValue: "In Progress" }),
+            count: workflowSummary.statusCounts.in_progress,
+            active: filters.status === "in_progress",
+            onClick: () => {
+              onFiltersChange((current) => ({ ...current, status: "in_progress" }));
+              setCurrentPage(1);
+            },
+          },
+        ]}
+        footer={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onFiltersChange((current) => ({
+                  ...current,
+                  status: "quotation_pending",
+                }));
+                setCurrentPage(1);
+              }}
+            >
+              {t("events.focusCommercialQueue", {
+                defaultValue: "Focus quotation queue",
+              })}
+            </Button>
+            <Button type="button" variant="outline" onClick={resetFilters}>
+              {t("events.clearFilters", { defaultValue: "Clear Filters" })}
+            </Button>
+          </div>
+        }
+        loading={workflowSummary.isLoading}
+      />
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((summary) => (
           <SummaryCard

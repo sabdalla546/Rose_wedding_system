@@ -20,6 +20,11 @@ import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import {
+  FormFeedbackBanner,
+  getFirstFormErrorMessage,
+} from "@/components/shared/form-feedback-banner";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
+import { getQuotationLockMessage } from "@/lib/workflow/workflow";
 import { cn } from "@/lib/utils";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import {
@@ -83,7 +89,7 @@ import type {
 } from "./types";
 
 const textAreaClass =
-  "min-h-[110px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
+  "min-h-[110px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)] read-only:cursor-default read-only:border-dashed read-only:border-[var(--lux-row-border)] read-only:bg-[var(--lux-row-surface)] read-only:text-[var(--lux-text-secondary)] read-only:focus:border-[var(--lux-control-border)] read-only:focus:ring-0";
 const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 
@@ -600,7 +606,6 @@ const QuotationFormPage = () => {
 
   const {
     fields: itemFields,
-    remove: removeItem,
     replace: replaceItems,
   } = useFieldArray({
     control: form.control,
@@ -806,6 +811,13 @@ const QuotationFormPage = () => {
     createMutation.isPending ||
     createFromEventMutation.isPending ||
     updateMutation.isPending;
+  const quotationLockMessage =
+    isEditMode && quotation ? getQuotationLockMessage(quotation.status) : null;
+  const isWorkflowLocked = Boolean(quotationLockMessage);
+  const formErrorMessage =
+    form.formState.submitCount > 0
+      ? getFirstFormErrorMessage(form.formState.errors)
+      : null;
 
   const updateCatalogVendorConfig = (
     vendorId: string,
@@ -1458,6 +1470,35 @@ const QuotationFormPage = () => {
                   onSubmit={form.handleSubmit(submit, handleInvalidSubmit)}
                   className="space-y-8"
                 >
+                  {formErrorMessage ? (
+                    <FormFeedbackBanner
+                      tone="error"
+                      title={t("common.validationError", {
+                        defaultValue: "Review the highlighted fields",
+                      })}
+                      message={formErrorMessage}
+                    />
+                  ) : null}
+
+                  {isWorkflowLocked ? (
+                    <WorkflowLockBanner
+                      title={t("quotations.editLockedTitle", {
+                        defaultValue: "Quotation Editing Locked",
+                      })}
+                      message={
+                        quotationLockMessage ??
+                        t("quotations.editLockedHint", {
+                          defaultValue:
+                            "This quotation is locked by workflow state. Review it from the detail page and use workflow actions there instead of editing the commercial form.",
+                        })
+                      }
+                    />
+                  ) : null}
+
+                  <fieldset
+                    disabled={isBusy || isWorkflowLocked}
+                    className="space-y-8 [&_textarea:disabled]:border-dashed [&_textarea:disabled]:border-[var(--lux-row-border)] [&_textarea:disabled]:bg-[var(--lux-row-surface)] [&_textarea:disabled]:text-[var(--lux-text-secondary)]"
+                  >
                   {!isEditMode ? (
                     <section className="space-y-4">
                       <div className="space-y-1">
@@ -1588,33 +1629,17 @@ const QuotationFormPage = () => {
                       />
                     </FieldBlock>
 
-                    <FieldBlock
-                      label={t("quotations.statusLabel", {
-                        defaultValue: "Status",
-                      })}
-                    >
-                      <Select
-                        value={form.watch("status")}
-                        onValueChange={(value) =>
-                          form.setValue("status", value as QuotationStatus, {
-                            shouldDirty: true,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {QUOTATION_STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {t(`quotations.status.${option.value}`, {
-                                defaultValue: option.label,
-                              })}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FieldBlock>
+                    <div className="md:col-span-2">
+                      <WorkflowLockBanner
+                        title={t("quotations.statusManagedByWorkflow", {
+                          defaultValue: "Status Managed by Workflow",
+                        })}
+                        message={t("quotations.statusManagedByWorkflowHint", {
+                          defaultValue:
+                            "Quotations start in draft. Use the quotation detail screen workflow actions to send, approve, reject, expire, or supersede the document.",
+                        })}
+                      />
+                    </div>
 
                     <FieldBlock
                       label={t("quotations.issueDate", {
@@ -2234,6 +2259,7 @@ const QuotationFormPage = () => {
                       emphasis
                     />
                   </div>
+                  </fieldset>
 
                   <div
                     className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-end"
@@ -2253,15 +2279,32 @@ const QuotationFormPage = () => {
                     >
                       {t("common.cancel", { defaultValue: "Cancel" })}
                     </Button>
-                    <Button type="submit" disabled={isBusy}>
-                      {isBusy
-                        ? t("common.processing", {
-                            defaultValue: "Processing...",
-                          })
-                        : isEditMode
-                          ? t("common.update", { defaultValue: "Update" })
-                          : t("common.create", { defaultValue: "Create" })}
-                    </Button>
+                    {isWorkflowLocked ? (
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            isEditMode && id
+                              ? `/quotations/${id}`
+                              : "/quotations",
+                          )
+                        }
+                      >
+                        {t("quotations.returnToDetails", {
+                          defaultValue: "Return to Quotation",
+                        })}
+                      </Button>
+                    ) : (
+                      <Button type="submit" disabled={isBusy}>
+                        {isBusy
+                          ? t("common.processing", {
+                              defaultValue: "Processing...",
+                            })
+                          : isEditMode
+                            ? t("common.update", { defaultValue: "Update" })
+                            : t("common.create", { defaultValue: "Create" })}
+                      </Button>
+                    )}
                   </div>
                 </form>
               </Form>

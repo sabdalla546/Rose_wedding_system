@@ -229,6 +229,8 @@ export const CONTRACT_STATUS_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "draft", label: "Draft" },
+  { value: "issued", label: "Issued" },
+  { value: "signed", label: "Signed" },
   { value: "active", label: "Active" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },

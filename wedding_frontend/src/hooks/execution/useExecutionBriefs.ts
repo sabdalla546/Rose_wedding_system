@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import api from "@/lib/axios";
+import { executionBriefsApi } from "@/lib/api/execution-briefs";
 import type {
   ExecutionBrief,
-  ExecutionBriefResponse,
   ExecutionBriefsResponse,
   ExecutionBriefStatus,
 } from "@/pages/execution/types";
@@ -21,29 +20,14 @@ export const useExecutionBriefs = ({
 }: UseExecutionBriefsParams = {}) => {
   return useQuery<ExecutionBriefsResponse>({
     queryKey: ["execution-briefs", eventId, status, search],
-    queryFn: async () => {
-      const res = await api.get("/execution-briefs", {
-        params: {
-          eventId: typeof eventId === "number" ? eventId : undefined,
-          status: status === "all" ? undefined : status,
-          search: search.trim() || undefined,
-        },
-      });
-
-      return res.data;
-    },
+    queryFn: () => executionBriefsApi.list({ eventId, status, search }),
   });
 };
 
 export const useExecutionBrief = (id?: number | string) => {
   return useQuery<ExecutionBrief>({
     queryKey: ["execution-brief", id],
-    queryFn: async () => {
-      const res = await api.get<ExecutionBriefResponse>(
-        `/execution-briefs/${id}`,
-      );
-      return res.data.data;
-    },
+    queryFn: () => executionBriefsApi.get(id as string),
     enabled: !!id,
   });
 };
@@ -51,12 +35,7 @@ export const useExecutionBrief = (id?: number | string) => {
 export const useExecutionBriefByEvent = (eventId?: number | string) => {
   return useQuery<ExecutionBrief>({
     queryKey: ["execution-brief-by-event", eventId],
-    queryFn: async () => {
-      const res = await api.get<ExecutionBriefResponse>(
-        `/execution-briefs/by-event/${eventId}`,
-      );
-      return res.data.data;
-    },
+    queryFn: () => executionBriefsApi.getByEvent(eventId as string),
     enabled: !!eventId,
   });
 };

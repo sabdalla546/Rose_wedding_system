@@ -45,10 +45,15 @@ export const APPOINTMENT_STATUS_OPTIONS: Array<{
   { value: "scheduled", label: "Scheduled" },
   { value: "confirmed", label: "Confirmed" },
   { value: "completed", label: "Completed" },
+  { value: "converted", label: "Converted" },
   { value: "rescheduled", label: "Rescheduled" },
   { value: "cancelled", label: "Cancelled" },
   { value: "no_show", label: "No Show" },
 ];
+
+export const APPOINTMENT_FORM_STATUS_OPTIONS = APPOINTMENT_STATUS_OPTIONS.filter(
+  (status) => status.value !== "converted",
+);
 
 export const APPOINTMENT_TYPE_OPTIONS: Array<{
   value: AppointmentType;
@@ -76,6 +81,7 @@ const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> = 
   scheduled: "Pending",
   confirmed: "Confirmed",
   completed: "Completed",
+  converted: "Completed",
   rescheduled: "Tentative",
   cancelled: "Cancelled",
   no_show: "Overdue",
@@ -85,6 +91,7 @@ const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> = 
   scheduled: "gold",
   confirmed: "emerald",
   completed: "blue",
+  converted: "blue",
   rescheduled: "gold",
   cancelled: "rose",
   no_show: "blue",

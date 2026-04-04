@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
+import { canCreateContractFromQuotation, isQuotationLocked } from "@/lib/workflow/workflow";
 import type { TableQuotation } from "@/pages/quotations/adapters";
 
 import { QuotationStatusBadge } from "./quotationStatusBadge";
@@ -164,6 +165,15 @@ export const useQuotationsColumns = ({
             <Button
               size="sm"
               variant="outline"
+              disabled={isQuotationLocked(row.original.status)}
+              title={
+                isQuotationLocked(row.original.status)
+                  ? t("quotations.lockedEditHint", {
+                      defaultValue:
+                        "Approved or superseded quotations are read-only.",
+                    })
+                  : undefined
+              }
               onClick={() => navigate(`/quotations/edit/${row.original.id}`)}
             >
               <Edit className="h-3.5 w-3.5" />
@@ -183,6 +193,15 @@ export const useQuotationsColumns = ({
           <Button
             size="sm"
             variant="secondary"
+            disabled={!canCreateContractFromQuotation(row.original.status)}
+            title={
+              canCreateContractFromQuotation(row.original.status)
+                ? undefined
+                : t("quotations.contractRequiresApprovedQuote", {
+                    defaultValue:
+                      "Only approved quotations can create a contract.",
+                  })
+            }
             onClick={() => onCreateContract(row.original)}
           >
             <FilePlus2 className="h-3.5 w-3.5" />

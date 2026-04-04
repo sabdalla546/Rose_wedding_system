@@ -1,12 +1,22 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ar, enUS } from "date-fns/locale";
 import type { CheckedState } from "@radix-ui/react-checkbox";
+import { ArrowRight, CheckCheck, CircleOff, Play } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
+import { WorkflowActionBar } from "@/components/workflow/workflow-action-bar";
+import { WorkflowLineageCard } from "@/components/workflow/workflow-lineage-card";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
+import {
+  WorkflowNextStepPanel,
+  type WorkflowNextStepItem,
+} from "@/components/workflow/workflow-next-step-panel";
+import { WorkflowStatusBadge } from "@/components/workflow/workflow-status-badge";
+import { WorkflowTimeline, type WorkflowTimelineItem } from "@/components/workflow/workflow-timeline";
 import {
   AppDialogBody,
   AppDialogFooter,
@@ -28,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUpdateEvent } from "@/hooks/events/useEventMutations";
+import { useEventWorkflowAction } from "@/hooks/events/useEventWorkflowActions";
 import { useEvent } from "@/hooks/events/useEvents";
 import { useContracts } from "@/hooks/contracts/useContracts";
 import {
@@ -35,6 +46,7 @@ import {
   useCreateContractFromQuotation,
 } from "@/hooks/contracts/useContractMutations";
 import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useExecutionBriefByEvent } from "@/hooks/execution/useExecutionBriefs";
 import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { useCreateQuotationFromEvent } from "@/hooks/quotations/useQuotationMutations";
 import {
@@ -93,6 +105,11 @@ import type {
   VendorPricingPlan,
   VendorType,
 } from "@/pages/vendors/types";
+import {
+  getEventCommercialSummary,
+  getEventWorkflowActions,
+  type WorkflowActionDefinition,
+} from "@/lib/workflow/workflow";
 
 import type { EventStatus } from "./types";
 
@@ -332,6 +349,8 @@ export const EventDetailsPage = ({
     useState(false);
   const [contractCreateForm, setContractCreateForm] =
     useState<ContractCreateFormState>(createDefaultContractCreateState());
+  const [pendingWorkflowAction, setPendingWorkflowAction] =
+    useState<WorkflowActionDefinition | null>(null);
 
   const updateEventMutation = useUpdateEvent(resolvedEventId, {
     navigateOnSuccess: false,
@@ -340,6 +359,7 @@ export const EventDetailsPage = ({
       setEditEventError("");
     },
   });
+  const workflowActionMutation = useEventWorkflowAction(resolvedEventId);
   const createQuotationFromEventMutation = useCreateQuotationFromEvent({
     navigateOnSuccess: false,
     onSuccess: () => setCreateQuotationDialogOpen(false),
@@ -454,6 +474,7 @@ export const EventDetailsPage = ({
     signedDateFrom: "",
     signedDateTo: "",
   });
+  const { data: executionBrief } = useExecutionBriefByEvent(resolvedEventId);
 
   const vendorCatalog = useMemo(
     () => vendorCatalogResponse?.data ?? [],
@@ -633,6 +654,7 @@ export const EventDetailsPage = ({
   );
   const latestQuotation = sortedEventQuotations[0] ?? null;
   const latestContract = sortedEventContracts[0] ?? null;
+  const commercialSummary = event ? getEventCommercialSummary(event) : null;
 
   const operationalReadiness = useMemo(() => {
     const servicesReady = sortedEventServiceItems.filter(
@@ -641,9 +663,13 @@ export const EventDetailsPage = ({
     const vendorsReady = sortedEventVendorLinks.filter(
       (link) => link.status === "approved" || link.status === "confirmed",
     ).length;
+    const sections = event?.sections ?? [];
+    const sectionsReady = sections.filter((section) => section.isCompleted).length;
     const total =
-      sortedEventServiceItems.length + sortedEventVendorLinks.length;
-    const ready = servicesReady + vendorsReady;
+      sortedEventServiceItems.length +
+      sortedEventVendorLinks.length +
+      sections.length;
+    const ready = servicesReady + vendorsReady + sectionsReady;
 
     return {
       ready,
@@ -653,8 +679,10 @@ export const EventDetailsPage = ({
       servicesTotal: sortedEventServiceItems.length,
       vendorsReady,
       vendorsTotal: sortedEventVendorLinks.length,
+      sectionsReady,
+      sectionsTotal: sections.length,
     };
-  }, [sortedEventServiceItems, sortedEventVendorLinks]);
+  }, [event?.sections, sortedEventServiceItems, sortedEventVendorLinks]);
 
   useEffect(() => {
     if (!vendorDialogOpen) {
@@ -988,8 +1016,34 @@ export const EventDetailsPage = ({
       guestCount: editEventForm.guestCount,
       title: editEventForm.title,
       notes: editEventForm.notes,
-      status: editEventForm.status,
     });
+  };
+
+  const handleEventWorkflowAction = (action: WorkflowActionDefinition) => {
+    if (!action.nextStatus) {
+      return;
+    }
+
+    if (action.confirmTitle || action.confirmMessage) {
+      setPendingWorkflowAction(action);
+      return;
+    }
+
+    workflowActionMutation.mutate({ status: action.nextStatus as EventStatus });
+  };
+
+  const handleConfirmWorkflowAction = () => {
+    if (!pendingWorkflowAction?.nextStatus) {
+      setPendingWorkflowAction(null);
+      return;
+    }
+
+    workflowActionMutation.mutate(
+      { status: pendingWorkflowAction.nextStatus as EventStatus },
+      {
+        onSettled: () => setPendingWorkflowAction(null),
+      },
+    );
   };
 
   const handleCreateQuotationSave = () => {
@@ -1039,6 +1093,229 @@ export const EventDetailsPage = ({
     });
   };
 
+  const workflowActionIcons: Partial<Record<EventStatus, ReactNode>> = {
+    designing: <ArrowRight className="h-4 w-4" />,
+    quotation_pending: <ArrowRight className="h-4 w-4" />,
+    quoted: <ArrowRight className="h-4 w-4" />,
+    confirmed: <CheckCheck className="h-4 w-4" />,
+    in_progress: <Play className="h-4 w-4" />,
+    completed: <CheckCheck className="h-4 w-4" />,
+    cancelled: <CircleOff className="h-4 w-4" />,
+  };
+
+  const workflowActions = getEventWorkflowActions(event.status).map((action) => ({
+    ...action,
+    icon: action.nextStatus
+      ? workflowActionIcons[action.nextStatus as EventStatus]
+      : undefined,
+    loading:
+      workflowActionMutation.isPending &&
+      action.nextStatus === workflowActionMutation.variables?.status,
+    onClick: () => handleEventWorkflowAction(action),
+  }));
+  const nextSteps: WorkflowNextStepItem[] = [];
+  const timelineItems: WorkflowTimelineItem[] = [
+    {
+      id: "created",
+      title: t("events.timelineCreated", {
+        defaultValue: "Event created",
+      }),
+      description: t("events.timelineCreatedHint", {
+        defaultValue: "The event entered the main workflow.",
+      }),
+      timestamp: event.createdAt ?? event.eventDate,
+      status: "done",
+    },
+    {
+      id: "status-update",
+      title: t("events.timelineStatusUpdate", {
+        defaultValue: "Event status updated",
+      }),
+      description: t("events.timelineStatusUpdateHint", {
+        defaultValue: "Current event status: {{status}}",
+        status: t(`events.status.${event.status}`, {
+          defaultValue: event.status,
+        }),
+      }),
+      timestamp: event.updatedAt ?? event.eventDate,
+      status: event.status === "cancelled" ? "warning" : "current",
+    },
+  ];
+
+  if (event.status === "cancelled") {
+    nextSteps.push({
+      id: "event-cancelled",
+      title: t("events.nextCancelledTitle", {
+        defaultValue: "Workflow is blocked",
+      }),
+      description: t("events.nextCancelledHint", {
+        defaultValue:
+          "This event is cancelled, so quotation, contract, and execution creation should stop here.",
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (event.status === "designing" && !latestQuotation) {
+    nextSteps.push({
+      id: "prepare-quotation",
+      title: t("events.nextQuotationTitle", {
+        defaultValue: "Prepare the quotation",
+      }),
+      description: t("events.nextQuotationHint", {
+        defaultValue:
+          "Design work is underway. Once scope is ready, create the quotation package from this event.",
+      }),
+      tone: "default",
+      action: (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setActiveTab("quotations");
+            setCreateQuotationDialogOpen(true);
+          }}
+        >
+          {t("quotations.createFromEvent", {
+            defaultValue: "Create Quotation",
+          })}
+        </Button>
+      ),
+    });
+  }
+
+  if (latestQuotation?.status === "approved" && !latestContract) {
+    nextSteps.push({
+      id: "create-contract",
+      title: t("events.nextContractTitle", {
+        defaultValue: "Create the contract",
+      }),
+      description: t("events.nextContractHint", {
+        defaultValue:
+          "The quotation is approved, but there is no downstream contract yet. Move this event into the commitment stage next.",
+      }),
+      tone: "default",
+      action: (
+        <Button
+          type="button"
+          onClick={() => {
+            setActiveTab("contracts");
+            setCreateContractDialogOpen(true);
+          }}
+        >
+          {t("contracts.create", { defaultValue: "Create Contract" })}
+        </Button>
+      ),
+    });
+  }
+
+  if (
+    latestContract &&
+    (latestContract.status === "signed" || latestContract.status === "active") &&
+    !executionBrief
+  ) {
+    nextSteps.push({
+      id: "prepare-execution",
+      title: t("events.nextExecutionTitle", {
+        defaultValue: "Prepare the execution brief",
+      }),
+      description: t("events.nextExecutionHint", {
+        defaultValue:
+          "The commitment stage is live, but there is no execution brief yet. Open the execution workspace to generate it from this event.",
+      }),
+      tone: "warning",
+    });
+  }
+
+  if (executionBrief?.status === "approved") {
+    nextSteps.push({
+      id: "handoff-execution",
+      title: t("events.nextHandoffTitle", {
+        defaultValue: "Handoff the approved brief",
+      }),
+      description: t("events.nextHandoffHint", {
+        defaultValue:
+          "The execution brief is approved and waiting on operational handoff.",
+      }),
+      tone: "warning",
+      action: (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(`/execution-briefs/${executionBrief.id}`)}
+        >
+          {t("execution.openExecutionBrief", {
+            defaultValue: "Open Execution Brief",
+          })}
+        </Button>
+      ),
+    });
+  }
+
+  if (event.sourceAppointment) {
+    timelineItems.push({
+      id: "source-appointment",
+      title: t("events.timelineFromAppointment", {
+        defaultValue: "Converted from appointment",
+      }),
+      description:
+        event.sourceAppointment.customer?.fullName || `#${event.sourceAppointmentId}`,
+      timestamp: event.sourceAppointment.appointmentDate,
+      status: "done",
+    });
+  }
+
+  if (latestQuotation) {
+    timelineItems.push({
+      id: "quotation-linked",
+      title: t("events.timelineQuotationLinked", {
+        defaultValue: "Quotation linked to event",
+      }),
+      description: t("events.timelineQuotationLinkedHint", {
+        defaultValue: "Latest quotation status: {{status}}",
+        status: t(`quotations.status.${latestQuotation.status}`, {
+          defaultValue: latestQuotation.status,
+        }),
+      }),
+      timestamp: latestQuotation.createdAt ?? latestQuotation.issueDate,
+      status: "done",
+    });
+  }
+
+  if (latestContract) {
+    timelineItems.push({
+      id: "contract-linked",
+      title: t("events.timelineContractLinked", {
+        defaultValue: "Contract linked to event",
+      }),
+      description: t("events.timelineContractLinkedHint", {
+        defaultValue: "Latest contract status: {{status}}",
+        status: t(`contracts.status.${latestContract.status}`, {
+          defaultValue: latestContract.status,
+        }),
+      }),
+      timestamp: latestContract.createdAt ?? latestContract.signedDate,
+      status: "done",
+    });
+  }
+
+  if (executionBrief) {
+    timelineItems.push({
+      id: "execution-linked",
+      title: t("events.timelineExecutionLinked", {
+        defaultValue: "Execution brief linked",
+      }),
+      description: t("events.timelineExecutionLinkedHint", {
+        defaultValue: "Execution status: {{status}}",
+        status: t(`execution.briefStatusOptions.${executionBrief.status}`, {
+          defaultValue: executionBrief.status,
+        }),
+      }),
+      timestamp: executionBrief.createdAt,
+      status: "done",
+    });
+  }
+
   return (
     <>
       <ProtectedComponent permission="events.read">
@@ -1072,6 +1349,142 @@ export const EventDetailsPage = ({
               />
             ) : null}
 
+            {event.status === "cancelled" ? (
+              <WorkflowLockBanner
+                title={t("events.workflowLockedTitle", {
+                  defaultValue: "Workflow Locked",
+                })}
+                message={t("events.workflowLockedMessage", {
+                  defaultValue:
+                    "This event is cancelled. New quotation and execution actions should stop here.",
+                })}
+              />
+            ) : null}
+
+            <WorkflowLineageCard
+              title={t("events.workflowLineage", {
+                defaultValue: "Workflow Lineage",
+              })}
+              items={[
+                {
+                  label: t("events.sourceAppointment", {
+                    defaultValue: "Source Appointment",
+                  }),
+                  value: event.sourceAppointmentId ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/appointments/${event.sourceAppointmentId}`)}
+                      className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                    >
+                      #{event.sourceAppointmentId}
+                    </button>
+                  ) : (
+                    t("events.manualEvent", {
+                      defaultValue: "Created manually without an appointment source.",
+                    })
+                  ),
+                  helper: event.sourceAppointment?.customer?.fullName || undefined,
+                },
+                {
+                  label: t("events.customer", { defaultValue: "Customer" }),
+                  value: event.customerId ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/customers/${event.customerId}`)}
+                      className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                    >
+                      {event.customer?.fullName || `Customer #${event.customerId}`}
+                    </button>
+                  ) : (
+                    t("events.noCustomerLinked", {
+                      defaultValue: "No customer linked",
+                    })
+                  ),
+                  helper: event.venue?.name || event.venueNameSnapshot || undefined,
+                },
+                {
+                  label: t("events.commercialState", {
+                    defaultValue: "Commercial State",
+                  }),
+                  value:
+                    latestContract?.status ||
+                    latestQuotation?.status ||
+                    t("events.noCommercialDocuments", {
+                      defaultValue: "No quotation or contract created yet.",
+                    }),
+                  helper: commercialSummary || undefined,
+                },
+                {
+                  label: t("events.downstreamArtifacts", {
+                    defaultValue: "Downstream Artifacts",
+                  }),
+                  value: (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {latestQuotation ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/quotations/${latestQuotation.id}`)}
+                          className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                        >
+                          QT #{latestQuotation.id}
+                        </button>
+                      ) : null}
+                      {latestContract ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/contracts/${latestContract.id}`)}
+                          className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
+                        >
+                          CT #{latestContract.id}
+                        </button>
+                      ) : null}
+                      {executionBrief ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/execution-briefs/${executionBrief.id}`)
+                          }
+                          className="inline-flex items-center"
+                        >
+                          <WorkflowStatusBadge
+                            entity="execution"
+                            status={executionBrief.status}
+                          />
+                        </button>
+                      ) : null}
+                      {!latestQuotation && !latestContract && !executionBrief
+                        ? t("events.noDownstreamArtifacts", {
+                            defaultValue:
+                              "No quotation, contract, or execution brief has been linked yet.",
+                          })
+                        : null}
+                    </div>
+                  ),
+                  helper: executionBrief
+                    ? t("events.executionBriefLinked", {
+                        defaultValue: "Execution brief is already linked to this event.",
+                      })
+                    : t("events.executionBriefPending", {
+                        defaultValue:
+                          "Execution brief becomes relevant after commercial confirmation.",
+                      }),
+                },
+              ]}
+            />
+
+            <ProtectedComponent permission="events.update">
+              <WorkflowActionBar
+                title={t("events.workflowActions", {
+                  defaultValue: "Workflow Actions",
+                })}
+                description={t("events.workflowActionsHint", {
+                  defaultValue:
+                    "Move the event forward with explicit business actions instead of editing status manually.",
+                })}
+                actions={workflowActions}
+              />
+            </ProtectedComponent>
+
             <EventWorkspaceSummary
               t={t}
               dateLocale={dateLocale}
@@ -1098,6 +1511,35 @@ export const EventDetailsPage = ({
                 setCreateContractDialogOpen(true);
               }}
             />
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <WorkflowNextStepPanel
+                title={t("events.nextStepsTitle", {
+                  defaultValue: "Next Step Guidance",
+                })}
+                description={t("events.nextStepsHint", {
+                  defaultValue:
+                    "This panel calls out the most relevant follow-up based on the event's current workflow position and linked artifacts.",
+                })}
+                items={nextSteps}
+              />
+
+              <WorkflowTimeline
+                title={t("events.timelineTitle", {
+                  defaultValue: "Timeline & Action History",
+                })}
+                description={t("events.timelineHint", {
+                  defaultValue:
+                    "This history combines the event record with linked quotation, contract, and execution timestamps when available.",
+                })}
+                partialHistoryLabel={t("events.timelinePartial", {
+                  defaultValue:
+                    "This is a partial operational timeline. Full backend audit history is not available yet, so the latest reliable timestamps are used.",
+                })}
+                items={timelineItems}
+                locale={dateLocale}
+              />
+            </div>
 
             <Tabs
               dir={i18n.dir()}
@@ -1288,40 +1730,17 @@ export const EventDetailsPage = ({
                   </Select>
                 </label>
 
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.statusLabel", { defaultValue: "Status" })}
-                  </span>
-                  <Select
-                    value={editEventForm.status || "draft"}
-                    onValueChange={(value) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        status: value as EventStatus,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        "draft",
-                        "designing",
-                        "confirmed",
-                        "in_progress",
-                        "completed",
-                        "cancelled",
-                      ].map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {t(`events.status.${status}`, {
-                            defaultValue: status,
-                          })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
+                <div className="md:col-span-2">
+                  <WorkflowLockBanner
+                    title={t("events.statusManagedByWorkflow", {
+                      defaultValue: "Status Managed by Workflow",
+                    })}
+                    message={t("events.statusManagedByWorkflowHint", {
+                      defaultValue:
+                        "Use the workflow action buttons on the event details page to change status safely.",
+                    })}
+                  />
+                </div>
 
                 <label className={fieldGroupClassName}>
                   <span className={fieldLabelClassName}>
@@ -2592,6 +3011,32 @@ export const EventDetailsPage = ({
         }}
         eventId={event.id}
         existingServiceIds={existingEventServiceIds}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingWorkflowAction)}
+        onOpenChange={(open) => !open && setPendingWorkflowAction(null)}
+        title={
+          pendingWorkflowAction?.confirmTitle ||
+          t("events.confirmWorkflowAction", {
+            defaultValue: "Confirm Workflow Action",
+          })
+        }
+        message={
+          pendingWorkflowAction?.confirmMessage ||
+          pendingWorkflowAction?.description ||
+          t("events.confirmWorkflowActionHint", {
+            defaultValue:
+              "This event will move to the next workflow stage.",
+          })
+        }
+        confirmLabel={
+          pendingWorkflowAction?.label ||
+          t("common.confirm", { defaultValue: "Confirm" })
+        }
+        cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
+        onConfirm={handleConfirmWorkflowAction}
+        isPending={workflowActionMutation.isPending}
       />
 
       <ConfirmDialog
