@@ -12,9 +12,22 @@ import {
   User,
 } from "../../models";
 import {
+  recordWorkflowAction,
+  recordWorkflowBlock,
+  recordWorkflowTransition,
+} from "../workflow/workflow.audit";
+import {
   invalidStatusTransitionError,
   WorkflowDomainError,
 } from "../workflow/workflow.errors";
+import {
+  EXECUTION_BRIEF_TRANSITIONS,
+  assertValidExecutionBriefTransition,
+  normalizeContractStatus,
+  normalizeExecutionBriefStatus,
+  normalizeQuotationStatus,
+  resolveTransitionPath,
+} from "../workflow/workflow.status";
 
 const serviceDetailsOrder: Order = [
   ["sortOrder", "ASC"],
@@ -169,6 +182,21 @@ export async function assertExecutionBriefCreationAllowed({
 }) {
   const existingBrief = await ExecutionBrief.findOne({ where: { eventId } });
   if (existingBrief) {
+    recordWorkflowBlock({
+      entityName: "execution_brief",
+      entityId: existingBrief.id,
+      actionName: "execution_brief.create_for_event",
+      currentStatus: normalizeExecutionBriefStatus(existingBrief.status),
+      attemptedBy: null,
+      message: "Execution brief already exists for this event",
+      sourceRefs: {
+        eventId,
+        quotationId: quotationId ?? null,
+        contractId: contractId ?? null,
+        executionBriefId: existingBrief.id,
+      },
+    });
+
     throw new WorkflowDomainError(
       "Execution brief already exists for this event",
       409,
@@ -182,6 +210,21 @@ export async function assertExecutionBriefCreationAllowed({
   });
 
   if (refs.event.status === "cancelled") {
+    recordWorkflowBlock({
+      entityName: "event",
+      entityId: refs.event.id,
+      actionName: "execution_brief.create_from_event",
+      currentStatus: refs.event.status,
+      attemptedBy: null,
+      message: "Cannot create execution brief for cancelled event",
+      sourceRefs: {
+        sourceAppointmentId: refs.event.sourceAppointmentId ?? null,
+        eventId: refs.event.id,
+        quotationId: refs.quotation?.id ?? null,
+        contractId: refs.contract?.id ?? null,
+      },
+    });
+
     throw new WorkflowDomainError(
       "Cannot create execution brief for cancelled event",
       400,
@@ -189,7 +232,81 @@ export async function assertExecutionBriefCreationAllowed({
   }
 
   if (refs.event.status !== "confirmed" && !contractId) {
+    recordWorkflowBlock({
+      entityName: "event",
+      entityId: refs.event.id,
+      actionName: "execution_brief.create_from_event",
+      currentStatus: refs.event.status,
+      attemptedBy: null,
+      message: "Invalid status transition",
+      sourceRefs: {
+        sourceAppointmentId: refs.event.sourceAppointmentId ?? null,
+        eventId: refs.event.id,
+        quotationId: refs.quotation?.id ?? null,
+        contractId: refs.contract?.id ?? null,
+      },
+      metadata: {
+        requiresConfirmedEvent: true,
+      },
+    });
+
     throw invalidStatusTransitionError();
+  }
+
+  return refs;
+}
+
+export async function assertExecutionBriefCommercialReady(
+  briefOrRefs:
+    | ExecutionBrief
+    | {
+        event: Event;
+        quotation?: Quotation | null;
+        contract?: Contract | null;
+      },
+) {
+  const refs =
+    briefOrRefs instanceof ExecutionBrief
+      ? await assertExecutionBriefReferences({
+          eventId: briefOrRefs.eventId,
+          quotationId: briefOrRefs.quotationId,
+          contractId: briefOrRefs.contractId,
+        })
+      : briefOrRefs;
+
+  if (refs.contract) {
+    const contractStatus = normalizeContractStatus(refs.contract.status);
+    if (
+      contractStatus === "signed"
+      || contractStatus === "active"
+      || contractStatus === "completed"
+    ) {
+      return refs;
+    }
+  }
+
+  if (!refs.quotation || normalizeQuotationStatus(refs.quotation.status) !== "approved") {
+    if (briefOrRefs instanceof ExecutionBrief) {
+      recordWorkflowBlock({
+        entityName: "execution_brief",
+        entityId: briefOrRefs.id,
+        actionName: "execution_brief.handoff",
+        currentStatus: normalizeExecutionBriefStatus(briefOrRefs.status),
+        attemptedBy: null,
+        message: "Execution brief handoff requires approved quotation or contract",
+        sourceRefs: {
+          eventId: briefOrRefs.eventId,
+          quotationId: briefOrRefs.quotationId ?? null,
+          contractId: briefOrRefs.contractId ?? null,
+          executionBriefId: briefOrRefs.id,
+        },
+      });
+    }
+
+    throw new WorkflowDomainError(
+      "Execution brief handoff requires approved quotation or contract",
+      400,
+    );
   }
 
   return refs;
@@ -279,7 +396,307 @@ export async function createExecutionBriefWorkflow({
     }
   }
 
+  recordWorkflowAction({
+    entityName: "execution_brief",
+    entityId: brief.id,
+    actionName: contractId
+      ? "execution_brief.create_from_contract"
+      : quotationId
+        ? "execution_brief.create_from_quotation"
+        : "execution_brief.create_from_event",
+    actorId: userId,
+    note: "Created execution brief operational snapshot",
+    sourceRefs: {
+      eventId,
+      quotationId,
+      contractId,
+      executionBriefId: brief.id,
+    },
+    metadata: {
+      initializeFromEventServices,
+    },
+  });
+
   return ExecutionBrief.findByPk(brief.id, {
     include: buildExecutionBriefInclude(),
   });
 }
+
+type ExecutionBriefStatusActionInput = {
+  brief: ExecutionBrief;
+  nextStatus: ExecutionBriefStatus;
+  actionName: string;
+  userId: number | null;
+  note?: string | null;
+  reason?: string | null;
+};
+
+const applyExecutionBriefStatusAction = async ({
+  brief,
+  nextStatus,
+  actionName,
+  userId,
+  note = null,
+  reason = null,
+}: ExecutionBriefStatusActionInput) => {
+  const previousStatus = brief.status;
+  assertValidExecutionBriefTransition(previousStatus, nextStatus);
+
+  if (nextStatus === "handed_off" || nextStatus === "in_progress") {
+    await assertExecutionBriefCommercialReady(brief);
+  }
+
+  await brief.update({
+    status: nextStatus,
+    updatedBy: userId,
+  });
+
+  recordWorkflowTransition({
+    entityName: "execution_brief",
+    entityId: brief.id,
+    previousStatus: normalizeExecutionBriefStatus(previousStatus),
+    nextStatus: normalizeExecutionBriefStatus(nextStatus),
+    actionName,
+    changedBy: userId,
+    note,
+    reason,
+    sourceRefs: {
+      eventId: brief.eventId,
+      quotationId: brief.quotationId ?? null,
+      contractId: brief.contractId ?? null,
+      executionBriefId: brief.id,
+    },
+    metadata: {
+      eventId: brief.eventId,
+      quotationId: brief.quotationId ?? null,
+      contractId: brief.contractId ?? null,
+    },
+  });
+
+  return brief;
+};
+
+export const submitExecutionBriefForReview = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "under_review",
+    actionName: "execution_brief.submit_for_review",
+    userId,
+    note,
+  });
+
+export const approveExecutionBrief = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "approved",
+    actionName: "execution_brief.approve",
+    userId,
+    note,
+  });
+
+export const handoffExecutionBrief = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "handed_off",
+    actionName: "execution_brief.handoff",
+    userId,
+    note,
+  });
+
+export const startExecutionBrief = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "in_progress",
+    actionName: "execution_brief.start",
+    userId,
+    note,
+  });
+
+export const completeExecutionBriefWorkflow = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "completed",
+    actionName: "execution_brief.complete",
+    userId,
+    note,
+  });
+
+export const cancelExecutionBrief = (
+  brief: ExecutionBrief,
+  userId: number | null,
+  reason?: string | null,
+  note?: string | null,
+) =>
+  applyExecutionBriefStatusAction({
+    brief,
+    nextStatus: "cancelled",
+    actionName: "execution_brief.cancel",
+    userId,
+    note,
+    reason,
+  });
+
+export const transitionExecutionBriefToStatus = async ({
+  brief,
+  targetStatus,
+  userId,
+  note,
+  reason,
+}: {
+  brief: ExecutionBrief;
+  targetStatus: ExecutionBriefStatus;
+  userId: number | null;
+  note?: string | null;
+  reason?: string | null;
+}) => {
+  const path = resolveTransitionPath(
+    EXECUTION_BRIEF_TRANSITIONS,
+    normalizeExecutionBriefStatus(brief.status),
+    normalizeExecutionBriefStatus(targetStatus),
+  );
+
+  for (const nextStatus of path) {
+    if (nextStatus === "under_review") {
+      await submitExecutionBriefForReview(brief, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "approved") {
+      await approveExecutionBrief(brief, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "handed_off") {
+      await handoffExecutionBrief(brief, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "in_progress") {
+      await startExecutionBrief(brief, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "completed") {
+      await completeExecutionBriefWorkflow(brief, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "cancelled") {
+      await cancelExecutionBrief(brief, userId, reason, note);
+    }
+  }
+
+  return brief;
+};
+
+const EXECUTION_LOCKED_STATUSES = new Set([
+  "handed_off",
+  "in_progress",
+  "completed",
+]);
+
+export const assertExecutionBriefStructureEditable = (
+  brief: ExecutionBrief,
+  audit?: {
+    userId: number | null;
+    area?: string;
+  },
+) => {
+  if (EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))) {
+    if (audit) {
+      recordWorkflowBlock({
+        entityName: "execution_brief",
+        entityId: brief.id,
+        actionName: "execution_brief.update_structure",
+        currentStatus: normalizeExecutionBriefStatus(brief.status),
+        attemptedBy: audit.userId,
+        message: "Cannot structurally modify handed-off execution brief",
+        sourceRefs: {
+          eventId: brief.eventId,
+          quotationId: brief.quotationId ?? null,
+          contractId: brief.contractId ?? null,
+          executionBriefId: brief.id,
+        },
+        metadata: {
+          area: audit.area,
+        },
+      });
+    }
+
+    throw invalidStatusTransitionError(
+      "Cannot structurally modify handed-off execution brief",
+    );
+  }
+};
+
+export const assertExecutionBriefHeaderEditable = (
+  brief: ExecutionBrief,
+  payload: Partial<{
+    quotationId: number | null;
+    contractId: number | null;
+    generalNotes: string | null;
+    clientNotes: string | null;
+    designerNotes: string | null;
+  }>,
+  audit?: {
+    userId: number | null;
+    attemptedFields?: string[];
+  },
+) => {
+  if (!EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))) {
+    return;
+  }
+
+  const hasProtectedChange =
+    typeof payload.quotationId !== "undefined"
+    || typeof payload.contractId !== "undefined"
+    || typeof payload.generalNotes !== "undefined"
+    || typeof payload.clientNotes !== "undefined"
+    || typeof payload.designerNotes !== "undefined";
+
+  if (hasProtectedChange) {
+    if (audit) {
+      recordWorkflowBlock({
+        entityName: "execution_brief",
+        entityId: brief.id,
+        actionName: "execution_brief.update_header",
+        currentStatus: normalizeExecutionBriefStatus(brief.status),
+        attemptedBy: audit.userId,
+        message: "Cannot structurally modify handed-off execution brief",
+        sourceRefs: {
+          eventId: brief.eventId,
+          quotationId: brief.quotationId ?? null,
+          contractId: brief.contractId ?? null,
+          executionBriefId: brief.id,
+        },
+        metadata: {
+          attemptedFields: audit.attemptedFields,
+        },
+      });
+    }
+
+    throw invalidStatusTransitionError(
+      "Cannot structurally modify handed-off execution brief",
+    );
+  }
+};

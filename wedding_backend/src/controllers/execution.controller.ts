@@ -18,13 +18,15 @@ import {
   executionBriefByEventParamSchema,
 } from "../validation/execution.validation";
 import {
+  assertExecutionBriefHeaderEditable,
+  assertExecutionBriefStructureEditable,
   assertExecutionBriefReferences,
   buildExecutionBriefInclude,
   createExecutionBriefWorkflow,
+  transitionExecutionBriefToStatus,
 } from "../services/execution/execution.service";
 import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
 import {
-  assertValidExecutionBriefTransition,
   expandExecutionBriefStatusesForQuery,
 } from "../services/workflow/workflow.status";
 
@@ -59,7 +61,7 @@ export const createExecutionBrief = async (req: Request, res: Response) => {
       eventId,
       quotationId,
       contractId,
-      status,
+      status: "draft",
       generalNotes,
       clientNotes,
       designerNotes,
@@ -67,9 +69,21 @@ export const createExecutionBrief = async (req: Request, res: Response) => {
       userId: getUserIdFromRequest(req),
     });
 
+    if (brief && status !== "draft") {
+      await transitionExecutionBriefToStatus({
+        brief,
+        targetStatus: status,
+        userId: getUserIdFromRequest(req),
+      });
+    }
+
+    const hydrated = brief ? await ExecutionBrief.findByPk(brief.id, {
+      include: buildExecutionBriefInclude(),
+    }) : brief;
+
     return res.status(201).json({
       message: "Execution brief created successfully",
-      data: brief,
+      data: hydrated,
     });
   } catch (error) {
     if (isWorkflowDomainError(error)) {
@@ -157,6 +171,17 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Execution brief not found" });
     }
 
+    assertExecutionBriefHeaderEditable(brief, {
+      quotationId: bodyParsed.data.quotationId,
+      contractId: bodyParsed.data.contractId,
+      generalNotes: bodyParsed.data.generalNotes,
+      clientNotes: bodyParsed.data.clientNotes,
+      designerNotes: bodyParsed.data.designerNotes,
+    }, {
+      userId: getUserIdFromRequest(req),
+      attemptedFields: Object.keys(req.body),
+    });
+
     await assertExecutionBriefReferences({
       eventId: brief.eventId,
       quotationId:
@@ -171,7 +196,6 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
 
     const userId = getUserIdFromRequest(req);
     const nextStatus = bodyParsed.data.status ?? brief.status;
-    assertValidExecutionBriefTransition(brief.status, nextStatus);
 
     const approvedByClientAt: Date | null | undefined =
       bodyParsed.data.approvedByClientAt === undefined
@@ -190,14 +214,28 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
     await brief.update({
       quotationId: bodyParsed.data.quotationId,
       contractId: bodyParsed.data.contractId,
-      status: nextStatus,
       generalNotes: bodyParsed.data.generalNotes,
       clientNotes: bodyParsed.data.clientNotes,
       designerNotes: bodyParsed.data.designerNotes,
       approvedByClientAt,
       handedToExecutorAt,
-      updatedBy: userId,
     });
+
+    if (nextStatus !== brief.status) {
+      await transitionExecutionBriefToStatus({
+        brief,
+        targetStatus: nextStatus,
+        userId,
+        note:
+          typeof bodyParsed.data.generalNotes === "string"
+            ? bodyParsed.data.generalNotes
+            : undefined,
+      });
+    } else {
+      await brief.update({
+        updatedBy: userId,
+      });
+    }
 
     const hydrated = await ExecutionBrief.findByPk(brief.id, {
       include: buildExecutionBriefInclude(),
@@ -271,27 +309,84 @@ export const updateExecutionServiceDetail = async (
   req: Request,
   res: Response,
 ) => {
-  const paramsParsed = executionServiceDetailIdParamSchema.safeParse(
-    req.params,
-  );
-  if (!paramsParsed.success) {
-    return res.status(400).json({
-      message: "Invalid service detail id",
-      errors: paramsParsed.error.flatten(),
-    });
-  }
+  try {
+    const paramsParsed = executionServiceDetailIdParamSchema.safeParse(
+      req.params,
+    );
+    if (!paramsParsed.success) {
+      return res.status(400).json({
+        message: "Invalid service detail id",
+        errors: paramsParsed.error.flatten(),
+      });
+    }
 
-  const bodyParsed = updateExecutionServiceDetailSchema.safeParse(req.body);
-  if (!bodyParsed.success) {
-    return res.status(400).json({
-      message: "Invalid execution service detail payload",
-      errors: bodyParsed.error.flatten(),
-    });
-  }
+    const bodyParsed = updateExecutionServiceDetailSchema.safeParse(req.body);
+    if (!bodyParsed.success) {
+      return res.status(400).json({
+        message: "Invalid execution service detail payload",
+        errors: bodyParsed.error.flatten(),
+      });
+    }
 
-  const serviceDetail = await ExecutionServiceDetail.findByPk(
-    paramsParsed.data.id,
-    {
+    const serviceDetail = await ExecutionServiceDetail.findByPk(
+      paramsParsed.data.id,
+      {
+        include: [
+          {
+            model: Service,
+            as: "service",
+            required: false,
+          },
+          {
+            model: ExecutionAttachment,
+            as: "attachments",
+            required: false,
+          },
+        ],
+      },
+    );
+
+    if (!serviceDetail) {
+      return res
+        .status(404)
+        .json({ message: "Execution service detail not found" });
+    }
+
+    const brief = await ExecutionBrief.findByPk(serviceDetail.briefId);
+    if (!brief) {
+      return res.status(404).json({ message: "Execution brief not found" });
+    }
+
+    if (
+      typeof bodyParsed.data.templateKey !== "undefined"
+      || typeof bodyParsed.data.sortOrder !== "undefined"
+      || typeof bodyParsed.data.detailsJson !== "undefined"
+    ) {
+      assertExecutionBriefStructureEditable(brief, {
+        userId: getUserIdFromRequest(req),
+        area: "service_details",
+      });
+    }
+
+    await serviceDetail.update({
+      templateKey: bodyParsed.data.templateKey ?? serviceDetail.templateKey,
+      sortOrder: bodyParsed.data.sortOrder ?? serviceDetail.sortOrder,
+      detailsJson:
+        bodyParsed.data.detailsJson !== undefined
+          ? bodyParsed.data.detailsJson
+          : serviceDetail.detailsJson,
+      notes:
+        bodyParsed.data.notes !== undefined
+          ? bodyParsed.data.notes
+          : serviceDetail.notes,
+      executorNotes:
+        bodyParsed.data.executorNotes !== undefined
+          ? bodyParsed.data.executorNotes
+          : serviceDetail.executorNotes,
+      status: bodyParsed.data.status ?? serviceDetail.status,
+    });
+
+    const hydrated = await ExecutionServiceDetail.findByPk(serviceDetail.id, {
       include: [
         {
           model: Service,
@@ -304,52 +399,19 @@ export const updateExecutionServiceDetail = async (
           required: false,
         },
       ],
-    },
-  );
+    });
 
-  if (!serviceDetail) {
-    return res
-      .status(404)
-      .json({ message: "Execution service detail not found" });
+    return res.json({
+      message: "Execution service detail updated successfully",
+      data: hydrated,
+    });
+  } catch (error) {
+    if (isWorkflowDomainError(error)) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Unexpected error" });
   }
-
-  await serviceDetail.update({
-    templateKey: bodyParsed.data.templateKey ?? serviceDetail.templateKey,
-    sortOrder: bodyParsed.data.sortOrder ?? serviceDetail.sortOrder,
-    detailsJson:
-      bodyParsed.data.detailsJson !== undefined
-        ? bodyParsed.data.detailsJson
-        : serviceDetail.detailsJson,
-    notes:
-      bodyParsed.data.notes !== undefined
-        ? bodyParsed.data.notes
-        : serviceDetail.notes,
-    executorNotes:
-      bodyParsed.data.executorNotes !== undefined
-        ? bodyParsed.data.executorNotes
-        : serviceDetail.executorNotes,
-    status: bodyParsed.data.status ?? serviceDetail.status,
-  });
-
-  const hydrated = await ExecutionServiceDetail.findByPk(serviceDetail.id, {
-    include: [
-      {
-        model: Service,
-        as: "service",
-        required: false,
-      },
-      {
-        model: ExecutionAttachment,
-        as: "attachments",
-        required: false,
-      },
-    ],
-  });
-
-  return res.json({
-    message: "Execution service detail updated successfully",
-    data: hydrated,
-  });
 };
 
 export const uploadExecutionBriefAttachment = async (

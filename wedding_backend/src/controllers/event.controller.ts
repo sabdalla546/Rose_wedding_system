@@ -9,9 +9,18 @@ import { renderEventReportHtml } from "../services/documents/event/eventReportPd
 import {
   assertAppointmentCanConvertToEvent,
   assertEventStatusTransition,
+  cancelEvent,
+  completeEventWorkflow,
+  confirmEvent,
+  convertAppointmentToEvent,
   listEventsPage,
   loadEventById,
+  markEventAsQuoted,
+  markEventAsQuotationPending,
+  moveEventToDesigning,
   normalizeNullableString,
+  startEventExecution,
+  transitionEventToStatus,
 } from "../services/events/event.service";
 import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
 
@@ -61,23 +70,48 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const event = await Event.create({
-      customerId: resolvedCustomerId,
-      sourceAppointmentId: data.sourceAppointmentId ?? null,
-      title: normalizeNullableString(data.title),
-      eventDate: resolvedEventDate,
-      venueId: resolvedVenueId,
-      venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
-      groomName: normalizeNullableString(data.groomName),
-      brideName: normalizeNullableString(data.brideName),
-      guestCount: resolvedGuestCount,
-      notes: data.notes ?? null,
-      status: data.status ?? "draft",
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
+    const created = data.sourceAppointmentId
+      ? await convertAppointmentToEvent({
+          sourceAppointmentId: data.sourceAppointmentId,
+          customerId: resolvedCustomerId,
+          title: normalizeNullableString(data.title),
+          eventDate: resolvedEventDate,
+          venueId: resolvedVenueId,
+          venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+          groomName: normalizeNullableString(data.groomName),
+          brideName: normalizeNullableString(data.brideName),
+          guestCount: resolvedGuestCount,
+          notes: data.notes ?? null,
+          status: data.status ?? "draft",
+          userId: req.user?.id ?? null,
+        })
+      : await (async () => {
+          const event = await Event.create({
+            customerId: resolvedCustomerId,
+            sourceAppointmentId: null,
+            title: normalizeNullableString(data.title),
+            eventDate: resolvedEventDate,
+            venueId: resolvedVenueId,
+            venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+            groomName: normalizeNullableString(data.groomName),
+            brideName: normalizeNullableString(data.brideName),
+            guestCount: resolvedGuestCount,
+            notes: data.notes ?? null,
+            status: "draft",
+            createdBy: req.user?.id ?? null,
+            updatedBy: req.user?.id ?? null,
+          });
 
-    const created = await loadEventById(event.id);
+          if (data.status && data.status !== "draft") {
+            await transitionEventToStatus({
+              event,
+              targetStatus: data.status,
+              userId: req.user?.id ?? null,
+            });
+          }
+
+          return loadEventById(event.id);
+        })();
 
     return res.status(201).json({
       message: "Event created successfully",
@@ -144,25 +178,44 @@ export const createEventFromSource = async (
       }
     }
 
-    const event = await Event.create({
-      customerId: customer.id,
-      sourceAppointmentId: data.sourceAppointmentId ?? null,
-      title:
-        normalizeNullableString(data.title) ||
-        `Wedding Event - ${customer.fullName}`,
-      eventDate: resolvedEventDate,
-      venueId: resolvedVenueId,
-      venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
-      groomName: normalizeNullableString(data.groomName),
-      brideName: normalizeNullableString(data.brideName),
-      guestCount: resolvedGuestCount,
-      notes: data.notes ?? null,
-      status: "draft",
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
+    const created = data.sourceAppointmentId
+      ? await convertAppointmentToEvent({
+          sourceAppointmentId: data.sourceAppointmentId,
+          customerId: customer.id,
+          title:
+            normalizeNullableString(data.title) ||
+            `Wedding Event - ${customer.fullName}`,
+          eventDate: resolvedEventDate,
+          venueId: resolvedVenueId,
+          venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+          groomName: normalizeNullableString(data.groomName),
+          brideName: normalizeNullableString(data.brideName),
+          guestCount: resolvedGuestCount,
+          notes: data.notes ?? null,
+          status: "draft",
+          userId: req.user?.id ?? null,
+        })
+      : await (async () => {
+          const event = await Event.create({
+            customerId: customer.id,
+            sourceAppointmentId: null,
+            title:
+              normalizeNullableString(data.title) ||
+              `Wedding Event - ${customer.fullName}`,
+            eventDate: resolvedEventDate,
+            venueId: resolvedVenueId,
+            venueNameSnapshot: normalizeNullableString(data.venueNameSnapshot),
+            groomName: normalizeNullableString(data.groomName),
+            brideName: normalizeNullableString(data.brideName),
+            guestCount: resolvedGuestCount,
+            notes: data.notes ?? null,
+            status: "draft",
+            createdBy: req.user?.id ?? null,
+            updatedBy: req.user?.id ?? null,
+          });
 
-    const created = await loadEventById(event.id);
+          return loadEventById(event.id);
+        })();
 
     return res.status(201).json({
       message: "Event created from source successfully",
@@ -276,8 +329,6 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    assertEventStatusTransition(event.status, data.status);
-
     await event.update({
       customerId:
         typeof data.customerId !== "undefined"
@@ -311,9 +362,17 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
           ? data.guestCount
           : event.guestCount,
       notes: typeof data.notes !== "undefined" ? data.notes : event.notes,
-      status: data.status ?? event.status,
       updatedBy: req.user?.id ?? null,
     });
+
+    if (typeof data.status !== "undefined" && data.status !== event.status) {
+      await transitionEventToStatus({
+        event,
+        targetStatus: data.status,
+        userId: req.user?.id ?? null,
+        note: typeof data.notes === "string" ? data.notes : undefined,
+      });
+    }
 
     const updated = await loadEventById(id);
 

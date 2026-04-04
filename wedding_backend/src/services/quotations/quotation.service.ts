@@ -14,14 +14,24 @@ import {
   VendorSubService,
   Venue,
 } from "../../models";
+import type { QuotationStatus } from "../../models/quotation.model";
+import {
+  recordWorkflowAction,
+  recordWorkflowBlock,
+  recordWorkflowTransition,
+} from "../workflow/workflow.audit";
 import { CANCELLED_EVENT_STATUSES } from "../../constants/workflow-statuses";
 import {
   cancelledEventQuotationError,
+  invalidStatusTransitionError,
   WorkflowDomainError,
 } from "../workflow/workflow.errors";
 import {
+  QUOTATION_TRANSITIONS,
+  assertValidQuotationTransition,
   expandQuotationStatusesForQuery,
   normalizeQuotationStatus,
+  resolveTransitionPath,
 } from "../workflow/workflow.status";
 
 export function buildVendorSummaryInclude() {
@@ -239,6 +249,19 @@ export async function assertEventCanCreateQuotation(eventId: number) {
   }
 
   if (CANCELLED_EVENT_STATUSES.has(event.status)) {
+    recordWorkflowBlock({
+      entityName: "event",
+      entityId: event.id,
+      actionName: "quotation.create_from_event",
+      currentStatus: event.status,
+      attemptedBy: null,
+      message: "Cannot create quotation for cancelled event",
+      sourceRefs: {
+        sourceAppointmentId: event.sourceAppointmentId ?? null,
+        eventId: event.id,
+      },
+    });
+
     throw cancelledEventQuotationError();
   }
 
@@ -267,16 +290,312 @@ export async function supersedeSiblingQuotationsForEvent(
   );
 
   await Promise.all(
-    quotationsToSupersede.map((quotation) =>
-      quotation.update({
+    quotationsToSupersede.map((quotation) => {
+      const previousStatus = normalizeQuotationStatus(quotation.status);
+
+      return quotation.update({
         status: "superseded",
         updatedBy: userId,
-      }),
-    ),
+      }).then(() => {
+        recordWorkflowTransition({
+          entityName: "quotation",
+          entityId: quotation.id,
+          previousStatus,
+          nextStatus: "superseded",
+          actionName: "quotation.supersede",
+          changedBy: userId,
+          note: "Superseded by newer effective quotation",
+          sourceRefs: {
+            eventId,
+            quotationId: quotation.id,
+          },
+          metadata: {
+            eventId,
+            keepQuotationId,
+          },
+        });
+      });
+    }),
   );
 
   return quotationsToSupersede.length;
 }
+
+type QuotationStatusActionInput = {
+  quotation: Quotation;
+  nextStatus: QuotationStatus;
+  actionName: string;
+  userId: number | null;
+  note?: string | null;
+  reason?: string | null;
+};
+
+const applyQuotationStatusAction = async ({
+  quotation,
+  nextStatus,
+  actionName,
+  userId,
+  note = null,
+  reason = null,
+}: QuotationStatusActionInput) => {
+  const previousStatus = quotation.status;
+  assertValidQuotationTransition(previousStatus, nextStatus);
+
+  await quotation.update({
+    status: nextStatus,
+    updatedBy: userId,
+  });
+
+  if (normalizeQuotationStatus(nextStatus) === "approved") {
+    await supersedeSiblingQuotationsForEvent(
+      quotation.eventId,
+      quotation.id,
+      userId,
+    );
+  }
+
+  recordWorkflowTransition({
+    entityName: "quotation",
+    entityId: quotation.id,
+    previousStatus: normalizeQuotationStatus(previousStatus),
+    nextStatus: normalizeQuotationStatus(nextStatus),
+    actionName,
+    changedBy: userId,
+    note,
+    reason,
+    sourceRefs: {
+      eventId: quotation.eventId,
+      quotationId: quotation.id,
+    },
+    metadata: {
+      eventId: quotation.eventId,
+    },
+  });
+
+  return quotation;
+};
+
+export const sendQuotation = (
+  quotation: Quotation,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyQuotationStatusAction({
+    quotation,
+    nextStatus: "sent",
+    actionName: "quotation.send",
+    userId,
+    note,
+  });
+
+export const approveQuotation = (
+  quotation: Quotation,
+  userId: number | null,
+  note?: string | null,
+) =>
+  applyQuotationStatusAction({
+    quotation,
+    nextStatus: "approved",
+    actionName: "quotation.approve",
+    userId,
+    note,
+  });
+
+export async function countEffectiveApprovedQuotationsForEvent(
+  eventId: number,
+  excludeQuotationId?: number,
+) {
+  return Quotation.count({
+    where: {
+      eventId,
+      status: "approved",
+      ...(excludeQuotationId
+        ? {
+            id: {
+              [Op.ne]: excludeQuotationId,
+            },
+          }
+        : {}),
+    },
+  });
+}
+
+export const rejectQuotation = (
+  quotation: Quotation,
+  userId: number | null,
+  reason?: string | null,
+  note?: string | null,
+) =>
+  applyQuotationStatusAction({
+    quotation,
+    nextStatus: "rejected",
+    actionName: "quotation.reject",
+    userId,
+    note,
+    reason,
+  });
+
+export const expireQuotation = (
+  quotation: Quotation,
+  userId: number | null,
+  reason?: string | null,
+  note?: string | null,
+) =>
+  applyQuotationStatusAction({
+    quotation,
+    nextStatus: "expired",
+    actionName: "quotation.expire",
+    userId,
+    note,
+    reason,
+  });
+
+export const supersedeQuotation = (
+  quotation: Quotation,
+  userId: number | null,
+  reason?: string | null,
+  note?: string | null,
+) =>
+  applyQuotationStatusAction({
+    quotation,
+    nextStatus: "superseded",
+    actionName: "quotation.supersede",
+    userId,
+    note,
+    reason,
+  });
+
+export const transitionQuotationToStatus = async ({
+  quotation,
+  targetStatus,
+  userId,
+  note,
+  reason,
+}: {
+  quotation: Quotation;
+  targetStatus: QuotationStatus;
+  userId: number | null;
+  note?: string | null;
+  reason?: string | null;
+}) => {
+  const path = resolveTransitionPath(
+    QUOTATION_TRANSITIONS,
+    normalizeQuotationStatus(quotation.status),
+    normalizeQuotationStatus(targetStatus),
+  );
+
+  for (const nextStatus of path) {
+    if (nextStatus === "sent") {
+      await sendQuotation(quotation, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "approved") {
+      await approveQuotation(quotation, userId, note);
+      continue;
+    }
+
+    if (nextStatus === "rejected") {
+      await rejectQuotation(quotation, userId, reason, note);
+      continue;
+    }
+
+    if (nextStatus === "expired") {
+      await expireQuotation(quotation, userId, reason, note);
+      continue;
+    }
+
+    if (nextStatus === "superseded") {
+      await supersedeQuotation(quotation, userId, reason, note);
+    }
+  }
+
+  return quotation;
+};
+
+const QUOTATION_LOCKED_STATUSES = new Set(["approved", "superseded"]);
+
+export const assertQuotationHeaderEditable = (
+  quotation: Quotation,
+  payload: Partial<{
+    quotationNumber: string | null;
+    issueDate: string;
+    validUntil: string | null;
+    discountAmount: number | null;
+    notes: string | null;
+  }>,
+  audit?: {
+    userId: number | null;
+    attemptedFields?: string[];
+  },
+) => {
+  if (!QUOTATION_LOCKED_STATUSES.has(normalizeQuotationStatus(quotation.status))) {
+    return;
+  }
+
+  const hasCommercialChange =
+    typeof payload.quotationNumber !== "undefined"
+    || typeof payload.issueDate !== "undefined"
+    || typeof payload.validUntil !== "undefined"
+    || typeof payload.discountAmount !== "undefined"
+    || typeof payload.notes !== "undefined";
+
+  if (hasCommercialChange) {
+    if (audit) {
+      recordWorkflowBlock({
+        entityName: "quotation",
+        entityId: quotation.id,
+        actionName: "quotation.update_header",
+        currentStatus: normalizeQuotationStatus(quotation.status),
+        attemptedBy: audit.userId,
+        message: "Cannot modify approved quotation commercial fields",
+        sourceRefs: {
+          eventId: quotation.eventId,
+          quotationId: quotation.id,
+        },
+        metadata: {
+          attemptedFields: audit.attemptedFields,
+        },
+      });
+    }
+
+    throw invalidStatusTransitionError(
+      "Cannot modify approved quotation commercial fields",
+    );
+  }
+};
+
+export const assertQuotationItemsEditable = (
+  quotation: Quotation,
+  audit?: {
+    userId: number | null;
+    itemId?: number;
+  },
+) => {
+  if (QUOTATION_LOCKED_STATUSES.has(normalizeQuotationStatus(quotation.status))) {
+    if (audit) {
+      recordWorkflowBlock({
+        entityName: "quotation",
+        entityId: quotation.id,
+        actionName: "quotation.update_items",
+        currentStatus: normalizeQuotationStatus(quotation.status),
+        attemptedBy: audit.userId,
+        message: "Cannot modify approved quotation commercial fields",
+        sourceRefs: {
+          eventId: quotation.eventId,
+          quotationId: quotation.id,
+        },
+        metadata: {
+          itemId: audit.itemId,
+        },
+      });
+    }
+
+    throw invalidStatusTransitionError(
+      "Cannot modify approved quotation commercial fields",
+    );
+  }
+};
 
 export async function listQuotationsPage({
   page,
@@ -335,3 +654,34 @@ export async function listQuotationsPage({
     offset: (page - 1) * limit,
   });
 }
+
+export const recordQuotationCreatedAction = ({
+  quotation,
+  userId,
+  itemCount,
+  sourceMode,
+}: {
+  quotation: Quotation;
+  userId: number | null;
+  itemCount: number;
+  sourceMode: "manual" | "event_items";
+}) =>
+  recordWorkflowAction({
+    entityName: "quotation",
+    entityId: quotation.id,
+    actionName: "quotation.create",
+    actorId: userId,
+    note:
+      sourceMode === "event_items"
+        ? "Created quotation from event items"
+        : "Created quotation from provided commercial snapshot",
+    sourceRefs: {
+      eventId: quotation.eventId,
+      quotationId: quotation.id,
+    },
+    metadata: {
+      itemCount,
+      sourceMode,
+      customerId: quotation.customerId ?? null,
+    },
+  });

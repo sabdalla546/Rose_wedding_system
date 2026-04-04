@@ -18,19 +18,18 @@ import { DocumentServiceError } from "../services/documents/document.types";
 import { generateQuotationPdfDocument } from "../services/documents/quotation/quotationPdf.service";
 import {
   assertEventCanCreateQuotation,
+  assertQuotationHeaderEditable,
+  assertQuotationItemsEditable,
   buildVendorSummaryInclude,
   listQuotationsPage,
   loadQuotationById,
   quotationItemDetailInclude,
+  recordQuotationCreatedAction,
   sanitizeQuotationItemPayload,
   sanitizeQuotationPayload,
-  supersedeSiblingQuotationsForEvent,
+  transitionQuotationToStatus,
 } from "../services/quotations/quotation.service";
 import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
-import {
-  assertValidQuotationTransition,
-  normalizeQuotationStatus,
-} from "../services/workflow/workflow.status";
 
 class HttpError extends Error {
   public status: number;
@@ -389,7 +388,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: data.notes ?? null,
-      status: data.status ?? "draft",
+      status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
@@ -400,6 +399,21 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
         ...item,
       })),
     );
+
+    recordQuotationCreatedAction({
+      quotation,
+      userId: req.user?.id ?? null,
+      itemCount: preparedItems.length,
+      sourceMode: "manual",
+    });
+
+    if (data.status && data.status !== "draft") {
+      await transitionQuotationToStatus({
+        quotation,
+        targetStatus: data.status,
+        userId: req.user?.id ?? null,
+      });
+    }
 
     const created = await loadQuotationById(quotation.id);
 
@@ -542,7 +556,7 @@ export const createQuotationFromEvent = async (
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: data.notes ?? null,
-      status: data.status ?? "draft",
+      status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
@@ -553,6 +567,21 @@ export const createQuotationFromEvent = async (
         ...item,
       })),
     );
+
+    recordQuotationCreatedAction({
+      quotation,
+      userId: req.user?.id ?? null,
+      itemCount: preparedItems.length,
+      sourceMode: "event_items",
+    });
+
+    if (data.status && data.status !== "draft") {
+      await transitionQuotationToStatus({
+        quotation,
+        targetStatus: data.status,
+        userId: req.user?.id ?? null,
+      });
+    }
 
     const created = await loadQuotationById(quotation.id);
 
@@ -662,6 +691,17 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
+    assertQuotationHeaderEditable(quotation, {
+      quotationNumber: data.quotationNumber,
+      issueDate: data.issueDate,
+      validUntil: data.validUntil,
+      discountAmount: data.discountAmount,
+      notes: data.notes,
+    }, {
+      userId: req.user?.id ?? null,
+      attemptedFields: Object.keys(data),
+    });
+
     const items = await QuotationItem.findAll({
       where: { quotationId: quotation.id },
     });
@@ -672,9 +712,6 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
         ? data.discountAmount
         : Number(quotation.discountAmount || 0),
     );
-
-    const nextStatus = data.status ?? quotation.status;
-    assertValidQuotationTransition(quotation.status, nextStatus);
 
     await quotation.update({
       quotationNumber:
@@ -690,16 +727,17 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: typeof data.notes !== "undefined" ? data.notes : quotation.notes,
-      status: nextStatus,
       updatedBy: req.user?.id ?? null,
     });
 
-    if (normalizeQuotationStatus(nextStatus) === "approved") {
-      await supersedeSiblingQuotationsForEvent(
-        quotation.eventId,
-        quotation.id,
-        req.user?.id ?? null,
-      );
+    const nextStatus = data.status ?? quotation.status;
+    if (nextStatus !== quotation.status) {
+      await transitionQuotationToStatus({
+        quotation,
+        targetStatus: nextStatus,
+        userId: req.user?.id ?? null,
+        note: typeof data.notes === "string" ? data.notes : undefined,
+      });
     }
 
     const updated = await loadQuotationById(id);
@@ -757,6 +795,11 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
     if (!quotation) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
+
+    assertQuotationItemsEditable(quotation, {
+      userId: req.user?.id ?? null,
+      itemId: item.id,
+    });
 
     const nextItemType = data.itemType ?? item.itemType;
 
@@ -882,6 +925,10 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
+    }
+
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });

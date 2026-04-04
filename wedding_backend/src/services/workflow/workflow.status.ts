@@ -126,6 +126,47 @@ const assertValidTransition = <TWorkflowStatus extends string>({
   }
 };
 
+export const resolveTransitionPath = <TWorkflowStatus extends string>(
+  transitions: Record<TWorkflowStatus, readonly TWorkflowStatus[]>,
+  from: TWorkflowStatus,
+  to: TWorkflowStatus,
+): TWorkflowStatus[] => {
+  if (from === to) {
+    return [];
+  }
+
+  const queue: Array<{ status: TWorkflowStatus; path: TWorkflowStatus[] }> = [
+    { status: from, path: [] },
+  ];
+  const visited = new Set<TWorkflowStatus>([from]);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) {
+      continue;
+    }
+
+    const nextStatuses = transitions[current.status] ?? [];
+    for (const nextStatus of nextStatuses) {
+      if (visited.has(nextStatus)) {
+        continue;
+      }
+
+      const nextPath = [...current.path, nextStatus];
+      if (nextStatus === to) {
+        return nextPath;
+      }
+
+      visited.add(nextStatus);
+      queue.push({ status: nextStatus, path: nextPath });
+    }
+  }
+
+  throw invalidStatusTransitionError(
+    `Invalid status transition from ${from} to ${to}`,
+  );
+};
+
 export const assertValidAppointmentTransition = (
   from: AppointmentStatus,
   to?: AppointmentStatus | null,

@@ -25,6 +25,14 @@ import {
   assertValidAppointmentTransition,
   expandAppointmentStatusesForQuery,
 } from "../services/workflow/workflow.status";
+import {
+  cancelAppointmentWorkflow,
+  completeAppointmentWorkflow,
+  confirmAppointmentWorkflow,
+  markAppointmentNoShow,
+  rescheduleAppointmentWorkflow,
+} from "../services/appointments/appointment.workflow.service";
+import { invalidStatusTransitionError } from "../services/workflow/workflow.errors";
 
 const APPOINTMENT_CONFLICT_MESSAGE =
   "This appointment overlaps with another appointment.";
@@ -384,13 +392,11 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    assertValidAppointmentTransition(appointment.status, "confirmed");
-
-    await appointment.update({
-      status: "confirmed",
-      notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
-      updatedBy: req.user?.id ?? null,
-    });
+    await confirmAppointmentWorkflow(
+      appointment,
+      req.user?.id ?? null,
+      data.notes,
+    );
 
     const updated = await Appointment.findByPk(id, {
       include: appointmentInclude,
@@ -420,13 +426,11 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    assertValidAppointmentTransition(appointment.status, "completed");
-
-    await appointment.update({
-      status: "completed",
-      notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
-      updatedBy: req.user?.id ?? null,
-    });
+    await completeAppointmentWorkflow(
+      appointment,
+      req.user?.id ?? null,
+      data.notes,
+    );
 
     const updated = await Appointment.findByPk(id, {
       include: appointmentInclude,
@@ -456,15 +460,12 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    assertValidAppointmentTransition(appointment.status, "cancelled");
-
-    const mergedNote = [data.reason, data.notes].filter(Boolean).join(" | ");
-
-    await appointment.update({
-      status: "cancelled",
-      notes: mergedNote || appointment.notes,
-      updatedBy: req.user?.id ?? null,
-    });
+    await cancelAppointmentWorkflow(
+      appointment,
+      req.user?.id ?? null,
+      data.reason,
+      data.notes,
+    );
 
     const updated = await Appointment.findByPk(id, {
       include: appointmentInclude,
@@ -497,8 +498,6 @@ export const rescheduleAppointment = async (
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    assertValidAppointmentTransition(appointment.status, "rescheduled");
-
     const nextEndTime =
       typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime;
 
@@ -509,13 +508,12 @@ export const rescheduleAppointment = async (
       ignoreAppointmentId: appointment.id,
     });
 
-    await appointment.update({
+    await rescheduleAppointmentWorkflow(appointment, {
       appointmentDate: data.appointmentDate,
       startTime: data.startTime,
-      endTime: nextEndTime,
-      notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
-      status: "rescheduled",
-      updatedBy: req.user?.id ?? null,
+      endTime: nextEndTime ?? null,
+      note: data.notes,
+      userId: req.user?.id ?? null,
     });
 
     const updated = await Appointment.findByPk(id, {
@@ -573,10 +571,12 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       ignoreAppointmentId: appointment.id,
     });
 
-    assertValidAppointmentTransition(
-      appointment.status,
-      data.status ?? appointment.status,
-    );
+    const nextStatus = data.status ?? appointment.status;
+    if (nextStatus === "converted" && appointment.status !== "converted") {
+      throw invalidStatusTransitionError(
+        "Appointment can only be converted through event conversion",
+      );
+    }
 
     await appointment.update({
       customerId:
@@ -600,9 +600,51 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
           ? data.venueId
           : appointment.venueId,
       notes: typeof data.notes !== "undefined" ? data.notes : appointment.notes,
-      status: data.status ?? appointment.status,
       updatedBy: req.user?.id ?? null,
     });
+
+    if (nextStatus !== appointment.status) {
+      if (nextStatus === "confirmed") {
+        await confirmAppointmentWorkflow(
+          appointment,
+          req.user?.id ?? null,
+          data.notes,
+        );
+      } else if (nextStatus === "completed") {
+        await completeAppointmentWorkflow(
+          appointment,
+          req.user?.id ?? null,
+          data.notes,
+        );
+      } else if (nextStatus === "cancelled") {
+        await cancelAppointmentWorkflow(
+          appointment,
+          req.user?.id ?? null,
+          undefined,
+          data.notes,
+        );
+      } else if (nextStatus === "rescheduled") {
+        await rescheduleAppointmentWorkflow(appointment, {
+          appointmentDate: nextAppointmentDate,
+          startTime: nextStartTime,
+          endTime: nextEndTime ?? null,
+          note: data.notes,
+          userId: req.user?.id ?? null,
+        });
+      } else if (nextStatus === "no_show") {
+        await markAppointmentNoShow(
+          appointment,
+          req.user?.id ?? null,
+          data.notes,
+        );
+      } else {
+        assertValidAppointmentTransition(appointment.status, nextStatus);
+        await appointment.update({
+          status: nextStatus,
+          updatedBy: req.user?.id ?? null,
+        });
+      }
+    }
 
     const updated = await Appointment.findByPk(id, {
       include: appointmentInclude,

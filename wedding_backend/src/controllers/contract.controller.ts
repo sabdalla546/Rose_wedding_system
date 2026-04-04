@@ -22,19 +22,22 @@ import {
 import { DocumentServiceError } from "../services/documents/document.types";
 import { generateContractPdfDocument } from "../services/documents/contract/contractPdf.service";
 import {
+  assertContractHeaderEditable,
+  assertContractStructureEditable,
   assertApprovedQuotationForContract,
   buildVendorSummaryInclude,
   contractItemDetailInclude,
   eventVendorDetailInclude,
   listContractsPage,
   loadContractById,
+  recordContractCreatedAction,
+  transitionContractToStatus,
 } from "../services/contracts/contract.service";
 import {
   invalidStatusTransitionError,
   isWorkflowDomainError,
   WorkflowDomainError,
 } from "../services/workflow/workflow.errors";
-import { assertValidContractTransition } from "../services/workflow/workflow.status";
 
 class HttpError extends Error {
   public status: number;
@@ -415,6 +418,8 @@ export const createContract = async (req: AuthRequest, res: Response) => {
 
     const totals = computeContractTotals(preparedItems, data.discountAmount);
 
+    const requestedStatus = data.status ?? "draft";
+
     const contract = await Contract.create({
       quotationId: quotation.id,
       eventId: quotation.eventId,
@@ -426,7 +431,7 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: data.notes ?? null,
-      status: data.status ?? "draft",
+      status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
@@ -453,6 +458,23 @@ export const createContract = async (req: AuthRequest, res: Response) => {
           updatedBy: req.user?.id ?? null,
         })),
       );
+    }
+
+    recordContractCreatedAction({
+      contract,
+      userId: req.user?.id ?? null,
+      itemCount: preparedItems.length,
+      paymentScheduleCount: data.paymentSchedules?.length ?? 0,
+      sourceMode: "manual",
+    });
+
+    if (requestedStatus !== "draft") {
+      await transitionContractToStatus({
+        contract,
+        targetStatus: requestedStatus,
+        userId: req.user?.id ?? null,
+        note: data.notes,
+      });
     }
 
     const created = await loadContractById(contract.id);
@@ -543,6 +565,8 @@ export const createContractFromQuotation = async (
         : Number(quotation.discountAmount || 0),
     );
 
+    const requestedStatus = data.status ?? "active";
+
     const contract = await Contract.create({
       quotationId: quotation.id,
       eventId: quotation.eventId,
@@ -554,7 +578,7 @@ export const createContractFromQuotation = async (
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: data.notes ?? quotation.notes ?? null,
-      status: data.status ?? "active",
+      status: "draft",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
@@ -583,10 +607,22 @@ export const createContractFromQuotation = async (
       );
     }
 
-    await quotation.update({
-      status: "superseded",
-      updatedBy: req.user?.id ?? null,
+    recordContractCreatedAction({
+      contract,
+      userId: req.user?.id ?? null,
+      itemCount: preparedItems.length,
+      paymentScheduleCount: data.paymentSchedules?.length ?? 0,
+      sourceMode: "quotation_snapshot",
     });
+
+    if (requestedStatus !== "draft") {
+      await transitionContractToStatus({
+        contract,
+        targetStatus: requestedStatus,
+        userId: req.user?.id ?? null,
+        note: data.notes ?? quotation.notes ?? null,
+      });
+    }
 
     const created = await loadContractById(contract.id);
 
@@ -713,6 +749,18 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    assertContractHeaderEditable(contract, {
+      quotationId: data.quotationId,
+      contractNumber: data.contractNumber,
+      signedDate: data.signedDate,
+      eventDate: data.eventDate,
+      discountAmount: data.discountAmount,
+      notes: data.notes,
+    }, {
+      userId: req.user?.id ?? null,
+      attemptedFields: Object.keys(data),
+    });
+
     const items = await ContractItem.findAll({
       where: { contractId: contract.id },
     });
@@ -723,9 +771,6 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
         ? data.discountAmount
         : Number(contract.discountAmount || 0),
     );
-
-    const nextStatus = data.status ?? contract.status;
-    assertValidContractTransition(contract.status, nextStatus);
 
     await contract.update({
       quotationId:
@@ -745,9 +790,18 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: typeof data.notes !== "undefined" ? data.notes : contract.notes,
-      status: nextStatus,
       updatedBy: req.user?.id ?? null,
     });
+
+    const nextStatus = data.status ?? contract.status;
+    if (nextStatus !== contract.status) {
+      await transitionContractToStatus({
+        contract,
+        targetStatus: nextStatus,
+        userId: req.user?.id ?? null,
+        note: typeof data.notes === "string" ? data.notes : undefined,
+      });
+    }
 
     const updated = await loadContractById(id);
 
@@ -804,6 +858,11 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
     if (!contract) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
+
+    assertContractStructureEditable(contract, {
+      userId: req.user?.id ?? null,
+      area: "contract_items",
+    });
 
     if (typeof data.quotationItemId !== "undefined" && data.quotationItemId) {
       await loadQuotationItemById(data.quotationItemId);
@@ -993,6 +1052,10 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -1008,6 +1071,11 @@ export const createPaymentSchedule = async (
     if (!contract) {
       return res.status(404).json({ message: "Contract not found" });
     }
+
+    assertContractStructureEditable(contract, {
+      userId: req.user?.id ?? null,
+      area: "payment_schedules",
+    });
 
     const payment = await PaymentSchedule.create({
       contractId: data.contractId,
@@ -1031,6 +1099,10 @@ export const createPaymentSchedule = async (
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -1052,6 +1124,16 @@ export const updatePaymentSchedule = async (
     if (!payment) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
+
+    const contract = await Contract.findByPk(payment.contractId);
+    if (!contract) {
+      return res.status(404).json({ message: "Contract not found" });
+    }
+
+    assertContractStructureEditable(contract, {
+      userId: req.user?.id ?? null,
+      area: "payment_schedules",
+    });
 
     await payment.update({
       installmentName: data.installmentName ?? payment.installmentName,
@@ -1078,23 +1160,45 @@ export const updatePaymentSchedule = async (
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
 
 export const deletePaymentSchedule = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
+  try {
+    const id = Number(req.params.id);
 
-  if (!id) {
-    return res.status(400).json({ message: req.t("common.invalid_id") });
+    if (!id) {
+      return res.status(400).json({ message: req.t("common.invalid_id") });
+    }
+
+    const payment = await PaymentSchedule.findByPk(id);
+    if (!payment) {
+      return res.status(404).json({ message: req.t("common.not_found") });
+    }
+
+    const contract = await Contract.findByPk(payment.contractId);
+    if (!contract) {
+      return res.status(404).json({ message: "Contract not found" });
+    }
+
+    assertContractStructureEditable(contract, {
+      userId: null,
+      area: "payment_schedules",
+    });
+
+    await payment.destroy();
+
+    return res.json({ message: req.t("common.deleted_successfully") });
+  } catch (err) {
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
-
-  const payment = await PaymentSchedule.findByPk(id);
-  if (!payment) {
-    return res.status(404).json({ message: req.t("common.not_found") });
-  }
-
-  await payment.destroy();
-
-  return res.json({ message: req.t("common.deleted_successfully") });
 };
