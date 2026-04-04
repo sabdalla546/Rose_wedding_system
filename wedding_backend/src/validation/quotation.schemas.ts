@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  optionalPositiveIntQuery,
+  optionalTrimmedStringQuery,
+  paginationQuerySchema,
+} from "./common.schemas";
 
 export const quotationStatusEnum = z.enum([
   "draft",
@@ -101,3 +106,11 @@ export const updateQuotationItemSchema = baseQuotationItemSchema
       });
     }
   });
+
+export const quotationListQuerySchema = paginationQuerySchema.extend({
+  eventId: optionalPositiveIntQuery,
+  status: optionalTrimmedStringQuery,
+  search: optionalTrimmedStringQuery,
+  issueDateFrom: optionalTrimmedStringQuery,
+  issueDateTo: optionalTrimmedStringQuery,
+});

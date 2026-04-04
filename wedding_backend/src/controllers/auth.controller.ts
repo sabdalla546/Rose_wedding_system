@@ -23,7 +23,7 @@ const BCRYPT_HASH_PREFIX = /^\$2[aby]\$\d{2}\$/;
 const setAuthCookies = (
   res: Response,
   accessToken: string,
-  refreshToken: string
+  refreshToken: string,
 ) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
@@ -65,7 +65,7 @@ const storeRefreshToken = async (userId: number, refreshTokenValue: string) => {
 
 const matchesStoredRefreshToken = async (
   refreshTokenValue: string,
-  storedTokenValue: string
+  storedTokenValue: string,
 ) => {
   if (storedTokenValue === refreshTokenValue) {
     return true;
@@ -80,7 +80,7 @@ const matchesStoredRefreshToken = async (
 
 const findRefreshTokenRecord = async (
   userId: number,
-  refreshTokenValue: string
+  refreshTokenValue: string,
 ) => {
   const activeTokens = await RefreshToken.findAll({
     where: {
@@ -188,7 +188,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     const payload = verifyRefreshToken(refreshTokenValue);
     const existingTokenRecord = await findRefreshTokenRecord(
       payload.userId,
-      refreshTokenValue
+      refreshTokenValue,
     );
 
     if (!existingTokenRecord) {
@@ -202,7 +202,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     const newRefreshTokenValue = signRefreshToken({ userId: payload.userId });
     const newRefreshTokenRecord = await storeRefreshToken(
       payload.userId,
-      newRefreshTokenValue
+      newRefreshTokenValue,
     );
 
     await existingTokenRecord.update({
@@ -242,7 +242,7 @@ export const logout = async (req: AuthRequest, res: Response) => {
           userId,
           revoked: false,
         },
-      }
+      },
     );
 
     clearAuthCookies(res);

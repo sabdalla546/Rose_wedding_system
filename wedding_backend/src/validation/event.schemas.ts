@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  optionalPositiveIntQuery,
+  optionalTrimmedStringQuery,
+  paginationQuerySchema,
+} from "./common.schemas";
 
 export const eventStatusEnum = z.enum([
   "draft",
@@ -64,4 +69,13 @@ export const createEventFromSourceSchema = z.object({
   brideName: z.string().max(150).optional().nullable(),
   guestCount: optionalNullableNonNegativeInt,
   notes: z.string().optional().nullable(),
+});
+
+export const eventListQuerySchema = paginationQuerySchema.extend({
+  status: optionalTrimmedStringQuery,
+  customerId: optionalPositiveIntQuery,
+  venueId: optionalPositiveIntQuery,
+  dateFrom: optionalTrimmedStringQuery,
+  dateTo: optionalTrimmedStringQuery,
+  search: optionalTrimmedStringQuery,
 });

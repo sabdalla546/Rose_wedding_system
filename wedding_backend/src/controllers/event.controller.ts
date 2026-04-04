@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
-import { ZodError } from "zod";
 import ejs from "ejs";
 import puppeteer from "puppeteer";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -8,59 +7,16 @@ import { Appointment, Event, Customer, Venue, User } from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
 import { renderEventReportHtml } from "../services/documents/event/eventReportPdf.service";
 import {
-  createEventSchema,
-  updateEventSchema,
-  createEventFromSourceSchema,
-} from "../validation/event.schemas";
-import { eventCalendarQuerySchema } from "../validation/calendar.schemas";
-
-const eventInclude: any = [
-  { model: Customer, as: "customer" },
-  { model: Venue, as: "venue" },
-  {
-    model: Appointment,
-    as: "sourceAppointment",
-    include: [
-      { model: Customer, as: "customer" },
-      { model: Venue, as: "venue" },
-    ],
-  },
-
-  { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-  { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-];
-
-const normalizeNullableString = (value?: string | null) => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-};
-
-const ACTIVE_EVENT_STATUSES = [
-  "draft",
-  "designing",
-  "confirmed",
-  "in_progress",
-  "completed",
-] as const;
-
-const getSourceAppointmentDefaults = async (
-  sourceAppointmentId?: number | null,
-) => {
-  if (!sourceAppointmentId) {
-    return null;
-  }
-
-  return Appointment.findByPk(sourceAppointmentId, {
-    include: [
-      { model: Customer, as: "customer" },
-      { model: Venue, as: "venue" },
-    ],
-  });
-};
+  ACTIVE_EVENT_STATUSES,
+  getSourceAppointmentDefaults,
+  listEventsPage,
+  loadEventById,
+  normalizeNullableString,
+} from "../services/events/event.service";
 
 export const createEvent = async (req: AuthRequest, res: Response) => {
   try {
-    const data = createEventSchema.parse(req.body);
+    const data = req.body;
 
     const sourceAppointment = await getSourceAppointmentDefaults(
       data.sourceAppointmentId ?? null,
@@ -140,18 +96,13 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    const created = await Event.findByPk(event.id, {
-      include: eventInclude,
-    });
+    const created = await loadEventById(event.id);
 
     return res.status(201).json({
       message: "Event created successfully",
       data: created,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -161,7 +112,7 @@ export const createEventFromSource = async (
   res: Response,
 ) => {
   try {
-    const data = createEventFromSourceSchema.parse(req.body);
+    const data = req.body;
 
     const sourceAppointment = await getSourceAppointmentDefaults(
       data.sourceAppointmentId ?? null,
@@ -247,19 +198,13 @@ export const createEventFromSource = async (
       updatedBy: req.user?.id ?? null,
     });
 
-    const created = await Event.findByPk(event.id, {
-      include: eventInclude,
-    });
+    const created = await loadEventById(event.id);
 
     return res.status(201).json({
       message: "Event created from source successfully",
       data: created,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -267,8 +212,6 @@ export const createEventFromSource = async (
 export const getEvents = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 20;
-  const offset = (page - 1) * limit;
-
   const status = String(req.query.status ?? "").trim();
   const customerId = Number(req.query.customerId) || undefined;
   const venueId = Number(req.query.venueId) || undefined;
@@ -276,43 +219,15 @@ export const getEvents = async (req: Request, res: Response) => {
   const dateTo = String(req.query.dateTo ?? "").trim();
   const search = String(req.query.search ?? "").trim();
 
-  const where: any = {};
-
-  if (status) where.status = status;
-  if (customerId) where.customerId = customerId;
-  if (venueId) where.venueId = venueId;
-
-  if (dateFrom || dateTo) {
-    where.eventDate = {};
-    if (dateFrom) where.eventDate[Op.gte] = dateFrom;
-    if (dateTo) where.eventDate[Op.lte] = dateTo;
-  }
-
-  if (search) {
-    const like = `%${search}%`;
-    where[Op.or] = [
-      { title: { [Op.like]: like } },
-      { groomName: { [Op.like]: like } },
-      { brideName: { [Op.like]: like } },
-      { venueNameSnapshot: { [Op.like]: like } },
-      { "$customer.fullName$": { [Op.like]: like } },
-    ];
-  }
-
-  const { count, rows } = await Event.findAndCountAll({
-    where,
-    include: [
-      { model: Customer, as: "customer" },
-      { model: Venue, as: "venue" },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
-    order: [
-      ["eventDate", "ASC"],
-      ["id", "DESC"],
-    ],
+  const { count, rows } = await listEventsPage({
+    page,
     limit,
-    offset,
+    status,
+    customerId,
+    venueId,
+    dateFrom,
+    dateTo,
+    search,
   });
 
   return res.json({
@@ -328,15 +243,10 @@ export const getEvents = async (req: Request, res: Response) => {
 
 export const getEventsCalendar = async (req: Request, res: Response) => {
   try {
-    const query = eventCalendarQuerySchema.parse(req.query);
-    const data = await listEventsCalendarRecords(query);
+    const data = await listEventsCalendarRecords(req.query as any);
 
     return res.json({ data });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({ errors: error.errors });
-    }
-
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -348,9 +258,7 @@ export const getEventById = async (req: Request, res: Response) => {
     return res.status(400).json({ message: req.t("common.invalid_id") });
   }
 
-  const event = await Event.findByPk(id, {
-    include: eventInclude,
-  });
+  const event = await loadEventById(id);
 
   if (!event) {
     return res.status(404).json({ message: req.t("common.not_found") });
@@ -367,7 +275,7 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: req.t("common.invalid_id") });
     }
 
-    const data = updateEventSchema.parse(req.body);
+    const data = req.body;
     const event = await Event.findByPk(id);
 
     if (!event) {
@@ -456,18 +364,13 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       updatedBy: req.user?.id ?? null,
     });
 
-    const updated = await Event.findByPk(id, {
-      include: eventInclude,
-    });
+    const updated = await loadEventById(id);
 
     return res.json({
       message: req.t("common.updated_successfully"),
       data: updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -722,10 +625,6 @@ const exportEventsPdfLegacy = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("EXPORT EVENTS PDF ERROR:", err);
 
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     return res.status(500).json({
       message: "PDF generation failed",
       error: err instanceof Error ? err.message : String(err),
@@ -921,10 +820,6 @@ export const exportEventsPdf = async (req: Request, res: Response) => {
     }
   } catch (err) {
     console.error("EXPORT EVENTS PDF ERROR:", err);
-
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
 
     return res.status(500).json({
       message: "PDF generation failed",

@@ -26,6 +26,7 @@ import { PaymentSchedule } from "./paymentSchedule.model";
 import { ExecutionBrief } from "./executionBrief.model";
 import { ExecutionServiceDetail } from "./executionServiceDetail.model";
 import { ExecutionAttachment } from "./executionAttachment.model";
+import { InventoryItem } from "./InventoryItem";
 // علاقات
 User.belongsToMany(Role, { through: UserRole, foreignKey: "userId" });
 Role.belongsToMany(User, { through: UserRole, foreignKey: "roleId" });
@@ -765,6 +766,25 @@ ExecutionAttachment.belongsTo(User, {
   foreignKey: "uploadedBy",
   as: "uploader",
 });
+
+// User -> InventoryItem audit
+User.hasMany(InventoryItem, {
+  foreignKey: "createdBy",
+  as: "createdInventoryItems",
+});
+InventoryItem.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(InventoryItem, {
+  foreignKey: "updatedBy",
+  as: "updatedInventoryItems",
+});
+InventoryItem.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
 export {
   sequelize,
   User,
@@ -793,4 +813,5 @@ export {
   ExecutionBrief,
   ExecutionServiceDetail,
   ExecutionAttachment,
+  InventoryItem,
 };

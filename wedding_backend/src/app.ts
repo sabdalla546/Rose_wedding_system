@@ -25,6 +25,7 @@ import quotationRoutes from "./routes/quotation.routes";
 import contractRoutes from "./routes/contract.routes";
 import calendarRoutes from "./routes/calendar.routes";
 import executionRoutes from "./routes/execution.routes";
+import inventoryRoutes from "./routes/inventory.routes";
 
 export const createApp = async () => {
   const app = express();
@@ -53,7 +54,16 @@ export const createApp = async () => {
   app.get("/api/v1/health", (req, res) => {
     res.json({ status: "ok", message: req.t("hello") });
   });
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+  app.use(
+    "/uploads",
+    express.static(path.join(process.cwd(), "uploads"), {
+      setHeaders: (res) => {
+        // Inventory images are rendered by the frontend from a different origin
+        // during local development, so the static files must be embeddable.
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      },
+    }),
+  );
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/roles", roleRoutes);
@@ -71,6 +81,7 @@ export const createApp = async () => {
   app.use("/api/v1/quotations", quotationRoutes);
   app.use("/api/v1/contracts", contractRoutes);
   app.use("/api/v1/execution-briefs", executionRoutes);
+  app.use("/api/v1/inventory", inventoryRoutes);
   app.use(errorHandler);
 
   return app;

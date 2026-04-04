@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
-import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
+import type { ContractStatus } from "../models/contract.model";
+import type {
+  PaymentScheduleStatus,
+  PaymentScheduleType,
+} from "../models/paymentSchedule.model";
 import {
   Contract,
   ContractItem,
@@ -11,25 +15,19 @@ import {
   Event,
   EventService,
   EventVendor,
-  EventVendorSubService,
-  VendorSubService,
   VendorPricingPlan,
   Vendor,
   Service,
-  Customer,
-  Venue,
-  User,
 } from "../models";
-import {
-  createContractSchema,
-  updateContractSchema,
-  createContractFromQuotationSchema,
-  updateContractItemSchema,
-  createPaymentScheduleSchema,
-  updatePaymentScheduleSchema,
-} from "../validation/contract.schemas";
 import { DocumentServiceError } from "../services/documents/document.types";
 import { generateContractPdfDocument } from "../services/documents/contract/contractPdf.service";
+import {
+  buildVendorSummaryInclude,
+  contractItemDetailInclude,
+  eventVendorDetailInclude,
+  listContractsPage,
+  loadContractById,
+} from "../services/contracts/contract.service";
 
 class HttpError extends Error {
   public status: number;
@@ -120,92 +118,6 @@ function computeContractTotals(
     discountAmount: discount,
     totalAmount,
   };
-}
-
-function buildVendorSummaryInclude() {
-  return {
-    model: Vendor,
-    as: "vendor",
-    attributes: ["id", "name", "type", "isActive"],
-  };
-}
-
-const eventVendorDetailInclude = [
-  buildVendorSummaryInclude(),
-  {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
-  {
-    model: EventVendorSubService,
-    as: "selectedSubServices",
-    include: [
-      {
-        model: VendorSubService,
-        as: "vendorSubService",
-        include: [buildVendorSummaryInclude()],
-      },
-    ],
-  },
-];
-
-const contractItemDetailInclude: any[] = [
-  { model: QuotationItem, as: "quotationItem" },
-  { model: EventService, as: "eventService" },
-  { model: Service, as: "service" },
-  {
-    model: EventVendor,
-    as: "eventVendor",
-    include: eventVendorDetailInclude,
-  },
-  { model: Vendor, as: "vendor" },
-  {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
-];
-
-function buildContractInclude(): any[] {
-  return [
-    { model: Quotation, as: "quotation" },
-    {
-      model: Event,
-      as: "event",
-      include: [
-        { model: Customer, as: "customer" },
-        { model: Venue, as: "venue" },
-      ],
-    },
-    {
-      model: ContractItem,
-      as: "items",
-      separate: true,
-      order: [
-        ["sortOrder", "ASC"],
-        ["id", "ASC"],
-      ],
-      include: contractItemDetailInclude,
-    },
-    {
-      model: PaymentSchedule,
-      as: "paymentSchedules",
-      separate: true,
-      order: [
-        ["sortOrder", "ASC"],
-        ["id", "ASC"],
-      ],
-    },
-    { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-    { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-  ];
-}
-
-async function loadContractById(id: number) {
-  return Contract.findByPk(id, {
-    include: buildContractInclude(),
-  });
 }
 
 async function loadEventServiceForEvent(eventId: number, eventServiceId: number) {
@@ -448,7 +360,26 @@ async function recomputeContractHeader(
 
 export const createContract = async (req: AuthRequest, res: Response) => {
   try {
-    const data = createContractSchema.parse(req.body);
+    const data = req.body as {
+      quotationId?: number | null;
+      eventId: number;
+      contractNumber?: string | null;
+      signedDate: string;
+      eventDate?: string | null;
+      discountAmount?: number | null;
+      notes?: string | null;
+      status?: ContractStatus | null;
+      items: ContractRequestItem[];
+      paymentSchedules?: Array<{
+        installmentName: string;
+        scheduleType: PaymentScheduleType;
+        dueDate?: string | null;
+        amount: number;
+        status?: PaymentScheduleStatus | null;
+        notes?: string | null;
+        sortOrder?: number;
+      }>;
+    };
 
     const event = await Event.findByPk(data.eventId);
     if (!event) {
@@ -522,10 +453,6 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       data: created,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -539,7 +466,24 @@ export const createContractFromQuotation = async (
   res: Response,
 ) => {
   try {
-    const data = createContractFromQuotationSchema.parse(req.body);
+    const data = req.body as {
+      quotationId: number;
+      contractNumber?: string | null;
+      signedDate: string;
+      eventDate?: string | null;
+      discountAmount?: number | null;
+      notes?: string | null;
+      status?: ContractStatus | null;
+      paymentSchedules?: Array<{
+        installmentName: string;
+        scheduleType: PaymentScheduleType;
+        dueDate?: string | null;
+        amount: number;
+        status?: PaymentScheduleStatus | null;
+        notes?: string | null;
+        sortOrder?: number;
+      }>;
+    };
 
     const quotation = await Quotation.findByPk(data.quotationId, {
       include: [
@@ -665,10 +609,6 @@ export const createContractFromQuotation = async (
       data: created,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -680,7 +620,6 @@ export const createContractFromQuotation = async (
 export const getContracts = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 20;
-  const offset = (page - 1) * limit;
 
   const quotationId = Number(req.query.quotationId) || undefined;
   const eventId = Number(req.query.eventId) || undefined;
@@ -689,46 +628,15 @@ export const getContracts = async (req: Request, res: Response) => {
   const signedDateFrom = String(req.query.signedDateFrom ?? "").trim();
   const signedDateTo = String(req.query.signedDateTo ?? "").trim();
 
-  const where: any = {};
-
-  if (quotationId) where.quotationId = quotationId;
-  if (eventId) where.eventId = eventId;
-  if (status) where.status = status;
-
-  if (search) {
-    where[Op.or] = [
-      { contractNumber: { [Op.like]: `%${search}%` } },
-      { notes: { [Op.like]: `%${search}%` } },
-    ];
-  }
-
-  if (signedDateFrom || signedDateTo) {
-    where.signedDate = {};
-    if (signedDateFrom) where.signedDate[Op.gte] = signedDateFrom;
-    if (signedDateTo) where.signedDate[Op.lte] = signedDateTo;
-  }
-
-  const { count, rows } = await Contract.findAndCountAll({
-    where,
-    include: [
-      { model: Quotation, as: "quotation" },
-      {
-        model: Event,
-        as: "event",
-        include: [
-          { model: Customer, as: "customer" },
-          { model: Venue, as: "venue" },
-        ],
-      },
-      { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
-      { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
-    ],
-    order: [
-      ["signedDate", "DESC"],
-      ["id", "DESC"],
-    ],
+  const { count, rows } = await listContractsPage({
+    page,
     limit,
-    offset,
+    quotationId,
+    eventId,
+    status,
+    search,
+    signedDateFrom,
+    signedDateTo,
   });
 
   return res.json({
@@ -793,7 +701,7 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: req.t("common.invalid_id") });
     }
 
-    const data = updateContractSchema.parse(req.body);
+    const data = req.body;
 
     const contract = await Contract.findByPk(id);
     if (!contract) {
@@ -847,10 +755,6 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       data: updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -884,7 +788,7 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: req.t("common.invalid_id") });
     }
 
-    const data = updateContractItemSchema.parse(req.body) as ContractUpdateItem;
+    const data = req.body as ContractUpdateItem;
 
     const item = await ContractItem.findByPk(id);
     if (!item) {
@@ -1080,10 +984,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
       data: updated,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -1097,7 +997,7 @@ export const createPaymentSchedule = async (
   res: Response,
 ) => {
   try {
-    const data = createPaymentScheduleSchema.parse(req.body);
+    const data = req.body;
 
     const contract = await Contract.findByPk(data.contractId);
     if (!contract) {
@@ -1122,10 +1022,6 @@ export const createPaymentSchedule = async (
       data: payment,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -1145,7 +1041,7 @@ export const updatePaymentSchedule = async (
       return res.status(400).json({ message: req.t("common.invalid_id") });
     }
 
-    const data = updatePaymentScheduleSchema.parse(req.body);
+    const data = req.body;
 
     const payment = await PaymentSchedule.findByPk(id);
     if (!payment) {
@@ -1173,10 +1069,6 @@ export const updatePaymentSchedule = async (
       data: payment,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }

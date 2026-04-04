@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  optionalPositiveIntQuery,
+  optionalTrimmedStringQuery,
+  paginationQuerySchema,
+} from "./common.schemas";
 
 export const contractStatusEnum = z.enum([
   "draft",
@@ -150,4 +155,13 @@ export const updatePaymentScheduleSchema = z.object({
   status: paymentScheduleStatusEnum.optional(),
   notes: z.string().optional().nullable(),
   sortOrder: z.number().int().min(0).optional(),
+});
+
+export const contractListQuerySchema = paginationQuerySchema.extend({
+  quotationId: optionalPositiveIntQuery,
+  eventId: optionalPositiveIntQuery,
+  status: optionalTrimmedStringQuery,
+  search: optionalTrimmedStringQuery,
+  signedDateFrom: optionalTrimmedStringQuery,
+  signedDateTo: optionalTrimmedStringQuery,
 });

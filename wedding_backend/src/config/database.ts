@@ -1,4 +1,3 @@
-// src/config/database.ts
 import { Sequelize } from "sequelize";
 import { env } from "./env";
 import { logger } from "./logger";
@@ -18,18 +17,9 @@ export const sequelize = new Sequelize(
 export const initDatabase = async () => {
   try {
     await sequelize.authenticate();
-    logger.info("âœ… Database connected successfully");
-    await sequelize.sync({
-      alter: env.dbSync.alter,
-      force: env.dbSync.force,
-    });
-    logger.info("âœ… Models synced");
-    const { syncVendorTypesCatalog } =
-      await import("../seed/syncVendorTypesCatalog");
-    await syncVendorTypesCatalog();
-    logger.info("âœ… Vendor types catalog synced");
+    logger.info("✅ Database connected successfully");
   } catch (err) {
-    logger.error("âŒ Unable to connect to DB", err);
+    logger.error("❌ Unable to connect to DB", err);
     process.exit(1);
   }
 };

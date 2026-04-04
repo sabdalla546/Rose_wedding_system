@@ -1,11 +1,11 @@
 import { Transaction } from "sequelize";
 import { initDatabase, sequelize } from "../config/database";
-import { Vendor, VendorPricingPlan, VendorSubService } from "../models";
-import type { VendorType } from "../models/vendor.model";
+import { Vendor, VendorPricingPlan, VendorSubService, VendorType } from "../models";
+import type { VendorType as LegacyVendorType } from "../models/vendor.model";
 
 type SeedVendorDefinition = {
   name: string;
-  type: VendorType;
+  type: LegacyVendorType;
   contactPerson?: string;
   phone?: string;
   email?: string;
@@ -250,6 +250,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
 
 const upsertSeedVendor = async (
   vendorSeed: SeedVendorDefinition,
+  vendorTypesBySlug: Map<string, number>,
   transaction: Transaction
 ) => {
   const [vendor, created] = await Vendor.findOrCreate({
@@ -261,6 +262,7 @@ const upsertSeedVendor = async (
     defaults: {
       name: vendorSeed.name,
       type: vendorSeed.type,
+      typeId: vendorTypesBySlug.get(vendorSeed.type) ?? null,
       contactPerson: vendorSeed.contactPerson ?? null,
       phone: vendorSeed.phone ?? null,
       email: vendorSeed.email ?? null,
@@ -275,6 +277,7 @@ const upsertSeedVendor = async (
         contactPerson: vendorSeed.contactPerson ?? null,
         phone: vendorSeed.phone ?? null,
         email: vendorSeed.email ?? null,
+        typeId: vendorTypesBySlug.get(vendorSeed.type) ?? null,
         notes: `${seedSourceNote}. ${vendorSeed.notes}`,
         isActive: true,
       },
@@ -331,9 +334,16 @@ const upsertSeedVendor = async (
 const seedExternalVendors = async () => {
   await initDatabase();
 
+  const vendorTypes = await VendorType.findAll({
+    attributes: ["id", "slug"],
+  });
+  const vendorTypesBySlug = new Map(
+    vendorTypes.map((vendorType) => [vendorType.slug, vendorType.id]),
+  );
+
   await sequelize.transaction(async (transaction) => {
     for (const vendorSeed of externalVendorSeeds) {
-      await upsertSeedVendor(vendorSeed, transaction);
+      await upsertSeedVendor(vendorSeed, vendorTypesBySlug, transaction);
     }
   });
 

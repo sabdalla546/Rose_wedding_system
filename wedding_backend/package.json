@@ -6,12 +6,20 @@
     "dev": "nodemon --watch src -e ts --exec ts-node src/server.ts",
     "build": "tsc && node scripts/copy-document-assets.js",
     "start": "node dist/server.js",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
+    "seed": "npm run seed:core && npm run seed:vendors && npm run seed:appointments-events",
+    "seed:undo": "sequelize-cli db:seed:undo:all",
+    "seed:core": "npm run seed:vendor-types && npm run seed:rbac && npm run seed:services && npm run seed:venues",
     "scan:permissions": "ts-node src/seed/scanRoutePermissions.ts",
     "seed:rbac": "ts-node src/seed/seedRbac.ts",
-    "seed:vendors": "ts-node src/seed/seedExternalVendors.ts",
+    "seed:vendor-types": "sequelize-cli db:seed --seed 20260404090000-seed-vendor-types.js",
+    "seed:vendors": "npm run seed:vendor-types && ts-node src/seed/seedExternalVendors.ts",
     "seed:venues": "ts-node src/seed/seedVenues.ts",
     "seed:appointments-events": "ts-node src/seed/seedCustomersAppointmentsEvents.ts",
-    "seed:services": "ts-node src/seed/seedServices.ts"
+    "seed:services": "ts-node src/seed/seedServices.ts",
+    "setup:dev": "npm run migrate && npm run seed"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -46,6 +54,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^22.19.15",
     "nodemon": "^3.1.0",
+    "sequelize-cli": "^6.6.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0"
   }
