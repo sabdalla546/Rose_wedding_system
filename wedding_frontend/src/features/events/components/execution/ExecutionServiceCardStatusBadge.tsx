@@ -65,7 +65,7 @@ export function ExecutionServiceCardStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold",
+        "inline-flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1 text-[11px] font-semibold",
         style.border,
         style.background,
         style.text,
@@ -74,12 +74,12 @@ export function ExecutionServiceCardStatusBadge({
     >
       <Icon
         className={cn(
-          "h-3.5 w-3.5",
+          "h-3 w-3",
           status === "in_progress" ? "animate-spin" : "",
         )}
       />
       <span>{getExecutionServiceDetailStatusLabel(status, t)}</span>
-      <span className="text-[10px] uppercase tracking-[0.18em] opacity-80">
+      <span className="text-[9px] uppercase tracking-[0.12em] opacity-80">
         {isExecutionServiceDetailReady(status)
           ? t("execution.readyState", { defaultValue: "Ready" })
           : t("execution.pendingState", { defaultValue: "Pending" })}

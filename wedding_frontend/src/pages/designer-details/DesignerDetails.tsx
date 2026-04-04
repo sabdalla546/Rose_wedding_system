@@ -37,7 +37,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useContracts } from "@/hooks/contracts/useContracts";
 import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useEvent, useEvents } from "@/hooks/events/useEvents";
+import { useEvent } from "@/hooks/events/useEvents";
+import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
 import { useUpdateEvent } from "@/hooks/events/useEventMutations";
 import { useDeleteEventService } from "@/hooks/services/useEventServiceMutations";
 import { useEventServiceItems } from "@/hooks/services/useServices";
@@ -968,16 +969,18 @@ export default function DesignerDetailsPage() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
   const [selectedEventId, setSelectedEventId] = useState("");
+  const eventFilters = useMemo(getInitialEventsBusinessFilters, []);
 
-  const { data: eventsResponse, isLoading: eventsLoading } = useEvents({
-    currentPage: 1,
-    itemsPerPage: 200,
-    filters: getInitialEventsBusinessFilters(),
-  });
+  const {
+    items: availableEventsData,
+    isLoading: eventsLoading,
+    isError: eventsLoadFailed,
+    refetch: refetchEvents,
+  } = useEventsCalendarView(eventFilters);
 
   const availableEvents = useMemo(
     () =>
-      [...(eventsResponse?.data ?? [])].sort((left, right) => {
+      [...availableEventsData].sort((left, right) => {
         const leftTime = new Date(left.eventDate).getTime();
         const rightTime = new Date(right.eventDate).getTime();
 
@@ -987,7 +990,7 @@ export default function DesignerDetailsPage() {
 
         return right.id - left.id;
       }),
-    [eventsResponse?.data],
+    [availableEventsData],
   );
   const effectiveSelectedEventId = availableEvents.find(
     (event) => String(event.id) === selectedEventId,
@@ -1153,6 +1156,21 @@ export default function DesignerDetailsPage() {
             <EventEmptyState
               title={t("designerDetails.loadingEventsTitle")}
               description={t("designerDetails.loadingEventsDescription")}
+            />
+          ) : eventsLoadFailed ? (
+            <EventEmptyState
+              title={t("designerDetails.loadEventsFailedTitle", {
+                defaultValue: "Unable to load events",
+              })}
+              description={t("designerDetails.loadEventsFailedDescription", {
+                defaultValue:
+                  "The event selector could not be loaded right now. Try again to refresh the list.",
+              })}
+              action={
+                <Button type="button" onClick={() => void refetchEvents()}>
+                  {t("common.retry", { defaultValue: "Retry" })}
+                </Button>
+              }
             />
           ) : availableEvents.length === 0 ? (
             <EventEmptyState

@@ -19,7 +19,8 @@ export function ExecutionServiceCardPreview({
   serviceTitle,
   previewText,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const attachmentsCount = detail.attachments?.length ?? 0;
   const templateLabel = getExecutionTemplateLabel(
     resolveExecutionTemplateKey(detail),
@@ -27,42 +28,44 @@ export function ExecutionServiceCardPreview({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
+    <div className={cn("space-y-3", isRtl ? "text-right" : "text-left")}>
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-2",
+          isRtl ? "justify-end" : "justify-start",
+        )}
+      >
+        <span className="inline-flex items-center rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-control-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--lux-text-muted)]">
           {t("execution.blockLabel", { defaultValue: "Execution block" })}
         </span>
-        <span className="inline-flex items-center rounded-full border border-[var(--lux-gold-border)] bg-[color-mix(in_srgb,var(--lux-gold)_10%,transparent)] px-3 py-1 text-xs font-medium text-[var(--lux-gold)]">
+        <span className="inline-flex items-center rounded-[6px] border border-[var(--lux-gold-border)] bg-[color-mix(in_srgb,var(--lux-gold)_10%,transparent)] px-2.5 py-1 text-[10px] font-medium text-[var(--lux-gold)]">
           {templateLabel}
         </span>
       </div>
 
-      <div className="space-y-2">
-        <h4 className="text-xl font-semibold text-[var(--lux-heading)]">
+      <div>
+        <h4 className="text-lg font-semibold leading-7 text-[var(--lux-heading)]">
           {serviceTitle}
         </h4>
-        <p
-          className={cn(
-            "text-sm leading-7 text-[var(--lux-text-secondary)]",
-            "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]",
-          )}
-        >
-          {previewText}
-        </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--lux-text-secondary)]">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1.5">
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-2 text-[11px] text-[var(--lux-text-secondary)]",
+          isRtl ? "justify-end" : "justify-start",
+        )}
+      >
+        <span className="inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-2.5 py-1">
           <Paperclip className="h-3.5 w-3.5 text-[var(--lux-gold)]" />
           {attachmentsCount}{" "}
           {t("execution.attachmentsLabel", { defaultValue: "Attachments" })}
         </span>
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1.5">
+        <span className="inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-2.5 py-1">
           <ArrowUpDown className="h-3.5 w-3.5 text-[var(--lux-gold)]" />
           {t("execution.sortOrderLabel", { defaultValue: "Sort" })} #
           {detail.sortOrder}
         </span>
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1.5">
+        <span className="inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-2.5 py-1">
           <ScrollText className="h-3.5 w-3.5 text-[var(--lux-gold)]" />
           {t("execution.detailIdLabel", { defaultValue: "Block" })} #{detail.id}
         </span>

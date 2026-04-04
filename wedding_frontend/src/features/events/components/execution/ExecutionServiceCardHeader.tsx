@@ -22,7 +22,8 @@ export function ExecutionServiceCardHeader({
   expanded,
   onToggle,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const serviceTitle =
     detail.serviceNameSnapshot ||
     detail.service?.name ||
@@ -38,39 +39,52 @@ export function ExecutionServiceCardHeader({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
+      dir={i18n.dir()}
       className={cn(
-        "w-full rounded-[28px] px-5 py-5 text-left transition-all duration-200",
+        "w-full rounded-[28px] px-4 py-4 transition-all duration-200",
+        isRtl ? "text-right" : "text-left",
         "hover:bg-[color-mix(in_srgb,var(--lux-control-hover)_36%,transparent)]",
       )}
     >
-      <div className="grid gap-5 xl:grid-cols-[280px,1fr,auto] xl:items-center">
+      <div className="space-y-4">
         <ExecutionServiceCardImage
           detail={detail}
           serviceTitle={serviceTitle}
           templateLabel={templateLabel}
         />
 
-        <ExecutionServiceCardPreview
-          detail={detail}
-          serviceTitle={serviceTitle}
-          previewText={previewText}
-        />
+        <div className="space-y-3">
+          <ExecutionServiceCardPreview
+            detail={detail}
+            serviceTitle={serviceTitle}
+            previewText={previewText}
+          />
 
-        <div className="flex flex-col items-start gap-4 xl:items-end">
-          <ExecutionServiceCardStatusBadge status={detail.status} />
+          <div
+            className={cn(
+              "flex flex-col gap-2.5 border-t border-[var(--lux-row-border)] pt-3 sm:items-center sm:justify-between",
+              isRtl ? "sm:flex-row-reverse" : "sm:flex-row",
+            )}
+          >
+            <ExecutionServiceCardStatusBadge status={detail.status} />
 
-          <div className="inline-flex items-center gap-3 rounded-full border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-2 text-sm font-medium text-[var(--lux-text)]">
-            <span>
-              {expanded
-                ? t("execution.hideDetails", { defaultValue: "Hide details" })
-                : t("execution.viewDetails", { defaultValue: "View details" })}
-            </span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-[var(--lux-gold)] transition-transform duration-200",
-                expanded ? "rotate-180" : "",
-              )}
-            />
+            <div className="inline-flex items-center justify-center gap-2 rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-3 py-1.5 text-xs font-medium text-[var(--lux-text)] sm:min-w-[140px]">
+              <span>
+                {expanded
+                  ? t("execution.hideDetails", {
+                      defaultValue: "Hide details",
+                    })
+                  : t("execution.viewDetails", {
+                      defaultValue: "View details",
+                    })}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-[var(--lux-gold)] transition-transform duration-200",
+                  expanded ? "rotate-180" : "",
+                )}
+              />
+            </div>
           </div>
         </div>
       </div>

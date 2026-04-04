@@ -179,8 +179,8 @@ const navigationTree: NavigationItem[] = [
     children: [
       {
         id: "inventory-stock",
-        labelKey: "sidebar.nav.stockItems",
-        label: "Stock Items",
+        labelKey: "inventory.title",
+        label: "Inventory",
         labelAr: "أصناف المخزون",
         href: "/inventory",
         icon: PackageOpen,
@@ -463,7 +463,9 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
     return [];
   }
 
-  return flattenNavigationLeaves(inventoryRoot.children, [INVENTORY_ROOT_ID]);
+  return flattenNavigationLeaves(inventoryRoot.children, [INVENTORY_ROOT_ID]).filter(
+    (item) => item.href === "/inventory",
+  );
 })();
 
 export const reportsNavigationLeaves: NavigationLeaf[] = (() => {

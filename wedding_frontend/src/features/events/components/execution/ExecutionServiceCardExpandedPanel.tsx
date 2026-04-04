@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -81,20 +82,30 @@ export function ExecutionServiceCardExpandedPanel({
   onUploadAttachment,
   onDeleteAttachment,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
 
   return (
-    <div className="space-y-5 border-t border-[var(--lux-row-border)] px-5 pb-5 pt-5">
+    <div
+      dir={i18n.dir()}
+      className={cn(
+        "space-y-5 border-t border-[var(--lux-row-border)] px-5 pb-5 pt-5",
+        isRtl ? "text-right" : "text-left",
+      )}
+    >
       <div className="grid gap-4 md:grid-cols-3">
         <label className="space-y-2">
           <span className="text-sm font-medium text-[var(--lux-text)]">
             {t("execution.templateKey", { defaultValue: "Template Key" })}
           </span>
           <Select value={templateKey} onValueChange={onTemplateKeyChange}>
-            <SelectTrigger>
+            <SelectTrigger
+              dir={i18n.dir()}
+              className={isRtl ? "text-right [&_span]:text-right" : "text-left [&_span]:text-left"}
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dir={i18n.dir()}>
               {templateOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -114,10 +125,13 @@ export function ExecutionServiceCardExpandedPanel({
               onStatusChange(value as ExecutionServiceDetailStatus)
             }
           >
-            <SelectTrigger>
+            <SelectTrigger
+              dir={i18n.dir()}
+              className={isRtl ? "text-right [&_span]:text-right" : "text-left [&_span]:text-left"}
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dir={i18n.dir()}>
               {(
                 ["pending", "draft", "ready", "in_progress", "done"] as const
               ).map((statusValue) => (
@@ -137,6 +151,7 @@ export function ExecutionServiceCardExpandedPanel({
             type="number"
             min="0"
             value={sortOrder}
+            className={isRtl ? "text-right" : "text-left"}
             onChange={(event) => onSortOrderChange(event.target.value)}
           />
         </label>
@@ -166,7 +181,7 @@ export function ExecutionServiceCardExpandedPanel({
             {t("common.notes", { defaultValue: "Notes" })}
           </span>
           <textarea
-            className={textareaClassName}
+            className={cn(textareaClassName, isRtl ? "text-right" : "text-left")}
             value={notes}
             onChange={(event) => onNotesChange(event.target.value)}
             placeholder={t("execution.notesPlaceholder", {
@@ -183,7 +198,7 @@ export function ExecutionServiceCardExpandedPanel({
             })}
           </span>
           <textarea
-            className={textareaClassName}
+            className={cn(textareaClassName, isRtl ? "text-right" : "text-left")}
             value={executorNotes}
             onChange={(event) => onExecutorNotesChange(event.target.value)}
             placeholder={t("execution.executorNotesPlaceholder", {
@@ -200,7 +215,7 @@ export function ExecutionServiceCardExpandedPanel({
         </div>
       ) : null}
 
-      <div className="flex items-center justify-end">
+      <div className={cn("flex items-center", isRtl ? "justify-start" : "justify-end")}>
         <Button onClick={onSave} disabled={saving}>
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" />

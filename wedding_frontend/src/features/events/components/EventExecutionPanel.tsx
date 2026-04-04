@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ChevronDown,
   ClipboardList,
   FileText,
   Handshake,
@@ -175,6 +176,7 @@ export function EventExecutionPanel({ eventId }: Props) {
     createBriefFormState(null),
   );
   const [expandedDetailId, setExpandedDetailId] = useState<number | null>(null);
+  const [isGeneralBriefCollapsed, setIsGeneralBriefCollapsed] = useState(false);
 
   useEffect(() => {
     setBriefForm(createBriefFormState(executionBrief));
@@ -513,187 +515,267 @@ export function EventExecutionPanel({ eventId }: Props) {
       </SectionCard>
 
       <SectionCard className="space-y-5">
-        <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
-          <h4 className="text-lg font-semibold text-[var(--lux-heading)]">
-            {t("execution.generalBriefSection", {
-              defaultValue: "General brief details",
-            })}
-          </h4>
-          <p className="text-sm text-[var(--lux-text-secondary)]">
-            {t("execution.generalBriefHint", {
-              defaultValue:
-                "These notes describe the event at a high level before filling service-specific execution blocks.",
-            })}
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("execution.briefStatus", { defaultValue: "Brief status" })}
-            </span>
-            <Select
-              value={briefForm.status}
-              onValueChange={(value) =>
-                setBriefForm((current) => ({
-                  ...current,
-                  status: value as ExecutionBriefStatus,
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(
-                  [
-                    "draft",
-                    "under_review",
-                    "approved",
-                    "handed_to_executor",
-                    "in_progress",
-                    "completed",
-                  ] as const
-                ).map((statusValue) => (
-                  <SelectItem key={statusValue} value={statusValue}>
-                    {getExecutionBriefStatusLabel(statusValue, t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("execution.approvedByClientAt", {
-                defaultValue: "Approved By Client At",
+        <div
+          className={cn(
+            "flex flex-col gap-4 sm:items-start sm:justify-between",
+            isRtl ? "sm:flex-row-reverse" : "sm:flex-row",
+          )}
+        >
+          <div className={cn("space-y-2", isRtl ? "text-right" : "text-left")}>
+            <h4 className="text-lg font-semibold text-[var(--lux-heading)]">
+              {t("execution.generalBriefSection", {
+                defaultValue: "General brief details",
               })}
-            </span>
-            <Input
-              type="date"
-              value={briefForm.approvedByClientAt}
-              onChange={(event) =>
-                setBriefForm((current) => ({
-                  ...current,
-                  approvedByClientAt: event.target.value,
-                }))
-              }
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("execution.handedToExecutorAt", {
-                defaultValue: "Handed To Executor At",
+            </h4>
+            <p className="text-sm text-[var(--lux-text-secondary)]">
+              {t("execution.generalBriefHint", {
+                defaultValue:
+                  "These notes describe the event at a high level before filling service-specific execution blocks.",
               })}
-            </span>
-            <Input
-              type="date"
-              value={briefForm.handedToExecutorAt}
-              onChange={(event) =>
-                setBriefForm((current) => ({
-                  ...current,
-                  handedToExecutorAt: event.target.value,
-                }))
-              }
-            />
-          </label>
-        </div>
+            </p>
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("execution.generalNotes", {
-                defaultValue: "General notes",
-              })}
-            </span>
-            <textarea
-              className={textareaClassName}
-              value={briefForm.generalNotes}
-              onChange={(event) =>
-                setBriefForm((current) => ({
-                  ...current,
-                  generalNotes: event.target.value,
-                }))
-              }
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("execution.clientNotes", {
-                defaultValue: "Client notes",
-              })}
-            </span>
-            <textarea
-              className={textareaClassName}
-              value={briefForm.clientNotes}
-              onChange={(event) =>
-                setBriefForm((current) => ({
-                  ...current,
-                  clientNotes: event.target.value,
-                }))
-              }
-            />
-          </label>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-[var(--lux-text)]">
-            {t("execution.designerNotes", {
-              defaultValue: "Designer notes",
-            })}
-          </span>
-          <textarea
-            className={textareaClassName}
-            value={briefForm.designerNotes}
-            onChange={(event) =>
-              setBriefForm((current) => ({
-                ...current,
-                designerNotes: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <div className="flex items-center justify-end">
           <Button
-            onClick={handleSaveBrief}
-            disabled={updateExecutionBriefMutation.isPending}
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              setIsGeneralBriefCollapsed((current) => !current)
+            }
+            className="min-w-[180px]"
           >
-            {updateExecutionBriefMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {updateExecutionBriefMutation.isPending
-              ? t("common.processing", { defaultValue: "Processing..." })
-              : t("common.saveChanges", { defaultValue: "Save Changes" })}
+            {isGeneralBriefCollapsed
+              ? t("execution.expandGeneralBrief", {
+                  defaultValue: "Show general brief",
+                })
+              : t("execution.collapseGeneralBrief", {
+                  defaultValue: "Hide general brief",
+                })}
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform duration-200",
+                isGeneralBriefCollapsed ? "rotate-180" : "",
+              )}
+            />
           </Button>
         </div>
 
-        <AttachmentUploader
-          title={t("execution.briefAttachmentsUploader", {
-            defaultValue: "Upload general event attachments",
-          })}
-          buttonLabel={t("execution.uploadAttachment", {
-            defaultValue: "Upload attachment",
-          })}
-          pending={uploadExecutionBriefAttachmentMutation.isPending}
-          onUpload={handleUploadBriefAttachment}
-        />
+        {!isGeneralBriefCollapsed ? (
+          <div
+            dir={i18n.dir()}
+            className={cn("space-y-5", isRtl ? "text-right" : "text-left")}
+          >
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("execution.briefStatus", { defaultValue: "Brief status" })}
+                </span>
+                <Select
+                  value={briefForm.status}
+                  onValueChange={(value) =>
+                    setBriefForm((current) => ({
+                      ...current,
+                      status: value as ExecutionBriefStatus,
+                    }))
+                  }
+                >
+                  <SelectTrigger
+                    dir={i18n.dir()}
+                    className={
+                      isRtl
+                        ? "text-right [&_span]:text-right"
+                        : "text-left [&_span]:text-left"
+                    }
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent dir={i18n.dir()}>
+                    {(
+                      [
+                        "draft",
+                        "under_review",
+                        "approved",
+                        "handed_to_executor",
+                        "in_progress",
+                        "completed",
+                      ] as const
+                    ).map((statusValue) => (
+                      <SelectItem key={statusValue} value={statusValue}>
+                        {getExecutionBriefStatusLabel(statusValue, t)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
 
-        <AttachmentGallery
-          attachments={briefAttachments}
-          title={t("execution.briefAttachments", {
-            defaultValue: "General brief attachments",
-          })}
-          emptyText={t("execution.noBriefAttachments", {
-            defaultValue: "No general attachments uploaded yet.",
-          })}
-          deleting={deleteExecutionAttachmentMutation.isPending}
-          onDelete={handleDeleteAttachment}
-        />
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("execution.approvedByClientAt", {
+                    defaultValue: "Approved by client on",
+                  })}
+                </span>
+                <Input
+                  type="date"
+                  dir={i18n.dir()}
+                  lang={isRtl ? "ar" : "en"}
+                  className={isRtl ? "text-right" : "text-left"}
+                  value={briefForm.approvedByClientAt}
+                  onChange={(event) =>
+                    setBriefForm((current) => ({
+                      ...current,
+                      approvedByClientAt: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("execution.handedToExecutorAt", {
+                    defaultValue: "Handed to executor on",
+                  })}
+                </span>
+                <Input
+                  type="date"
+                  dir={i18n.dir()}
+                  lang={isRtl ? "ar" : "en"}
+                  className={isRtl ? "text-right" : "text-left"}
+                  value={briefForm.handedToExecutorAt}
+                  onChange={(event) =>
+                    setBriefForm((current) => ({
+                      ...current,
+                      handedToExecutorAt: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("execution.generalNotes", {
+                    defaultValue: "General notes",
+                  })}
+                </span>
+                <textarea
+                  className={cn(
+                    textareaClassName,
+                    isRtl ? "text-right" : "text-left",
+                  )}
+                  value={briefForm.generalNotes}
+                  placeholder={t("execution.generalNotesPlaceholder", {
+                    defaultValue:
+                      "Overall execution notes, wedding flow, and shared context...",
+                  })}
+                  onChange={(event) =>
+                    setBriefForm((current) => ({
+                      ...current,
+                      generalNotes: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-[var(--lux-text)]">
+                  {t("execution.clientNotes", {
+                    defaultValue: "Client notes",
+                  })}
+                </span>
+                <textarea
+                  className={cn(
+                    textareaClassName,
+                    isRtl ? "text-right" : "text-left",
+                  )}
+                  value={briefForm.clientNotes}
+                  placeholder={t("execution.clientNotesPlaceholder", {
+                    defaultValue:
+                      "Client preferences, approvals, and special requests...",
+                  })}
+                  onChange={(event) =>
+                    setBriefForm((current) => ({
+                      ...current,
+                      clientNotes: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                {t("execution.designerNotes", {
+                  defaultValue: "Designer notes",
+                })}
+              </span>
+              <textarea
+                className={cn(
+                  textareaClassName,
+                  isRtl ? "text-right" : "text-left",
+                )}
+                value={briefForm.designerNotes}
+                placeholder={t("execution.designerNotesPlaceholder", {
+                  defaultValue:
+                    "Internal design notes, execution intent, and setup direction...",
+                })}
+                onChange={(event) =>
+                  setBriefForm((current) => ({
+                    ...current,
+                    designerNotes: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <div
+              className={cn(
+                "flex items-center",
+                isRtl ? "justify-start" : "justify-end",
+              )}
+            >
+              <Button
+                onClick={handleSaveBrief}
+                disabled={updateExecutionBriefMutation.isPending}
+              >
+                {updateExecutionBriefMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {updateExecutionBriefMutation.isPending
+                  ? t("common.processing", {
+                      defaultValue: "Processing...",
+                    })
+                  : t("common.saveChanges", {
+                      defaultValue: "Save Changes",
+                    })}
+              </Button>
+            </div>
+
+            <AttachmentUploader
+              title={t("execution.briefAttachmentsUploader", {
+                defaultValue: "Upload general event attachments",
+              })}
+              buttonLabel={t("execution.uploadAttachment", {
+                defaultValue: "Upload attachment",
+              })}
+              pending={uploadExecutionBriefAttachmentMutation.isPending}
+              onUpload={handleUploadBriefAttachment}
+            />
+
+            <AttachmentGallery
+              attachments={briefAttachments}
+              title={t("execution.briefAttachments", {
+                defaultValue: "General brief attachments",
+              })}
+              emptyText={t("execution.noBriefAttachments", {
+                defaultValue: "No general attachments uploaded yet.",
+              })}
+              deleting={deleteExecutionAttachmentMutation.isPending}
+              onDelete={handleDeleteAttachment}
+            />
+          </div>
+        ) : null}
       </SectionCard>
 
       <div className="space-y-5">
@@ -718,7 +800,7 @@ export function EventExecutionPanel({ eventId }: Props) {
         </div>
 
         {serviceDetails.length ? (
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {serviceDetails.map((detail) => (
               <ServiceDetailEditorCard
                 key={detail.id}

@@ -31,6 +31,9 @@ import EventDetailsPage from "@/pages/events/EventDetails";
 import EventFormPage from "@/pages/events/EventForm";
 import EventCalendarPage from "@/pages/events/EventCalendar";
 import EventsPage from "@/pages/events/Events";
+import InventoryDetailsPage from "@/pages/inventory/InventoryDetails";
+import InventoryFormPage from "@/pages/inventory/InventoryForm";
+import InventoryPage from "@/pages/inventory/Inventory";
 import QuotationDetailsPage from "@/pages/quotations/QuotationDetails";
 import QuotationFormPage from "@/pages/quotations/QuotationForm";
 import QuotationsPage from "@/pages/quotations/Quotations";
@@ -108,6 +111,12 @@ const explicitModulePaths = new Set([
   "/appointments/create",
   "/appointments/edit/:id",
   "/appointments/:id",
+  "/inventory",
+  "/inventory/create",
+  "/inventory/edit/:id",
+  "/inventory/:id",
+  "/inventory/reservations",
+  "/inventory/purchase-orders",
 ]);
 
 function createModuleRoute(item: NavigationLeaf) {
@@ -431,6 +440,22 @@ export const router = createBrowserRouter([
           {
             path: "appointments/:id",
             element: <AppointmentDetailsPage />,
+          },
+          {
+            path: "inventory",
+            element: <InventoryPage />,
+          },
+          {
+            path: "inventory/create",
+            element: <InventoryFormPage />,
+          },
+          {
+            path: "inventory/edit/:id",
+            element: <InventoryFormPage />,
+          },
+          {
+            path: "inventory/:id",
+            element: <InventoryDetailsPage />,
           },
           ...navigationLeaves
             .filter((item) => !item.href || !explicitModulePaths.has(item.href))

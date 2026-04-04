@@ -147,10 +147,6 @@ export function ExecutionServiceCard({
           ? "border-[var(--lux-gold-border)] bg-[color-mix(in_srgb,var(--lux-panel-surface)_94%,black)] shadow-[0_20px_60px_color-mix(in_srgb,var(--lux-gold)_12%,transparent)] xl:col-span-2"
           : "border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] hover:border-[color-mix(in_srgb,var(--lux-gold)_24%,var(--lux-row-border))]",
       )}
-      style={{
-        background:
-          "radial-gradient(circle at top right, color-mix(in srgb, var(--lux-gold) 10%, transparent), transparent 38%), linear-gradient(155deg, color-mix(in srgb, var(--lux-panel-surface) 94%, black), color-mix(in srgb, var(--lux-control-hover) 36%, transparent))",
-      }}
       aria-label={`${resolvedCardTemplateLabel} ${t("execution.blockLabel", {
         defaultValue: "Execution block",
       })}`}

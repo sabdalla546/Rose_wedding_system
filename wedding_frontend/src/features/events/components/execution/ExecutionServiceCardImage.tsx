@@ -41,8 +41,8 @@ export function ExecutionServiceCardImage({
   const initial = serviceTitle.trim().charAt(0).toUpperCase() || "E";
 
   return (
-    <div className="relative overflow-hidden rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-control-surface)]">
-      <div className="aspect-[5/4]">
+    <div className="relative w-full overflow-hidden rounded-[6px] border border-[var(--lux-row-border)] bg-[var(--lux-control-surface)]">
+      <div className="aspect-[16/9] w-full">
         {showImage ? (
           <img
             key={coverImageUrl ?? "execution-card-placeholder"}

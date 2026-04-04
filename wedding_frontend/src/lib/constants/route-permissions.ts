@@ -61,6 +61,10 @@ export const routeAccessByHref: Record<string, RouteAccess> = {
   "/appointments/create": { permission: "appointments.create" },
   "/appointments/edit/:id": { permission: "appointments.update" },
   "/appointments/:id": { permission: "appointments.read" },
+  "/inventory": { permission: "inventory.read" },
+  "/inventory/create": { permission: "inventory.create" },
+  "/inventory/edit/:id": { permission: "inventory.update" },
+  "/inventory/:id": { permission: "inventory.read" },
 };
 
 export const routePermissionByHref: Record<string, string> = Object.entries(

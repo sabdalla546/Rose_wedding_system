@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -50,7 +50,9 @@ import {
   getEventVendorDisplayName,
   formatMoney as formatVendorMoney,
 } from "@/pages/vendors/adapters";
+import type { EventServiceItem, Service } from "@/pages/services/types";
 import type {
+  EventVendorLink,
   VendorPricingPlan,
   VendorSubService,
   VendorType,
@@ -384,6 +386,83 @@ const createEmptyContractItem = (
   sortOrder: String(sortOrder),
 });
 
+const buildServiceItemFromEventService = (
+  item: EventServiceItem,
+  sortOrder: number,
+): ContractItemFormData => ({
+  ...createEmptyContractItem(sortOrder, "service"),
+  eventServiceId: String(item.id),
+  serviceId: item.serviceId ? String(item.serviceId) : "",
+  itemName: item.serviceNameSnapshot || item.service?.name || "",
+  category: item.category,
+  quantity: "1",
+  unitPrice: "0",
+  totalPrice: "0",
+  notes: item.notes ?? "",
+});
+
+const buildServiceItemFromCatalogService = (
+  service: Service,
+  sortOrder: number,
+): ContractItemFormData => ({
+  ...createEmptyContractItem(sortOrder, "service"),
+  serviceId: String(service.id),
+  itemName: service.name,
+  category: service.category,
+  quantity: "1",
+  unitPrice: "0",
+  totalPrice: "0",
+  notes: "",
+});
+
+const buildVendorItemFromEventVendor = (
+  item: EventVendorLink,
+  sortOrder: number,
+): ContractItemFormData => {
+  const agreedPrice = toNumberValue(item.agreedPrice) ?? 0;
+
+  return {
+    ...createEmptyContractItem(sortOrder, "vendor"),
+    eventVendorId: String(item.id),
+    vendorId: item.vendorId ? String(item.vendorId) : "",
+    pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
+    itemName: getEventVendorDisplayName(item),
+    category: item.vendorType,
+    quantity: "1",
+    unitPrice: String(agreedPrice),
+    totalPrice: String(agreedPrice),
+    notes: item.notes ?? "",
+  };
+};
+
+const buildVendorItemFromCatalogVendorConfig = (
+  vendor: CatalogVendorLike,
+  config: SelectedCatalogVendorConfig,
+  sortOrder: number,
+): ContractItemFormData => ({
+  ...createEmptyContractItem(sortOrder, "vendor"),
+  vendorId: String(vendor.id),
+  pricingPlanId: config.pricingPlanId || "",
+  itemName: vendor.name,
+  category: vendor.type ?? "vendor",
+  quantity: "1",
+  unitPrice: config.agreedPrice || config.calculatedPrice || "0",
+  totalPrice: config.agreedPrice || config.calculatedPrice || "0",
+  notes: "",
+});
+
+const normalizeContractSortOrder = (items: ContractItemFormData[]) =>
+  items.map((item, index) => ({
+    ...item,
+    sortOrder: String(index),
+  }));
+
+const getEventVendorDisabledReason = (item: EventVendorLink) => {
+  if (item.status === "cancelled") return "cancelled";
+  if (toNumberValue(item.agreedPrice) === null) return "missing_price";
+  return null;
+};
+
 const createEmptyPaymentSchedule = (
   sortOrder = 0,
 ): ContractFormValues["paymentSchedules"][number] => ({
@@ -406,6 +485,7 @@ const ContractFormPage = () => {
     searchParams.get("mode") === "from-quotation" ? "from_quotation" : "manual";
   const preselectedEventId = searchParams.get("eventId") ?? "";
   const preselectedQuotationId = searchParams.get("quotationId") ?? "";
+  const previousEventIdRef = useRef("");
   const [catalogVendorConfigs, setCatalogVendorConfigs] = useState<
     Record<string, SelectedCatalogVendorConfig>
   >({});
@@ -468,15 +548,13 @@ const ContractFormPage = () => {
       discountAmount: "0",
       notes: "",
       status: "draft",
-      items: [createEmptyContractItem()],
+      items: [],
       paymentSchedules: [],
     },
   });
 
   const {
     fields: itemFields,
-    append: appendItem,
-    remove: removeItem,
     replace: replaceItems,
   } = useFieldArray({
     control: form.control,
@@ -570,8 +648,50 @@ const ContractFormPage = () => {
     () =>
       [...(selectedQuotation?.items ?? [])].sort(
         (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0),
-      ),
+    ),
     [selectedQuotation?.items],
+  );
+  const selectedManualEventServiceIds = useMemo(
+    () =>
+      watchedItems
+        ?.filter(
+          (item) => item.itemType === "service" && item.eventServiceId?.trim(),
+        )
+        .map((item) => item.eventServiceId as string) ?? [],
+    [watchedItems],
+  );
+  const selectedManualCatalogServiceIds = useMemo(
+    () =>
+      watchedItems
+        ?.filter(
+          (item) =>
+            item.itemType === "service" &&
+            item.serviceId?.trim() &&
+            !item.eventServiceId?.trim(),
+        )
+        .map((item) => item.serviceId as string) ?? [],
+    [watchedItems],
+  );
+  const selectedManualEventVendorIds = useMemo(
+    () =>
+      watchedItems
+        ?.filter(
+          (item) => item.itemType === "vendor" && item.eventVendorId?.trim(),
+        )
+        .map((item) => item.eventVendorId as string) ?? [],
+    [watchedItems],
+  );
+  const selectedManualCatalogVendorIds = useMemo(
+    () =>
+      watchedItems
+        ?.filter(
+          (item) =>
+            item.itemType === "vendor" &&
+            item.vendorId?.trim() &&
+            !item.eventVendorId?.trim(),
+        )
+        .map((item) => item.vendorId as string) ?? [],
+    [watchedItems],
   );
   const selectableQuotations = useMemo(
     () =>
@@ -726,6 +846,31 @@ const ContractFormPage = () => {
   }, [form, isEditMode, preselectedEventId, preselectedQuotationId]);
 
   useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "manual") {
+      return;
+    }
+
+    if (!watchedEventId) {
+      previousEventIdRef.current = "";
+      replaceItems([]);
+      setCatalogVendorConfigs({});
+      return;
+    }
+
+    if (!previousEventIdRef.current) {
+      previousEventIdRef.current = watchedEventId;
+      return;
+    }
+
+    if (previousEventIdRef.current !== watchedEventId) {
+      replaceItems([]);
+      setCatalogVendorConfigs({});
+    }
+
+    previousEventIdRef.current = watchedEventId;
+  }, [isEditMode, replaceItems, watchedCreateMode, watchedEventId]);
+
+  useEffect(() => {
     if (isEditMode || !selectedQuotation) {
       return;
     }
@@ -755,14 +900,6 @@ const ContractFormPage = () => {
     }
   }, [form, isEditMode, selectedEvent]);
 
-  useEffect(() => {
-    if (isEditMode || watchedCreateMode !== "manual" || itemFields.length > 0) {
-      return;
-    }
-
-    appendItem(createEmptyContractItem());
-  }, [appendItem, isEditMode, itemFields.length, watchedCreateMode]);
-
   const isBusy =
     contractLoading ||
     createMutation.isPending ||
@@ -782,6 +919,110 @@ const ContractFormPage = () => {
       ),
     }));
   };
+
+  useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "manual") {
+      return;
+    }
+
+    const selectedVendorIds = new Set(selectedManualCatalogVendorIds);
+
+    setCatalogVendorConfigs((current) => {
+      let changed = false;
+      const nextConfigs: Record<string, SelectedCatalogVendorConfig> = {};
+
+      selectedManualCatalogVendorIds.forEach((vendorId) => {
+        if (current[vendorId]) {
+          nextConfigs[vendorId] = current[vendorId];
+          return;
+        }
+
+        changed = true;
+        nextConfigs[vendorId] = createDefaultCatalogVendorConfig(vendorId);
+      });
+
+      Object.keys(current).forEach((key) => {
+        if (!selectedVendorIds.has(key)) {
+          changed = true;
+        }
+      });
+
+      return changed ? nextConfigs : current;
+    });
+  }, [isEditMode, selectedManualCatalogVendorIds, watchedCreateMode]);
+
+  useEffect(() => {
+    if (isEditMode || watchedCreateMode !== "manual") {
+      return;
+    }
+
+    const currentItems = form.getValues("items");
+    let hasChanges = false;
+
+    const nextItems = currentItems.map((item, index) => {
+      if (
+        item.itemType !== "vendor" ||
+        !item.vendorId?.trim() ||
+        item.eventVendorId?.trim()
+      ) {
+        return item;
+      }
+
+      const vendor = catalogVendors.find(
+        (entry) => String(entry.id) === item.vendorId,
+      );
+
+      if (!vendor) {
+        return item;
+      }
+
+      const config =
+        catalogVendorConfigs[item.vendorId] ??
+        createDefaultCatalogVendorConfig(item.vendorId);
+      const nextVendorItem = buildVendorItemFromCatalogVendorConfig(
+        vendor,
+        config,
+        index,
+      );
+      const mergedItem: ContractItemFormData = {
+        ...item,
+        vendorId: nextVendorItem.vendorId,
+        pricingPlanId: nextVendorItem.pricingPlanId,
+        itemName: nextVendorItem.itemName,
+        category: nextVendorItem.category,
+        quantity: nextVendorItem.quantity,
+        unitPrice: nextVendorItem.unitPrice,
+        totalPrice: nextVendorItem.totalPrice,
+        sortOrder: String(index),
+      };
+
+      if (
+        mergedItem.pricingPlanId !== item.pricingPlanId ||
+        mergedItem.unitPrice !== item.unitPrice ||
+        mergedItem.totalPrice !== item.totalPrice ||
+        mergedItem.itemName !== item.itemName ||
+        mergedItem.category !== item.category ||
+        mergedItem.quantity !== item.quantity ||
+        mergedItem.sortOrder !== item.sortOrder
+      ) {
+        hasChanges = true;
+      }
+
+      return mergedItem;
+    });
+
+    if (hasChanges) {
+      replaceItems(nextItems);
+    }
+  }, [
+    catalogVendorConfigs,
+    catalogVendors,
+    form,
+    isEditMode,
+    replaceItems,
+    watchedCreateMode,
+    watchedItems,
+  ]);
 
   const getVendorSource = (
     rowKey: string,
@@ -1153,6 +1394,202 @@ const ContractFormPage = () => {
     updateItemValues(index, Object.fromEntries(changedEntries) as Partial<
       Omit<ContractItemFormData, "id">
     >);
+  };
+
+  const replaceManualItems = (nextItems: ContractItemFormData[]) => {
+    replaceItems(normalizeContractSortOrder(nextItems));
+  };
+
+  const toggleManualEventService = (
+    item: EventServiceItem,
+    checked: boolean,
+  ) => {
+    const current = form.getValues("items");
+
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "service" &&
+            row.eventServiceId === String(item.id),
+        )
+      ) {
+        return;
+      }
+
+      replaceManualItems([
+        ...current,
+        buildServiceItemFromEventService(item, current.length),
+      ]);
+      return;
+    }
+
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "service" && row.eventServiceId === String(item.id)
+          ),
+      ),
+    );
+  };
+
+  const toggleManualCatalogService = (service: Service, checked: boolean) => {
+    const current = form.getValues("items");
+
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "service" &&
+            row.serviceId === String(service.id) &&
+            !row.eventServiceId,
+        )
+      ) {
+        return;
+      }
+
+      replaceManualItems([
+        ...current,
+        buildServiceItemFromCatalogService(service, current.length),
+      ]);
+      return;
+    }
+
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "service" &&
+            row.serviceId === String(service.id) &&
+            !row.eventServiceId
+          ),
+      ),
+    );
+  };
+
+  const toggleManualEventVendor = (item: EventVendorLink, checked: boolean) => {
+    if (getEventVendorDisabledReason(item)) {
+      return;
+    }
+
+    const current = form.getValues("items");
+
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "vendor" && row.eventVendorId === String(item.id),
+        )
+      ) {
+        return;
+      }
+
+      replaceManualItems([
+        ...current,
+        buildVendorItemFromEventVendor(item, current.length),
+      ]);
+      return;
+    }
+
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(row.itemType === "vendor" && row.eventVendorId === String(item.id)),
+      ),
+    );
+  };
+
+  const toggleManualCatalogVendor = (
+    vendor: CatalogVendorLike,
+    checked: boolean,
+  ) => {
+    const current = form.getValues("items");
+    const vendorId = String(vendor.id);
+
+    if (checked) {
+      if (
+        current.some(
+          (row) =>
+            row.itemType === "vendor" &&
+            row.vendorId === vendorId &&
+            !row.eventVendorId,
+        )
+      ) {
+        return;
+      }
+
+      const config =
+        catalogVendorConfigs[vendorId] ??
+        createDefaultCatalogVendorConfig(vendorId);
+
+      setCatalogVendorConfigs((previous) =>
+        previous[vendorId]
+          ? previous
+          : {
+              ...previous,
+              [vendorId]: config,
+            },
+      );
+
+      replaceManualItems([
+        ...current,
+        buildVendorItemFromCatalogVendorConfig(vendor, config, current.length),
+      ]);
+      return;
+    }
+
+    setCatalogVendorConfigs((previous) => {
+      if (!previous[vendorId]) {
+        return previous;
+      }
+
+      const next = { ...previous };
+      delete next[vendorId];
+      return next;
+    });
+
+    replaceManualItems(
+      current.filter(
+        (row) =>
+          !(
+            row.itemType === "vendor" &&
+            row.vendorId === vendorId &&
+            !row.eventVendorId
+          ),
+      ),
+    );
+  };
+
+  const handleRemoveManualRow = (index: number) => {
+    const current = [...form.getValues("items")];
+    current.splice(index, 1);
+    replaceManualItems(current);
+  };
+
+  const handleManualCatalogVendorResolvedValues = (
+    vendorId: string,
+    values: Partial<Omit<ContractItemFormData, "id">>,
+  ) => {
+    const current = form.getValues("items");
+    const index = current.findIndex(
+      (item) =>
+        item.itemType === "vendor" &&
+        item.vendorId === vendorId &&
+        !item.eventVendorId,
+    );
+
+    if (index < 0) {
+      return;
+    }
+
+    const nextItems = [...current];
+    nextItems[index] = {
+      ...nextItems[index],
+      ...values,
+    };
+
+    replaceManualItems(nextItems);
   };
 
   const onSubmit = (values: ContractFormValues) => {
@@ -1680,7 +2117,293 @@ const ContractFormPage = () => {
                     </label>
                   </section>
 
-                  {isEditMode || watchedCreateMode === "manual" ? (
+                  {!isEditMode && watchedCreateMode === "manual" ? (
+                    <section className="space-y-6">
+                      <div className="space-y-1">
+                        <h2 className={sectionTitleClass}>
+                          {t("contracts.manualChecklistTitle", {
+                            defaultValue: "Select services and vendors",
+                          })}
+                        </h2>
+                        <p className={sectionHintClass}>
+                          {t("contracts.manualChecklistHint", {
+                            defaultValue:
+                              "Choose event-linked items first when available, or use the system catalogs to build the contract rows automatically.",
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        <SelectionCard
+                          title={t("contracts.servicesChecklistTitle", {
+                            defaultValue: "Services",
+                          })}
+                          hint={t("contracts.servicesChecklistHint", {
+                            defaultValue:
+                              "Selected services create editable service rows with references preserved for the contract snapshot.",
+                          })}
+                        >
+                          <div className="space-y-4">
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("contracts.eventServices", {
+                                  defaultValue: "Event Services",
+                                })}
+                              </div>
+                              {!watchedEventId ? (
+                                <EmptyHint
+                                  text={t(
+                                    "contracts.selectEventBeforeServices",
+                                    {
+                                      defaultValue: "Select an event first.",
+                                    },
+                                  )}
+                                />
+                              ) : availableEventServices.length === 0 ? (
+                                <EmptyHint
+                                  text={t(
+                                    "contracts.noEventServicesForEvent",
+                                    {
+                                      defaultValue:
+                                        "This event has no services yet.",
+                                    },
+                                  )}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {availableEventServices.map((item) => (
+                                    <SelectableCard
+                                      key={`contract-event-service-${item.id}`}
+                                      checked={selectedManualEventServiceIds.includes(
+                                        String(item.id),
+                                      )}
+                                      onCheckedChange={(value) =>
+                                        toggleManualEventService(item, value)
+                                      }
+                                      title={item.serviceNameSnapshot}
+                                      subtitle={t(
+                                        `services.category.${item.category}`,
+                                        {
+                                          defaultValue: item.category,
+                                        },
+                                      )}
+                                      meta={[
+                                        `${t("contracts.quantity", {
+                                          defaultValue: "Quantity",
+                                        })}: ${item.quantity ?? 1}`,
+                                        t("contracts.serviceManualPricingHintShort", {
+                                          defaultValue:
+                                            "Price stays editable in the contract row",
+                                        }),
+                                      ]}
+                                      helperText={item.notes ?? undefined}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("contracts.catalogServices", {
+                                  defaultValue: "Catalog Services",
+                                })}
+                              </div>
+                              {services.length === 0 ? (
+                                <EmptyHint
+                                  text={t("contracts.noCatalogServices", {
+                                    defaultValue: "No catalog services found.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {services.map((service) => (
+                                    <SelectableCard
+                                      key={`contract-catalog-service-${service.id}`}
+                                      checked={selectedManualCatalogServiceIds.includes(
+                                        String(service.id),
+                                      )}
+                                      onCheckedChange={(value) =>
+                                        toggleManualCatalogService(
+                                          service,
+                                          value,
+                                        )
+                                      }
+                                      title={service.name}
+                                      subtitle={service.category || undefined}
+                                      meta={[
+                                        t("contracts.catalogServiceSource", {
+                                          defaultValue:
+                                            "Source: service catalog",
+                                        }),
+                                        t("contracts.serviceManualPricingHintShort", {
+                                          defaultValue:
+                                            "Price stays editable in the contract row",
+                                        }),
+                                      ]}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </SelectionCard>
+
+                        <SelectionCard
+                          title={t("contracts.vendorsChecklistTitle", {
+                            defaultValue: "Vendors",
+                          })}
+                          hint={t("contracts.vendorsChecklistHint", {
+                            defaultValue:
+                              "Event vendors use agreed prices directly. Catalog vendors can match pricing plans from selected sub-services.",
+                          })}
+                        >
+                          <div className="space-y-4">
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("contracts.eventVendors", {
+                                  defaultValue: "Event Vendors",
+                                })}
+                              </div>
+                              {!watchedEventId ? (
+                                <EmptyHint
+                                  text={t("contracts.selectEventBeforeVendors", {
+                                    defaultValue: "Select an event first.",
+                                  })}
+                                />
+                              ) : availableEventVendors.length === 0 ? (
+                                <EmptyHint
+                                  text={t("contracts.noEventVendorsForEvent", {
+                                    defaultValue:
+                                      "This event has no vendors yet.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {availableEventVendors.map((item) => {
+                                    const disabledReason =
+                                      getEventVendorDisabledReason(item);
+
+                                    return (
+                                      <SelectableCard
+                                        key={`contract-event-vendor-${item.id}`}
+                                        checked={selectedManualEventVendorIds.includes(
+                                          String(item.id),
+                                        )}
+                                        disabled={Boolean(disabledReason)}
+                                        onCheckedChange={(value) =>
+                                          toggleManualEventVendor(item, value)
+                                        }
+                                        title={getEventVendorDisplayName(item)}
+                                        subtitle={t(
+                                          `vendors.type.${item.vendorType}`,
+                                          {
+                                            defaultValue: formatVendorType(
+                                              item.vendorType,
+                                            ),
+                                          },
+                                        )}
+                                        meta={[
+                                          `${t("contracts.agreedPrice", {
+                                            defaultValue: "Agreed Price",
+                                          })}: ${formatVendorMoney(item.agreedPrice ?? 0)}`,
+                                          `${t("contracts.itemStatus", {
+                                            defaultValue: "Status",
+                                          })}: ${item.status}`,
+                                        ]}
+                                        helperText={
+                                          disabledReason === "cancelled"
+                                            ? t(
+                                                "contracts.cannotSelectCancelledVendor",
+                                                {
+                                                  defaultValue:
+                                                    "Cannot select cancelled vendor",
+                                                },
+                                              )
+                                            : disabledReason === "missing_price"
+                                              ? t(
+                                                  "contracts.vendorHasNoAgreedPrice",
+                                                  {
+                                                    defaultValue:
+                                                      "Vendor has no agreed price",
+                                                  },
+                                                )
+                                              : item.notes || undefined
+                                        }
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <div className="mb-2 text-sm font-semibold text-[var(--lux-heading)]">
+                                {t("contracts.catalogVendors", {
+                                  defaultValue: "Vendor Catalog",
+                                })}
+                              </div>
+                              {catalogVendors.length === 0 ? (
+                                <EmptyHint
+                                  text={t("contracts.noCatalogVendors", {
+                                    defaultValue: "No catalog vendors found.",
+                                  })}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {catalogVendors.map((vendor) => (
+                                    <ContractCatalogVendorSelectionCard
+                                      key={`contract-catalog-vendor-${vendor.id}`}
+                                      vendor={vendor}
+                                      checked={selectedManualCatalogVendorIds.includes(
+                                        String(vendor.id),
+                                      )}
+                                      currentItem={watchedItems.find(
+                                        (item) =>
+                                          item.itemType === "vendor" &&
+                                          item.vendorId === String(vendor.id) &&
+                                          !item.eventVendorId,
+                                      )}
+                                      config={
+                                        catalogVendorConfigs[String(vendor.id)]
+                                      }
+                                      t={t}
+                                      onCheckedChange={(value) =>
+                                        toggleManualCatalogVendor(vendor, value)
+                                      }
+                                      onConfigChange={updateCatalogVendorConfig}
+                                      onResolvedValuesChange={(values) =>
+                                        handleManualCatalogVendorResolvedValues(
+                                          String(vendor.id),
+                                          values,
+                                        )
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </SelectionCard>
+                      </div>
+
+                      <EditableContractItemsSection
+                        t={t}
+                        fields={itemFields}
+                        items={watchedItems ?? []}
+                        form={form}
+                        onRemove={handleRemoveManualRow}
+                      />
+
+                      {form.formState.errors.items ? (
+                        <p className="text-sm font-medium text-[var(--lux-danger)]">
+                          {String(form.formState.errors.items.message)}
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
+
+                  {isEditMode ? (
                     <section className="space-y-4">
                       <div
                         className="border-b pb-3"
@@ -1697,7 +2420,7 @@ const ContractFormPage = () => {
                               {isEditMode
                                 ? t("contracts.editItemsHint", {
                                     defaultValue:
-                                      "Update the existing contract items. Adding or deleting items will be connected in a later backend phase.",
+                                  "Update the existing contract items. Adding or deleting items will be connected in a later backend phase.",
                                   })
                                 : t("contracts.itemsHint", {
                                     defaultValue:
@@ -1705,23 +2428,6 @@ const ContractFormPage = () => {
                                   })}
                             </p>
                           </div>
-
-                          {!isEditMode ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() =>
-                                appendItem(
-                                  createEmptyContractItem(itemFields.length),
-                                )
-                              }
-                            >
-                              <Plus className="h-4 w-4" />
-                              {t("contracts.addItem", {
-                                defaultValue: "Add Item",
-                              })}
-                            </Button>
-                          ) : null}
                         </div>
                       </div>
 
@@ -1774,19 +2480,6 @@ const ContractFormPage = () => {
                                     ) : null}
                                   </div>
 
-                                  {!isEditMode ? (
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      onClick={() => removeItem(index)}
-                                      disabled={itemFields.length === 1}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      {t("contracts.removeItem", {
-                                        defaultValue: "Remove",
-                                      })}
-                                    </Button>
-                                  ) : null}
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -2991,6 +3684,383 @@ const ContractFormPage = () => {
     </ProtectedComponent>
   );
 };
+
+function SelectionCard({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-[4px] border p-5"
+      style={{
+        background: "var(--lux-panel-surface)",
+        borderColor: "var(--lux-row-border)",
+      }}
+    >
+      <div className="space-y-1">
+        <h3 className="text-base font-semibold text-[var(--lux-heading)]">
+          {title}
+        </h3>
+        <p className="text-sm text-[var(--lux-text-secondary)]">{hint}</p>
+      </div>
+      <div className="mt-4">{children}</div>
+    </div>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  return (
+    <div
+      className="rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text-secondary)]"
+      style={{
+        background: "var(--lux-control-surface)",
+        borderColor: "var(--lux-row-border)",
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function SelectableCard({
+  checked,
+  disabled,
+  onCheckedChange,
+  title,
+  subtitle,
+  meta,
+  helperText,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  title: string;
+  subtitle?: string;
+  meta: string[];
+  helperText?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex gap-4 rounded-[4px] border p-4",
+        disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer",
+        checked
+          ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
+          : "border-[var(--lux-row-border)] bg-[var(--lux-control-surface)]",
+      )}
+    >
+      <Checkbox
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={(value) => onCheckedChange(Boolean(value))}
+      />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="font-semibold text-[var(--lux-heading)]">{title}</div>
+        {subtitle ? (
+          <div className="text-xs text-[var(--lux-text-secondary)]">
+            {subtitle}
+          </div>
+        ) : null}
+        <div className="grid grid-cols-1 gap-2 text-xs text-[var(--lux-text-secondary)] md:grid-cols-2">
+          {meta.map((item) => (
+            <div key={item}>{item}</div>
+          ))}
+        </div>
+        {helperText ? (
+          <div className="text-xs text-[var(--lux-text-secondary)]">
+            {helperText}
+          </div>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
+function ContractCatalogVendorSelectionCard({
+  vendor,
+  checked,
+  currentItem,
+  config,
+  t,
+  onCheckedChange,
+  onConfigChange,
+  onResolvedValuesChange,
+}: {
+  vendor: CatalogVendorLike;
+  checked: boolean;
+  currentItem?: Partial<ContractItemFormData>;
+  config?: SelectedCatalogVendorConfig;
+  t: (key: string, options?: Record<string, unknown>) => string;
+  onCheckedChange: (checked: boolean) => void;
+  onConfigChange: (
+    vendorId: string,
+    updater: (
+      current: SelectedCatalogVendorConfig,
+    ) => SelectedCatalogVendorConfig,
+  ) => void;
+  onResolvedValuesChange: (
+    values: Partial<Omit<ContractItemFormData, "id">>,
+  ) => void;
+}) {
+  const vendorId = String(vendor.id);
+  const resolvedConfig = config ?? createDefaultCatalogVendorConfig(vendorId);
+
+  return (
+    <div className="space-y-3">
+      <SelectableCard
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        title={vendor.name}
+        subtitle={vendor.type ? formatVendorType(vendor.type) : undefined}
+        meta={[
+          t("contracts.catalogVendorSource", {
+            defaultValue: "Source: vendor catalog",
+          }),
+          checked
+            ? resolvedConfig.pricingPlanId
+              ? `${t("contracts.pricingPlan", {
+                  defaultValue: "Pricing Plan",
+                })}: ${resolvedConfig.pricingPlanId}`
+              : t("contracts.vendorPriceAutoMatched", {
+                  defaultValue: "Price updates from matched pricing plans",
+                })
+            : t("contracts.vendorConfigAppearsAfterSelection", {
+                defaultValue: "Sub-services and pricing appear after selection",
+              }),
+        ]}
+        helperText={
+          checked
+            ? t("contracts.catalogVendorSelectedHint", {
+                defaultValue:
+                  "Configure vendor sub-services and override the price only if needed.",
+              })
+            : t("contracts.catalogVendorUnselectedHint", {
+                defaultValue: "Select to configure this vendor for the contract.",
+              })
+        }
+      />
+
+      {checked ? (
+        <ContractCatalogVendorConfigurator
+          rowKey={vendorId}
+          vendorId={vendorId}
+          currentItem={currentItem}
+          config={config}
+          vendors={[vendor]}
+          onConfigChange={onConfigChange}
+          onResolvedValuesChange={onResolvedValuesChange}
+          t={t}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function EditableContractItemsSection({
+  t,
+  fields,
+  items,
+  form,
+  onRemove,
+}: {
+  t: (key: string, options?: Record<string, unknown>) => string;
+  fields: Array<{ id: string }>;
+  items: ContractItemFormData[];
+  form: ReturnType<typeof useForm<ContractFormValues>>;
+  onRemove: (index: number) => void;
+}) {
+  if (fields.length === 0) {
+    return (
+      <EmptyHint
+        text={t("contracts.noManualItemsSelected", {
+          defaultValue:
+            "No contract rows have been selected yet. Use the checklist above to build the contract.",
+        })}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h2 className={sectionTitleClass}>
+          {t("contracts.itemsTitle", {
+            defaultValue: "Contract Items",
+          })}
+        </h2>
+        <p className={sectionHintClass}>
+          {t("contracts.manualItemsEditorHint", {
+            defaultValue:
+              "Selected checklist items become editable contract rows here. References stay linked while commercial details remain editable.",
+          })}
+        </p>
+      </div>
+
+      <div
+        className="overflow-x-auto rounded-[4px] border"
+        style={{ borderColor: "var(--lux-row-border)" }}
+      >
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--lux-row-border)] text-[var(--lux-text-muted)]">
+              <th className="px-3 py-3 text-start">
+                {t("contracts.type", { defaultValue: "Type" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("contracts.itemName", { defaultValue: "Item Name" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("contracts.category", { defaultValue: "Category" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("contracts.quantity", { defaultValue: "Quantity" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("contracts.unitPrice", { defaultValue: "Unit Price" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("contracts.totalPrice", { defaultValue: "Total Price" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("common.notes", { defaultValue: "Notes" })}
+              </th>
+              <th className="px-3 py-3 text-start">
+                {t("common.actions", { defaultValue: "Actions" })}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((field, index) => {
+              const itemValues = items[index];
+              const isVendorItem = itemValues?.itemType === "vendor";
+              const itemNameField = form.register(`items.${index}.itemName`);
+              const categoryField = form.register(`items.${index}.category`);
+              const quantityField = form.register(`items.${index}.quantity`);
+              const unitPriceField = form.register(`items.${index}.unitPrice`);
+              const totalPriceField = form.register(`items.${index}.totalPrice`);
+              const notesField = form.register(`items.${index}.notes`);
+
+              return (
+                <tr
+                  key={field.id}
+                  className="border-b border-[var(--lux-row-border)] align-top last:border-b-0"
+                  style={{
+                    background: isVendorItem
+                      ? "var(--lux-control-hover)"
+                      : "var(--lux-panel-surface)",
+                  }}
+                >
+                  <td className="min-w-[120px] px-3 py-3">
+                    <TypeBadge item={itemValues} t={t} />
+                  </td>
+                  <td className="min-w-[260px] px-3 py-3">
+                    <Input
+                      {...itemNameField}
+                      placeholder={t("contracts.itemNamePlaceholder", {
+                        defaultValue: "Enter item name",
+                      })}
+                    />
+                    <div className="mt-2 text-xs text-[var(--lux-text-secondary)]">
+                      {getContractItemOriginLabel(itemValues as any) || "-"}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--lux-text-secondary)]">
+                      {itemValues?.eventServiceId
+                        ? `${t("contracts.linkedEventService", {
+                            defaultValue: "Event Service",
+                          })}: #${itemValues.eventServiceId}`
+                        : itemValues?.serviceId
+                          ? `${t("contracts.linkedService", {
+                              defaultValue: "Catalog Service",
+                            })}: #${itemValues.serviceId}`
+                          : itemValues?.eventVendorId
+                            ? `${t("contracts.linkedEventVendor", {
+                                defaultValue: "Event Vendor",
+                              })}: #${itemValues.eventVendorId}`
+                            : itemValues?.vendorId
+                              ? `${t("contracts.linkedVendor", {
+                                  defaultValue: "Catalog Vendor",
+                                })}: #${itemValues.vendorId}`
+                              : "-"}
+                      {itemValues?.pricingPlanId
+                        ? ` • ${t("contracts.pricingPlan", {
+                            defaultValue: "Pricing Plan",
+                          })}: #${itemValues.pricingPlanId}`
+                        : ""}
+                    </div>
+                  </td>
+                  <td className="min-w-[180px] px-3 py-3">
+                    <Input
+                      {...categoryField}
+                      placeholder={t("contracts.categoryPlaceholder", {
+                        defaultValue: "Enter item category",
+                      })}
+                    />
+                  </td>
+                  <td className="min-w-[120px] px-3 py-3">
+                    <Input
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      {...quantityField}
+                    />
+                  </td>
+                  <td className="min-w-[150px] px-3 py-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      {...unitPriceField}
+                    />
+                  </td>
+                  <td className="min-w-[150px] px-3 py-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      {...totalPriceField}
+                    />
+                  </td>
+                  <td className="min-w-[260px] px-3 py-3">
+                    <textarea
+                      {...notesField}
+                      className={textareaClassName}
+                      placeholder={t("contracts.itemNotesPlaceholder", {
+                        defaultValue:
+                          "Add scope notes, commercial remarks, or delivery details...",
+                      })}
+                      style={{
+                        background: "var(--lux-control-surface)",
+                        borderColor: "var(--lux-control-border)",
+                        minHeight: "100px",
+                      }}
+                    />
+                  </td>
+                  <td className="w-[90px] px-3 py-3">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => onRemove(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t("contracts.removeItem", {
+                        defaultValue: "Remove",
+                      })}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function ContractCatalogVendorConfigurator({
   rowKey,

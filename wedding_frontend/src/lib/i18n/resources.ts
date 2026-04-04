@@ -1,4 +1,4 @@
-export const resources = {
+const baseResources = {
   en: {
     translation: {
       common: {
@@ -1594,11 +1594,19 @@ export const resources = {
           "Update the general execution brief, review service blocks, and attach visual references for the field team.",
         briefStatus: "Brief status",
         generalBriefSection: "General brief details",
+        expandGeneralBrief: "Show general brief",
+        collapseGeneralBrief: "Hide general brief",
         generalBriefHint:
           "These notes describe the wedding at a high level before filling each execution block.",
         generalNotes: "General notes",
+        generalNotesPlaceholder:
+          "Overall execution notes, wedding flow, and shared context...",
         clientNotes: "Client notes",
+        clientNotesPlaceholder:
+          "Client preferences, approvals, and special requests...",
         designerNotes: "Designer notes",
+        designerNotesPlaceholder:
+          "Internal design notes, execution intent, and setup direction...",
         approvedByClientAt: "Approved by client on",
         handedToExecutorAt: "Handed to executor on",
         serviceBlocks: "Service blocks",
@@ -1797,6 +1805,11 @@ export const resources = {
         subtotal: "Subtotal",
         discount: "Discount",
         totalAmount: "Total Amount",
+        totalServices: "Total Services",
+        totalServicesAmount: "Total Services Amount",
+        totalServicesAmountHint:
+          "This amount represents the combined services section before vendor rows and discount are applied.",
+        totalServicesAmountHintShort: "Manual services pricing",
         createContract: "Create Contract",
         contractPlaceholder: "Contracts will be connected in a later phase.",
         headerInformation: "Quotation Header",
@@ -1814,11 +1827,17 @@ export const resources = {
         itemName: "Item Name",
         itemNamePlaceholder: "Enter item name",
         type: "Type",
+        update: "Update Quotation",
         service: "Service",
+        eventServices: "Event Services",
+        catalogServices: "Catalog Services",
+        catalogServiceSource: "Catalog Service",
         serviceColumn: "Services",
         priceColumn: "Price",
         totalCompanies: "Total Companies",
         vendor: "Vendor",
+        eventVendors: "Event Vendors",
+        catalogVendors: "Vendor Catalog",
         companyColumn: "Companies",
         companyPriceColumn: "Company Prices",
         category: "Category",
@@ -1874,9 +1893,31 @@ export const resources = {
         noServiceSelected: "No service selected",
         linkedEventVendor: "Event Vendor",
         selectEventVendor: "Select event vendor",
+        linkedVendor: "Catalog Vendor",
+        catalogVendorSource: "Catalog Vendor",
         pricingPlan: "Pricing Plan",
         agreedPrice: "Agreed Price",
+        calculatedPrice: "Calculated Price",
+        agreedPricePlaceholder: "Calculated automatically when available",
+        agreedPriceAutoHint:
+          "The quotation amount follows the matched pricing plan until manual override is enabled.",
         vendorType: "Vendor Type",
+        vendorSubServices: "Vendor Sub-Services",
+        vendorSubServicesHint:
+          "Select the vendor sub-services that should shape the quotation pricing for this row.",
+        loadingVendorSubServices: "Loading vendor sub-services...",
+        noVendorSubServicesConfigured:
+          "No vendor sub-services are configured for this vendor yet.",
+        vendorPricingSummary: "Pricing Summary",
+        vendorPricingSummaryHint:
+          "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+        noMatchingPricingPlan: "No matching pricing plan",
+        noPricingPlanSelected: "No pricing plan selected",
+        manualPriceOverride: "Manual Price Override",
+        manualPriceOverrideHint:
+          "Enable this only when the final quotation amount differs from the matched pricing plan.",
+        manualPriceOverrideActiveHint:
+          "Manual override is active. The matched pricing plan stays linked for reference.",
         selectedSubServicesCount: "Selected Sub-Services",
         selectedServices: "Selected Services",
         selectedVendors: "Selected Vendors",
@@ -1886,12 +1927,27 @@ export const resources = {
         selectedVendorsSourceTitle: "Event Vendors",
         selectedVendorsSourceHint:
           "Choose the event vendor rows to include in this quotation.",
+        manualChecklistTitle: "Select services and vendors",
+        manualChecklistHint:
+          "Choose event-linked items first when available, or use the system catalogs to build the quotation rows automatically.",
+        servicesChecklistTitle: "Services",
+        servicesChecklistHint:
+          "Selected services create editable service rows with references preserved when available.",
+        companiesChecklistTitle: "Vendors",
+        companiesChecklistHint:
+          "Event vendors use agreed prices directly. Catalog vendors can match pricing plans from selected sub-services.",
+        serviceReferencePricingHint:
+          "Event-linked services keep their source reference, while catalog services rely on manual pricing.",
+        catalogVendorSelectionHint:
+          "Select this vendor to configure sub-services and pricing for the quotation row.",
         itemNotesPlaceholder:
           "Add item notes, scope details, or commercial remarks...",
         editItemsRestriction:
           "This phase supports updating existing quotation items only. Adding or deleting lines will be enabled when backend endpoints are available.",
         snapshotOnlyHint:
           "This changes the quotation snapshot only. It does not change the original vendor pricing on the event.",
+        vendorPriceAutoMatched: "Auto-matched from pricing plan",
+        vendorPriceNeedsReview: "Price needs review",
         fromEventSelectionTitle: "Event Service Selection",
         fromEventSelectionHint:
           "Select event services and event vendors together, then review the mixed preview before creating the quotation.",
@@ -1914,6 +1970,10 @@ export const resources = {
           "Select at least one event service to continue.",
         cannotSelectCancelledVendor: "Cannot select cancelled vendor",
         vendorHasNoAgreedPrice: "Vendor has no agreed price",
+        noCatalogServices: "No catalog services are available.",
+        noCatalogVendors: "No catalog vendors are available.",
+        noDescription: "No description available.",
+        noItems: "No quotation items added yet.",
         noItemsSelected: "No quotation items have been selected yet.",
         status: {
           draft: "Draft",
@@ -1983,6 +2043,7 @@ export const resources = {
         subtotal: "Subtotal",
         discount: "Discount",
         totalAmount: "Total Amount",
+        totalServices: "Total Services",
         headerInformation: "Contract Header",
         headerInformationHint:
           "Core contract dates, reference number, and commercial status.",
@@ -2001,6 +2062,16 @@ export const resources = {
         itemReference: "Line Reference",
         itemName: "Item Name",
         itemNamePlaceholder: "Enter item name",
+        type: "Type",
+        update: "Update Contract",
+        service: "Service",
+        vendor: "Vendor",
+        eventServices: "Event Services",
+        catalogServices: "Catalog Services",
+        eventVendors: "Event Vendors",
+        catalogVendors: "Vendor Catalog",
+        serviceOrigin: "Service Source",
+        vendorOrigin: "Vendor Source",
         category: "Category",
         categoryPlaceholder: "Enter item category",
         quantity: "Quantity",
@@ -2047,6 +2118,9 @@ export const resources = {
         linkedEventService: "Event Service",
         selectEventService: "Select event service",
         noEventServiceSelected: "No event service selected",
+        linkedEventVendor: "Event Vendor",
+        selectEventVendor: "Select event vendor",
+        noEventVendorSelected: "No event vendor selected",
         vendorSource: "Vendor Source",
         eventVendorSource: "Event Vendor",
         catalogVendorSource: "Catalog Vendor",
@@ -2054,6 +2128,7 @@ export const resources = {
         selectVendor: "Select vendor",
         noVendorSelected: "No vendor selected",
         linkedService: "Catalog Service",
+        catalogServiceSource: "Catalog Service",
         selectService: "Select service",
         noServiceSelected: "No service selected",
         vendorSubServices: "Vendor Sub-Services",
@@ -2067,6 +2142,7 @@ export const resources = {
         vendorPricingSummary: "Pricing Summary",
         vendorPricingSummaryHint:
           "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+        pricingPlan: "Pricing Plan",
         selectedSubServicesCount: "Selected Count",
         calculatedPrice: "Calculated Price",
         noMatchingPricingPlan: "No matching pricing plan",
@@ -2082,10 +2158,48 @@ export const resources = {
           "The contract amount follows the matched pricing plan until manual override is enabled.",
         catalogVendorPricingHint:
           "Catalog vendor rows can match pricing plans from the selected sub-services, then allow a manual override when needed.",
+        manualChecklistTitle: "Select services and vendors",
+        manualChecklistHint:
+          "Choose event-linked items first when available, or use the system catalogs to build the contract rows automatically.",
+        servicesChecklistTitle: "Services",
+        servicesChecklistHint:
+          "Selected services create editable service rows with references preserved for the contract snapshot.",
+        vendorsChecklistTitle: "Vendors",
+        vendorsChecklistHint:
+          "Event vendors use agreed prices directly. Catalog vendors can match pricing plans from selected sub-services.",
+        serviceManualPricing: "Manual service pricing",
+        serviceManualPricingHint:
+          "Service rows are priced manually in contracts. Update the line amount directly in the editor below.",
+        serviceManualPricingHintShort: "Priced manually",
+        vendorAgreedPriceHint:
+          "Uses the agreed event vendor price as the contract snapshot.",
+        vendorPriceAutoMatched: "Auto-matched from pricing plan",
+        vendorConfigAppearsAfterSelection:
+          "Vendor configuration appears after selection.",
+        catalogVendorSelectedHint:
+          "Vendor selected. Configure sub-services and pricing below.",
+        catalogVendorUnselectedHint:
+          "Select this vendor to configure sub-services and pricing.",
+        manualItemsEditorHint:
+          "Review and adjust the generated contract rows below. You can still edit names, quantities, prices, and notes.",
+        vendorSnapshotOnly: "Snapshot only",
         itemNotesPlaceholder:
           "Add item notes, scope details, or commercial remarks...",
         editItemsRestriction:
           "This phase supports updating existing contract items only. Adding or deleting lines will be enabled when backend endpoints are available.",
+        selectEventBeforeServices:
+          "Select an event first to preview its service lines.",
+        selectEventBeforeVendors:
+          "Select an event first to preview its event vendors.",
+        noCatalogServices: "No catalog services are available.",
+        noCatalogVendors: "No catalog vendors are available.",
+        noEventServicesForEvent:
+          "No active event services are available for the selected event.",
+        noEventVendorsForEvent:
+          "No event vendors are available for the selected event.",
+        itemStatus: "Status",
+        noDescription: "No description available.",
+        noManualItemsSelected: "No contract items have been selected yet.",
         fromQuotationPreviewTitle: "Quotation Preview",
         fromQuotationPreviewHint:
           "Review the quotation summary and line items that will be copied into the contract.",
@@ -4301,6 +4415,581 @@ export const resources = {
           rescheduled: "تمت إعادة جدولة الموعد بنجاح",
           rescheduleFailed: "تعذرت إعادة جدولة الموعد",
         },
+      },
+    },
+  },
+} as const;
+
+const contractQuotationFormOverrides = {
+  en: {
+    quotations: {
+      agreedPriceAutoHint:
+        "The quotation amount follows the matched pricing plan until manual override is enabled.",
+      agreedPricePlaceholder: "Calculated automatically when available",
+      calculatedPrice: "Calculated Price",
+      catalogServiceSource: "Catalog Service",
+      catalogServices: "Catalog Services",
+      catalogVendorSelectionHint:
+        "Select this vendor to configure sub-services and pricing for the quotation row.",
+      catalogVendorSource: "Catalog Vendor",
+      catalogVendors: "Vendor Catalog",
+      companiesChecklistHint:
+        "Event vendors use agreed prices directly. Catalog vendors can match pricing plans from selected sub-services.",
+      companiesChecklistTitle: "Vendors",
+      eventServices: "Event Services",
+      eventVendors: "Event Vendors",
+      linkedVendor: "Catalog Vendor",
+      loadingVendorSubServices: "Loading vendor sub-services...",
+      manualChecklistHint:
+        "Choose event-linked items first when available, or use the system catalogs to build the quotation rows automatically.",
+      manualChecklistTitle: "Select services and vendors",
+      manualPriceOverride: "Manual Price Override",
+      manualPriceOverrideActiveHint:
+        "Manual override is active. The matched pricing plan stays linked for reference.",
+      manualPriceOverrideHint:
+        "Enable this only when the final quotation amount differs from the matched pricing plan.",
+      noCatalogServices: "No catalog services are available.",
+      noCatalogVendors: "No catalog vendors are available.",
+      noDescription: "No description available.",
+      noItems: "No quotation items added yet.",
+      noMatchingPricingPlan: "No matching pricing plan",
+      noPricingPlanSelected: "No pricing plan selected",
+      noVendorSubServicesConfigured:
+        "No vendor sub-services are configured for this vendor yet.",
+      serviceReferencePricingHint:
+        "Event-linked services keep their source reference, while catalog services rely on manual pricing.",
+      servicesChecklistHint:
+        "Selected services create editable service rows with references preserved when available.",
+      servicesChecklistTitle: "Services",
+      totalServices: "Total Services",
+      totalServicesAmount: "Total Services Amount",
+      totalServicesAmountHint:
+        "This amount represents the combined services section before vendor rows and discount are applied.",
+      totalServicesAmountHintShort: "Manual services pricing",
+      update: "Update Quotation",
+      vendorPriceAutoMatched: "Auto-matched from pricing plan",
+      vendorPriceNeedsReview: "Price needs review",
+      vendorPricingSummary: "Pricing Summary",
+      vendorPricingSummaryHint:
+        "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+      vendorSubServices: "Vendor Sub-Services",
+      vendorSubServicesHint:
+        "Select the vendor sub-services that should shape the quotation pricing for this row.",
+    },
+    contracts: {
+      agreedPrice: "Agreed Price",
+      agreedPriceAutoHint:
+        "The contract amount follows the matched pricing plan until manual override is enabled.",
+      agreedPricePlaceholder: "Calculated automatically when available",
+      calculatedPrice: "Calculated Price",
+      cannotSelectCancelledVendor: "Cannot select cancelled vendor",
+      catalogServiceSource: "Catalog Service",
+      catalogServices: "Catalog Services",
+      catalogVendorPricingHint:
+        "Catalog vendor rows can match pricing plans from the selected sub-services, then allow a manual override when needed.",
+      catalogVendorSelectedHint:
+        "Vendor selected. Configure sub-services and pricing below.",
+      catalogVendorSource: "Catalog Vendor",
+      catalogVendorUnselectedHint:
+        "Select this vendor to configure sub-services and pricing.",
+      catalogVendors: "Vendor Catalog",
+      eventServices: "Event Services",
+      eventVendorSource: "Event Vendor",
+      eventVendors: "Event Vendors",
+      itemStatus: "Status",
+      linkedEventVendor: "Event Vendor",
+      linkedVendor: "Catalog Vendor",
+      loadingVendorSubServices: "Loading vendor sub-services...",
+      manualChecklistHint:
+        "Choose event-linked items first when available, or use the system catalogs to build the contract rows automatically.",
+      manualChecklistTitle: "Select services and vendors",
+      manualItemsEditorHint:
+        "Review and adjust the generated contract rows below. You can still edit names, quantities, prices, and notes.",
+      manualPriceOverride: "Manual Price Override",
+      manualPriceOverrideActiveHint:
+        "Manual override is active. The matched pricing plan stays linked for reference.",
+      manualPriceOverrideHint:
+        "Enable this only when the final contract amount differs from the matched pricing plan.",
+      noCatalogServices: "No catalog services are available.",
+      noCatalogVendors: "No catalog vendors are available.",
+      noDescription: "No description available.",
+      noEventServicesForEvent:
+        "No active event services are available for the selected event.",
+      noEventVendorSelected: "No event vendor selected",
+      noEventVendorsForEvent:
+        "No event vendors are available for the selected event.",
+      noManualItemsSelected: "No contract items have been selected yet.",
+      noMatchingPricingPlan: "No matching pricing plan",
+      noPricingPlanSelected: "No pricing plan selected",
+      noVendorSelected: "No vendor selected",
+      noVendorSubServicesConfigured:
+        "No vendor sub-services are configured for this vendor yet.",
+      pricingPlan: "Pricing Plan",
+      selectEventBeforeServices:
+        "Select an event first to preview its service lines.",
+      selectEventBeforeVendors:
+        "Select an event first to preview its event vendors.",
+      selectEventVendor: "Select event vendor",
+      selectVendor: "Select vendor",
+      selectVendorFirstForSubServices:
+        "Select a catalog vendor first to load sub-services.",
+      selectedSubServicesCount: "Selected Count",
+      service: "Service",
+      serviceManualPricing: "Manual service pricing",
+      serviceManualPricingHint:
+        "Service rows are priced manually in contracts. Update the line amount directly in the editor below.",
+      serviceManualPricingHintShort: "Priced manually",
+      serviceOrigin: "Service Source",
+      servicesChecklistHint:
+        "Selected services create editable service rows with references preserved for the contract snapshot.",
+      servicesChecklistTitle: "Services",
+      totalServices: "Total Services",
+      type: "Type",
+      update: "Update Contract",
+      vendor: "Vendor",
+      vendorAgreedPriceHint:
+        "Uses the agreed event vendor price as the contract snapshot.",
+      vendorConfigAppearsAfterSelection:
+        "Vendor configuration appears after selection.",
+      vendorHasNoAgreedPrice: "Vendor has no agreed price",
+      vendorOrigin: "Vendor Source",
+      vendorPriceAutoMatched: "Auto-matched from pricing plan",
+      vendorPricingSummary: "Pricing Summary",
+      vendorPricingSummaryHint:
+        "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+      vendorSnapshotOnly: "Snapshot only",
+      vendorSource: "Vendor Source",
+      vendorSubServices: "Vendor Sub-Services",
+      vendorSubServicesHint:
+        "Select the vendor sub-services that should shape the contract pricing for this row.",
+      vendorsChecklistHint:
+        "Event vendors use agreed prices directly. Catalog vendors can match pricing plans from selected sub-services.",
+      vendorsChecklistTitle: "Vendors",
+    },
+  },
+  ar: {
+    quotations: {
+      agreedPriceAutoHint:
+        "يتبع مبلغ عرض السعر خطة التسعير المطابقة إلى أن يتم تفعيل التعديل اليدوي.",
+      agreedPricePlaceholder: "يتم احتسابه تلقائيًا عند توفره",
+      calculatedPrice: "السعر المحتسب",
+      catalogServiceSource: "خدمة من الكتالوج",
+      catalogServices: "خدمات الكتالوج",
+      catalogVendorSelectionHint:
+        "اختر هذا المورد لتهيئة الخدمات الفرعية والتسعير لسطر عرض السعر.",
+      catalogVendorSource: "مورد من الكتالوج",
+      catalogVendors: "كتالوج الموردين",
+      companiesChecklistHint:
+        "يستخدم موردو الحفل السعر المتفق عليه مباشرة، أما موردو الكتالوج فيمكن مطابقتهم مع خطط التسعير بناءً على الخدمات الفرعية.",
+      companiesChecklistTitle: "الموردون",
+      eventServices: "خدمات الحفل",
+      eventVendors: "موردو الحفل",
+      linkedVendor: "مورد من الكتالوج",
+      loadingVendorSubServices: "جارٍ تحميل الخدمات الفرعية...",
+      manualChecklistHint:
+        "ابدأ بالعناصر المرتبطة بالحفل عند توفرها، أو استخدم كتالوجات النظام لبناء بنود عرض السعر تلقائيًا.",
+      manualChecklistTitle: "اختر الخدمات والموردين",
+      manualPriceOverride: "تعديل السعر يدويًا",
+      manualPriceOverrideActiveHint:
+        "التعديل اليدوي مفعّل. تبقى خطة التسعير مرتبطة للمرجع.",
+      manualPriceOverrideHint:
+        "فعّل هذا فقط عندما يختلف المبلغ النهائي لعرض السعر عن خطة التسعير المطابقة.",
+      noCatalogServices: "لا توجد خدمات في الكتالوج.",
+      noCatalogVendors: "لا يوجد موردون في الكتالوج.",
+      noDescription: "لا توجد أوصاف متاحة.",
+      noItems: "لم تُضف أي بنود لعرض السعر بعد.",
+      noMatchingPricingPlan: "لا توجد خطة تسعير مطابقة",
+      noPricingPlanSelected: "لم يتم اختيار خطة تسعير",
+      noVendorSubServicesConfigured:
+        "لا توجد خدمات فرعية معدة لهذا المورد حتى الآن.",
+      serviceReferencePricingHint:
+        "تحافظ الخدمات المرتبطة بالحفل على مرجعها، بينما تعتمد خدمات الكتالوج على تسعير يدوي.",
+      servicesChecklistHint:
+        "تنشئ الخدمات المختارة بنود خدمات قابلة للتعديل مع الحفاظ على المرجع عند توفره.",
+      servicesChecklistTitle: "الخدمات",
+      totalServices: "إجمالي الخدمات",
+      totalServicesAmount: "إجمالي قيمة الخدمات",
+      totalServicesAmountHint:
+        "يمثل هذا المبلغ إجمالي قسم الخدمات قبل إضافة بنود الموردين والخصم.",
+      totalServicesAmountHintShort: "تسعير الخدمات يدوي",
+      update: "تحديث عرض السعر",
+      vendorPriceAutoMatched: "تمت مطابقة السعر تلقائيًا من خطة التسعير",
+      vendorPriceNeedsReview: "السعر يحتاج مراجعة",
+      vendorPricingSummary: "ملخص التسعير",
+      vendorPricingSummaryHint:
+        "تملأ خطة التسعير المطابقة مبلغ السطر تلقائيًا إلى أن يتم تفعيل التعديل اليدوي.",
+      vendorSubServices: "الخدمات الفرعية للمورد",
+      vendorSubServicesHint:
+        "اختر الخدمات الفرعية التي تحدد تسعير سطر المورد في عرض السعر.",
+    },
+    contracts: {
+      agreedPrice: "السعر المتفق عليه",
+      agreedPriceAutoHint:
+        "يتبع مبلغ العقد خطة التسعير المطابقة إلى أن يتم تفعيل التعديل اليدوي.",
+      agreedPricePlaceholder: "يتم احتسابه تلقائيًا عند توفره",
+      calculatedPrice: "السعر المحتسب",
+      cannotSelectCancelledVendor: "لا يمكن اختيار مورد ملغي",
+      catalogServiceSource: "خدمة من الكتالوج",
+      catalogServices: "خدمات الكتالوج",
+      catalogVendorPricingHint:
+        "يمكن لبنود موردي الكتالوج مطابقة خطط التسعير بناءً على الخدمات الفرعية المختارة، مع إتاحة تعديل السعر يدويًا عند الحاجة.",
+      catalogVendorSelectedHint:
+        "تم اختيار المورد. هيئ الخدمات الفرعية والتسعير أدناه.",
+      catalogVendorSource: "مورد من الكتالوج",
+      catalogVendorUnselectedHint:
+        "اختر هذا المورد لتهيئة الخدمات الفرعية والتسعير.",
+      catalogVendors: "كتالوج الموردين",
+      eventServices: "خدمات الحفل",
+      eventVendorSource: "مورد الحفل",
+      eventVendors: "موردو الحفل",
+      itemStatus: "الحالة",
+      linkedEventVendor: "مورد الحفل",
+      linkedVendor: "مورد من الكتالوج",
+      loadingVendorSubServices: "جارٍ تحميل الخدمات الفرعية...",
+      manualChecklistHint:
+        "ابدأ بالعناصر المرتبطة بالحفل عند توفرها، أو استخدم كتالوجات النظام لبناء بنود العقد تلقائيًا.",
+      manualChecklistTitle: "اختر الخدمات والموردين",
+      manualItemsEditorHint:
+        "راجع بنود العقد المولدة أدناه وعدّل الأسماء والكميات والأسعار والملاحظات عند الحاجة.",
+      manualPriceOverride: "تعديل السعر يدويًا",
+      manualPriceOverrideActiveHint:
+        "التعديل اليدوي مفعّل. تبقى خطة التسعير مرتبطة للمرجع.",
+      manualPriceOverrideHint:
+        "فعّل هذا فقط عندما يختلف المبلغ النهائي للعقد عن خطة التسعير المطابقة.",
+      noCatalogServices: "لا توجد خدمات في الكتالوج.",
+      noCatalogVendors: "لا يوجد موردون في الكتالوج.",
+      noDescription: "لا توجد أوصاف متاحة.",
+      noEventServicesForEvent:
+        "لا توجد خدمات حفل نشطة متاحة للحفل المحدد.",
+      noEventVendorSelected: "لا يوجد مورد حفل محدد",
+      noEventVendorsForEvent:
+        "لا يوجد موردو حفل متاحون للحفل المحدد.",
+      noManualItemsSelected: "لم يتم اختيار أي بنود للعقد بعد.",
+      noMatchingPricingPlan: "لا توجد خطة تسعير مطابقة",
+      noPricingPlanSelected: "لم يتم اختيار خطة تسعير",
+      noVendorSelected: "لا يوجد مورد محدد",
+      noVendorSubServicesConfigured:
+        "لا توجد خدمات فرعية معدة لهذا المورد حتى الآن.",
+      pricingPlan: "خطة التسعير",
+      selectEventBeforeServices: "اختر الحفل أولًا لمعاينة بنود خدماته.",
+      selectEventBeforeVendors: "اختر الحفل أولًا لمعاينة موردي الحفل.",
+      selectEventVendor: "اختر مورد الحفل",
+      selectVendor: "اختر المورد",
+      selectVendorFirstForSubServices:
+        "اختر موردًا من الكتالوج أولًا لتحميل الخدمات الفرعية.",
+      selectedSubServicesCount: "عدد الخدمات الفرعية المختارة",
+      service: "خدمة",
+      serviceManualPricing: "تسعير الخدمات يدوي",
+      serviceManualPricingHint:
+        "تُسعّر بنود الخدمات يدويًا في العقود. حدّث مبلغ السطر مباشرة في المحرر أدناه.",
+      serviceManualPricingHintShort: "يُسعّر يدويًا",
+      serviceOrigin: "مصدر الخدمة",
+      servicesChecklistHint:
+        "تنشئ الخدمات المختارة بنود خدمات قابلة للتعديل مع الحفاظ على المراجع لأغراض ملف العقد.",
+      servicesChecklistTitle: "الخدمات",
+      totalServices: "إجمالي الخدمات",
+      type: "النوع",
+      update: "تحديث العقد",
+      vendor: "مورد",
+      vendorAgreedPriceHint:
+        "يستخدم السعر المتفق عليه لمورد الحفل كلقطة العقد.",
+      vendorConfigAppearsAfterSelection: "تظهر إعدادات المورد بعد الاختيار.",
+      vendorHasNoAgreedPrice: "لا يوجد سعر متفق عليه لهذا المورد",
+      vendorOrigin: "مصدر المورد",
+      vendorPriceAutoMatched: "تمت مطابقة السعر تلقائيًا من خطة التسعير",
+      vendorPricingSummary: "ملخص التسعير",
+      vendorPricingSummaryHint:
+        "تملأ خطة التسعير المطابقة مبلغ السطر تلقائيًا إلى أن يتم تفعيل التعديل اليدوي.",
+      vendorSnapshotOnly: "للقطة العقدية فقط",
+      vendorSource: "مصدر المورد",
+      vendorSubServices: "الخدمات الفرعية للمورد",
+      vendorSubServicesHint:
+        "اختر الخدمات الفرعية التي تحدد تسعير سطر المورد في العقد.",
+      vendorsChecklistHint:
+        "يستخدم موردو الحفل السعر المتفق عليه مباشرة، أما موردو الكتالوج فيمكن مطابقتهم مع خطط التسعير بناءً على الخدمات الفرعية.",
+      vendorsChecklistTitle: "الموردون",
+    },
+  },
+} as const;
+
+const inventoryModuleOverrides = {
+  en: {
+    sidebar: {
+      nav: {
+        inventory: "Inventory",
+      },
+    },
+    inventory: {
+      title: "Inventory",
+      description:
+        "Manage standalone stock items, quantities, and optional catalog images.",
+      totalItems: "total items",
+      listTitle: "Inventory Items",
+      create: "Create Item",
+      createTitle: "Create Inventory Item",
+      editTitle: "Edit Inventory Item",
+      createDescription:
+        "Add a standalone stock item with a direct quantity and optional reference image.",
+      editDescription:
+        "Update the standalone stock item name, quantity, and reference image.",
+      backToInventory: "Back to Inventory",
+      basicInformation: "Basic Information",
+      basicInformationHint:
+        "Capture the product name and the current on-hand quantity for this standalone catalog item.",
+      name: "Product Name",
+      namePlaceholder: "Enter product name",
+      quantity: "Quantity",
+      quantityPlaceholder: "Enter available quantity",
+      quantityHelper: "Use zero for items that are currently out of stock.",
+      image: "Image",
+      imageSection: "Reference Image",
+      imageSectionHint:
+        "Upload an optional product image that helps the team identify this stock item quickly.",
+      imageUpload: "Upload Image",
+      imageHint:
+        "Accepted image files only. Keep uploads under 5 MB for smoother syncing.",
+      imageMaxSize: "Maximum recommended size: 5 MB",
+      selectedImage: "Selected image",
+      preview: "Preview",
+      previewHint:
+        "The selected image will appear in the inventory list and details view.",
+      noImage: "No image uploaded",
+      noImageHint:
+        "Add an optional image to make the stock catalog easier to scan.",
+      imagePath: "Image Path",
+      stockStatus: "Stock Status",
+      currentQuantity: "Current quantity",
+      auditTrail: "Audit Trail",
+      auditTrailHint:
+        "Track who created the item and when the catalog record was updated.",
+      createdBy: "Created By",
+      updatedBy: "Updated By",
+      createdAt: "Created At",
+      updatedAt: "Updated At",
+      searchPlaceholder: "Search inventory by product name...",
+      filterDescription:
+        "Refine the stock catalog by product name and stock availability.",
+      stockFilter: "Stock Filter",
+      emptyTitle: "No inventory items yet",
+      emptyDescription:
+        "Start your standalone stock catalog by creating the first item and adding its quantity and reference image.",
+      emptyAction: "Create First Item",
+      emptyFilteredTitle: "No matching inventory items",
+      emptyFilteredDescription:
+        "Try changing the search term or stock filter to find matching items.",
+      deleteTitle: "Delete Inventory Item",
+      deleteMessage: "Are you sure you want to delete this inventory item?",
+      units_one: "unit",
+      units_other: "units",
+      filters: {
+        all: "All Items",
+        "in-stock": "In Stock",
+        "out-of-stock": "Out of Stock",
+      },
+      status: {
+        inStock: "In Stock",
+        outOfStock: "Out of Stock",
+      },
+      toast: {
+        created: "Inventory item created successfully",
+        createFailed: "Failed to create inventory item",
+        updated: "Inventory item updated successfully",
+        updateFailed: "Failed to update inventory item",
+        deleted: "Inventory item deleted successfully",
+        deleteFailed: "Failed to delete inventory item",
+      },
+      validation: {
+        nameRequired: "Product name is required",
+        quantityRequired: "Quantity is required",
+        quantityInteger: "Quantity must be a whole number",
+        quantityMin: "Quantity cannot be negative",
+      },
+    },
+  },
+  ar: {
+    sidebar: {
+      nav: {
+        inventory: "\u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      },
+    },
+    inventory: {
+      title: "\u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      description:
+        "\u0625\u062f\u0627\u0631\u0629 \u0623\u0635\u0646\u0627\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0627\u0644\u0645\u0633\u062a\u0642\u0644\u0629 \u0648\u0627\u0644\u0643\u0645\u064a\u0627\u062a \u0648\u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629 \u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631\u064a\u0629.",
+      totalItems: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0623\u0635\u0646\u0627\u0641",
+      listTitle: "\u0623\u0635\u0646\u0627\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      create: "\u0625\u0646\u0634\u0627\u0621 \u0635\u0646\u0641",
+      createTitle: "\u0625\u0646\u0634\u0627\u0621 \u0635\u0646\u0641 \u0645\u062e\u0632\u0648\u0646",
+      editTitle: "\u062a\u0639\u062f\u064a\u0644 \u0635\u0646\u0641 \u0645\u062e\u0632\u0648\u0646",
+      createDescription:
+        "\u0623\u0636\u0641 \u0635\u0646\u0641 \u0645\u062e\u0632\u0648\u0646 \u0645\u0633\u062a\u0642\u0644 \u0645\u0639 \u0643\u0645\u064a\u0629 \u0645\u0628\u0627\u0634\u0631\u0629 \u0648\u0635\u0648\u0631\u0629 \u0645\u0631\u062c\u0639\u064a\u0629 \u0627\u062e\u062a\u064a\u0627\u0631\u064a\u0629.",
+      editDescription:
+        "\u062d\u062f\u062b \u0627\u0633\u0645 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0627\u0644\u0645\u0633\u062a\u0642\u0644 \u0648\u0643\u0645\u064a\u062a\u0647 \u0648\u0635\u0648\u0631\u062a\u0647 \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629.",
+      backToInventory:
+        "\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u0649 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      basicInformation:
+        "\u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629",
+      basicInformationHint:
+        "\u0623\u062f\u062e\u0644 \u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c \u0648\u0627\u0644\u0643\u0645\u064a\u0629 \u0627\u0644\u0645\u062a\u0648\u0641\u0631\u0629 \u062d\u0627\u0644\u064a\u064b\u0627 \u0644\u0647\u0630\u0627 \u0627\u0644\u0635\u0646\u0641 \u0627\u0644\u0645\u0633\u062a\u0642\u0644.",
+      name: "\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c",
+      namePlaceholder: "\u0623\u062f\u062e\u0644 \u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c",
+      quantity: "\u0627\u0644\u0643\u0645\u064a\u0629",
+      quantityPlaceholder:
+        "\u0623\u062f\u062e\u0644 \u0627\u0644\u0643\u0645\u064a\u0629 \u0627\u0644\u0645\u062a\u0648\u0641\u0631\u0629",
+      quantityHelper:
+        "\u0627\u0633\u062a\u062e\u062f\u0645 \u0635\u0641\u0631\u064b\u0627 \u0644\u0644\u0623\u0635\u0646\u0627\u0641 \u063a\u064a\u0631 \u0627\u0644\u0645\u062a\u0648\u0641\u0631\u0629 \u062d\u0627\u0644\u064a\u064b\u0627.",
+      image: "\u0627\u0644\u0635\u0648\u0631\u0629",
+      imageSection: "\u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629",
+      imageSectionHint:
+        "\u0627\u0631\u0641\u0639 \u0635\u0648\u0631\u0629 \u0645\u0646\u062a\u062c \u0627\u062e\u062a\u064a\u0627\u0631\u064a\u0629 \u0644\u062a\u0633\u0647\u064a\u0644 \u0627\u0644\u062a\u0639\u0631\u0641 \u0639\u0644\u0649 \u0627\u0644\u0635\u0646\u0641 \u0633\u0631\u064a\u0639\u064b\u0627.",
+      imageUpload: "\u0631\u0641\u0639 \u0635\u0648\u0631\u0629",
+      imageHint:
+        "\u064a\u064f\u0633\u0645\u062d \u0628\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0635\u0648\u0631 \u0641\u0642\u0637. \u062d\u0627\u0641\u0638 \u0639\u0644\u0649 \u062d\u062c\u0645 \u0623\u0642\u0644 \u0645\u0646 5 \u0645\u064a\u062c\u0627\u0628\u0627\u064a\u062a \u0644\u0633\u0644\u0627\u0633\u0629 \u0623\u0641\u0636\u0644.",
+      imageMaxSize: "\u0627\u0644\u062d\u062f \u0627\u0644\u0645\u0648\u0635\u0649 \u0628\u0647: 5 \u0645\u064a\u062c\u0627\u0628\u0627\u064a\u062a",
+      selectedImage: "\u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0645\u062d\u062f\u062f\u0629",
+      preview: "\u0645\u0639\u0627\u064a\u0646\u0629",
+      previewHint:
+        "\u0633\u062a\u0638\u0647\u0631 \u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0645\u062d\u062f\u062f\u0629 \u0641\u064a \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0648\u0635\u0641\u062d\u0629 \u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644.",
+      noImage: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0635\u0648\u0631\u0629",
+      noImageHint:
+        "\u0623\u0636\u0641 \u0635\u0648\u0631\u0629 \u0627\u062e\u062a\u064a\u0627\u0631\u064a\u0629 \u0644\u062a\u0633\u0647\u064a\u0644 \u0645\u0633\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062e\u0632\u0648\u0646.",
+      imagePath: "\u0645\u0633\u0627\u0631 \u0627\u0644\u0635\u0648\u0631\u0629",
+      stockStatus: "\u062d\u0627\u0644\u0629 \u0627\u0644\u062a\u0648\u0641\u0631",
+      currentQuantity: "\u0627\u0644\u0643\u0645\u064a\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629",
+      auditTrail: "\u0633\u062c\u0644 \u0627\u0644\u062a\u062a\u0628\u0639",
+      auditTrailHint:
+        "\u062a\u062a\u0628\u0639 \u0645\u0646 \u0623\u0646\u0634\u0623 \u0627\u0644\u0635\u0646\u0641 \u0648\u0645\u062a\u0649 \u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0633\u062c\u0644\u0647.",
+      createdBy: "\u0623\u0646\u0634\u0626 \u0628\u0648\u0627\u0633\u0637\u0629",
+      updatedBy: "\u062d\u062f\u062b \u0628\u0648\u0627\u0633\u0637\u0629",
+      createdAt: "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0625\u0646\u0634\u0627\u0621",
+      updatedAt: "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u062a\u062d\u062f\u064a\u062b",
+      searchPlaceholder:
+        "\u0627\u0628\u062d\u062b \u0641\u064a \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0628\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c...",
+      filterDescription:
+        "\u0635\u0641\u0651 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u062d\u0633\u0628 \u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c \u0648\u062d\u0627\u0644\u0629 \u0627\u0644\u062a\u0648\u0641\u0631.",
+      stockFilter: "\u0645\u0631\u0634\u062d \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      emptyTitle: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0635\u0646\u0627\u0641 \u0645\u062e\u0632\u0648\u0646 \u0628\u0639\u062f",
+      emptyDescription:
+        "\u0627\u0628\u062f\u0623 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0627\u0644\u0645\u0633\u062a\u0642\u0644\u0629 \u0628\u0625\u0646\u0634\u0627\u0621 \u0623\u0648\u0644 \u0635\u0646\u0641 \u0648\u0625\u0636\u0627\u0641\u0629 \u0643\u0645\u064a\u062a\u0647 \u0648\u0635\u0648\u0631\u062a\u0647.",
+      emptyAction: "\u0625\u0646\u0634\u0627\u0621 \u0623\u0648\u0644 \u0635\u0646\u0641",
+      emptyFilteredTitle:
+        "\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0635\u0646\u0627\u0641 \u0645\u0637\u0627\u0628\u0642\u0629",
+      emptyFilteredDescription:
+        "\u062d\u0627\u0648\u0644 \u062a\u063a\u064a\u064a\u0631 \u0646\u0635 \u0627\u0644\u0628\u062d\u062b \u0623\u0648 \u0645\u0631\u0634\u062d \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0644\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0627\u0644\u0646\u062a\u0627\u0626\u062c.",
+      deleteTitle: "\u062d\u0630\u0641 \u0635\u0646\u0641 \u0645\u062e\u0632\u0648\u0646",
+      deleteMessage:
+        "\u0647\u0644 \u0623\u0646\u062a \u0645\u062a\u0623\u0643\u062f \u0645\u0646 \u062d\u0630\u0641 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0647\u0630\u0627\u061f",
+      units_one: "\u0648\u062d\u062f\u0629",
+      units_other: "\u0648\u062d\u062f\u0627\u062a",
+      filters: {
+        all: "\u0643\u0644 \u0627\u0644\u0623\u0635\u0646\u0627\u0641",
+        "in-stock": "\u0645\u062a\u0648\u0641\u0631",
+        "out-of-stock": "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631",
+      },
+      status: {
+        inStock: "\u0645\u062a\u0648\u0641\u0631",
+        outOfStock: "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631",
+      },
+      toast: {
+        created: "\u062a\u0645 \u0625\u0646\u0634\u0627\u0621 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0628\u0646\u062c\u0627\u062d",
+        createFailed: "\u062a\u0639\u0630\u0631 \u0625\u0646\u0634\u0627\u0621 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+        updated: "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0628\u0646\u062c\u0627\u062d",
+        updateFailed: "\u062a\u0639\u0630\u0631 \u062a\u062d\u062f\u064a\u062b \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+        deleted: "\u062a\u0645 \u062d\u0630\u0641 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0628\u0646\u062c\u0627\u062d",
+        deleteFailed: "\u062a\u0639\u0630\u0631 \u062d\u0630\u0641 \u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+      },
+      validation: {
+        nameRequired:
+          "\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c \u0645\u0637\u0644\u0648\u0628",
+        quantityRequired: "\u0627\u0644\u0643\u0645\u064a\u0629 \u0645\u0637\u0644\u0648\u0628\u0629",
+        quantityInteger:
+          "\u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0627\u0644\u0643\u0645\u064a\u0629 \u0631\u0642\u0645\u064b\u0627 \u0635\u062d\u064a\u062d\u064b\u0627",
+        quantityMin:
+          "\u0644\u0627 \u064a\u0645\u0643\u0646 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0627\u0644\u0643\u0645\u064a\u0629 \u0633\u0627\u0644\u0628\u0629",
+      },
+    },
+  },
+} as const;
+
+const executionWorkspaceOverrides = {
+  en: {
+    execution: {
+      expandGeneralBrief: "Show general brief",
+      collapseGeneralBrief: "Hide general brief",
+      generalNotesPlaceholder:
+        "Overall execution notes, wedding flow, and shared context...",
+      clientNotesPlaceholder:
+        "Client preferences, approvals, and special requests...",
+      designerNotesPlaceholder:
+        "Internal design notes, execution intent, and setup direction...",
+    },
+  },
+  ar: {
+    execution: {
+      expandGeneralBrief: "إظهار البريف العام",
+      collapseGeneralBrief: "إخفاء البريف العام",
+      generalNotesPlaceholder:
+        "ملخص التنفيذ العام، مسار الحفل، والسياق المشترك...",
+      clientNotesPlaceholder:
+        "تفضيلات العميل، الاعتمادات، وأي طلبات خاصة...",
+      designerNotesPlaceholder:
+        "ملاحظات داخلية للتصميم، وجهة التنفيذ، وتوجيهات التجهيز...",
+    },
+  },
+} as const;
+
+export const resources = {
+  en: {
+    translation: {
+      ...baseResources.en.translation,
+      sidebar: {
+        ...baseResources.en.translation.sidebar,
+        nav: {
+          ...baseResources.en.translation.sidebar.nav,
+          ...inventoryModuleOverrides.en.sidebar.nav,
+        },
+      },
+      inventory: {
+        ...inventoryModuleOverrides.en.inventory,
+      },
+      execution: {
+        ...baseResources.en.translation.execution,
+        ...executionWorkspaceOverrides.en.execution,
+      },
+      quotations: {
+        ...baseResources.en.translation.quotations,
+        ...contractQuotationFormOverrides.en.quotations,
+      },
+      contracts: {
+        ...baseResources.en.translation.contracts,
+        ...contractQuotationFormOverrides.en.contracts,
+      },
+    },
+  },
+  ar: {
+    translation: {
+      ...baseResources.ar.translation,
+      sidebar: {
+        ...baseResources.ar.translation.sidebar,
+        nav: {
+          ...baseResources.ar.translation.sidebar.nav,
+          ...inventoryModuleOverrides.ar.sidebar.nav,
+        },
+      },
+      inventory: {
+        ...inventoryModuleOverrides.ar.inventory,
+      },
+      execution: {
+        ...baseResources.ar.translation.execution,
+        ...executionWorkspaceOverrides.ar.execution,
+      },
+      quotations: {
+        ...baseResources.ar.translation.quotations,
+        ...contractQuotationFormOverrides.ar.quotations,
+      },
+      contracts: {
+        ...baseResources.ar.translation.contracts,
+        ...contractQuotationFormOverrides.ar.contracts,
       },
     },
   },
