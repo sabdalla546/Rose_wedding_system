@@ -1,13 +1,7 @@
 import { z } from "zod";
+import { APPOINTMENT_STATUSES } from "../constants/workflow-statuses";
 
-export const appointmentStatusEnum = z.enum([
-  "scheduled",
-  "confirmed",
-  "completed",
-  "rescheduled",
-  "cancelled",
-  "no_show",
-]);
+export const appointmentStatusEnum = z.enum(APPOINTMENT_STATUSES);
 
 export const appointmentTypeEnum = z.enum([
   "New Appointment 1",

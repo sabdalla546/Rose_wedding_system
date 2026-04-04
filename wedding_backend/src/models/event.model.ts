@@ -1,13 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import { EVENT_STATUSES } from "../constants/workflow-statuses";
 
-export type EventStatus =
-  | "draft"
-  | "designing"
-  | "confirmed"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type EventStatus = (typeof EVENT_STATUSES)[number];
 
 export interface EventAttributes {
   id: number;
@@ -120,14 +115,7 @@ Event.init(
     },
 
     status: {
-      type: DataTypes.ENUM(
-        "draft",
-        "designing",
-        "confirmed",
-        "in_progress",
-        "completed",
-        "cancelled",
-      ),
+      type: DataTypes.ENUM(...EVENT_STATUSES),
       allowNull: false,
       defaultValue: "draft",
     },

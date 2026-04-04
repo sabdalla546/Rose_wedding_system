@@ -1,18 +1,12 @@
 import { z } from "zod";
+import { EVENT_STATUSES } from "../constants/workflow-statuses";
 import {
   optionalPositiveIntQuery,
   optionalTrimmedStringQuery,
   paginationQuerySchema,
 } from "./common.schemas";
 
-export const eventStatusEnum = z.enum([
-  "draft",
-  "designing",
-  "confirmed",
-  "in_progress",
-  "completed",
-  "cancelled",
-]);
+export const eventStatusEnum = z.enum(EVENT_STATUSES);
 
 const optionalNullablePositiveInt = z.preprocess((value) => {
   if (value === "" || value === null || typeof value === "undefined") {

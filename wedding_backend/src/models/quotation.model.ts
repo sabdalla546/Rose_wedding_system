@@ -1,13 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import { QUOTATION_STATUSES } from "../constants/workflow-statuses";
 
-export type QuotationStatus =
-  | "draft"
-  | "sent"
-  | "approved"
-  | "rejected"
-  | "expired"
-  | "converted_to_contract";
+export type QuotationStatus = (typeof QUOTATION_STATUSES)[number];
 
 export interface QuotationAttributes {
   id: number;
@@ -132,14 +127,7 @@ Quotation.init(
     },
 
     status: {
-      type: DataTypes.ENUM(
-        "draft",
-        "sent",
-        "approved",
-        "rejected",
-        "expired",
-        "converted_to_contract",
-      ),
+      type: DataTypes.ENUM(...QUOTATION_STATUSES),
       allowNull: false,
       defaultValue: "draft",
     },

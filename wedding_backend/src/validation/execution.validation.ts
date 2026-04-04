@@ -1,13 +1,14 @@
 import { z } from "zod";
+import {
+  EXECUTION_BRIEF_STATUSES,
+} from "../constants/workflow-statuses";
+import {
+  optionalPositiveIntQuery,
+  optionalTrimmedStringQuery,
+  paginationQuerySchema,
+} from "./common.schemas";
 
-export const executionBriefStatusEnum = z.enum([
-  "draft",
-  "under_review",
-  "approved",
-  "handed_to_executor",
-  "in_progress",
-  "completed",
-]);
+export const executionBriefStatusEnum = z.enum(EXECUTION_BRIEF_STATUSES);
 
 export const executionServiceDetailStatusEnum = z.enum([
   "pending",
@@ -71,4 +72,10 @@ export const createExecutionAttachmentForServiceDetailSchema = z.object({
 
 export const executionAttachmentIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
+});
+
+export const executionBriefListQuerySchema = paginationQuerySchema.extend({
+  eventId: optionalPositiveIntQuery,
+  status: optionalTrimmedStringQuery,
+  search: optionalTrimmedStringQuery,
 });

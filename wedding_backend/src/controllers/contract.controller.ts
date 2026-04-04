@@ -34,6 +34,7 @@ import {
   isWorkflowDomainError,
   WorkflowDomainError,
 } from "../services/workflow/workflow.errors";
+import { assertValidContractTransition } from "../services/workflow/workflow.status";
 
 class HttpError extends Error {
   public status: number;
@@ -583,7 +584,7 @@ export const createContractFromQuotation = async (
     }
 
     await quotation.update({
-      status: "converted_to_contract",
+      status: "superseded",
       updatedBy: req.user?.id ?? null,
     });
 
@@ -723,6 +724,9 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
         : Number(contract.discountAmount || 0),
     );
 
+    const nextStatus = data.status ?? contract.status;
+    assertValidContractTransition(contract.status, nextStatus);
+
     await contract.update({
       quotationId:
         typeof data.quotationId !== "undefined"
@@ -741,7 +745,7 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: typeof data.notes !== "undefined" ? data.notes : contract.notes,
-      status: data.status ?? contract.status,
+      status: nextStatus,
       updatedBy: req.user?.id ?? null,
     });
 

@@ -7,10 +7,8 @@ import { Appointment, Event, Customer, Venue, User } from "../models";
 import { listEventsCalendarRecords } from "../services/calendar/calendar.service";
 import { renderEventReportHtml } from "../services/documents/event/eventReportPdf.service";
 import {
-  ACTIVE_EVENT_STATUSES,
   assertAppointmentCanConvertToEvent,
   assertEventStatusTransition,
-  getSourceAppointmentDefaults,
   listEventsPage,
   loadEventById,
   normalizeNullableString,

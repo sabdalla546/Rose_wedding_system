@@ -14,10 +14,15 @@ import {
   VendorSubService,
   Venue,
 } from "../../models";
+import { CANCELLED_EVENT_STATUSES } from "../../constants/workflow-statuses";
 import {
   cancelledEventQuotationError,
   WorkflowDomainError,
 } from "../workflow/workflow.errors";
+import {
+  expandQuotationStatusesForQuery,
+  normalizeQuotationStatus,
+} from "../workflow/workflow.status";
 
 export function buildVendorSummaryInclude() {
   return {
@@ -233,11 +238,44 @@ export async function assertEventCanCreateQuotation(eventId: number) {
     throw new WorkflowDomainError("Event not found", 404);
   }
 
-  if (event.status === "cancelled") {
+  if (CANCELLED_EVENT_STATUSES.has(event.status)) {
     throw cancelledEventQuotationError();
   }
 
   return event;
+}
+
+export async function supersedeSiblingQuotationsForEvent(
+  eventId: number,
+  keepQuotationId: number,
+  userId: number | null,
+) {
+  const siblings = await Quotation.findAll({
+    where: {
+      eventId,
+      id: {
+        [Op.ne]: keepQuotationId,
+      },
+      status: {
+        [Op.in]: ["draft", "sent", "approved", "converted_to_contract"],
+      },
+    },
+  });
+
+  const quotationsToSupersede = siblings.filter(
+    (quotation) => normalizeQuotationStatus(quotation.status) !== "superseded",
+  );
+
+  await Promise.all(
+    quotationsToSupersede.map((quotation) =>
+      quotation.update({
+        status: "superseded",
+        updatedBy: userId,
+      }),
+    ),
+  );
+
+  return quotationsToSupersede.length;
 }
 
 export async function listQuotationsPage({
@@ -260,7 +298,7 @@ export async function listQuotationsPage({
   const where: any = {};
 
   if (eventId) where.eventId = eventId;
-  if (status) where.status = status;
+  if (status) where.status = { [Op.in]: expandQuotationStatusesForQuery(status) };
 
   if (search) {
     where[Op.or] = [

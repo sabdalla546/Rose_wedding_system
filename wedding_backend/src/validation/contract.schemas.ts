@@ -1,17 +1,12 @@
 import { z } from "zod";
+import { CONTRACT_STATUSES } from "../constants/workflow-statuses";
 import {
   optionalPositiveIntQuery,
   optionalTrimmedStringQuery,
   paginationQuerySchema,
 } from "./common.schemas";
 
-export const contractStatusEnum = z.enum([
-  "draft",
-  "active",
-  "completed",
-  "cancelled",
-  "terminated",
-]);
+export const contractStatusEnum = z.enum(CONTRACT_STATUSES);
 
 export const paymentScheduleTypeEnum = z.enum([
   "deposit",

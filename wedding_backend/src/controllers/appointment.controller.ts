@@ -20,6 +20,11 @@ import {
   rescheduleAppointmentSchema,
 } from "../validation/appointment-action.schemas";
 import { renderAppointmentReportHtml } from "../services/documents/appointment/appointmentReportPdf.service";
+import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
+import {
+  assertValidAppointmentTransition,
+  expandAppointmentStatusesForQuery,
+} from "../services/workflow/workflow.status";
 
 const APPOINTMENT_CONFLICT_MESSAGE =
   "This appointment overlaps with another appointment.";
@@ -125,6 +130,10 @@ const handleAppointmentError = (req: Request, res: Response, err: unknown) => {
   }
 
   if (err instanceof AppointmentSchedulingError) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
+
+  if (isWorkflowDomainError(err)) {
     return res.status(err.statusCode).json({ message: err.message });
   }
 
@@ -298,7 +307,9 @@ export const getAppointments = async (req: Request, res: Response) => {
 
   const where: any = {};
 
-  if (status) where.status = status;
+  if (status) {
+    where.status = { [Op.in]: expandAppointmentStatusesForQuery(status) };
+  }
   if (customerId) where.customerId = customerId;
 
   if (search) {
@@ -373,11 +384,7 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (["completed", "cancelled"].includes(appointment.status)) {
-      return res.status(400).json({
-        message: "Only scheduled or rescheduled appointments can be confirmed",
-      });
-    }
+    assertValidAppointmentTransition(appointment.status, "confirmed");
 
     await appointment.update({
       status: "confirmed",
@@ -413,11 +420,7 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (appointment.status === "cancelled") {
-      return res.status(400).json({
-        message: "Cancelled appointment cannot be completed",
-      });
-    }
+    assertValidAppointmentTransition(appointment.status, "completed");
 
     await appointment.update({
       status: "completed",
@@ -453,11 +456,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (appointment.status === "completed") {
-      return res.status(400).json({
-        message: "Completed appointment cannot be cancelled",
-      });
-    }
+    assertValidAppointmentTransition(appointment.status, "cancelled");
 
     const mergedNote = [data.reason, data.notes].filter(Boolean).join(" | ");
 
@@ -498,11 +497,7 @@ export const rescheduleAppointment = async (
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (appointment.status === "completed") {
-      return res.status(400).json({
-        message: "Completed appointment cannot be rescheduled",
-      });
-    }
+    assertValidAppointmentTransition(appointment.status, "rescheduled");
 
     const nextEndTime =
       typeof data.endTime !== "undefined" ? data.endTime : appointment.endTime;
@@ -578,6 +573,11 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       ignoreAppointmentId: appointment.id,
     });
 
+    assertValidAppointmentTransition(
+      appointment.status,
+      data.status ?? appointment.status,
+    );
+
     await appointment.update({
       customerId:
         typeof data.customerId !== "undefined"
@@ -646,7 +646,9 @@ export const getAppointmentsCalendar = async (req: Request, res: Response) => {
 
   const where: any = {};
 
-  if (status) where.status = status;
+  if (status) {
+    where.status = { [Op.in]: expandAppointmentStatusesForQuery(status) };
+  }
   if (customerId) where.customerId = customerId;
 
   if (search) {
@@ -686,7 +688,9 @@ const exportAppointmentsPdfLegacy = async (req: Request, res: Response) => {
 
     const where: any = {};
 
-    if (status) where.status = status;
+    if (status) {
+      where.status = { [Op.in]: expandAppointmentStatusesForQuery(status) };
+    }
     if (customerId) where.customerId = customerId;
 
     if (search) {
@@ -921,7 +925,9 @@ export const exportAppointmentsPdf = async (req: Request, res: Response) => {
 
     const where: any = {};
 
-    if (status) where.status = status;
+    if (status) {
+      where.status = { [Op.in]: expandAppointmentStatusesForQuery(status) };
+    }
     if (customerId) where.customerId = customerId;
 
     if (search) {

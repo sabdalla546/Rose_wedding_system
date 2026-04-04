@@ -1,12 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import { CONTRACT_STATUSES } from "../constants/workflow-statuses";
 
-export type ContractStatus =
-  | "draft"
-  | "active"
-  | "completed"
-  | "cancelled"
-  | "terminated";
+export type ContractStatus = (typeof CONTRACT_STATUSES)[number];
 
 export interface ContractAttributes {
   id: number;
@@ -139,13 +135,7 @@ Contract.init(
     },
 
     status: {
-      type: DataTypes.ENUM(
-        "draft",
-        "active",
-        "completed",
-        "cancelled",
-        "terminated",
-      ),
+      type: DataTypes.ENUM(...CONTRACT_STATUSES),
       allowNull: false,
       defaultValue: "draft",
     },

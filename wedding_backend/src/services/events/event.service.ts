@@ -1,10 +1,18 @@
 import { Op } from "sequelize";
 import { Appointment, Customer, Event, User, Venue } from "../../models";
 import {
+  ACTIVE_EVENT_STATUSES,
+  TERMINAL_APPOINTMENT_STATUSES,
+} from "../../constants/workflow-statuses";
+import {
   appointmentAlreadyConvertedError,
   invalidStatusTransitionError,
   WorkflowDomainError,
 } from "../workflow/workflow.errors";
+import {
+  assertValidEventTransition,
+  normalizeAppointmentStatus,
+} from "../workflow/workflow.status";
 
 export const eventInclude: any[] = [
   { model: Customer, as: "customer" },
@@ -20,14 +28,6 @@ export const eventInclude: any[] = [
   { model: User, as: "createdByUser", attributes: ["id", "fullName"] },
   { model: User, as: "updatedByUser", attributes: ["id", "fullName"] },
 ];
-
-export const ACTIVE_EVENT_STATUSES = [
-  "draft",
-  "designing",
-  "confirmed",
-  "in_progress",
-  "completed",
-] as const;
 
 export const normalizeNullableString = (value?: string | null) => {
   const trimmed = value?.trim();
@@ -59,7 +59,7 @@ export const assertAppointmentCanConvertToEvent = async (
     throw new WorkflowDomainError("Source appointment not found", 404);
   }
 
-  if (appointment.status === "cancelled" || appointment.status === "no_show") {
+  if (TERMINAL_APPOINTMENT_STATUSES.has(normalizeAppointmentStatus(appointment.status))) {
     throw invalidStatusTransitionError();
   }
 
@@ -109,16 +109,8 @@ export const findActiveEventBySourceAppointment = async (
 
 export const assertEventStatusTransition = (
   currentStatus: Event["status"],
-  nextStatus?: string | null,
-) => {
-  if (!nextStatus || nextStatus === currentStatus) {
-    return;
-  }
-
-  if (nextStatus === "in_progress" && currentStatus !== "confirmed") {
-    throw invalidStatusTransitionError();
-  }
-};
+  nextStatus?: Event["status"] | null,
+) => assertValidEventTransition(currentStatus, nextStatus ?? undefined);
 
 export const listEventsPage = async ({
   page,

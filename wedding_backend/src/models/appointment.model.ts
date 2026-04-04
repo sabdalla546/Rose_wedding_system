@@ -1,13 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import { APPOINTMENT_STATUSES } from "../constants/workflow-statuses";
 
-export type AppointmentStatus =
-  | "scheduled"
-  | "confirmed"
-  | "completed"
-  | "rescheduled"
-  | "cancelled"
-  | "no_show";
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export type AppointmentType =
   | "New Appointment 1"
@@ -123,14 +118,7 @@ Appointment.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM(
-        "scheduled",
-        "confirmed",
-        "completed",
-        "rescheduled",
-        "cancelled",
-        "no_show",
-      ),
+      type: DataTypes.ENUM(...APPOINTMENT_STATUSES),
       allowNull: false,
       defaultValue: "scheduled",
     },

@@ -1,18 +1,12 @@
 import { z } from "zod";
+import { QUOTATION_STATUSES } from "../constants/workflow-statuses";
 import {
   optionalPositiveIntQuery,
   optionalTrimmedStringQuery,
   paginationQuerySchema,
 } from "./common.schemas";
 
-export const quotationStatusEnum = z.enum([
-  "draft",
-  "sent",
-  "approved",
-  "rejected",
-  "expired",
-  "converted_to_contract",
-]);
+export const quotationStatusEnum = z.enum(QUOTATION_STATUSES);
 
 const financialNumberSchema = z.number().finite().nonnegative();
 

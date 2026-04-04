@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
+import { Op } from "sequelize";
 import { ExecutionBrief } from "../models/executionBrief.model";
 import { ExecutionServiceDetail } from "../models/executionServiceDetail.model";
 import { ExecutionAttachment } from "../models/executionAttachment.model";
@@ -22,6 +23,10 @@ import {
   createExecutionBriefWorkflow,
 } from "../services/execution/execution.service";
 import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
+import {
+  assertValidExecutionBriefTransition,
+  expandExecutionBriefStatusesForQuery,
+} from "../services/workflow/workflow.status";
 
 const getUserIdFromRequest = (req: Request): number | null => {
   const maybeUser = (req as Request & { user?: { id?: number } }).user;
@@ -130,28 +135,28 @@ export const getExecutionBriefByEventId = async (
 };
 
 export const updateExecutionBrief = async (req: Request, res: Response) => {
-  const paramsParsed = executionBriefIdParamSchema.safeParse(req.params);
-  if (!paramsParsed.success) {
-    return res.status(400).json({
-      message: "Invalid brief id",
-      errors: paramsParsed.error.flatten(),
-    });
-  }
-
-  const bodyParsed = updateExecutionBriefSchema.safeParse(req.body);
-  if (!bodyParsed.success) {
-    return res.status(400).json({
-      message: "Invalid execution brief payload",
-      errors: bodyParsed.error.flatten(),
-    });
-  }
-
-  const brief = await ExecutionBrief.findByPk(paramsParsed.data.id);
-  if (!brief) {
-    return res.status(404).json({ message: "Execution brief not found" });
-  }
-
   try {
+    const paramsParsed = executionBriefIdParamSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      return res.status(400).json({
+        message: "Invalid brief id",
+        errors: paramsParsed.error.flatten(),
+      });
+    }
+
+    const bodyParsed = updateExecutionBriefSchema.safeParse(req.body);
+    if (!bodyParsed.success) {
+      return res.status(400).json({
+        message: "Invalid execution brief payload",
+        errors: bodyParsed.error.flatten(),
+      });
+    }
+
+    const brief = await ExecutionBrief.findByPk(paramsParsed.data.id);
+    if (!brief) {
+      return res.status(404).json({ message: "Execution brief not found" });
+    }
+
     await assertExecutionBriefReferences({
       eventId: brief.eventId,
       quotationId:
@@ -163,6 +168,45 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
           ? brief.contractId
           : bodyParsed.data.contractId,
     });
+
+    const userId = getUserIdFromRequest(req);
+    const nextStatus = bodyParsed.data.status ?? brief.status;
+    assertValidExecutionBriefTransition(brief.status, nextStatus);
+
+    const approvedByClientAt: Date | null | undefined =
+      bodyParsed.data.approvedByClientAt === undefined
+        ? undefined
+        : bodyParsed.data.approvedByClientAt === null
+          ? null
+          : new Date(bodyParsed.data.approvedByClientAt);
+
+    const handedToExecutorAt: Date | null | undefined =
+      bodyParsed.data.handedToExecutorAt === undefined
+        ? undefined
+        : bodyParsed.data.handedToExecutorAt === null
+          ? null
+          : new Date(bodyParsed.data.handedToExecutorAt);
+
+    await brief.update({
+      quotationId: bodyParsed.data.quotationId,
+      contractId: bodyParsed.data.contractId,
+      status: nextStatus,
+      generalNotes: bodyParsed.data.generalNotes,
+      clientNotes: bodyParsed.data.clientNotes,
+      designerNotes: bodyParsed.data.designerNotes,
+      approvedByClientAt,
+      handedToExecutorAt,
+      updatedBy: userId,
+    });
+
+    const hydrated = await ExecutionBrief.findByPk(brief.id, {
+      include: buildExecutionBriefInclude(),
+    });
+
+    return res.json({
+      message: "Execution brief updated successfully",
+      data: hydrated,
+    });
   } catch (error) {
     if (isWorkflowDomainError(error)) {
       return res.status(error.statusCode).json({ message: error.message });
@@ -170,43 +214,6 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
 
     return res.status(500).json({ message: "Unexpected error" });
   }
-
-  const userId = getUserIdFromRequest(req);
-
-  const approvedByClientAt: Date | null | undefined =
-    bodyParsed.data.approvedByClientAt === undefined
-      ? undefined
-      : bodyParsed.data.approvedByClientAt === null
-        ? null
-        : new Date(bodyParsed.data.approvedByClientAt);
-
-  const handedToExecutorAt: Date | null | undefined =
-    bodyParsed.data.handedToExecutorAt === undefined
-      ? undefined
-      : bodyParsed.data.handedToExecutorAt === null
-        ? null
-        : new Date(bodyParsed.data.handedToExecutorAt);
-
-  await brief.update({
-    quotationId: bodyParsed.data.quotationId,
-    contractId: bodyParsed.data.contractId,
-    status: bodyParsed.data.status,
-    generalNotes: bodyParsed.data.generalNotes,
-    clientNotes: bodyParsed.data.clientNotes,
-    designerNotes: bodyParsed.data.designerNotes,
-    approvedByClientAt,
-    handedToExecutorAt,
-    updatedBy: userId,
-  });
-
-  const hydrated = await ExecutionBrief.findByPk(brief.id, {
-    include: buildExecutionBriefInclude(),
-  });
-
-  return res.json({
-    message: "Execution brief updated successfully",
-    data: hydrated,
-  });
 };
 
 export const getExecutionBriefs = async (req: Request, res: Response) => {
@@ -232,7 +239,7 @@ export const getExecutionBriefs = async (req: Request, res: Response) => {
   }
 
   if (status) {
-    where.status = status;
+    where.status = { [Op.in]: expandExecutionBriefStatusesForQuery(status) };
   }
 
   const briefs = await ExecutionBrief.findAll({

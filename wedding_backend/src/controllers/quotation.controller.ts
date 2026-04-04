@@ -24,8 +24,13 @@ import {
   quotationItemDetailInclude,
   sanitizeQuotationItemPayload,
   sanitizeQuotationPayload,
+  supersedeSiblingQuotationsForEvent,
 } from "../services/quotations/quotation.service";
 import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
+import {
+  assertValidQuotationTransition,
+  normalizeQuotationStatus,
+} from "../services/workflow/workflow.status";
 
 class HttpError extends Error {
   public status: number;
@@ -668,6 +673,9 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
         : Number(quotation.discountAmount || 0),
     );
 
+    const nextStatus = data.status ?? quotation.status;
+    assertValidQuotationTransition(quotation.status, nextStatus);
+
     await quotation.update({
       quotationNumber:
         typeof data.quotationNumber !== "undefined"
@@ -682,9 +690,17 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
       notes: typeof data.notes !== "undefined" ? data.notes : quotation.notes,
-      status: data.status ?? quotation.status,
+      status: nextStatus,
       updatedBy: req.user?.id ?? null,
     });
+
+    if (normalizeQuotationStatus(nextStatus) === "approved") {
+      await supersedeSiblingQuotationsForEvent(
+        quotation.eventId,
+        quotation.id,
+        req.user?.id ?? null,
+      );
+    }
 
     const updated = await loadQuotationById(id);
 
@@ -695,6 +711,10 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
+    }
+
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });

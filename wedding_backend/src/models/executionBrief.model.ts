@@ -1,13 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import { EXECUTION_BRIEF_STATUSES } from "../constants/workflow-statuses";
 
-export type ExecutionBriefStatus =
-  | "draft"
-  | "under_review"
-  | "approved"
-  | "handed_to_executor"
-  | "in_progress"
-  | "completed";
+export type ExecutionBriefStatus = (typeof EXECUTION_BRIEF_STATUSES)[number];
 
 export interface ExecutionBriefAttributes {
   id: number;
