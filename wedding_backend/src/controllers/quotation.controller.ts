@@ -17,6 +17,7 @@ import {
 import { DocumentServiceError } from "../services/documents/document.types";
 import { generateQuotationPdfDocument } from "../services/documents/quotation/quotationPdf.service";
 import {
+  assertEventCanCreateQuotation,
   buildVendorSummaryInclude,
   listQuotationsPage,
   loadQuotationById,
@@ -24,6 +25,7 @@ import {
   sanitizeQuotationItemPayload,
   sanitizeQuotationPayload,
 } from "../services/quotations/quotation.service";
+import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
 
 class HttpError extends Error {
   public status: number;
@@ -357,10 +359,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
       items: QuotationRequestItem[];
     };
 
-    const event = await Event.findByPk(data.eventId);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
+    const event = await assertEventCanCreateQuotation(data.eventId);
 
     const preparedItems = await Promise.all(
       data.items.map((item, index) =>
@@ -408,6 +407,10 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -419,10 +422,7 @@ export const createQuotationFromEvent = async (
   try {
     const data = req.body;
 
-    const event = await Event.findByPk(data.eventId);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
+    const event = await assertEventCanCreateQuotation(data.eventId);
 
     const eventServiceIds = normalizeIdList(data.eventServiceIds);
     const eventVendorIds = normalizeIdList(data.eventVendorIds);
@@ -558,6 +558,10 @@ export const createQuotationFromEvent = async (
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
+    }
+
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });

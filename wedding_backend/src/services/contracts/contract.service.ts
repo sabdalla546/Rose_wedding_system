@@ -17,6 +17,10 @@ import {
   VendorSubService,
   Venue,
 } from "../../models";
+import {
+  invalidStatusTransitionError,
+  WorkflowDomainError,
+} from "../workflow/workflow.errors";
 
 export function buildVendorSummaryInclude() {
   return {
@@ -102,6 +106,56 @@ export async function loadContractById(id: number) {
   return Contract.findByPk(id, {
     include: buildContractInclude(),
   });
+}
+
+export async function assertApprovedQuotationForContract(
+  quotationId: number,
+  excludeContractId?: number,
+) {
+  const quotation = await Quotation.findByPk(quotationId, {
+    include: [
+      { model: Event, as: "event" },
+      {
+        model: QuotationItem,
+        as: "items",
+        separate: true,
+        order: [
+          ["sortOrder", "ASC"],
+          ["id", "ASC"],
+        ],
+      },
+    ],
+  });
+
+  if (!quotation) {
+    throw new WorkflowDomainError("Quotation not found", 404);
+  }
+
+  if (quotation.status !== "approved") {
+    throw invalidStatusTransitionError();
+  }
+
+  const existingContract = await Contract.findOne({
+    where: {
+      quotationId: quotation.id,
+      ...(excludeContractId
+        ? {
+            id: {
+              [Op.ne]: excludeContractId,
+            },
+          }
+        : {}),
+    },
+  });
+
+  if (existingContract) {
+    throw new WorkflowDomainError(
+      "Contract already exists for this quotation",
+      400,
+    );
+  }
+
+  return quotation;
 }
 
 export async function listContractsPage({

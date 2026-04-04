@@ -14,6 +14,10 @@ import {
   VendorSubService,
   Venue,
 } from "../../models";
+import {
+  cancelledEventQuotationError,
+  WorkflowDomainError,
+} from "../workflow/workflow.errors";
 
 export function buildVendorSummaryInclude() {
   return {
@@ -220,6 +224,20 @@ export async function loadQuotationById(id: number) {
   return Quotation.findByPk(id, {
     include: buildQuotationInclude(),
   });
+}
+
+export async function assertEventCanCreateQuotation(eventId: number) {
+  const event = await Event.findByPk(eventId);
+
+  if (!event) {
+    throw new WorkflowDomainError("Event not found", 404);
+  }
+
+  if (event.status === "cancelled") {
+    throw cancelledEventQuotationError();
+  }
+
+  return event;
 }
 
 export async function listQuotationsPage({

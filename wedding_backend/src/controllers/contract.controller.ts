@@ -22,12 +22,18 @@ import {
 import { DocumentServiceError } from "../services/documents/document.types";
 import { generateContractPdfDocument } from "../services/documents/contract/contractPdf.service";
 import {
+  assertApprovedQuotationForContract,
   buildVendorSummaryInclude,
   contractItemDetailInclude,
   eventVendorDetailInclude,
   listContractsPage,
   loadContractById,
 } from "../services/contracts/contract.service";
+import {
+  invalidStatusTransitionError,
+  isWorkflowDomainError,
+  WorkflowDomainError,
+} from "../services/workflow/workflow.errors";
 
 class HttpError extends Error {
   public status: number;
@@ -381,16 +387,18 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       }>;
     };
 
-    const event = await Event.findByPk(data.eventId);
+    if (!data.quotationId) {
+      throw new WorkflowDomainError("Only approved quotation can create contract");
+    }
+
+    const quotation = await assertApprovedQuotationForContract(data.quotationId);
+    const event = await Event.findByPk(quotation.eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    if (data.quotationId) {
-      const quotation = await Quotation.findByPk(data.quotationId);
-      if (!quotation) {
-        return res.status(404).json({ message: "Quotation not found" });
-      }
+    if (data.eventId !== quotation.eventId) {
+      throw new WorkflowDomainError("Quotation does not belong to event");
     }
 
     const preparedItems = await Promise.all(
@@ -407,9 +415,9 @@ export const createContract = async (req: AuthRequest, res: Response) => {
     const totals = computeContractTotals(preparedItems, data.discountAmount);
 
     const contract = await Contract.create({
-      quotationId: data.quotationId ?? null,
-      eventId: data.eventId,
-      customerId: event.customerId ?? null,
+      quotationId: quotation.id,
+      eventId: quotation.eventId,
+      customerId: quotation.customerId ?? event.customerId ?? null,
       contractNumber: data.contractNumber ?? null,
       signedDate: data.signedDate,
       eventDate: data.eventDate ?? event.eventDate ?? null,
@@ -457,6 +465,10 @@ export const createContract = async (req: AuthRequest, res: Response) => {
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -485,34 +497,7 @@ export const createContractFromQuotation = async (
       }>;
     };
 
-    const quotation = await Quotation.findByPk(data.quotationId, {
-      include: [
-        { model: Event, as: "event" },
-        {
-          model: QuotationItem,
-          as: "items",
-          separate: true,
-          order: [
-            ["sortOrder", "ASC"],
-            ["id", "ASC"],
-          ],
-        },
-      ],
-    });
-
-    if (!quotation) {
-      return res.status(404).json({ message: "Quotation not found" });
-    }
-
-    const existingContract = await Contract.findOne({
-      where: { quotationId: quotation.id },
-    });
-
-    if (existingContract) {
-      return res.status(400).json({
-        message: "Contract already exists for this quotation",
-      });
-    }
+    const quotation = await assertApprovedQuotationForContract(data.quotationId);
 
     const items = (quotation as any).items as QuotationItem[];
     if (!items?.length) {
@@ -613,6 +598,10 @@ export const createContractFromQuotation = async (
       return res.status(err.status).json({ message: err.message });
     }
 
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -708,10 +697,18 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (typeof data.quotationId !== "undefined" && data.quotationId) {
-      const quotation = await Quotation.findByPk(data.quotationId);
-      if (!quotation) {
-        return res.status(404).json({ message: "Quotation not found" });
+    if (typeof data.quotationId !== "undefined") {
+      if (!data.quotationId) {
+        throw invalidStatusTransitionError();
+      }
+
+      const quotation = await assertApprovedQuotationForContract(
+        data.quotationId,
+        contract.id,
+      );
+
+      if (quotation.eventId !== contract.eventId) {
+        throw new WorkflowDomainError("Quotation does not belong to event");
       }
     }
 
@@ -757,6 +754,10 @@ export const updateContract = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
+    }
+
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
     }
 
     return res.status(500).json({ message: req.t("common.unexpected_error") });

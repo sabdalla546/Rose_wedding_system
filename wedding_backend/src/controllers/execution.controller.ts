@@ -1,17 +1,10 @@
 import { Request, Response } from "express";
-import { Includeable, Op, Order } from "sequelize";
 import fs from "fs";
 import path from "path";
 import { ExecutionBrief } from "../models/executionBrief.model";
 import { ExecutionServiceDetail } from "../models/executionServiceDetail.model";
 import { ExecutionAttachment } from "../models/executionAttachment.model";
-import { Event } from "../models/event.model";
 import { Service } from "../models/service.model";
-import { EventService } from "../models/eventService.model";
-import { Quotation } from "../models/quotation.model";
-import { Contract } from "../models/contract.model";
-import { User } from "../models/user.model";
-
 import {
   updateExecutionServiceDetailSchema,
   executionServiceDetailIdParamSchema,
@@ -23,104 +16,16 @@ import {
   updateExecutionBriefSchema,
   executionBriefByEventParamSchema,
 } from "../validation/execution.validation";
+import {
+  assertExecutionBriefReferences,
+  buildExecutionBriefInclude,
+  createExecutionBriefWorkflow,
+} from "../services/execution/execution.service";
+import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
 
 const getUserIdFromRequest = (req: Request): number | null => {
   const maybeUser = (req as Request & { user?: { id?: number } }).user;
   return typeof maybeUser?.id === "number" ? maybeUser.id : null;
-};
-
-const getTemplateKeyFromService = (service: {
-  name?: string | null;
-  category?: string | null;
-}) => {
-  const source =
-    `${service.category ?? ""} ${service.name ?? ""}`.toLowerCase();
-
-  if (source.includes("كوش") || source.includes("kosha")) return "kosha_setup";
-  if (source.includes("ورد") || source.includes("flower"))
-    return "flowers_setup";
-  if (source.includes("مدخل") || source.includes("entrance"))
-    return "entrance_setup";
-  if (source.includes("بوفيه") || source.includes("buffet"))
-    return "buffet_setup";
-  if (source.includes("طقم") || source.includes("seating"))
-    return "front_seating_setup";
-
-  return "generic_execution_setup";
-};
-
-const serviceDetailsOrder: Order = [
-  ["sortOrder", "ASC"],
-  ["id", "ASC"],
-];
-
-const buildExecutionBriefInclude = (search?: string): Includeable[] => {
-  const eventInclude: Includeable = search
-    ? {
-        model: Event,
-        as: "event",
-        required: true,
-        where: {
-          [Op.or]: [
-            { title: { [Op.like]: `%${search}%` } },
-            { eventType: { [Op.like]: `%${search}%` } },
-          ],
-        },
-      }
-    : {
-        model: Event,
-        as: "event",
-      };
-
-  return [
-    eventInclude,
-    {
-      model: Quotation,
-      as: "quotation",
-      required: false,
-    },
-    {
-      model: Contract,
-      as: "contract",
-      required: false,
-    },
-    {
-      model: User,
-      as: "creator",
-      required: false,
-      attributes: ["id", "fullName", "email"],
-    },
-    {
-      model: User,
-      as: "updater",
-      required: false,
-      attributes: ["id", "fullName", "email"],
-    },
-    {
-      model: ExecutionServiceDetail,
-      as: "serviceDetails",
-      required: false,
-      separate: true,
-      order: serviceDetailsOrder,
-      include: [
-        {
-          model: Service,
-          as: "service",
-          required: false,
-        },
-        {
-          model: ExecutionAttachment,
-          as: "attachments",
-          required: false,
-        },
-      ],
-    },
-    {
-      model: ExecutionAttachment,
-      as: "attachments",
-      required: false,
-    },
-  ];
 };
 
 export const createExecutionBrief = async (req: Request, res: Response) => {
@@ -144,89 +49,30 @@ export const createExecutionBrief = async (req: Request, res: Response) => {
     initializeFromEventServices = true,
   } = parsed.data;
 
-  const existingBrief = await ExecutionBrief.findOne({ where: { eventId } });
-  if (existingBrief) {
-    return res.status(409).json({
-      message: "Execution brief already exists for this event",
-      data: existingBrief,
-    });
-  }
-
-  const event = await Event.findByPk(eventId);
-  if (!event) {
-    return res.status(404).json({ message: "Event not found" });
-  }
-
-  const userId = getUserIdFromRequest(req);
-
-  const brief = await ExecutionBrief.create({
-    eventId,
-    quotationId,
-    contractId,
-    status,
-    generalNotes,
-    clientNotes,
-    designerNotes,
-    createdBy: userId,
-    updatedBy: userId,
-  });
-
-  if (initializeFromEventServices) {
-    const eventServices = await EventService.findAll({
-      where: { eventId },
-      include: [
-        {
-          model: Service,
-          as: "service",
-          required: false,
-        },
-      ],
-      order: [["id", "ASC"]],
+  try {
+    const brief = await createExecutionBriefWorkflow({
+      eventId,
+      quotationId,
+      contractId,
+      status,
+      generalNotes,
+      clientNotes,
+      designerNotes,
+      initializeFromEventServices,
+      userId: getUserIdFromRequest(req),
     });
 
-    const detailRows = eventServices
-      .filter(
-        (item) => typeof item.serviceId === "number" && item.serviceId > 0,
-      )
-      .map((item, index) => {
-        const serviceRecord = (
-          item as EventService & { service?: Service | null }
-        ).service;
-        const serviceName = serviceRecord?.name ?? null;
-        const serviceCategory =
-          (serviceRecord as (Service & { category?: string | null }) | null)
-            ?.category ?? null;
-
-        return {
-          briefId: brief.id,
-          eventId,
-          serviceId: item.serviceId as number,
-          serviceNameSnapshot: serviceName,
-          templateKey: getTemplateKeyFromService({
-            name: serviceName,
-            category: serviceCategory,
-          }),
-          sortOrder: index,
-          detailsJson: null,
-          status: "pending" as const,
-        };
-      });
-
-    if (detailRows.length > 0) {
-      await ExecutionServiceDetail.bulkCreate(detailRows, {
-        ignoreDuplicates: true,
-      });
+    return res.status(201).json({
+      message: "Execution brief created successfully",
+      data: brief,
+    });
+  } catch (error) {
+    if (isWorkflowDomainError(error)) {
+      return res.status(error.statusCode).json({ message: error.message });
     }
+
+    return res.status(500).json({ message: "Unexpected error" });
   }
-
-  const hydrated = await ExecutionBrief.findByPk(brief.id, {
-    include: buildExecutionBriefInclude(),
-  });
-
-  return res.status(201).json({
-    message: "Execution brief created successfully",
-    data: hydrated,
-  });
 };
 
 export const getExecutionBriefById = async (req: Request, res: Response) => {
@@ -305,6 +151,26 @@ export const updateExecutionBrief = async (req: Request, res: Response) => {
     return res.status(404).json({ message: "Execution brief not found" });
   }
 
+  try {
+    await assertExecutionBriefReferences({
+      eventId: brief.eventId,
+      quotationId:
+        bodyParsed.data.quotationId === undefined
+          ? brief.quotationId
+          : bodyParsed.data.quotationId,
+      contractId:
+        bodyParsed.data.contractId === undefined
+          ? brief.contractId
+          : bodyParsed.data.contractId,
+    });
+  } catch (error) {
+    if (isWorkflowDomainError(error)) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Unexpected error" });
+  }
+
   const userId = getUserIdFromRequest(req);
 
   const approvedByClientAt: Date | null | undefined =
@@ -380,6 +246,7 @@ export const getExecutionBriefs = async (req: Request, res: Response) => {
     data: briefs,
   });
 };
+
 const getPublicFileUrl = (req: Request, filePath: string) => {
   const normalized = filePath.replace(/\\/g, "/");
   const uploadsIndex = normalized.lastIndexOf("/uploads/");

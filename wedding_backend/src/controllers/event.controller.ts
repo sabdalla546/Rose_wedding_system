@@ -8,39 +8,22 @@ import { listEventsCalendarRecords } from "../services/calendar/calendar.service
 import { renderEventReportHtml } from "../services/documents/event/eventReportPdf.service";
 import {
   ACTIVE_EVENT_STATUSES,
+  assertAppointmentCanConvertToEvent,
+  assertEventStatusTransition,
   getSourceAppointmentDefaults,
   listEventsPage,
   loadEventById,
   normalizeNullableString,
 } from "../services/events/event.service";
+import { isWorkflowDomainError } from "../services/workflow/workflow.errors";
 
 export const createEvent = async (req: AuthRequest, res: Response) => {
   try {
     const data = req.body;
 
-    const sourceAppointment = await getSourceAppointmentDefaults(
-      data.sourceAppointmentId ?? null,
-    );
-    if (data.sourceAppointmentId && !sourceAppointment) {
-      return res.status(404).json({ message: "Source appointment not found" });
-    }
-
-    if (data.sourceAppointmentId) {
-      const existingEvent = await Event.findOne({
-        where: {
-          sourceAppointmentId: data.sourceAppointmentId,
-          status: {
-            [Op.in]: ACTIVE_EVENT_STATUSES,
-          },
-        },
-      });
-
-      if (existingEvent) {
-        return res.status(409).json({
-          message: "An event has already been created from this appointment",
-        });
-      }
-    }
+    const sourceAppointment = data.sourceAppointmentId
+      ? await assertAppointmentCanConvertToEvent(data.sourceAppointmentId)
+      : null;
 
     const resolvedCustomerId =
       typeof data.customerId !== "undefined" && data.customerId !== null
@@ -103,6 +86,10 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
       data: created,
     });
   } catch (err) {
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -114,30 +101,9 @@ export const createEventFromSource = async (
   try {
     const data = req.body;
 
-    const sourceAppointment = await getSourceAppointmentDefaults(
-      data.sourceAppointmentId ?? null,
-    );
-
-    if (data.sourceAppointmentId && !sourceAppointment) {
-      return res.status(404).json({ message: "Source appointment not found" });
-    }
-
-    if (data.sourceAppointmentId) {
-      const existingEvent = await Event.findOne({
-        where: {
-          sourceAppointmentId: data.sourceAppointmentId,
-          status: {
-            [Op.in]: ACTIVE_EVENT_STATUSES,
-          },
-        },
-      });
-
-      if (existingEvent) {
-        return res.status(409).json({
-          message: "An event has already been created from this appointment",
-        });
-      }
-    }
+    const sourceAppointment = data.sourceAppointmentId
+      ? await assertAppointmentCanConvertToEvent(data.sourceAppointmentId)
+      : null;
 
     const resolvedCustomerId =
       typeof data.customerId !== "undefined" && data.customerId !== null
@@ -205,6 +171,10 @@ export const createEventFromSource = async (
       data: created,
     });
   } catch (err) {
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
@@ -290,33 +260,14 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
     }
 
     if (typeof data.sourceAppointmentId !== "undefined") {
-      if (data.sourceAppointmentId) {
-        const sourceAppointment = await Appointment.findByPk(
+      if (
+        data.sourceAppointmentId
+        && data.sourceAppointmentId !== event.sourceAppointmentId
+      ) {
+        await assertAppointmentCanConvertToEvent(
           data.sourceAppointmentId,
+          event.id,
         );
-        if (!sourceAppointment) {
-          return res
-            .status(404)
-            .json({ message: "Source appointment not found" });
-        }
-
-        const duplicateEvent = await Event.findOne({
-          where: {
-            sourceAppointmentId: data.sourceAppointmentId,
-            id: {
-              [Op.ne]: event.id,
-            },
-            status: {
-              [Op.in]: ACTIVE_EVENT_STATUSES,
-            },
-          },
-        });
-
-        if (duplicateEvent) {
-          return res.status(409).json({
-            message: "An event has already been created from this appointment",
-          });
-        }
       }
     }
 
@@ -326,6 +277,8 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({ message: "Venue not found" });
       }
     }
+
+    assertEventStatusTransition(event.status, data.status);
 
     await event.update({
       customerId:
@@ -371,6 +324,10 @@ export const updateEvent = async (req: AuthRequest, res: Response) => {
       data: updated,
     });
   } catch (err) {
+    if (isWorkflowDomainError(err)) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };

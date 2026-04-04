@@ -1,5 +1,10 @@
 import { Op } from "sequelize";
 import { Appointment, Customer, Event, User, Venue } from "../../models";
+import {
+  appointmentAlreadyConvertedError,
+  invalidStatusTransitionError,
+  WorkflowDomainError,
+} from "../workflow/workflow.errors";
 
 export const eventInclude: any[] = [
   { model: Customer, as: "customer" },
@@ -44,6 +49,44 @@ export const getSourceAppointmentDefaults = async (
   });
 };
 
+export const assertAppointmentCanConvertToEvent = async (
+  sourceAppointmentId: number,
+  excludeEventId?: number,
+) => {
+  const appointment = await getSourceAppointmentDefaults(sourceAppointmentId);
+
+  if (!appointment) {
+    throw new WorkflowDomainError("Source appointment not found", 404);
+  }
+
+  if (appointment.status === "cancelled" || appointment.status === "no_show") {
+    throw invalidStatusTransitionError();
+  }
+
+  if (appointment.status !== "completed") {
+    throw invalidStatusTransitionError();
+  }
+
+  const existingEvent = await Event.findOne({
+    where: {
+      sourceAppointmentId,
+      ...(excludeEventId
+        ? {
+            id: {
+              [Op.ne]: excludeEventId,
+            },
+          }
+        : {}),
+    },
+  });
+
+  if (existingEvent) {
+    throw appointmentAlreadyConvertedError();
+  }
+
+  return appointment;
+};
+
 export const findActiveEventBySourceAppointment = async (
   sourceAppointmentId: number,
   excludeEventId?: number,
@@ -63,6 +106,19 @@ export const findActiveEventBySourceAppointment = async (
       },
     },
   });
+
+export const assertEventStatusTransition = (
+  currentStatus: Event["status"],
+  nextStatus?: string | null,
+) => {
+  if (!nextStatus || nextStatus === currentStatus) {
+    return;
+  }
+
+  if (nextStatus === "in_progress" && currentStatus !== "confirmed") {
+    throw invalidStatusTransitionError();
+  }
+};
 
 export const listEventsPage = async ({
   page,

@@ -11,7 +11,6 @@
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
     "seed": "npm run seed:core && npm run seed:vendors && npm run seed:appointments-events",
     "seed:undo": "sequelize-cli db:seed:undo:all",
-    "seed:core": "npm run seed:vendor-types && npm run seed:rbac && npm run seed:services && npm run seed:venues",
     "scan:permissions": "ts-node src/seed/scanRoutePermissions.ts",
     "seed:rbac": "ts-node src/seed/seedRbac.ts",
     "seed:vendor-types": "sequelize-cli db:seed --seed 20260404090000-seed-vendor-types.js",
