@@ -36,7 +36,7 @@ export const globalRateLimiter = buildRateLimiter({
 
 export const loginRateLimiter = buildRateLimiter({
   windowMs: FIFTEEN_MINUTES,
-  max: 5,
+  max: 20,
   message: "Too many login attempts. Please try again later.",
   skipSuccessfulRequests: true,
 });

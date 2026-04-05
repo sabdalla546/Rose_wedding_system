@@ -33,6 +33,7 @@ import { EventEmptyState, EventMetricTile } from "./EventDetailsPrimitives";
 type QuotationProps = {
   quotations: Quotation[];
   loading: boolean;
+  error?: boolean;
   latestQuotation: Quotation | null;
   totalAmount: number;
   dateLocale: Locale;
@@ -57,6 +58,7 @@ type ContractProps = {
 export function EventQuotationsPanel({
   quotations,
   loading,
+  error = false,
   latestQuotation,
   totalAmount,
   dateLocale,
@@ -147,6 +149,16 @@ export function EventQuotationsPanel({
             title={t("common.loading", { defaultValue: "Loading..." })}
             description={t("events.loadingQuotations", {
               defaultValue: "Loading quotations for this event.",
+            })}
+          />
+        ) : error ? (
+          <EventEmptyState
+            title={t("events.loadQuotationsFailedTitle", {
+              defaultValue: "Unable to load quotations",
+            })}
+            description={t("events.loadQuotationsFailedDescription", {
+              defaultValue:
+                "The quotations for this event could not be loaded right now. Try again in a moment.",
             })}
           />
         ) : quotations.length ? (

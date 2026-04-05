@@ -16,6 +16,7 @@ type Props = {
   onViewQuotation?: (quotationId: number) => void;
   quotations?: Quotation[];
   loading?: boolean;
+  error?: boolean;
 };
 
 export function EventQuotationsPanel({
@@ -25,12 +26,13 @@ export function EventQuotationsPanel({
   onViewQuotation,
   quotations: quotationsOverride,
   loading: loadingOverride,
+  error: errorOverride,
 }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
-  const { data, isLoading } = useQuotations({
+  const { data, isLoading, isError } = useQuotations({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 100,
     searchQuery: "",
     eventId: String(eventId ?? ""),
     status: "all",
@@ -70,6 +72,7 @@ export function EventQuotationsPanel({
     <EventQuotationsPanelContent
       quotations={quotations}
       loading={loadingOverride ?? isLoading}
+      error={errorOverride ?? isError}
       latestQuotation={quotations[0] ?? null}
       totalAmount={totalAmount}
       dateLocale={dateLocale}

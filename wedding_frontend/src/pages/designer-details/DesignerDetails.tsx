@@ -153,9 +153,10 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const {
     data: eventQuotationsResponse,
     isLoading: quotationsLoading,
+    isError: quotationsLoadFailed,
   } = useQuotations({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 100,
     searchQuery: "",
     eventId,
     status: "all",
@@ -650,6 +651,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             eventId={eventId}
             quotations={quotations}
             loading={quotationsLoading}
+            error={quotationsLoadFailed}
             onCreateQuotation={handleCreateQuotation}
             onCreateQuotationFromEvent={handleCreateQuotation}
             onViewQuotation={(quotationId) =>

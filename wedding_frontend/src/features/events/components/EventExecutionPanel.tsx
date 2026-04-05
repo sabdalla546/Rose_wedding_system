@@ -130,7 +130,7 @@ export function EventExecutionPanel({ eventId }: Props) {
 
   const { data: quotationsResponse } = useQuotations({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 100,
     searchQuery: "",
     eventId: String(eventId ?? ""),
     status: "all",

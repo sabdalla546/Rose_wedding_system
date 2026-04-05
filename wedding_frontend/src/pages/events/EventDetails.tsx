@@ -457,7 +457,7 @@ export const EventDetailsPage = ({
   });
   const { data: eventQuotationsResponse } = useQuotations({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 100,
     searchQuery: "",
     eventId: String(resolvedEventId || ""),
     status: "all",

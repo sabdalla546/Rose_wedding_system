@@ -88,7 +88,7 @@ const ContractsPage = () => {
   });
   const { data: quotationsResponse } = useQuotations({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 100,
     searchQuery: "",
     eventId: "",
     status: "all",
