@@ -28,6 +28,8 @@ export function EventContractsPanel({
 }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
+  const useProvidedContracts =
+    contractsOverride !== undefined && loadingOverride !== undefined;
   const { data, isLoading } = useContracts({
     currentPage: 1,
     itemsPerPage: 200,
@@ -37,6 +39,7 @@ export function EventContractsPanel({
     status: "all",
     signedDateFrom: "",
     signedDateTo: "",
+    enabled: !useProvidedContracts,
   });
 
   const contracts = useMemo(

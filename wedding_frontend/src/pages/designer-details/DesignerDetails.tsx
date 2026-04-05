@@ -980,7 +980,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 export default function DesignerDetailsPage() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
-  const [selectedEventId, setSelectedEventId] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const eventFilters = useMemo(getInitialEventsBusinessFilters, []);
 
   const {
@@ -1004,13 +1004,38 @@ export default function DesignerDetailsPage() {
       }),
     [availableEventsData],
   );
+  const requestedEventId = searchParams.get("eventId");
   const effectiveSelectedEventId = availableEvents.find(
-    (event) => String(event.id) === selectedEventId,
+    (event) => String(event.id) === requestedEventId,
   )
-    ? selectedEventId
+    ? requestedEventId ?? ""
     : availableEvents[0]
       ? String(availableEvents[0].id)
       : "";
+
+  useEffect(() => {
+    if (
+      !effectiveSelectedEventId ||
+      requestedEventId === effectiveSelectedEventId
+    ) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("eventId", effectiveSelectedEventId);
+    setSearchParams(nextParams, { replace: true });
+  }, [
+    effectiveSelectedEventId,
+    requestedEventId,
+    searchParams,
+    setSearchParams,
+  ]);
+
+  const handleEventChange = (value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("eventId", value);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <ProtectedComponent
@@ -1078,7 +1103,7 @@ export default function DesignerDetailsPage() {
               <div className="w-full xl:max-w-md">
                 <Select
                   value={effectiveSelectedEventId || undefined}
-                  onValueChange={(value) => setSelectedEventId(value)}
+                  onValueChange={handleEventChange}
                   disabled={eventsLoading || availableEvents.length === 0}
                 >
                   <SelectTrigger

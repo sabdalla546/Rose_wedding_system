@@ -16,6 +16,7 @@ interface UseContractsParams {
   status: "all" | ContractStatus;
   signedDateFrom: string;
   signedDateTo: string;
+  enabled?: boolean;
 }
 
 export const useContracts = ({
@@ -27,6 +28,7 @@ export const useContracts = ({
   status,
   signedDateFrom,
   signedDateTo,
+  enabled = true,
 }: UseContractsParams) => {
   return useQuery<ContractsResponse>({
     queryKey: [
@@ -51,6 +53,7 @@ export const useContracts = ({
         signedDateFrom,
         signedDateTo,
       }),
+    enabled,
   });
 };
 
