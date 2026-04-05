@@ -16,6 +16,7 @@ type Props = {
   onViewContract?: (contractId: number) => void;
   contracts?: Contract[];
   loading?: boolean;
+  error?: boolean;
 };
 
 export function EventContractsPanel({
@@ -25,12 +26,13 @@ export function EventContractsPanel({
   onViewContract,
   contracts: contractsOverride,
   loading: loadingOverride,
+  error: errorOverride,
 }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const useProvidedContracts =
     contractsOverride !== undefined && loadingOverride !== undefined;
-  const { data, isLoading } = useContracts({
+  const { data, isLoading, isError } = useContracts({
     currentPage: 1,
     itemsPerPage: 200,
     searchQuery: "",
@@ -54,7 +56,7 @@ export function EventContractsPanel({
 
         return right.id - left.id;
       }),
-    [contractsOverride, data?.data],
+    [data?.data, contractsOverride],
   );
   const totalAmount = useMemo(
     () =>
@@ -74,6 +76,7 @@ export function EventContractsPanel({
     <EventContractsPanelContent
       contracts={contracts}
       loading={loadingOverride ?? isLoading}
+      error={errorOverride ?? isError}
       latestContract={contracts[0] ?? null}
       totalAmount={totalAmount}
       dateLocale={dateLocale}

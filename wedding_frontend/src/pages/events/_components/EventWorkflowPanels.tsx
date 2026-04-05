@@ -46,6 +46,7 @@ type QuotationProps = {
 type ContractProps = {
   contracts: Contract[];
   loading: boolean;
+  error?: boolean;
   latestContract: Contract | null;
   totalAmount: number;
   dateLocale: Locale;
@@ -243,6 +244,7 @@ export function EventQuotationsPanel({
 export function EventContractsPanel({
   contracts,
   loading,
+  error = false,
   latestContract,
   totalAmount,
   dateLocale,
@@ -334,6 +336,16 @@ export function EventContractsPanel({
             title={t("common.loading", { defaultValue: "Loading..." })}
             description={t("events.loadingContracts", {
               defaultValue: "Loading contracts for this event.",
+            })}
+          />
+        ) : error ? (
+          <EventEmptyState
+            title={t("events.loadContractsFailedTitle", {
+              defaultValue: "Unable to load contracts",
+            })}
+            description={t("events.loadContractsFailedDescription", {
+              defaultValue:
+                "The contracts for this event could not be loaded right now. Try again in a moment.",
             })}
           />
         ) : contracts.length ? (

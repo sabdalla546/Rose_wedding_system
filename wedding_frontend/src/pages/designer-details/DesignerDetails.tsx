@@ -166,6 +166,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const {
     data: eventContractsResponse,
     isLoading: contractsLoading,
+    isError: contractsLoadFailed,
   } = useContracts({
     currentPage: 1,
     itemsPerPage: 200,
@@ -433,9 +434,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 
   const handleCreateContract = () => {
     if (latestQuotation) {
-      navigate(
-        `/contracts/create?mode=from-quotation&quotationId=${latestQuotation.id}&eventId=${eventId}`,
-      );
+      const params = new URLSearchParams({
+        mode: "from-quotation",
+        quotationId: String(latestQuotation.id),
+        eventId,
+      });
+
+      navigate(`/contracts/create?${params.toString()}`);
       return;
     }
 
@@ -665,6 +670,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
             eventId={eventId}
             contracts={contracts}
             loading={contractsLoading}
+            error={contractsLoadFailed}
             onCreateContract={handleCreateContract}
             onCreateContractFromQuotation={handleCreateContract}
             onViewContract={(contractId) =>
