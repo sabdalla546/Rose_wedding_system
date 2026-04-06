@@ -4,12 +4,91 @@ import { useTranslation } from "react-i18next";
 
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
-import type { VenueFormData } from "@/pages/venues/types";
+import type {
+  VenueFormData,
+  VenueSpecifications,
+  VenueSpecificationFormData,
+} from "@/pages/venues/types";
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 };
+
+const toNullableNumber = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeEntrance = (
+  entrance: VenueSpecificationFormData["entrances"][number],
+) => ({
+  name: normalizeOptionalString(entrance.name) ?? null,
+  length: toNullableNumber(entrance.length),
+  width: toNullableNumber(entrance.width),
+  height: toNullableNumber(entrance.height),
+  pieceCount: toNullableNumber(entrance.pieceCount),
+});
+
+const buildSpecificationsPayload = (
+  specs: VenueSpecificationFormData,
+): VenueSpecifications => ({
+  hall: {
+    length: toNullableNumber(specs.hall.length),
+    width: toNullableNumber(specs.hall.width),
+    height: toNullableNumber(specs.hall.height),
+    sideCoveringPolicy: specs.hall.sideCoveringPolicy || null,
+  },
+  kosha: {
+    length: toNullableNumber(specs.kosha.length),
+    width: toNullableNumber(specs.kosha.width),
+    height: toNullableNumber(specs.kosha.height),
+    pieceCount: toNullableNumber(specs.kosha.pieceCount),
+    frameCount: toNullableNumber(specs.kosha.frameCount),
+    stairsCount: toNullableNumber(specs.kosha.stairsCount),
+    stairLength: toNullableNumber(specs.kosha.stairLength),
+    hasStage: specs.kosha.hasStage,
+    stage: {
+      length: toNullableNumber(specs.kosha.stage.length),
+      width: toNullableNumber(specs.kosha.stage.width),
+      height: toNullableNumber(specs.kosha.stage.height),
+    },
+  },
+  gate: {
+    length: toNullableNumber(specs.gate.length),
+    width: toNullableNumber(specs.gate.width),
+    height: toNullableNumber(specs.gate.height),
+    pieceCount: toNullableNumber(specs.gate.pieceCount),
+  },
+  door: {
+    length: toNullableNumber(specs.door.length),
+    width: toNullableNumber(specs.door.width),
+    height: toNullableNumber(specs.door.height),
+  },
+  entrances: specs.entrances.map(normalizeEntrance),
+  buffet: {
+    length: toNullableNumber(specs.buffet.length),
+    width: toNullableNumber(specs.buffet.width),
+    height: toNullableNumber(specs.buffet.height),
+  },
+  sides: {
+    length: toNullableNumber(specs.sides.length),
+    width: toNullableNumber(specs.sides.width),
+    height: toNullableNumber(specs.sides.height),
+    pieceCount: toNullableNumber(specs.sides.pieceCount),
+  },
+  lighting: {
+    hasHangingSupport: specs.lighting.hasHangingSupport,
+    hangingLength: toNullableNumber(specs.lighting.hangingLength),
+    hangingWidth: toNullableNumber(specs.lighting.hangingWidth),
+  },
+  hotelBleachers: {
+    available: specs.hotelBleachers.available,
+  },
+});
 
 const buildVenuePayload = (values: VenueFormData) => ({
   name: values.name.trim(),
@@ -20,6 +99,7 @@ const buildVenuePayload = (values: VenueFormData) => ({
   contactPerson: normalizeOptionalString(values.contactPerson),
   notes: normalizeOptionalString(values.notes),
   isActive: values.isActive,
+  specificationsJson: buildSpecificationsPayload(values.specificationsJson),
 });
 
 export const useCreateVenue = () => {

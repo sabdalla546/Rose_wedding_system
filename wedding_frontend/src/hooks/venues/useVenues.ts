@@ -42,6 +42,7 @@ export const useVenue = (id?: string) => {
     queryKey: ["venue", id],
     queryFn: async () => {
       const res = await api.get<VenueResponse>(`/venues/${id}`);
+      console.log("GET /venues/:id response", res.data);
       return res.data.data;
     },
     enabled: !!id,
