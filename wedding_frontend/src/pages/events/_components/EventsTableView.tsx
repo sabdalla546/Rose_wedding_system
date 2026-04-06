@@ -20,6 +20,11 @@ import {
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
+import {
+  SearchableSelect,
+  SearchableSelectEmpty,
+  SearchableSelectItem,
+} from "@/components/ui/searchable-select";
 import { buildEventsTableSummary } from "@/features/events/event-calendar";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
@@ -45,6 +50,8 @@ const fieldStyle = {
   borderColor: "var(--lux-control-border)",
 } as const;
 
+const EMPTY_FILTER_VALUE = "__all__";
+
 type EventsTableViewProps = {
   filters: EventsBusinessFilters;
   onFiltersChange: Dispatch<SetStateAction<EventsBusinessFilters>>;
@@ -59,6 +66,9 @@ export function EventsTableView({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [statusSearch, setStatusSearch] = useState("");
+  const [venueSearch, setVenueSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [deleteCandidate, setDeleteCandidate] = useState<TableEvent | null>(
     null,
   );
@@ -87,6 +97,65 @@ export function EventsTableView({
   const adapted = useMemo(() => toTableEvents(data), [data]);
   const customers = customersResponse?.data ?? [];
   const venues = venuesResponse?.data ?? [];
+  const statusOptions = useMemo(
+    () =>
+      EVENT_STATUS_OPTIONS.map((status) => ({
+        value: status.value,
+        label: t(`events.status.${status.value}`, {
+          defaultValue: status.label,
+        }),
+      })),
+    [t],
+  );
+  const filteredStatusOptions = useMemo(() => {
+    const query = statusSearch.trim().toLowerCase();
+
+    if (!query) {
+      return statusOptions;
+    }
+
+    return statusOptions.filter((status) =>
+      status.label.toLowerCase().includes(query),
+    );
+  }, [statusOptions, statusSearch]);
+  const customerOptions = useMemo(
+    () =>
+      customers.map((customer) => ({
+        value: String(customer.id),
+        label: customer.fullName,
+      })),
+    [customers],
+  );
+  const filteredCustomerOptions = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+
+    if (!query) {
+      return customerOptions;
+    }
+
+    return customerOptions.filter((customer) =>
+      customer.label.toLowerCase().includes(query),
+    );
+  }, [customerOptions, customerSearch]);
+  const venueOptions = useMemo(
+    () =>
+      venues.map((venue) => ({
+        value: String(venue.id),
+        label: venue.name,
+      })),
+    [venues],
+  );
+  const filteredVenueOptions = useMemo(() => {
+    const query = venueSearch.trim().toLowerCase();
+
+    if (!query) {
+      return venueOptions;
+    }
+
+    return venueOptions.filter((venue) =>
+      venue.label.toLowerCase().includes(query),
+    );
+  }, [venueOptions, venueSearch]);
   const tableEvents = adapted.data.events;
   const activeFiltersCount = [
     Boolean(filters.search.trim()),
@@ -231,12 +300,22 @@ export function EventsTableView({
   return (
     <>
       <WorkflowModuleDashboard
+        eyebrow={t("events.workflowDashboardEyebrow", {
+          defaultValue: "Workflow Dashboard",
+        })}
         title={t("events.workflowDashboard", {
           defaultValue: "Event Workflow Visibility",
         })}
         description={t("events.workflowDashboardHint", {
           defaultValue:
             "See which events are still being designed, waiting on commercial progress, confirmed, or already blocked.",
+        })}
+        statusesTitle={t("events.statusDistributionTitle", {
+          defaultValue: "Status Distribution",
+        })}
+        statusesDescription={t("events.statusDistributionHint", {
+          defaultValue:
+            "Use these quick filters to jump into the current workflow queue.",
         })}
         metrics={[
           {
@@ -368,6 +447,12 @@ export function EventsTableView({
           </div>
         }
         loading={workflowSummary.isLoading}
+        showContentLabel={t("events.showWorkflowDashboard", {
+          defaultValue: "Show Dashboard",
+        })}
+        hideContentLabel={t("events.hideWorkflowDashboard", {
+          defaultValue: "Hide Dashboard",
+        })}
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -443,81 +528,154 @@ export function EventsTableView({
             <WorkspaceFilterField
               label={t("events.statusLabel", { defaultValue: "Status" })}
             >
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
+              <SearchableSelect
                 value={filters.status}
-                onChange={(event) => {
+                onValueChange={(value) => {
                   onFiltersChange((current) => ({
                     ...current,
-                    status: event.target.value as "all" | EventStatus,
+                    status: value as "all" | EventStatus,
                   }));
                   setCurrentPage(1);
                 }}
+                onSearch={setStatusSearch}
+                placeholder={t("events.allStatuses", {
+                  defaultValue: "All Statuses",
+                })}
+                searchPlaceholder={t("common.search", {
+                  defaultValue: "search",
+                })}
+                emptyMessage={t("common.noResultsTitle", {
+                  defaultValue: "No results found",
+                })}
+                allowClear={filters.status !== "all"}
+                onClear={() => {
+                  onFiltersChange((current) => ({
+                    ...current,
+                    status: "all",
+                  }));
+                  setCurrentPage(1);
+                }}
+                triggerClassName={filterFieldClassName}
               >
-                <option value="all">
+                <SearchableSelectItem value="all">
                   {t("events.allStatuses", { defaultValue: "All Statuses" })}
-                </option>
-                {EVENT_STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {t(`events.status.${status.value}`, {
-                      defaultValue: status.label,
+                </SearchableSelectItem>
+                {filteredStatusOptions.length === 0 ? (
+                  <SearchableSelectEmpty
+                    message={t("common.noResultsTitle", {
+                      defaultValue: "No results found",
                     })}
-                  </option>
+                  />
+                ) : null}
+                {filteredStatusOptions.map((status) => (
+                  <SearchableSelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SearchableSelectItem>
                 ))}
-              </select>
+              </SearchableSelect>
             </WorkspaceFilterField>
 
             <WorkspaceFilterField
               label={t("common.venue", { defaultValue: "Venue" })}
             >
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
-                value={filters.venueId}
-                onChange={(event) => {
+              <SearchableSelect
+                value={filters.venueId || EMPTY_FILTER_VALUE}
+                onValueChange={(value) => {
                   onFiltersChange((current) => ({
                     ...current,
-                    venueId: event.target.value,
+                    venueId: value === EMPTY_FILTER_VALUE ? "" : value,
                   }));
                   setCurrentPage(1);
                 }}
+                onSearch={setVenueSearch}
+                placeholder={t("events.allVenues", {
+                  defaultValue: "All Venues",
+                })}
+                searchPlaceholder={t("events.searchVenues", {
+                  defaultValue: "Search venues...",
+                })}
+                emptyMessage={t("common.noResultsTitle", {
+                  defaultValue: "No results found",
+                })}
+                allowClear={Boolean(filters.venueId)}
+                onClear={() => {
+                  onFiltersChange((current) => ({
+                    ...current,
+                    venueId: "",
+                  }));
+                  setCurrentPage(1);
+                }}
+                triggerClassName={filterFieldClassName}
               >
-                <option value="">
+                <SearchableSelectItem value={EMPTY_FILTER_VALUE}>
                   {t("events.allVenues", { defaultValue: "All Venues" })}
-                </option>
-                {venues.map((venue) => (
-                  <option key={venue.id} value={String(venue.id)}>
-                    {venue.name}
-                  </option>
+                </SearchableSelectItem>
+                {filteredVenueOptions.length === 0 ? (
+                  <SearchableSelectEmpty
+                    message={t("common.noResultsTitle", {
+                      defaultValue: "No results found",
+                    })}
+                  />
+                ) : null}
+                {filteredVenueOptions.map((venue) => (
+                  <SearchableSelectItem key={venue.value} value={venue.value}>
+                    {venue.label}
+                  </SearchableSelectItem>
                 ))}
-              </select>
+              </SearchableSelect>
             </WorkspaceFilterField>
 
             <WorkspaceFilterField
               label={t("events.customer", { defaultValue: "Customer" })}
             >
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
-                value={filters.customerId}
-                onChange={(event) => {
+              <SearchableSelect
+                value={filters.customerId || EMPTY_FILTER_VALUE}
+                onValueChange={(value) => {
                   onFiltersChange((current) => ({
                     ...current,
-                    customerId: event.target.value,
+                    customerId: value === EMPTY_FILTER_VALUE ? "" : value,
                   }));
                   setCurrentPage(1);
                 }}
+                onSearch={setCustomerSearch}
+                placeholder={t("events.allCustomers", {
+                  defaultValue: "All Customers",
+                })}
+                searchPlaceholder={t("events.searchCustomers", {
+                  defaultValue: "Search customers...",
+                })}
+                emptyMessage={t("common.noResultsTitle", {
+                  defaultValue: "No results found",
+                })}
+                allowClear={Boolean(filters.customerId)}
+                onClear={() => {
+                  onFiltersChange((current) => ({
+                    ...current,
+                    customerId: "",
+                  }));
+                  setCurrentPage(1);
+                }}
+                triggerClassName={filterFieldClassName}
               >
-                <option value="">
+                <SearchableSelectItem value={EMPTY_FILTER_VALUE}>
                   {t("events.allCustomers", { defaultValue: "All Customers" })}
-                </option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={String(customer.id)}>
-                    {customer.fullName}
-                  </option>
+                </SearchableSelectItem>
+                {filteredCustomerOptions.length === 0 ? (
+                  <SearchableSelectEmpty
+                    message={t("common.noResultsTitle", {
+                      defaultValue: "No results found",
+                    })}
+                  />
+                ) : null}
+                {filteredCustomerOptions.map((customer) => (
+                  <SearchableSelectItem
+                    key={customer.value}
+                    value={customer.value}
+                  >
+                    {customer.label}
+                  </SearchableSelectItem>
                 ))}
-              </select>
+              </SearchableSelect>
             </WorkspaceFilterField>
 
             <WorkspaceFilterField

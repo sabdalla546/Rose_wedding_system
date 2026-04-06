@@ -123,6 +123,86 @@ function ItemKindBadge({
   );
 }
 
+const getLocalizedQuotationWorkflowAction = (
+  action: WorkflowActionDefinition,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): Partial<
+  Pick<
+    WorkflowActionDefinition,
+    "label" | "description" | "confirmTitle" | "confirmMessage"
+  >
+> => {
+  switch (action.key) {
+    case "send_quotation":
+      return {
+        label: t("quotations.sendQuotationAction", {
+          defaultValue: "Send Quotation",
+        }),
+        description: t("quotations.sendQuotationActionHint", {
+          defaultValue: "Mark the quotation as sent to the customer.",
+        }),
+      };
+    case "approve_quotation":
+      return {
+        label: t("quotations.approveQuotationAction", {
+          defaultValue: "Approve Quotation",
+        }),
+        description: t("quotations.approveQuotationActionHint", {
+          defaultValue: "Make this quotation the approved commercial basis.",
+        }),
+      };
+    case "reject_quotation":
+      return {
+        label: t("quotations.rejectQuotationAction", {
+          defaultValue: "Reject Quotation",
+        }),
+        description: t("quotations.rejectQuotationActionHint", {
+          defaultValue: "Record that the quotation was rejected.",
+        }),
+        confirmTitle: t("quotations.rejectQuotationConfirmTitle", {
+          defaultValue: "Reject quotation?",
+        }),
+        confirmMessage: t("quotations.rejectQuotationConfirmMessage", {
+          defaultValue: "This quotation will be marked as rejected.",
+        }),
+      };
+    case "expire_quotation":
+      return {
+        label: t("quotations.expireQuotationAction", {
+          defaultValue: "Expire Quotation",
+        }),
+        description: t("quotations.expireQuotationActionHint", {
+          defaultValue: "Mark the quotation as expired.",
+        }),
+        confirmTitle: t("quotations.expireQuotationConfirmTitle", {
+          defaultValue: "Expire quotation?",
+        }),
+        confirmMessage: t("quotations.expireQuotationConfirmMessage", {
+          defaultValue: "This quotation will be marked as expired.",
+        }),
+      };
+    case "supersede_quotation":
+      return {
+        label: t("quotations.supersedeQuotationAction", {
+          defaultValue: "Supersede Quotation",
+        }),
+        description: t("quotations.supersedeQuotationActionHint", {
+          defaultValue:
+            "Retire this quotation in favor of a newer commercial version.",
+        }),
+        confirmTitle: t("quotations.supersedeQuotationConfirmTitle", {
+          defaultValue: "Supersede quotation?",
+        }),
+        confirmMessage: t("quotations.supersedeQuotationConfirmMessage", {
+          defaultValue:
+            "This quotation will no longer be the active commercial option.",
+        }),
+      };
+    default:
+      return {};
+  }
+};
+
 const QuotationDetailsPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -249,7 +329,12 @@ const QuotationDetailsPage = () => {
     );
   }
 
-  const quotationLockMessage = getQuotationLockMessage(quotation.status);
+  const quotationLockMessage = getQuotationLockMessage(quotation.status)
+    ? t("quotations.lockedMessage", {
+        defaultValue:
+          "Commercial fields are read-only because this quotation is approved or superseded.",
+      })
+    : null;
   const canCreateContract = canCreateContractFromQuotation(quotation.status);
   const workflowActionIcons = {
     sent: <ArrowRight className="h-4 w-4" />,
@@ -259,27 +344,34 @@ const QuotationDetailsPage = () => {
     superseded: <ArrowRight className="h-4 w-4" />,
   } as const;
   const workflowActions = getQuotationWorkflowActions(quotation.status).map(
-    (action) => ({
-      ...action,
-      icon: action.nextStatus
-        ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
-        : undefined,
-      loading:
-        workflowActionMutation.isPending &&
-        action.nextStatus === workflowActionMutation.variables?.status,
-      onClick: () => {
-        if (action.confirmTitle || action.confirmMessage) {
-          setPendingWorkflowAction(action);
-          return;
-        }
+    (action) => {
+      const localizedAction = {
+        ...action,
+        ...getLocalizedQuotationWorkflowAction(action, t),
+      };
 
-        if (action.nextStatus) {
-          workflowActionMutation.mutate({
-            status: action.nextStatus as typeof quotation.status,
-          });
-        }
-      },
-    }),
+      return {
+        ...localizedAction,
+        icon: action.nextStatus
+          ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
+          : undefined,
+        loading:
+          workflowActionMutation.isPending &&
+          action.nextStatus === workflowActionMutation.variables?.status,
+        onClick: () => {
+          if (localizedAction.confirmTitle || localizedAction.confirmMessage) {
+            setPendingWorkflowAction(localizedAction);
+            return;
+          }
+
+          if (action.nextStatus) {
+            workflowActionMutation.mutate({
+              status: action.nextStatus as typeof quotation.status,
+            });
+          }
+        },
+      };
+    },
   );
   const nextSteps: WorkflowNextStepItem[] = [];
   const timelineItems: WorkflowTimelineItem[] = [
@@ -327,7 +419,12 @@ const QuotationDetailsPage = () => {
       }),
       description: t("quotations.timelineContractCreatedHint", {
         defaultValue: "Downstream contract {{contract}} now carries the commitment workflow.",
-        contract: latestDownstreamContract.contractNumber || `#${latestDownstreamContract.id}`,
+        contract:
+          latestDownstreamContract.contractNumber ||
+          t("quotations.contractReference", {
+            defaultValue: "Contract #{{id}}",
+            id: latestDownstreamContract.id,
+          }),
       }),
       timestamp:
         latestDownstreamContract.createdAt ?? latestDownstreamContract.signedDate,
@@ -439,9 +536,10 @@ const QuotationDetailsPage = () => {
             description={
               quotation.event
                 ? getEventDisplayTitle(quotation.event)
-                : `${t("quotations.event", {
-                    defaultValue: "Event",
-                  })} #${quotation.eventId}`
+                : t("quotations.eventReference", {
+                    defaultValue: "Event #{{id}}",
+                    id: quotation.eventId,
+                  })
             }
             status={<QuotationStatusBadge status={quotation.status} />}
             actions={
@@ -519,7 +617,10 @@ const QuotationDetailsPage = () => {
                   >
                     {quotation.event
                       ? getEventDisplayTitle(quotation.event)
-                      : `Event #${quotation.eventId}`}
+                      : t("quotations.eventReference", {
+                          defaultValue: "Event #{{id}}",
+                          id: quotation.eventId,
+                        })}
                   </button>
                 ),
                 helper: quotation.event?.eventDate
@@ -533,7 +634,7 @@ const QuotationDetailsPage = () => {
                 value:
                   quotation.event?.customer?.fullName ||
                   quotation.customer?.fullName ||
-                  t("quotations.noCustomerLinked", {
+                  t("quotations.noCustomerAvailable", {
                     defaultValue: "No customer linked",
                   }),
                 helper:
@@ -563,7 +664,10 @@ const QuotationDetailsPage = () => {
                     className="text-sm font-medium text-[var(--lux-gold)] hover:underline"
                   >
                     {latestDownstreamContract.contractNumber ||
-                      `Contract #${latestDownstreamContract.id}`}
+                      t("quotations.contractReference", {
+                        defaultValue: "Contract #{{id}}",
+                        id: latestDownstreamContract.id,
+                      })}
                   </button>
                 ) : canCreateContract
                   ? t("quotations.readyToCreateContract", {
@@ -708,7 +812,10 @@ const QuotationDetailsPage = () => {
                   value={
                     quotation.event
                       ? getEventDisplayTitle(quotation.event)
-                      : `Event #${quotation.eventId}`
+                      : t("quotations.eventReference", {
+                          defaultValue: "Event #{{id}}",
+                          id: quotation.eventId,
+                        })
                   }
                 />
                 <DetailItem

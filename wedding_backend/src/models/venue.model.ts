@@ -1,6 +1,66 @@
-// src/models/venue.model.ts
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+
+export interface VenueSpecifications {
+  hall?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+    sideCoveringPolicy?: "allowed" | "not_allowed" | null;
+  } | null;
+  kosha?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+    pieceCount?: number | null;
+    frameCount?: number | null;
+    stairsCount?: number | null;
+    stairLength?: number | null;
+    hasStage?: boolean;
+    stage?: {
+      length?: number | null;
+      width?: number | null;
+      height?: number | null;
+    } | null;
+  } | null;
+  gate?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+    pieceCount?: number | null;
+  } | null;
+  door?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  entrances?: Array<{
+    name?: string | null;
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+    pieceCount?: number | null;
+  }> | null;
+  buffet?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  sides?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+    pieceCount?: number | null;
+  } | null;
+  lighting?: {
+    hasHangingSupport?: boolean;
+    hangingLength?: number | null;
+    hangingWidth?: number | null;
+  } | null;
+  hotelBleachers?: {
+    available?: boolean;
+  } | null;
+}
 
 export interface VenueAttributes {
   id: number;
@@ -12,6 +72,7 @@ export interface VenueAttributes {
   contactPerson?: string | null;
   notes?: string | null;
   isActive: boolean;
+  specificationsJson?: VenueSpecifications | null;
 }
 
 type VenueCreationAttributes = Optional<
@@ -24,6 +85,7 @@ type VenueCreationAttributes = Optional<
   | "contactPerson"
   | "notes"
   | "isActive"
+  | "specificationsJson"
 >;
 
 export class Venue
@@ -39,6 +101,7 @@ export class Venue
   public contactPerson?: string | null;
   public notes?: string | null;
   public isActive!: boolean;
+  public specificationsJson?: VenueSpecifications | null;
 }
 
 Venue.init(
@@ -89,6 +152,11 @@ Venue.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+
+    specificationsJson: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
   },
   {

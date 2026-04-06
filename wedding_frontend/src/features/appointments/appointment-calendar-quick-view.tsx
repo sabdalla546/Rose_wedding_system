@@ -156,16 +156,6 @@ export function AppointmentQuickView({
             value={customerName}
             icon={UserRound}
           />
-          <QuickFact
-            label={t("appointments.assignedUser", {
-              defaultValue: "Assigned User / Coordinator",
-            })}
-            value={
-              appointment.createdByUser?.fullName ||
-              t("appointments.unassigned", { defaultValue: "Unassigned" })
-            }
-            icon={UserRound}
-          />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

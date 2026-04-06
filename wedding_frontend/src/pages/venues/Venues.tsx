@@ -5,15 +5,18 @@ import { useTranslation } from "react-i18next";
 
 import CompactHeader from "@/components/common/CompactHeader";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import {
-  CrudFilterField,
-  CrudFilters,
-  CrudPageLayout,
-} from "@/components/shared/crud-layout";
+import { CrudPageLayout } from "@/components/shared/crud-layout";
 import { DataTableShell } from "@/components/shared/data-table-shell";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDeleteVenue } from "@/hooks/venues/useDeleteVenue";
 import { useVenues } from "@/hooks/venues/useVenues";
 
@@ -95,50 +98,58 @@ const VenuesPage = () => {
             onSubmit: handleSearchSubmit,
           }}
           right={
-            <ProtectedComponent permission={createPermission}>
-              <Button
-                size="sm"
-                onClick={() => navigate("/settings/venues/create")}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("venues.create", { defaultValue: "Create Venue" })}
-              </Button>
-            </ProtectedComponent>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+              <div className="w-full sm:w-[220px]">
+                <label className="sr-only" htmlFor="venues-status-filter">
+                  {t("venues.statusFilter", { defaultValue: "Status Filter" })}
+                </label>
+                <Select
+                  value={isActiveFilter}
+                  onValueChange={(value) => {
+                    setIsActiveFilter(value as "all" | "true" | "false");
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-9 rounded-[14px] px-3 text-[13px]"
+                    id="venues-status-filter"
+                  >
+                    <SelectValue
+                      placeholder={t("venues.allStatuses", {
+                        defaultValue: "All Venues",
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t("venues.allStatuses", {
+                        defaultValue: "All Venues",
+                      })}
+                    </SelectItem>
+                    <SelectItem value="true">
+                      {t("venues.activeOnly", { defaultValue: "Active Only" })}
+                    </SelectItem>
+                    <SelectItem value="false">
+                      {t("venues.inactiveOnly", {
+                        defaultValue: "Inactive Only",
+                      })}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <ProtectedComponent permission={createPermission}>
+                <Button
+                  size="sm"
+                  onClick={() => navigate("/settings/venues/create")}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("venues.create", { defaultValue: "Create Venue" })}
+                </Button>
+              </ProtectedComponent>
+            </div>
           }
         />
-
-        <CrudFilters
-          title={t("common.filters", { defaultValue: "Filters" })}
-          description={t("venues.filterDescription", {
-            defaultValue: "Refine venue records by active availability.",
-          })}
-          contentClassName="md:grid-cols-[minmax(0,220px)]"
-        >
-          <CrudFilterField
-            label={t("venues.statusFilter", { defaultValue: "Status Filter" })}
-          >
-              <select
-                className="app-native-select"
-                value={isActiveFilter}
-                onChange={(event) => {
-                  setIsActiveFilter(
-                    event.target.value as "all" | "true" | "false",
-                  );
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="all">
-                  {t("venues.allStatuses", { defaultValue: "All Venues" })}
-                </option>
-                <option value="true">
-                  {t("venues.activeOnly", { defaultValue: "Active Only" })}
-                </option>
-                <option value="false">
-                  {t("venues.inactiveOnly", { defaultValue: "Inactive Only" })}
-                </option>
-              </select>
-          </CrudFilterField>
-        </CrudFilters>
 
         <DataTableShell
           title={t("venues.listTitle", { defaultValue: "Venues List" })}

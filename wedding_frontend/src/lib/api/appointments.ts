@@ -126,7 +126,6 @@ export const appointmentsApi = {
     dateFrom: string;
     dateTo: string;
     status?: string;
-    assignedUserId?: number;
     customerId?: number;
     search?: string;
   }) {

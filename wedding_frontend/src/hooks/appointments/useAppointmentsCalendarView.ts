@@ -10,7 +10,6 @@ import type { Appointment } from "@/pages/appointments/types";
 export type AppointmentCalendarFilters = {
   search: string;
   status: "all" | Appointment["status"];
-  assignedUserId: string;
   customerId: string;
   dateFrom: string;
   dateTo: string;
@@ -20,7 +19,6 @@ export function getInitialAppointmentCalendarFilters(): AppointmentCalendarFilte
   return {
     search: "",
     status: "all",
-    assignedUserId: "all",
     customerId: "all",
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: "",
@@ -59,8 +57,6 @@ export function useAppointmentsCalendarView() {
     dateFrom,
     dateTo,
     status: filters.status,
-    assignedUserId:
-      filters.assignedUserId !== "all" ? filters.assignedUserId : "",
     customerId: filters.customerId !== "all" ? filters.customerId : "",
     search: searchQuery,
   });
@@ -81,7 +77,6 @@ export function useAppointmentsCalendarView() {
       [
         Boolean(filters.search.trim()),
         filters.status !== "all",
-        filters.assignedUserId !== "all",
         filters.customerId !== "all",
         Boolean(filters.dateFrom.trim()),
         Boolean(filters.dateTo.trim()),

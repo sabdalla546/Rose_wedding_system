@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import type { WorkflowActionDefinition } from "@/lib/workflow/workflow";
@@ -19,6 +20,8 @@ export function WorkflowActionBar({
   description?: string;
   actions: WorkflowActionItem[];
 }) {
+  const { t } = useTranslation();
+
   if (!actions.length) {
     return null;
   }
@@ -46,7 +49,9 @@ export function WorkflowActionBar({
               onClick={action.onClick}
             >
               {action.icon}
-              {action.loading ? "Processing..." : action.label}
+              {action.loading
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : action.label}
             </Button>
           ))}
         </div>

@@ -24,6 +24,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  SearchableSelect,
+  SearchableSelectEmpty,
+  SearchableSelectItem,
+} from "@/components/ui/searchable-select";
+import {
   AppointmentQuickView,
   AppointmentQuickViewDialog,
 } from "@/features/appointments/appointment-calendar-quick-view";
@@ -38,7 +43,6 @@ import {
 } from "@/hooks/appointments/useAppointmentActions";
 import { useAppointmentsCalendarView } from "@/hooks/appointments/useAppointmentsCalendarView";
 import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useUsers } from "@/hooks/users/useUsers";
 import { APPOINTMENT_STATUS_OPTIONS } from "@/pages/appointments/adapters";
 import type { Appointment } from "@/pages/appointments/types";
 
@@ -52,6 +56,8 @@ const fieldStyle = {
 
 const textareaClassName =
   "min-h-[110px] w-full rounded-[6px] border px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
+
+const FILTER_ALL_VALUE = "all";
 
 type ActionTarget = Appointment | null;
 
@@ -272,15 +278,11 @@ export function AppointmentsCalendarView({
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
   const [rescheduleNotes, setRescheduleNotes] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const confirmAppointment = useConfirmAppointment();
   const cancelAppointment = useCancelAppointment();
   const rescheduleAppointment = useRescheduleAppointment();
-  const { data: usersResponse } = useUsers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-  });
   const { data: customersResponse } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
@@ -317,15 +319,6 @@ export function AppointmentsCalendarView({
     return items[0] ?? null;
   }, [items, selectedAppointmentId]);
 
-  const assignedUserOptions = useMemo(
-    () =>
-      (usersResponse?.data ?? []).map((user) => ({
-        value: String(user.id),
-        label: user.fullName,
-      })),
-    [usersResponse?.data],
-  );
-
   const customerOptions = useMemo(
     () =>
       (customersResponse?.data ?? []).map((customer) => ({
@@ -334,6 +327,17 @@ export function AppointmentsCalendarView({
       })),
     [customersResponse?.data],
   );
+  const filteredCustomerOptions = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+
+    if (!query) {
+      return customerOptions;
+    }
+
+    return customerOptions.filter((option) =>
+      option.label.toLowerCase().includes(query),
+    );
+  }, [customerOptions, customerSearch]);
 
   const openCancelDialog = (appointment: Appointment) => {
     setDetailsDialogOpen(false);
@@ -366,16 +370,6 @@ export function AppointmentsCalendarView({
         label={t(`appointments.status.${filters.status}`, {
           defaultValue: filters.status,
         })}
-      />
-    ) : null,
-    filters.assignedUserId !== "all" ? (
-      <WorkspaceFilterPill
-        key="assigned"
-        label={
-          assignedUserOptions.find(
-            (option) => option.value === filters.assignedUserId,
-          )?.label ?? filters.assignedUserId
-        }
       />
     ) : null,
     filters.customerId !== "all" ? (
@@ -445,86 +439,96 @@ export function AppointmentsCalendarView({
                 }
                 placeholder={t("appointments.calendarPage.searchPlaceholder", {
                   defaultValue:
-                    "Search customers, notes, mobile numbers, or assigned users...",
+                    "Search customers, notes, or mobile numbers...",
                 })}
               />
             </WorkspaceFilterField>
 
             <WorkspaceFilterField label={t("appointments.statusLabel")}>
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
+              <SearchableSelect
                 value={filters.status}
-                onChange={(event) =>
+                onValueChange={(value) =>
                   setFilters((current) => ({
                     ...current,
-                    status: event.target.value as typeof filters.status,
+                    status: value as typeof filters.status,
                   }))
                 }
+                placeholder={t("appointments.allStatuses", {
+                  defaultValue: "All Statuses",
+                })}
+                searchPlaceholder={t("appointments.calendarPage.searchLabel", {
+                  defaultValue: "Search",
+                })}
+                allowClear={filters.status !== FILTER_ALL_VALUE}
+                onClear={() =>
+                  setFilters((current) => ({
+                    ...current,
+                    status: FILTER_ALL_VALUE,
+                  }))
+                }
+                triggerClassName={filterFieldClassName}
               >
-                <option value="all">
+                <SearchableSelectItem value={FILTER_ALL_VALUE}>
                   {t("appointments.allStatuses", {
                     defaultValue: "All Statuses",
                   })}
-                </option>
+                </SearchableSelectItem>
                 {APPOINTMENT_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <SearchableSelectItem key={option.value} value={option.value}>
                     {t(`appointments.status.${option.value}`, {
                       defaultValue: option.label,
                     })}
-                  </option>
+                  </SearchableSelectItem>
                 ))}
-              </select>
-            </WorkspaceFilterField>
-
-            <WorkspaceFilterField label={t("appointments.assignedUser")}>
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
-                value={filters.assignedUserId}
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    assignedUserId: event.target.value,
-                  }))
-                }
-              >
-                <option value="all">
-                  {t("appointments.calendarPage.allAssignedUsers", {
-                    defaultValue: "All assigned users",
-                  })}
-                </option>
-                {assignedUserOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              </SearchableSelect>
             </WorkspaceFilterField>
 
             <WorkspaceFilterField label={t("appointments.customer")}>
-              <select
-                className={filterFieldClassName}
-                style={fieldStyle}
+              <SearchableSelect
                 value={filters.customerId}
-                onChange={(event) =>
+                onValueChange={(value) =>
                   setFilters((current) => ({
                     ...current,
-                    customerId: event.target.value,
+                    customerId: value,
                   }))
                 }
+                onSearch={setCustomerSearch}
+                placeholder={t("appointments.calendarPage.allCustomers", {
+                  defaultValue: "All customers",
+                })}
+                searchPlaceholder={t("appointments.calendarPage.searchLabel", {
+                  defaultValue: "Search",
+                })}
+                emptyMessage={t("common.noResultsTitle", {
+                  defaultValue: "No results found",
+                })}
+                allowClear={filters.customerId !== FILTER_ALL_VALUE}
+                onClear={() =>
+                  setFilters((current) => ({
+                    ...current,
+                    customerId: FILTER_ALL_VALUE,
+                  }))
+                }
+                triggerClassName={filterFieldClassName}
               >
-                <option value="all">
+                <SearchableSelectItem value={FILTER_ALL_VALUE}>
                   {t("appointments.calendarPage.allCustomers", {
                     defaultValue: "All customers",
                   })}
-                </option>
-                {customerOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
+                </SearchableSelectItem>
+                {filteredCustomerOptions.length === 0 ? (
+                  <SearchableSelectEmpty
+                    message={t("common.noResultsTitle", {
+                      defaultValue: "No results found",
+                    })}
+                  />
+                ) : null}
+                {filteredCustomerOptions.map((option) => (
+                  <SearchableSelectItem key={option.value} value={option.value}>
                     {option.label}
-                  </option>
+                  </SearchableSelectItem>
                 ))}
-              </select>
+              </SearchableSelect>
             </WorkspaceFilterField>
 
             <WorkspaceFilterField

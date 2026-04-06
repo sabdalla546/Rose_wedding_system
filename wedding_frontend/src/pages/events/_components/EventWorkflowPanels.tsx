@@ -375,7 +375,8 @@ export function EventContractsPanel({
                       </div>
                     </TableCell>
                     <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                      <span dir="auto">{contract.customer?.fullName ||
+                      <span dir="auto">{contract.event?.customer?.fullName ||
+                        contract.customer?.fullName ||
                         t("events.noContractParty", {
                           defaultValue: "No customer or lead linked",
                         })}</span>

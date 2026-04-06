@@ -63,14 +63,12 @@ export const useAppointmentsCalendar = ({
   dateFrom,
   dateTo,
   status = "all",
-  assignedUserId = "",
   customerId = "",
   search = "",
 }: {
   dateFrom: string;
   dateTo: string;
   status?: "all" | Appointment["status"];
-  assignedUserId?: string;
   customerId?: string;
   search?: string;
 }) => {
@@ -80,7 +78,6 @@ export const useAppointmentsCalendar = ({
       dateFrom,
       dateTo,
       status,
-      assignedUserId,
       customerId,
       search,
     ],
@@ -89,7 +86,6 @@ export const useAppointmentsCalendar = ({
         dateFrom,
         dateTo,
         status: status === "all" ? undefined : status,
-        assignedUserId: assignedUserId ? Number(assignedUserId) : undefined,
         customerId: customerId ? Number(customerId) : undefined,
         search: search?.trim() ? search.trim() : undefined,
       }),

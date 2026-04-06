@@ -1,26 +1,32 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize";
-import { ZodError } from "zod";
-import { Venue } from "../models";
-import {
-  createVenueSchema,
-  updateVenueSchema,
-} from "../validation/venue.schemas";
+import { Op, WhereOptions } from "sequelize";
+import { Appointment, Event, Venue } from "../models";
+import type { VenueSpecifications } from "../models/venue.model";
 
 export const createVenue = async (req: Request, res: Response) => {
   try {
-    const data = createVenueSchema.parse(req.body);
+    const data = req.body as {
+      name: string;
+      city?: string | null;
+      area?: string | null;
+      address?: string | null;
+      phone?: string | null;
+      contactPerson?: string | null;
+      notes?: string | null;
+      isActive?: boolean;
+      specificationsJson?: VenueSpecifications | null;
+    };
 
     const existing = await Venue.findOne({
-      where: { name: data.name.trim() },
+      where: { name: data.name },
     });
 
     if (existing) {
-      return res.status(409).json({ message: "Venue name already exists" });
+      return res.status(409).json({ message: req.t("venues.name_exists") });
     }
 
     const venue = await Venue.create({
-      name: data.name.trim(),
+      name: data.name,
       city: data.city ?? null,
       area: data.area ?? null,
       address: data.address ?? null,
@@ -28,46 +34,46 @@ export const createVenue = async (req: Request, res: Response) => {
       contactPerson: data.contactPerson ?? null,
       notes: data.notes ?? null,
       isActive: data.isActive ?? true,
+      specificationsJson: data.specificationsJson ?? null,
     });
 
     return res.status(201).json({
-      message: "Venue created successfully",
+      message: req.t("venues.created_successfully"),
       data: venue,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
 
 export const getVenues = async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 20;
+  const query = req.query as {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isActive?: boolean;
+  };
+
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 20;
   const offset = (page - 1) * limit;
-  const search = String(req.query.search ?? "").trim();
-  const isActive =
-    typeof req.query.isActive !== "undefined"
-      ? String(req.query.isActive) === "true"
-      : undefined;
+  const search = query.search ?? "";
+  const isActive = query.isActive;
 
-  const where: any = {};
+  const orConditions = search
+    ? [
+        { name: { [Op.like]: `%${search}%` } },
+        { city: { [Op.like]: `%${search}%` } },
+        { area: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { contactPerson: { [Op.like]: `%${search}%` } },
+      ]
+    : undefined;
 
-  if (search) {
-    where[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { city: { [Op.like]: `%${search}%` } },
-      { area: { [Op.like]: `%${search}%` } },
-      { phone: { [Op.like]: `%${search}%` } },
-      { contactPerson: { [Op.like]: `%${search}%` } },
-    ];
-  }
-
-  if (typeof isActive === "boolean") {
-    where.isActive = isActive;
-  }
+  const where: WhereOptions = {
+    ...(orConditions ? { [Op.or]: orConditions } : {}),
+    ...(typeof isActive === "boolean" ? { isActive } : {}),
+  };
 
   const { count, rows } = await Venue.findAndCountAll({
     where,
@@ -88,11 +94,7 @@ export const getVenues = async (req: Request, res: Response) => {
 };
 
 export const getVenueById = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ message: req.t("common.invalid_id") });
-  }
+  const { id } = req.params as unknown as { id: number };
 
   const venue = await Venue.findByPk(id);
 
@@ -105,13 +107,19 @@ export const getVenueById = async (req: Request, res: Response) => {
 
 export const updateVenue = async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const { id } = req.params as unknown as { id: number };
 
-    if (!id) {
-      return res.status(400).json({ message: req.t("common.invalid_id") });
-    }
-
-    const data = updateVenueSchema.parse(req.body);
+    const data = req.body as {
+      name?: string;
+      city?: string | null;
+      area?: string | null;
+      address?: string | null;
+      phone?: string | null;
+      contactPerson?: string | null;
+      notes?: string | null;
+      isActive?: boolean;
+      specificationsJson?: VenueSpecifications | null;
+    };
 
     const venue = await Venue.findByPk(id);
 
@@ -119,18 +127,21 @@ export const updateVenue = async (req: Request, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    if (data.name && data.name.trim() !== venue.name) {
+    if (typeof data.name !== "undefined" && data.name !== venue.name) {
       const exists = await Venue.findOne({
-        where: { name: data.name.trim() },
+        where: {
+          name: data.name,
+          id: { [Op.ne]: id },
+        },
       });
 
       if (exists) {
-        return res.status(409).json({ message: "Venue name already exists" });
+        return res.status(409).json({ message: req.t("venues.name_exists") });
       }
     }
 
     await venue.update({
-      name: data.name?.trim() ?? venue.name,
+      name: typeof data.name !== "undefined" ? data.name : venue.name,
       city: typeof data.city !== "undefined" ? data.city : venue.city,
       area: typeof data.area !== "undefined" ? data.area : venue.area,
       address:
@@ -143,6 +154,10 @@ export const updateVenue = async (req: Request, res: Response) => {
       notes: typeof data.notes !== "undefined" ? data.notes : venue.notes,
       isActive:
         typeof data.isActive === "boolean" ? data.isActive : venue.isActive,
+      specificationsJson:
+        typeof data.specificationsJson !== "undefined"
+          ? data.specificationsJson
+          : venue.specificationsJson,
     });
 
     return res.json({
@@ -150,25 +165,40 @@ export const updateVenue = async (req: Request, res: Response) => {
       data: venue,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
 
 export const deleteVenue = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ message: req.t("common.invalid_id") });
-  }
+  const { id } = req.params as unknown as { id: number };
 
   const venue = await Venue.findByPk(id);
 
   if (!venue) {
     return res.status(404).json({ message: req.t("common.not_found") });
+  }
+
+  const [appointmentsCount, eventsCount] = await Promise.all([
+    Appointment.count({
+      where: {
+        venueId: id,
+      },
+    }),
+    Event.count({
+      where: {
+        venueId: id,
+      },
+    }),
+  ]);
+
+  if (appointmentsCount > 0 || eventsCount > 0) {
+    return res.status(409).json({
+      message: req.t("venues.cannot_delete_linked"),
+      details: {
+        appointmentsCount,
+        eventsCount,
+      },
+    });
   }
 
   await venue.destroy();

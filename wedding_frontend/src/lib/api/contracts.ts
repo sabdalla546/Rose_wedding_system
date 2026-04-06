@@ -5,6 +5,8 @@ import type {
   ContractStatus,
 } from "@/pages/contracts/types";
 
+const MAX_CONTRACTS_PAGE_SIZE = 100;
+
 const normalizeContractsResponse = (
   payload: unknown,
   fallbackPage: number,
@@ -66,10 +68,16 @@ export const contractsApi = {
     signedDateFrom: string;
     signedDateTo: string;
   }) {
+    const currentPage = Math.max(1, params.currentPage);
+    const itemsPerPage = Math.min(
+      Math.max(1, params.itemsPerPage),
+      MAX_CONTRACTS_PAGE_SIZE,
+    );
+
     const response = await api.get<ContractsResponse>("/contracts", {
       params: {
-        page: params.currentPage,
-        limit: params.itemsPerPage,
+        page: currentPage,
+        limit: itemsPerPage,
         search: params.searchQuery || undefined,
         quotationId: params.quotationId ? Number(params.quotationId) : undefined,
         eventId: params.eventId ? Number(params.eventId) : undefined,
@@ -81,8 +89,8 @@ export const contractsApi = {
 
     return normalizeContractsResponse(
       response.data,
-      params.currentPage,
-      params.itemsPerPage,
+      currentPage,
+      itemsPerPage,
     );
   },
 

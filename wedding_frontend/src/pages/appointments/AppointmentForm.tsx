@@ -182,6 +182,7 @@ const AppointmentFormPage = () => {
   const [searchParams] = useSearchParams();
   const isEditMode = Boolean(id);
   const [mode, setMode] = useState<AppointmentMode>("existing");
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const { data: appointment, isLoading } = useAppointment(id);
   const { data: customersResponse } = useCustomers({
@@ -204,6 +205,7 @@ const AppointmentFormPage = () => {
     [t, mode, isEditMode],
   );
   const preselectedCustomerId = searchParams.get("customerId") || "";
+  const preselectedAppointmentDate = searchParams.get("date") || "";
 
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
@@ -216,7 +218,7 @@ const AppointmentFormPage = () => {
       customerNationalId: "",
       customerAddress: "",
       customerNotes: "",
-      appointmentDate: "",
+      appointmentDate: preselectedAppointmentDate,
       weddingDate: "",
       guestCount: "",
       venueId: "",
@@ -268,7 +270,11 @@ const AppointmentFormPage = () => {
       {
         value: selectedCustomerId,
         label:
-          appointment?.customer?.fullName || `Customer #${selectedCustomerId}`,
+          appointment?.customer?.fullName ||
+          t("appointments.customerOptionFallback", {
+            defaultValue: "Customer #{{id}}",
+            id: selectedCustomerId,
+          }),
       },
       ...base,
     ];
@@ -278,6 +284,17 @@ const AppointmentFormPage = () => {
     selectedCustomer,
     selectedCustomerId,
   ]);
+  const filteredCustomerOptions = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+
+    if (!query) {
+      return customerOptions;
+    }
+
+    return customerOptions.filter((customer) =>
+      customer.label.toLowerCase().includes(query),
+    );
+  }, [customerOptions, customerSearch]);
   const venueOptions = useMemo(() => {
     const base = (venuesResponse?.data ?? []).map((venue) => ({
       value: String(venue.id),
@@ -302,7 +319,12 @@ const AppointmentFormPage = () => {
     return [
       {
         value: selectedVenueId,
-        label: appointment?.venue?.name || `Venue #${selectedVenueId}`,
+        label:
+          appointment?.venue?.name ||
+          t("appointments.venueOptionFallback", {
+            defaultValue: "Venue #{{id}}",
+            id: selectedVenueId,
+          }),
       },
       ...base,
     ];
@@ -341,6 +363,17 @@ const AppointmentFormPage = () => {
       notes: appointment.notes ?? "",
     });
   }, [appointment, form, isEditMode]);
+  useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
+
+    form.setValue("appointmentDate", preselectedAppointmentDate, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+  }, [form, isEditMode, preselectedAppointmentDate]);
   useEffect(() => {
     if (!isEditMode || !appointment) {
       return;
@@ -613,6 +646,7 @@ const AppointmentFormPage = () => {
                                 onValueChange={(value) =>
                                   field.onChange(value === EMPTY_VALUE ? "" : value)
                                 }
+                                onSearch={setCustomerSearch}
                                 triggerClassName="rounded-[4px]"
                                 placeholder={t("appointments.selectCustomer", {
                                   defaultValue: "Select customer",
@@ -633,14 +667,14 @@ const AppointmentFormPage = () => {
                                     defaultValue: "Select customer",
                                   })}
                                 </SearchableSelectItem>
-                                {customerOptions.length === 0 ? (
+                                {filteredCustomerOptions.length === 0 ? (
                                   <SearchableSelectEmpty
                                     message={t("common.noResultsTitle", {
                                       defaultValue: "No results found",
                                     })}
                                   />
                                 ) : (
-                                  customerOptions.map((customer) => (
+                                  filteredCustomerOptions.map((customer) => (
                                     <SearchableSelectItem
                                       key={customer.value}
                                       value={customer.value}

@@ -60,7 +60,10 @@ export const useContracts = ({
 export const useContract = (id?: string) => {
   return useQuery<Contract>({
     queryKey: ["contract", id],
-    queryFn: () => contractsApi.get(id as string),
+    queryFn: () => {
+      console.log("useContract fetching contract", { id });
+      return contractsApi.get(id as string);
+    },
     enabled: !!id,
   });
 };

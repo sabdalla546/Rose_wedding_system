@@ -257,12 +257,22 @@ export function AppointmentsTableView() {
   return (
     <>
       <WorkflowModuleDashboard
+        eyebrow={t("appointments.workflowDashboardEyebrow", {
+          defaultValue: "Workflow Dashboard",
+        })}
         title={t("appointments.workflowDashboard", {
           defaultValue: "Appointment Workflow Visibility",
         })}
         description={t("appointments.workflowDashboardHint", {
           defaultValue:
             "Track intake load, completed appointments ready for conversion, and blocked appointments before they disappear into the table.",
+        })}
+        statusesTitle={t("appointments.statusDistributionTitle", {
+          defaultValue: "Status Distribution",
+        })}
+        statusesDescription={t("appointments.statusDistributionHint", {
+          defaultValue:
+            "Use these quick filters to jump into the current workflow queue.",
         })}
         metrics={[
           {
@@ -386,6 +396,12 @@ export function AppointmentsTableView() {
           </div>
         }
         loading={workflowSummary.isLoading}
+        showContentLabel={t("appointments.showWorkflowDashboard", {
+          defaultValue: "Show Dashboard",
+        })}
+        hideContentLabel={t("appointments.hideWorkflowDashboard", {
+          defaultValue: "Hide Dashboard",
+        })}
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

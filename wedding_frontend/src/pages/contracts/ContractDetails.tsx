@@ -158,13 +158,94 @@ function ItemKindBadge({
       }}
     >
       {isVendor
-        ? t("contracts.vendor", { defaultValue: "شركة" })
+        ? t("contracts.vendor", { defaultValue: "Vendor" })
         : isSummary
-          ? t("contracts.totalServices", { defaultValue: "إجمالي الخدمات" })
-          : t("contracts.service", { defaultValue: "خدمة" })}
+          ? t("contracts.totalServices", { defaultValue: "Total Services" })
+          : t("contracts.service", { defaultValue: "Service" })}
     </span>
   );
 }
+
+const getLocalizedContractWorkflowAction = (
+  action: WorkflowActionDefinition,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): Partial<
+  Pick<
+    WorkflowActionDefinition,
+    "label" | "description" | "confirmTitle" | "confirmMessage"
+  >
+> => {
+  switch (action.key) {
+    case "issue_contract":
+      return {
+        label: t("contracts.issueContractAction", {
+          defaultValue: "Issue Contract",
+        }),
+        description: t("contracts.issueContractActionHint", {
+          defaultValue: "Issue this contract to the client.",
+        }),
+      };
+    case "sign_contract":
+      return {
+        label: t("contracts.signContractAction", {
+          defaultValue: "Sign Contract",
+        }),
+        description: t("contracts.signContractActionHint", {
+          defaultValue: "Record that the contract has been signed.",
+        }),
+      };
+    case "activate_contract":
+      return {
+        label: t("contracts.activateContractAction", {
+          defaultValue: "Activate Contract",
+        }),
+        description: t("contracts.activateContractActionHint", {
+          defaultValue: "Move this signed contract into the active commitment stage.",
+        }),
+      };
+    case "complete_contract":
+      return {
+        label: t("contracts.completeContractAction", {
+          defaultValue: "Complete Contract",
+        }),
+        description: t("contracts.completeContractActionHint", {
+          defaultValue: "Mark this contract as fulfilled.",
+        }),
+      };
+    case "cancel_contract":
+      return {
+        label: t("contracts.cancelContractAction", {
+          defaultValue: "Cancel Contract",
+        }),
+        description: t("contracts.cancelContractActionHint", {
+          defaultValue: "Cancel this contract before activation.",
+        }),
+        confirmTitle: t("contracts.cancelContractConfirmTitle", {
+          defaultValue: "Cancel contract?",
+        }),
+        confirmMessage: t("contracts.cancelContractConfirmMessage", {
+          defaultValue: "This contract will be marked as cancelled.",
+        }),
+      };
+    case "terminate_contract":
+      return {
+        label: t("contracts.terminateContractAction", {
+          defaultValue: "Terminate Contract",
+        }),
+        description: t("contracts.terminateContractActionHint", {
+          defaultValue: "Terminate this active commitment.",
+        }),
+        confirmTitle: t("contracts.terminateContractConfirmTitle", {
+          defaultValue: "Terminate contract?",
+        }),
+        confirmMessage: t("contracts.terminateContractConfirmMessage", {
+          defaultValue: "This contract will be marked as terminated.",
+        }),
+      };
+    default:
+      return {};
+  }
+};
 
 const ContractDetailsPage = () => {
   const { t, i18n } = useTranslation();
@@ -301,7 +382,12 @@ const ContractDetailsPage = () => {
     );
   }
 
-  const contractLockMessage = getContractLockMessage(contract.status);
+  const contractLockMessage = getContractLockMessage(contract.status)
+    ? t("contracts.lockedMessage", {
+        defaultValue:
+          "Commitment fields are read-only because this contract is signed, active, or completed.",
+      })
+    : null;
   const workflowActionIcons = {
     issued: <ArrowRight className="h-4 w-4" />,
     signed: <CheckCheck className="h-4 w-4" />,
@@ -311,27 +397,34 @@ const ContractDetailsPage = () => {
     terminated: <Slash className="h-4 w-4" />,
   } as const;
   const workflowActions = getContractWorkflowActions(contract.status).map(
-    (action) => ({
-      ...action,
-      icon: action.nextStatus
-        ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
-        : undefined,
-      loading:
-        workflowActionMutation.isPending &&
-        action.nextStatus === workflowActionMutation.variables?.status,
-      onClick: () => {
-        if (action.confirmTitle || action.confirmMessage) {
-          setPendingWorkflowAction(action);
-          return;
-        }
+    (action) => {
+      const localizedAction = {
+        ...action,
+        ...getLocalizedContractWorkflowAction(action, t),
+      };
 
-        if (action.nextStatus) {
-          workflowActionMutation.mutate({
-            status: action.nextStatus as typeof contract.status,
-          });
-        }
-      },
-    }),
+      return {
+        ...localizedAction,
+        icon: action.nextStatus
+          ? workflowActionIcons[action.nextStatus as keyof typeof workflowActionIcons]
+          : undefined,
+        loading:
+          workflowActionMutation.isPending &&
+          action.nextStatus === workflowActionMutation.variables?.status,
+        onClick: () => {
+          if (localizedAction.confirmTitle || localizedAction.confirmMessage) {
+            setPendingWorkflowAction(localizedAction);
+            return;
+          }
+
+          if (action.nextStatus) {
+            workflowActionMutation.mutate({
+              status: action.nextStatus as typeof contract.status,
+            });
+          }
+        },
+      };
+    },
   );
   const nextSteps: WorkflowNextStepItem[] = [];
   const timelineItems: WorkflowTimelineItem[] = [
@@ -619,9 +712,10 @@ const ContractDetailsPage = () => {
             description={
               contract.event
                 ? getEventDisplayTitle(contract.event)
-                : `${t("contracts.event", {
-                    defaultValue: "Event",
-                  })} #${contract.eventId}`
+                : t("contracts.eventReference", {
+                    defaultValue: "Event #{{id}}",
+                    id: contract.eventId,
+                  })
             }
             status={<ContractStatusBadge status={contract.status} />}
             actions={
@@ -677,7 +771,10 @@ const ContractDetailsPage = () => {
                   >
                     {contract.quotation
                       ? getQuotationDisplayNumber(contract.quotation)
-                      : `QT-${contract.quotationId}`}
+                      : t("contracts.quotationReference", {
+                          defaultValue: "QT-{{id}}",
+                          id: contract.quotationId,
+                        })}
                   </button>
                 ) : (
                   t("contracts.noQuotationLinked", {
@@ -702,7 +799,10 @@ const ContractDetailsPage = () => {
                   >
                     {contract.event
                       ? getEventDisplayTitle(contract.event)
-                      : `Event #${contract.eventId}`}
+                      : t("contracts.eventReference", {
+                          defaultValue: "Event #{{id}}",
+                          id: contract.eventId,
+                        })}
                   </button>
                 ),
                 helper:
@@ -860,7 +960,10 @@ const ContractDetailsPage = () => {
                     contract.quotation
                       ? getQuotationDisplayNumber(contract.quotation)
                       : contract.quotationId
-                        ? `QT-${contract.quotationId}`
+                        ? t("contracts.quotationReference", {
+                            defaultValue: "QT-{{id}}",
+                            id: contract.quotationId,
+                          })
                         : "-"
                   }
                 />
@@ -869,7 +972,10 @@ const ContractDetailsPage = () => {
                   value={
                     contract.event
                       ? getEventDisplayTitle(contract.event)
-                      : `Event #${contract.eventId}`
+                      : t("contracts.eventReference", {
+                          defaultValue: "Event #{{id}}",
+                          id: contract.eventId,
+                        })
                   }
                 />
                 <DetailItem
@@ -1008,7 +1114,7 @@ const ContractDetailsPage = () => {
                             <div className="space-y-1">
                               <div className="font-medium text-[var(--lux-text)]">
                                 {t("contracts.totalCompanies", {
-                                  defaultValue: "إجمالي الشركات",
+                                  defaultValue: "Total Companies",
                                 })}
                               </div>
                               <div className="text-xs text-[var(--lux-text-secondary)]">
@@ -1020,7 +1126,7 @@ const ContractDetailsPage = () => {
                                   }}
                                 >
                                   {t("contracts.totalCompanies", {
-                                    defaultValue: "إجمالي الشركات",
+                                    defaultValue: "Total Companies",
                                   })}
                                 </span>
                               </div>
