@@ -5,6 +5,7 @@ import type {
   AppointmentType,
   AppointmentsResponse,
 } from "@/pages/appointments/types";
+import type { TFunction } from "i18next";
 
 export type TableAppointment = Appointment & {
   customerName: string;
@@ -96,7 +97,18 @@ export const formatAppointmentStatus = (status: AppointmentStatus) => {
     .join(" ");
 };
 
-export const formatAppointmentType = (value: AppointmentType) => value;
+export const formatAppointmentType = (
+  value: AppointmentType,
+  t?: TFunction<"translation", undefined>,
+): string => {
+  if (t) {
+    return t(`appointments.typeOptions.${value}`, {
+      defaultValue: value,
+    });
+  }
+
+  return value;
+};
 
 const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> =
   {

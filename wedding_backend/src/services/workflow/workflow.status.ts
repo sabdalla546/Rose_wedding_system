@@ -1,5 +1,4 @@
 import {
-  APPOINTMENT_STATUS_ALIASES,
   type AppointmentStatus,
   type AppointmentWorkflowStatus,
   CONTRACT_STATUSES,
@@ -82,8 +81,7 @@ export const EXECUTION_BRIEF_TRANSITIONS: Record<
 
 export const normalizeAppointmentStatus = (
   status: AppointmentStatus,
-): AppointmentWorkflowStatus =>
-  APPOINTMENT_STATUS_ALIASES[status] ?? (status as AppointmentWorkflowStatus);
+): AppointmentWorkflowStatus => status as AppointmentWorkflowStatus;
 
 export const normalizeEventStatus = (
   status: EventStatus,
@@ -222,26 +220,6 @@ export const assertValidExecutionBriefTransition = (
   });
 
 export const expandAppointmentStatusesForQuery = (status: string) => {
-  const normalized = APPOINTMENT_STATUS_ALIASES[status as AppointmentStatus];
-
-  if (
-    normalized === "reserved" ||
-    status === "reserved" ||
-    status === "scheduled" ||
-    status === "confirmed" ||
-    status === "rescheduled"
-  ) {
-    return ["reserved", "scheduled", "confirmed", "rescheduled"];
-  }
-
-  if (
-    normalized === "attended" ||
-    status === "attended" ||
-    status === "completed"
-  ) {
-    return ["attended", "completed"];
-  }
-
   return [status];
 };
 

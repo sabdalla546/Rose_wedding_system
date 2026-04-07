@@ -1,29 +1,12 @@
 export const APPOINTMENT_WORKFLOW_STATUSES = [
   "reserved",
   "attended",
-  "cancelled",
   "converted",
+  "cancelled",
   "no_show",
 ] as const;
 
-export const APPOINTMENT_LEGACY_STATUSES = [
-  "scheduled",
-  "completed",
-  "confirmed",
-  "rescheduled",
-] as const;
-
-export const APPOINTMENT_STATUSES = [
-  "reserved",
-  "attended",
-  "cancelled",
-  "converted",
-  "no_show",
-  "scheduled",
-  "completed",
-  "confirmed",
-  "rescheduled",
-] as const;
+export const APPOINTMENT_STATUSES = APPOINTMENT_WORKFLOW_STATUSES;
 
 export type AppointmentWorkflowStatus =
   (typeof APPOINTMENT_WORKFLOW_STATUSES)[number];
@@ -110,15 +93,6 @@ export const EXECUTION_BRIEF_STATUSES = [
 export type ExecutionBriefWorkflowStatus =
   (typeof EXECUTION_BRIEF_WORKFLOW_STATUSES)[number];
 export type ExecutionBriefStatus = (typeof EXECUTION_BRIEF_STATUSES)[number];
-
-export const APPOINTMENT_STATUS_ALIASES: Partial<
-  Record<AppointmentStatus, AppointmentWorkflowStatus>
-> = {
-  scheduled: "reserved",
-  confirmed: "reserved",
-  rescheduled: "reserved",
-  completed: "attended",
-};
 
 export const QUOTATION_STATUS_ALIASES: Partial<
   Record<QuotationStatus, QuotationWorkflowStatus>

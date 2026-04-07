@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
+
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import {
@@ -36,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   useCreateAppointment,
   useCreateAppointmentWithCustomer,
@@ -43,16 +45,10 @@ import {
 } from "@/hooks/appointments/useAppointmentMutations";
 import { useAppointment } from "@/hooks/appointments/useAppointments";
 import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
-import { useVenue, useVenues } from "@/hooks/venues/useVenues";
-import {
-  APPOINTMENT_FORM_STATUS_OPTIONS,
-  APPOINTMENT_TYPE_OPTIONS,
-} from "./adapters";
-import type {
-  AppointmentFormData,
-  AppointmentStatus,
-  AppointmentType,
-} from "./types";
+import { useVenues } from "@/hooks/venues/useVenues";
+
+import { APPOINTMENT_TYPE_OPTIONS } from "./adapters";
+import type { AppointmentFormData, AppointmentType } from "./types";
 
 type AppointmentMode = "existing" | "new";
 
@@ -117,12 +113,6 @@ const buildAppointmentSchema = (
         )
         .max(10),
       endTime: z.string().max(10).optional(),
-      status: z.enum(
-        APPOINTMENT_FORM_STATUS_OPTIONS.map((item) => item.value) as [
-          AppointmentStatus,
-          ...AppointmentStatus[],
-        ],
-      ),
       type: z.enum(
         APPOINTMENT_TYPE_OPTIONS.map((item) => item.value) as [
           AppointmentType,
@@ -194,17 +184,20 @@ const AppointmentFormPage = () => {
   });
   const { data: venuesResponse } = useVenues({
     currentPage: 1,
-    itemsPerPage: 200,
+    itemsPerPage: 50,
     searchQuery: "",
     isActive: "all",
   });
+
   const createMutation = useCreateAppointment();
   const createWithCustomerMutation = useCreateAppointmentWithCustomer();
   const updateMutation = useUpdateAppointment(id);
+
   const appointmentSchema = useMemo(
     () => buildAppointmentSchema(t, mode, isEditMode),
     [t, mode, isEditMode],
   );
+
   const preselectedCustomerId = searchParams.get("customerId") || "";
   const preselectedAppointmentDate = searchParams.get("date") || "";
 
@@ -225,32 +218,29 @@ const AppointmentFormPage = () => {
       venueId: "",
       startTime: "",
       endTime: "",
-      status: "reserved",
       type: "Office Visit",
       notes: "",
     },
   });
+
   const watchedCustomerId =
     useWatch({ control: form.control, name: "customerId" })?.trim() || "";
-  const watchedVenueId =
-    useWatch({ control: form.control, name: "venueId" })?.trim() || "";
+
   const selectedCustomerId =
     (isEditMode
       ? watchedCustomerId || String(appointment?.customerId ?? "")
       : watchedCustomerId) || "";
-  const selectedVenueId =
-    (isEditMode
-      ? watchedVenueId || String(appointment?.venueId ?? "")
-      : watchedVenueId) || "";
+
   const { data: selectedCustomer } = useCustomer(
     selectedCustomerId || undefined,
   );
-  const { data: selectedVenue } = useVenue(selectedVenueId || undefined);
+
   const customerOptions = useMemo(() => {
     const base = (customersResponse?.data ?? []).map((customer) => ({
       value: String(customer.id),
       label: customer.fullName,
     }));
+
     const exists = base.some((item) => item.value === selectedCustomerId);
 
     if (!selectedCustomerId || exists) {
@@ -284,7 +274,9 @@ const AppointmentFormPage = () => {
     customersResponse?.data,
     selectedCustomer,
     selectedCustomerId,
+    t,
   ]);
+
   const filteredCustomerOptions = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
 
@@ -296,143 +288,82 @@ const AppointmentFormPage = () => {
       customer.label.toLowerCase().includes(query),
     );
   }, [customerOptions, customerSearch]);
+
   const venueOptions = useMemo(() => {
     const base = (venuesResponse?.data ?? []).map((venue) => ({
       value: String(venue.id),
       label: venue.name,
     }));
-    const exists = base.some((item) => item.value === selectedVenueId);
 
-    if (!selectedVenueId || exists) {
+    if (!isEditMode || !appointment?.venueId) {
       return base;
     }
 
-    if (selectedVenue?.id) {
-      return [
-        {
-          value: String(selectedVenue.id),
-          label: selectedVenue.name,
-        },
-        ...base,
-      ];
+    const exists = base.some(
+      (venue) => venue.value === String(appointment.venueId),
+    );
+
+    if (exists) {
+      return base;
     }
 
     return [
       {
-        value: selectedVenueId,
+        value: String(appointment.venueId),
         label:
-          appointment?.venue?.name ||
+          appointment.venue?.name ||
           t("appointments.venueOptionFallback", {
             defaultValue: "Venue #{{id}}",
-            id: selectedVenueId,
+            id: appointment.venueId,
           }),
       },
       ...base,
     ];
   }, [
-    appointment?.venue?.name,
-    selectedVenue,
-    selectedVenueId,
     venuesResponse?.data,
-  ]);
-
-  useEffect(() => {
-    if (!isEditMode || !appointment) {
-      return;
-    }
-
-    form.reset({
-      customerId: String(appointment.customerId),
-      customerFullName: "",
-      customerMobile: "",
-      customerMobile2: "",
-      customerEmail: "",
-      customerNationalId: "",
-      customerAddress: "",
-      customerNotes: "",
-      appointmentDate: appointment.appointmentDate,
-      weddingDate: appointment.weddingDate ?? "",
-      guestCount:
-        typeof appointment.guestCount === "number"
-          ? String(appointment.guestCount)
-          : "",
-      venueId: appointment.venueId ? String(appointment.venueId) : "",
-      startTime: appointment.startTime,
-      endTime: appointment.endTime ?? "",
-      status: appointment.status,
-      type: appointment.type,
-      notes: appointment.notes ?? "",
-    });
-  }, [appointment, form, isEditMode]);
-  useEffect(() => {
-    if (isEditMode) {
-      return;
-    }
-
-    form.setValue("appointmentDate", preselectedAppointmentDate, {
-      shouldDirty: false,
-      shouldTouch: false,
-      shouldValidate: false,
-    });
-  }, [form, isEditMode, preselectedAppointmentDate]);
-  useEffect(() => {
-    if (!isEditMode || !appointment) {
-      return;
-    }
-
-    form.reset({
-      customerId: String(appointment.customerId),
-      customerFullName: "",
-      customerMobile: "",
-      customerMobile2: "",
-      customerEmail: "",
-      customerNationalId: "",
-      customerAddress: "",
-      customerNotes: "",
-      appointmentDate: appointment.appointmentDate,
-      weddingDate: appointment.weddingDate ?? "",
-      guestCount:
-        typeof appointment.guestCount === "number"
-          ? String(appointment.guestCount)
-          : "",
-      venueId: appointment.venueId ? String(appointment.venueId) : "",
-      startTime: appointment.startTime,
-      endTime: appointment.endTime ?? "",
-      status: appointment.status,
-      type: appointment.type,
-      notes: appointment.notes ?? "",
-    });
-  }, [appointment, form, isEditMode]);
-  useEffect(() => {
-    if (!isEditMode || !appointment) {
-      return;
-    }
-
-    const currentCustomerId = form.getValues("customerId")?.trim() || "";
-    const currentVenueId = form.getValues("venueId")?.trim() || "";
-
-    if (!currentCustomerId && appointment.customerId) {
-      form.setValue("customerId", String(appointment.customerId), {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false,
-      });
-    }
-
-    if (!currentVenueId && appointment.venueId) {
-      form.setValue("venueId", String(appointment.venueId), {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false,
-      });
-    }
-  }, [
-    appointment?.customerId,
-    appointment?.venueId,
-    form,
     isEditMode,
-    appointment,
+    appointment?.venueId,
+    appointment?.venue?.name,
+    t,
   ]);
+
+  useEffect(() => {
+    if (!isEditMode) {
+      form.setValue("appointmentDate", preselectedAppointmentDate, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+      return;
+    }
+
+    if (!appointment) {
+      return;
+    }
+
+    form.reset({
+      customerId: String(appointment.customerId),
+      customerFullName: "",
+      customerMobile: "",
+      customerMobile2: "",
+      customerEmail: "",
+      customerNationalId: "",
+      customerAddress: "",
+      customerNotes: "",
+      appointmentDate: appointment.appointmentDate,
+      weddingDate: appointment.weddingDate ?? "",
+      guestCount:
+        typeof appointment.guestCount === "number"
+          ? String(appointment.guestCount)
+          : "",
+      venueId: appointment.venueId ? String(appointment.venueId) : "",
+      startTime: appointment.startTime,
+      endTime: appointment.endTime ?? "",
+      type: appointment.type,
+      notes: appointment.notes ?? "",
+    });
+  }, [appointment, form, isEditMode, preselectedAppointmentDate]);
+
   const onSubmit: SubmitHandler<AppointmentFormValues> = (values) => {
     const payload: AppointmentFormData = {
       customerId: values.customerId || "",
@@ -442,7 +373,6 @@ const AppointmentFormPage = () => {
       venueId: values.venueId,
       startTime: values.startTime,
       endTime: values.endTime,
-      status: values.status,
       type: values.type,
       notes: values.notes,
     };
@@ -494,6 +424,7 @@ const AppointmentFormPage = () => {
     createMutation.isPending ||
     createWithCustomerMutation.isPending ||
     updateMutation.isPending;
+
   const formErrorMessage =
     form.formState.submitCount > 0
       ? getFirstFormErrorMessage(form.formState.errors)
@@ -905,56 +836,16 @@ const AppointmentFormPage = () => {
                           </FormItem>
                         )}
                       />
-                      {!isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t("appointments.statusLabel", {
-                                  defaultValue: "Status",
-                                })}
-                              </FormLabel>
-                              <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="rounded-[4px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {APPOINTMENT_FORM_STATUS_OPTIONS.map(
-                                    (status) => (
-                                      <SelectItem
-                                        key={status.value}
-                                        value={status.value}
-                                      >
-                                        {t(
-                                          `appointments.status.${status.value}`,
-                                          {
-                                            defaultValue: status.label,
-                                          },
-                                        )}
-                                      </SelectItem>
-                                    ),
-                                  )}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="rounded-[16px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
+
+                      {isEditMode ? (
+                        <div className="rounded-[16px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 text-sm text-[var(--lux-text-secondary)] md:col-span-2">
                           {t("appointments.workflowEditHint", {
                             defaultValue:
                               "Use appointment workflow actions from the detail page to change status safely.",
                           })}
                         </div>
-                      )}
+                      ) : null}
+
                       <FormField
                         control={form.control}
                         name="guestCount"

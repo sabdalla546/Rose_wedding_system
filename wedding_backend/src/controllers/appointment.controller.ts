@@ -574,12 +574,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       ignoreAppointmentId: appointment.id,
     });
 
-    const nextStatus =
-      data.status === "scheduled"
-        ? "reserved"
-        : data.status === "completed"
-          ? "attended"
-          : (data.status ?? appointment.status);
+    const nextStatus = data.status ?? appointment.status;
 
     if (nextStatus === "converted" && appointment.status !== "converted") {
       throw invalidStatusTransitionError(
@@ -613,13 +608,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
     });
 
     if (nextStatus !== appointment.status) {
-      if (nextStatus === "confirmed") {
-        await confirmAppointmentWorkflow(
-          appointment,
-          req.user?.id ?? null,
-          data.notes,
-        );
-      } else if (nextStatus === "attended") {
+      if (nextStatus === "attended") {
         await attendAppointmentWorkflow(
           appointment,
           req.user?.id ?? null,
@@ -632,14 +621,6 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
           undefined,
           data.notes,
         );
-      } else if (nextStatus === "rescheduled") {
-        await rescheduleAppointmentWorkflow(appointment, {
-          appointmentDate: nextAppointmentDate,
-          startTime: nextStartTime,
-          endTime: nextEndTime ?? null,
-          note: data.notes,
-          userId: req.user?.id ?? null,
-        });
       } else if (nextStatus === "no_show") {
         await markAppointmentNoShow(
           appointment,

@@ -45,20 +45,18 @@ export const createVenue = async (req: Request, res: Response) => {
     return res.status(500).json({ message: req.t("common.unexpected_error") });
   }
 };
-
 export const getVenues = async (req: Request, res: Response) => {
-  const query = req.query as {
-    page?: number;
-    limit?: number;
-    search?: string;
-    isActive?: boolean;
-  };
+  const page = Number(req.query.page ?? 1);
+  const limit = Number(req.query.limit ?? 20);
+  const search = String(req.query.search ?? "").trim();
 
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 20;
-  const offset = (page - 1) * limit;
-  const search = query.search ?? "";
-  const isActive = query.isActive;
+  const rawIsActive = req.query.isActive;
+  const isActive =
+    rawIsActive === "true" ? true : rawIsActive === "false" ? false : undefined;
+
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
+  const offset = (safePage - 1) * safeLimit;
 
   const orConditions = search
     ? [
@@ -78,7 +76,7 @@ export const getVenues = async (req: Request, res: Response) => {
   const { count, rows } = await Venue.findAndCountAll({
     where,
     order: [["id", "DESC"]],
-    limit,
+    limit: safeLimit,
     offset,
   });
 
@@ -86,13 +84,12 @@ export const getVenues = async (req: Request, res: Response) => {
     data: rows,
     meta: {
       total: count,
-      page,
-      limit,
-      pages: Math.ceil(count / limit),
+      page: safePage,
+      limit: safeLimit,
+      pages: Math.ceil(count / safeLimit),
     },
   });
 };
-
 export const getVenueById = async (req: Request, res: Response) => {
   const { id } = req.params as unknown as { id: number };
 

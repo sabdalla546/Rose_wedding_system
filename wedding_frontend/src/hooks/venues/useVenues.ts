@@ -25,13 +25,13 @@ export const useVenues = ({
     queryFn: async () => {
       const res = await api.get("/venues", {
         params: {
-          page: currentPage,
-          limit: itemsPerPage,
+          page: Number(currentPage),
+          limit: Number(itemsPerPage),
           search: searchQuery || undefined,
           isActive: isActive === "all" ? undefined : isActive,
         },
       });
-
+      console.log("GET /venues response", res.data);
       return res.data;
     },
   });

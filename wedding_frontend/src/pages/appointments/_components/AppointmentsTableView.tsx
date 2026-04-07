@@ -31,9 +31,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { buildAppointmentsTableSummary } from "@/features/appointments/appointment-calendar";
 import {
-  useCancelAppointment,
-  useCompleteAppointment,
   useConfirmAppointment,
+  useAttendAppointment,
+  useCancelAppointment,
   useRescheduleAppointment,
 } from "@/hooks/appointments/useAppointmentActions";
 import { useAppointments } from "@/hooks/appointments/useAppointments";
@@ -79,7 +79,7 @@ export function AppointmentsTableView() {
     useState<TableAppointment | null>(null);
   const [confirmCandidate, setConfirmCandidate] =
     useState<TableAppointment | null>(null);
-  const [completeCandidate, setCompleteCandidate] =
+  const [attendCandidate, setAttendCandidate] =
     useState<TableAppointment | null>(null);
   const [cancelCandidate, setCancelCandidate] =
     useState<TableAppointment | null>(null);
@@ -92,6 +92,7 @@ export function AppointmentsTableView() {
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+
   useEffect(() => {
     const handle = window.setTimeout(() => {
       setSearchQuery(searchTerm.trim());
@@ -109,6 +110,7 @@ export function AppointmentsTableView() {
     dateFrom,
     dateTo,
   });
+
   const { data: customersResponse } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
@@ -118,13 +120,14 @@ export function AppointmentsTableView() {
 
   const deleteMutation = useDeleteAppointment();
   const confirmMutation = useConfirmAppointment();
-  const completeMutation = useCompleteAppointment();
+  const attendMutation = useAttendAppointment();
   const cancelMutation = useCancelAppointment();
   const rescheduleMutation = useRescheduleAppointment();
 
   const adapted = useMemo(() => toTableAppointments(data), [data]);
   const customers = customersResponse?.data ?? [];
   const appointments = adapted.data.appointments;
+
   const activeFiltersCount = [
     Boolean(searchTerm.trim()),
     statusFilter !== "all",
@@ -132,6 +135,7 @@ export function AppointmentsTableView() {
     Boolean(dateFrom),
     Boolean(dateTo),
   ].filter(Boolean).length;
+
   const summaryItems = useMemo(
     () =>
       buildAppointmentsTableSummary(
@@ -142,6 +146,7 @@ export function AppointmentsTableView() {
       ),
     [activeFiltersCount, adapted.total, appointments, t],
   );
+
   const activeFilterPills = [
     searchTerm.trim() ? (
       <WorkspaceFilterPill key="search" label={searchTerm.trim()} />
@@ -183,9 +188,9 @@ export function AppointmentsTableView() {
       setActionNotes(appointment.notes || "");
       setConfirmCandidate(appointment);
     },
-    onComplete: (appointment) => {
+    onAttend: (appointment) => {
       setActionNotes(appointment.notes || "");
-      setCompleteCandidate(appointment);
+      setAttendCandidate(appointment);
     },
     onCancel: (appointment) => {
       setActionNotes(appointment.notes || "");
@@ -199,11 +204,10 @@ export function AppointmentsTableView() {
       setActionNotes(appointment.notes || "");
       setRescheduleCandidate(appointment);
     },
-    onCreateEvent: (appointment) =>
-      navigate(`/events/create?fromAppointmentId=${appointment.id}`),
     editPermission: "appointments.update",
     deletePermission: "appointments.delete",
   });
+
   const resetFilters = () => {
     setStatusFilter("all");
     setCustomerFilter("");
@@ -213,6 +217,7 @@ export function AppointmentsTableView() {
     setDateTo("");
     setCurrentPage(1);
   };
+
   const handleExportPdf = async () => {
     try {
       setIsExportingPdf(true);
@@ -254,6 +259,7 @@ export function AppointmentsTableView() {
       setIsExportingPdf(false);
     }
   };
+
   return (
     <>
       <WorkflowModuleDashboard
@@ -630,20 +636,24 @@ export function AppointmentsTableView() {
       />
 
       <ActionDialog
-        open={completeCandidate !== null}
-        onOpenChange={(open) => !open && setCompleteCandidate(null)}
-        title={t("appointments.completeTitle")}
+        open={attendCandidate !== null}
+        onOpenChange={(open) => !open && setAttendCandidate(null)}
+        title={t("appointments.attendTitle", {
+          defaultValue: "Mark as Attended",
+        })}
         value={actionNotes}
         onChange={setActionNotes}
         onConfirm={() =>
-          completeCandidate &&
-          completeMutation.mutate(
-            { id: completeCandidate.id, values: { notes: actionNotes } },
-            { onSuccess: () => setCompleteCandidate(null) },
+          attendCandidate &&
+          attendMutation.mutate(
+            { id: attendCandidate.id, values: { notes: actionNotes } },
+            { onSuccess: () => setAttendCandidate(null) },
           )
         }
-        isPending={completeMutation.isPending}
-        confirmLabel={t("appointments.complete")}
+        isPending={attendMutation.isPending}
+        confirmLabel={t("appointments.attend", {
+          defaultValue: "Attend",
+        })}
       />
 
       <Dialog
@@ -743,7 +753,7 @@ export function AppointmentsTableView() {
                     values: {
                       appointmentDate: rescheduleDate,
                       startTime: rescheduleStartTime,
-                      endTime: rescheduleEndTime,
+                      endTime: rescheduleEndTime || undefined,
                       notes: actionNotes,
                     },
                   },

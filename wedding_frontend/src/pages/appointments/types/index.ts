@@ -76,19 +76,17 @@ export interface AppointmentResponse {
 export interface AppointmentsCalendarResponse {
   data: Appointment[];
 }
-
-export interface AppointmentFormData {
+export type AppointmentFormData = {
   customerId: string;
   appointmentDate: string;
-  startTime: string;
-  endTime?: string;
   weddingDate?: string;
   guestCount?: string;
   venueId?: string;
-  status: AppointmentStatus;
+  startTime: string;
+  endTime?: string;
   type: AppointmentType;
   notes?: string;
-}
+};
 
 export interface ConfirmAppointmentData {
   notes?: string;

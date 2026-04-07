@@ -27,14 +27,8 @@ export const idParamSchema = z.object({
 });
 
 export const paginationQuerySchema = z.object({
-  page: z.preprocess(
-    toOptionalNumber,
-    z.number().int().positive().optional(),
-  ),
-  limit: z.preprocess(
-    toOptionalNumber,
-    z.number().int().positive().max(100).optional(),
-  ),
+  page: z.preprocess(toOptionalNumber, z.number().int().positive().optional()),
+  limit: z.preprocess(toOptionalNumber, z.number().int().positive().optional()),
 });
 
 export const optionalPositiveIntQuery = z.preprocess(
