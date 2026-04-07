@@ -20,7 +20,10 @@ export function SummaryCard({
   children,
 }: SummaryCardProps) {
   return (
-    <SectionCard className={cn("dashboard-summary-card space-y-3", className)} elevated>
+    <SectionCard
+      className={cn("dashboard-summary-card space-y-3", className)}
+      elevated
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
@@ -32,7 +35,9 @@ export function SummaryCard({
         </div>
         {accent ? <div>{accent}</div> : null}
       </div>
-      {hint ? <p className="text-sm text-[var(--lux-text-secondary)]">{hint}</p> : null}
+      {hint ? (
+        <p className="text-sm text-[var(--lux-text-secondary)]">{hint}</p>
+      ) : null}
       {children}
     </SectionCard>
   );

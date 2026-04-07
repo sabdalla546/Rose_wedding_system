@@ -8,8 +8,8 @@ import { getApiErrorMessage } from "@/lib/axios";
 import { appointmentsApi } from "@/lib/api/appointments";
 import { useToast } from "@/hooks/use-toast";
 import type {
+  AttendAppointmentData,
   CancelAppointmentData,
-  CompleteAppointmentData,
   ConfirmAppointmentData,
   RescheduleAppointmentData,
 } from "@/pages/appointments/types";
@@ -26,25 +26,23 @@ function useAppointmentActionMutation<TPayload>(
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      values,
-    }: {
-      id: number;
-      values: TPayload;
-    }) => {
+    mutationFn: async ({ id, values }: { id: number; values: TPayload }) => {
       const endpoint = endpointBuilder(id);
+
       if (endpoint.endsWith("/confirm")) {
         return appointmentsApi.confirm(id, values as ConfirmAppointmentData);
       }
-      if (endpoint.endsWith("/complete")) {
-        return appointmentsApi.complete(id, values as CompleteAppointmentData);
+      if (endpoint.endsWith("/attend")) {
+        return appointmentsApi.attend(id, values as AttendAppointmentData);
       }
       if (endpoint.endsWith("/cancel")) {
         return appointmentsApi.cancel(id, values as CancelAppointmentData);
       }
 
-      return appointmentsApi.reschedule(id, values as RescheduleAppointmentData);
+      return appointmentsApi.reschedule(
+        id,
+        values as RescheduleAppointmentData,
+      );
     },
     onSuccess: (_res, variables) => {
       toast({
@@ -60,6 +58,7 @@ function useAppointmentActionMutation<TPayload>(
         queryKey: ["appointment", String(variables.id)],
       });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     },
     onError: (error) => {
       toast({
@@ -85,13 +84,13 @@ export const useConfirmAppointment = () =>
     "Failed to confirm appointment",
   );
 
-export const useCompleteAppointment = () =>
-  useAppointmentActionMutation<CompleteAppointmentData>(
-    (id) => `/appointments/${id}/complete`,
-    "appointments.toast.completed",
-    "Appointment completed successfully",
-    "appointments.toast.completeFailed",
-    "Failed to complete appointment",
+export const useAttendAppointment = () =>
+  useAppointmentActionMutation<AttendAppointmentData>(
+    (id) => `/appointments/${id}/attend`,
+    "appointments.toast.attended",
+    "Appointment attended successfully",
+    "appointments.toast.attendFailed",
+    "Failed to mark appointment as attended",
   );
 
 export const useCancelAppointment = () =>

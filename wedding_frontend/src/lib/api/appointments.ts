@@ -4,8 +4,8 @@ import type {
   AppointmentResponse,
   AppointmentsCalendarResponse,
   AppointmentsResponse,
+  AttendAppointmentData,
   CancelAppointmentData,
-  CompleteAppointmentData,
   ConfirmAppointmentData,
   RescheduleAppointmentData,
 } from "@/pages/appointments/types";
@@ -149,21 +149,22 @@ export const appointmentsApi = {
   },
 
   update(id: string | number, values: AppointmentFormData) {
-    return api.put(`/appointments/${id}`, buildUpdateAppointmentPayload(values));
+    return api.put(
+      `/appointments/${id}`,
+      buildUpdateAppointmentPayload(values),
+    );
   },
-
   confirm(id: number, values: ConfirmAppointmentData) {
     return api.patch(`/appointments/${id}/confirm`, values);
   },
 
-  complete(id: number, values: CompleteAppointmentData) {
-    return api.patch(`/appointments/${id}/complete`, values);
+  attend(id: number, values: AttendAppointmentData) {
+    return api.patch(`/appointments/${id}/attend`, values);
   },
 
   cancel(id: number, values: CancelAppointmentData) {
     return api.patch(`/appointments/${id}/cancel`, values);
   },
-
   reschedule(id: number, values: RescheduleAppointmentData) {
     return api.patch(`/appointments/${id}/reschedule`, {
       appointmentDate: values.appointmentDate,

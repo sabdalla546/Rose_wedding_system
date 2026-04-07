@@ -290,7 +290,8 @@ export function AppointmentsTableView() {
             }),
             value: workflowSummary.metrics.upcoming,
             helper: t("appointments.upcomingLabelHint", {
-              defaultValue: "Scheduled, confirmed, and rescheduled appointments.",
+              defaultValue:
+                "Scheduled, confirmed, and rescheduled appointments.",
             }),
           },
           {
@@ -300,7 +301,8 @@ export function AppointmentsTableView() {
             }),
             value: workflowSummary.metrics.readyToConvert,
             helper: t("appointments.readyToConvertLabelHint", {
-              defaultValue: "Completed appointments can move into the event workflow.",
+              defaultValue:
+                "Completed appointments can move into the event workflow.",
             }),
           },
           {
@@ -317,7 +319,9 @@ export function AppointmentsTableView() {
         statuses={[
           {
             key: "all",
-            label: t("appointments.allStatuses", { defaultValue: "All Statuses" }),
+            label: t("appointments.allStatuses", {
+              defaultValue: "All Statuses",
+            }),
             count: workflowSummary.total,
             active: statusFilter === "all",
             onClick: () => {
@@ -327,7 +331,9 @@ export function AppointmentsTableView() {
           },
           {
             key: "scheduled",
-            label: t("appointments.status.scheduled", { defaultValue: "Scheduled" }),
+            label: t("appointments.status.scheduled", {
+              defaultValue: "Scheduled",
+            }),
             count: workflowSummary.statusCounts.scheduled,
             active: statusFilter === "scheduled",
             onClick: () => {
@@ -337,7 +343,9 @@ export function AppointmentsTableView() {
           },
           {
             key: "confirmed",
-            label: t("appointments.status.confirmed", { defaultValue: "Confirmed" }),
+            label: t("appointments.status.confirmed", {
+              defaultValue: "Confirmed",
+            }),
             count: workflowSummary.statusCounts.confirmed,
             active: statusFilter === "confirmed",
             onClick: () => {
@@ -347,7 +355,9 @@ export function AppointmentsTableView() {
           },
           {
             key: "completed",
-            label: t("appointments.status.completed", { defaultValue: "Completed" }),
+            label: t("appointments.status.completed", {
+              defaultValue: "Completed",
+            }),
             count: workflowSummary.statusCounts.completed,
             active: statusFilter === "completed",
             onClick: () => {
@@ -357,7 +367,9 @@ export function AppointmentsTableView() {
           },
           {
             key: "converted",
-            label: t("appointments.status.converted", { defaultValue: "Converted" }),
+            label: t("appointments.status.converted", {
+              defaultValue: "Converted",
+            }),
             count: workflowSummary.statusCounts.converted,
             active: statusFilter === "converted",
             onClick: () => {
@@ -367,7 +379,9 @@ export function AppointmentsTableView() {
           },
           {
             key: "cancelled",
-            label: t("appointments.status.cancelled", { defaultValue: "Cancelled" }),
+            label: t("appointments.status.cancelled", {
+              defaultValue: "Cancelled",
+            }),
             count: workflowSummary.statusCounts.cancelled,
             active: statusFilter === "cancelled",
             onClick: () => {
@@ -391,7 +405,9 @@ export function AppointmentsTableView() {
               })}
             </Button>
             <Button type="button" variant="outline" onClick={resetFilters}>
-              {t("appointments.clearFilters", { defaultValue: "Clear Filters" })}
+              {t("appointments.clearFilters", {
+                defaultValue: "Clear Filters",
+              })}
             </Button>
           </div>
         }

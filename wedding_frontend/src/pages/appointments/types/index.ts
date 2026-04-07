@@ -1,13 +1,15 @@
 import type { Venue } from "@/pages/venues/types";
 
 export type AppointmentStatus =
+  | "reserved"
+  | "attended"
+  | "converted"
+  | "cancelled"
+  | "no_show"
   | "scheduled"
   | "confirmed"
   | "completed"
-  | "converted"
-  | "rescheduled"
-  | "cancelled"
-  | "no_show";
+  | "rescheduled";
 
 export type AppointmentType =
   | "New Appointment 1"
@@ -92,7 +94,7 @@ export interface ConfirmAppointmentData {
   notes?: string;
 }
 
-export interface CompleteAppointmentData {
+export interface AttendAppointmentData {
   notes?: string;
 }
 

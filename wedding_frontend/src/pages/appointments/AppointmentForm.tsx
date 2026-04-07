@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
@@ -224,7 +225,7 @@ const AppointmentFormPage = () => {
       venueId: "",
       startTime: "",
       endTime: "",
-      status: "scheduled",
+      status: "reserved",
       type: "Office Visit",
       notes: "",
     },
@@ -644,7 +645,9 @@ const AppointmentFormPage = () => {
                                 key={`customer-select-${field.value || EMPTY_VALUE}-${customerOptions.length}`}
                                 value={field.value || EMPTY_VALUE}
                                 onValueChange={(value) =>
-                                  field.onChange(value === EMPTY_VALUE ? "" : value)
+                                  field.onChange(
+                                    value === EMPTY_VALUE ? "" : value,
+                                  )
                                 }
                                 onSearch={setCustomerSearch}
                                 triggerClassName="rounded-[4px]"
@@ -720,7 +723,9 @@ const AppointmentFormPage = () => {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
-                                {t("customers.email", { defaultValue: "Email" })}
+                                {t("customers.email", {
+                                  defaultValue: "Email",
+                                })}
                               </FormLabel>
                               <FormControl>
                                 <Input
@@ -786,7 +791,8 @@ const AppointmentFormPage = () => {
                                   placeholder={t(
                                     "customers.nationalIdPlaceholder",
                                     {
-                                      defaultValue: "Enter 12-digit national ID",
+                                      defaultValue:
+                                        "Enter 12-digit national ID",
                                     },
                                   )}
                                 />
@@ -809,9 +815,12 @@ const AppointmentFormPage = () => {
                                 <Input
                                   {...field}
                                   className="rounded-[4px]"
-                                  placeholder={t("customers.addressPlaceholder", {
-                                    defaultValue: "Enter customer address",
-                                  })}
+                                  placeholder={t(
+                                    "customers.addressPlaceholder",
+                                    {
+                                      defaultValue: "Enter customer address",
+                                    },
+                                  )}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -856,236 +865,251 @@ const AppointmentFormPage = () => {
                     })}
                   >
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="appointmentDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.date", { defaultValue: "Date" })}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            className="rounded-[4px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="weddingDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.weddingDate", {
-                            defaultValue: "Wedding Date",
-                          })}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            className="rounded-[4px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {!isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {t("appointments.statusLabel", {
-                              defaultValue: "Status",
-                            })}
-                          </FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                          >
+                      <FormField
+                        control={form.control}
+                        name="appointmentDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.date", { defaultValue: "Date" })}
+                            </FormLabel>
                             <FormControl>
-                              <SelectTrigger className="rounded-[4px]">
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input
+                                type="date"
+                                {...field}
+                                className="rounded-[4px]"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {APPOINTMENT_FORM_STATUS_OPTIONS.map((status) => (
-                                <SelectItem
-                                  key={status.value}
-                                  value={status.value}
-                                >
-                                  {t(`appointments.status.${status.value}`, {
-                                    defaultValue: status.label,
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="weddingDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.weddingDate", {
+                                defaultValue: "Wedding Date",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...field}
+                                className="rounded-[4px]"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {!isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("appointments.statusLabel", {
+                                  defaultValue: "Status",
+                                })}
+                              </FormLabel>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="rounded-[4px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {APPOINTMENT_FORM_STATUS_OPTIONS.map(
+                                    (status) => (
+                                      <SelectItem
+                                        key={status.value}
+                                        value={status.value}
+                                      >
+                                        {t(
+                                          `appointments.status.${status.value}`,
+                                          {
+                                            defaultValue: status.label,
+                                          },
+                                        )}
+                                      </SelectItem>
+                                    ),
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="rounded-[16px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
+                          {t("appointments.workflowEditHint", {
+                            defaultValue:
+                              "Use appointment workflow actions from the detail page to change status safely.",
+                          })}
+                        </div>
+                      )}
+                      <FormField
+                        control={form.control}
+                        name="guestCount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.guestCount", {
+                                defaultValue: "Guest Count",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                className="rounded-[4px]"
+                                placeholder={t(
+                                  "appointments.guestCountPlaceholder",
+                                  {
+                                    defaultValue: "Enter expected guest count",
+                                  },
+                                )}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="startTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.startTime", {
+                                defaultValue: "Start Time",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="time"
+                                {...field}
+                                className="rounded-[4px]"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.endTime", {
+                                defaultValue: "End Time",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="time"
+                                {...field}
+                                className="rounded-[4px]"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="venueId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.venue", {
+                                defaultValue: "Venue",
+                              })}
+                            </FormLabel>
+                            <Select
+                              key={`venue-select-${field.value || EMPTY_VALUE}-${venueOptions.length}`}
+                              value={field.value || EMPTY_VALUE}
+                              onValueChange={(value) =>
+                                field.onChange(
+                                  value === EMPTY_VALUE ? "" : value,
+                                )
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger className="rounded-[4px]">
+                                  <SelectValue
+                                    placeholder={t("appointments.selectVenue", {
+                                      defaultValue: "Select venue",
+                                    })}
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value={EMPTY_VALUE}>
+                                  {t("appointments.noVenueSelected", {
+                                    defaultValue: "No venue selected",
                                   })}
                                 </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <div className="rounded-[16px] border border-[var(--lux-row-border)] bg-[var(--lux-row-surface)] p-4 text-sm text-[var(--lux-text-secondary)]">
-                      {t("appointments.workflowEditHint", {
-                        defaultValue:
-                          "Use appointment workflow actions from the detail page to change status safely.",
-                      })}
-                    </div>
-                  )}
-                  <FormField
-                    control={form.control}
-                    name="guestCount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.guestCount", {
-                            defaultValue: "Guest Count",
-                          })}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            {...field}
-                            className="rounded-[4px]"
-                            placeholder={t(
-                              "appointments.guestCountPlaceholder",
-                              {
-                                defaultValue: "Enter expected guest count",
-                              },
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="startTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.startTime", {
-                            defaultValue: "Start Time",
-                          })}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            {...field}
-                            className="rounded-[4px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="endTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.endTime", {
-                            defaultValue: "End Time",
-                          })}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            {...field}
-                            className="rounded-[4px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="venueId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t("appointments.venue", { defaultValue: "Venue" })}
-                        </FormLabel>
-                        <Select
-                          key={`venue-select-${field.value || EMPTY_VALUE}-${venueOptions.length}`}
-                          value={field.value || EMPTY_VALUE}
-                          onValueChange={(value) =>
-                            field.onChange(value === EMPTY_VALUE ? "" : value)
-                          }
-                        >
-                          <FormControl>
-                            <SelectTrigger className="rounded-[4px]">
-                              <SelectValue
-                                placeholder={t("appointments.selectVenue", {
-                                  defaultValue: "Select venue",
-                                })}
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value={EMPTY_VALUE}>
-                              {t("appointments.noVenueSelected", {
-                                defaultValue: "No venue selected",
-                              })}
-                            </SelectItem>
-                            {venueOptions.map((venue) => (
-                              <SelectItem key={venue.value} value={venue.value}>
-                                {venue.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>
-                          {t("appointments.type", { defaultValue: "Type" })}
-                        </FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="rounded-[4px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {APPOINTMENT_TYPE_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {t(`appointments.typeOptions.${option.value}`, {
-                                  defaultValue: option.label,
-                                })}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                      )}
-                    />
+                                {venueOptions.map((venue) => (
+                                  <SelectItem
+                                    key={venue.value}
+                                    value={venue.value}
+                                  >
+                                    {venue.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>
+                              {t("appointments.type", { defaultValue: "Type" })}
+                            </FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="rounded-[4px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {APPOINTMENT_TYPE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {t(
+                                      `appointments.typeOptions.${option.value}`,
+                                      {
+                                        defaultValue: option.label,
+                                      },
+                                    )}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </FormSection>
 

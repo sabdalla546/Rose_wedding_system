@@ -14,11 +14,9 @@ import type { ExecutionBriefStatus } from "@/pages/execution/types";
 import type { QuotationStatus } from "@/pages/quotations/types";
 
 const APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  "scheduled",
-  "confirmed",
-  "completed",
+  "reserved",
+  "attended",
   "converted",
-  "rescheduled",
   "cancelled",
   "no_show",
 ];
@@ -65,7 +63,10 @@ const EXECUTION_STATUSES: ExecutionBriefStatus[] = [
   "cancelled",
 ];
 
-const countRecord = <T extends string>(statuses: readonly T[], counts: Array<number | undefined>) =>
+const countRecord = <T extends string>(
+  statuses: readonly T[],
+  counts: Array<number | undefined>,
+) =>
   Object.fromEntries(
     statuses.map((status, index) => [status, counts[index] ?? 0]),
   ) as Record<T, number>;
@@ -97,12 +98,12 @@ export function useAppointmentWorkflowSummary() {
       total: totalQuery.data ?? 0,
       statusCounts,
       metrics: {
-        upcoming:
-          statusCounts.scheduled + statusCounts.confirmed + statusCounts.rescheduled,
-        readyToConvert: statusCounts.completed,
+        upcoming: statusCounts.reserved,
+        readyToConvert: statusCounts.attended,
         blocked: statusCounts.cancelled + statusCounts.no_show,
       },
-      isLoading: totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
+      isLoading:
+        totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
     };
   }, [statusQueries, totalQuery.data, totalQuery.isLoading]);
 }
@@ -111,11 +112,13 @@ export function useEventWorkflowSummary() {
   const totalQuery = useQuery({
     queryKey: ["workflow-summary", "events", "total"],
     queryFn: async () =>
-      (await eventsApi.list({
-        currentPage: 1,
-        itemsPerPage: 1,
-        filters: getInitialEventsBusinessFilters(),
-      })).meta.total,
+      (
+        await eventsApi.list({
+          currentPage: 1,
+          itemsPerPage: 1,
+          filters: getInitialEventsBusinessFilters(),
+        })
+      ).meta.total,
     staleTime: 60_000,
   });
 
@@ -123,11 +126,13 @@ export function useEventWorkflowSummary() {
     queries: EVENT_STATUSES.map((status) => ({
       queryKey: ["workflow-summary", "events", status],
       queryFn: async () =>
-        (await eventsApi.list({
-          currentPage: 1,
-          itemsPerPage: 1,
-          filters: { ...getInitialEventsBusinessFilters(), status },
-        })).meta.total,
+        (
+          await eventsApi.list({
+            currentPage: 1,
+            itemsPerPage: 1,
+            filters: { ...getInitialEventsBusinessFilters(), status },
+          })
+        ).meta.total,
       staleTime: 60_000,
     })),
   });
@@ -151,7 +156,8 @@ export function useEventWorkflowSummary() {
         completed: statusCounts.completed,
         blocked: statusCounts.cancelled,
       },
-      isLoading: totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
+      isLoading:
+        totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
     };
   }, [statusQueries, totalQuery.data, totalQuery.isLoading]);
 }
@@ -160,15 +166,17 @@ export function useQuotationWorkflowSummary() {
   const totalQuery = useQuery({
     queryKey: ["workflow-summary", "quotations", "total"],
     queryFn: async () =>
-      (await quotationsApi.list({
-        currentPage: 1,
-        itemsPerPage: 1,
-        searchQuery: "",
-        eventId: "",
-        status: "all",
-        issueDateFrom: "",
-        issueDateTo: "",
-      })).meta.total,
+      (
+        await quotationsApi.list({
+          currentPage: 1,
+          itemsPerPage: 1,
+          searchQuery: "",
+          eventId: "",
+          status: "all",
+          issueDateFrom: "",
+          issueDateTo: "",
+        })
+      ).meta.total,
     staleTime: 60_000,
   });
 
@@ -176,15 +184,17 @@ export function useQuotationWorkflowSummary() {
     queries: QUOTATION_STATUSES.map((status) => ({
       queryKey: ["workflow-summary", "quotations", status],
       queryFn: async () =>
-        (await quotationsApi.list({
-          currentPage: 1,
-          itemsPerPage: 1,
-          searchQuery: "",
-          eventId: "",
-          status,
-          issueDateFrom: "",
-          issueDateTo: "",
-        })).meta.total,
+        (
+          await quotationsApi.list({
+            currentPage: 1,
+            itemsPerPage: 1,
+            searchQuery: "",
+            eventId: "",
+            status,
+            issueDateFrom: "",
+            issueDateTo: "",
+          })
+        ).meta.total,
       staleTime: 60_000,
     })),
   });
@@ -202,9 +212,12 @@ export function useQuotationWorkflowSummary() {
         pending: statusCounts.draft + statusCounts.sent,
         approved: statusCounts.approved,
         blocked:
-          statusCounts.rejected + statusCounts.expired + statusCounts.superseded,
+          statusCounts.rejected +
+          statusCounts.expired +
+          statusCounts.superseded,
       },
-      isLoading: totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
+      isLoading:
+        totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
     };
   }, [statusQueries, totalQuery.data, totalQuery.isLoading]);
 }
@@ -213,16 +226,18 @@ export function useContractWorkflowSummary() {
   const totalQuery = useQuery({
     queryKey: ["workflow-summary", "contracts", "total"],
     queryFn: async () =>
-      (await contractsApi.list({
-        currentPage: 1,
-        itemsPerPage: 1,
-        searchQuery: "",
-        quotationId: "",
-        eventId: "",
-        status: "all",
-        signedDateFrom: "",
-        signedDateTo: "",
-      })).meta.total,
+      (
+        await contractsApi.list({
+          currentPage: 1,
+          itemsPerPage: 1,
+          searchQuery: "",
+          quotationId: "",
+          eventId: "",
+          status: "all",
+          signedDateFrom: "",
+          signedDateTo: "",
+        })
+      ).meta.total,
     staleTime: 60_000,
   });
 
@@ -230,16 +245,18 @@ export function useContractWorkflowSummary() {
     queries: CONTRACT_STATUSES.map((status) => ({
       queryKey: ["workflow-summary", "contracts", status],
       queryFn: async () =>
-        (await contractsApi.list({
-          currentPage: 1,
-          itemsPerPage: 1,
-          searchQuery: "",
-          quotationId: "",
-          eventId: "",
-          status,
-          signedDateFrom: "",
-          signedDateTo: "",
-        })).meta.total,
+        (
+          await contractsApi.list({
+            currentPage: 1,
+            itemsPerPage: 1,
+            searchQuery: "",
+            quotationId: "",
+            eventId: "",
+            status,
+            signedDateFrom: "",
+            signedDateTo: "",
+          })
+        ).meta.total,
       staleTime: 60_000,
     })),
   });
@@ -258,7 +275,8 @@ export function useContractWorkflowSummary() {
         completed: statusCounts.completed,
         blocked: statusCounts.cancelled + statusCounts.terminated,
       },
-      isLoading: totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
+      isLoading:
+        totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
     };
   }, [statusQueries, totalQuery.data, totalQuery.isLoading]);
 }
@@ -266,14 +284,16 @@ export function useContractWorkflowSummary() {
 export function useExecutionWorkflowSummary() {
   const totalQuery = useQuery({
     queryKey: ["workflow-summary", "execution", "total"],
-    queryFn: async () => (await executionBriefsApi.list({ status: "all" })).data.length,
+    queryFn: async () =>
+      (await executionBriefsApi.list({ status: "all" })).data.length,
     staleTime: 60_000,
   });
 
   const statusQueries = useQueries({
     queries: EXECUTION_STATUSES.map((status) => ({
       queryKey: ["workflow-summary", "execution", status],
-      queryFn: async () => (await executionBriefsApi.list({ status })).data.length,
+      queryFn: async () =>
+        (await executionBriefsApi.list({ status })).data.length,
       staleTime: 60_000,
     })),
   });
@@ -297,7 +317,8 @@ export function useExecutionWorkflowSummary() {
         completed: statusCounts.completed,
         blocked: statusCounts.cancelled,
       },
-      isLoading: totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
+      isLoading:
+        totalQuery.isLoading || statusQueries.some((query) => query.isLoading),
     };
   }, [statusQueries, totalQuery.data, totalQuery.isLoading]);
 }

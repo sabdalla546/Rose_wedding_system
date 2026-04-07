@@ -21,15 +21,17 @@ export type TableAppointmentsResponse = {
 export function toTableAppointments(
   res?: AppointmentsResponse,
 ): TableAppointmentsResponse {
-  const appointments = (res?.data ?? []).map<TableAppointment>((appointment) => ({
-    ...appointment,
-    customerName:
-      appointment.customer?.fullName || `Customer #${appointment.customerId}`,
-    timeDisplay: appointment.endTime
-      ? `${appointment.startTime} - ${appointment.endTime}`
-      : appointment.startTime,
-    weddingDateDisplay: appointment.weddingDate || "-",
-  }));
+  const appointments = (res?.data ?? []).map<TableAppointment>(
+    (appointment) => ({
+      ...appointment,
+      customerName:
+        appointment.customer?.fullName || `Customer #${appointment.customerId}`,
+      timeDisplay: appointment.endTime
+        ? `${appointment.startTime} - ${appointment.endTime}`
+        : appointment.startTime,
+      weddingDateDisplay: appointment.weddingDate || "-",
+    }),
+  );
 
   return {
     data: { appointments },
@@ -42,18 +44,30 @@ export const APPOINTMENT_STATUS_OPTIONS: Array<{
   value: AppointmentStatus;
   label: string;
 }> = [
+  { value: "reserved", label: "Reserved" },
+  { value: "attended", label: "Attended" },
+  { value: "converted", label: "Converted" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "no_show", label: "No Show" },
+
+  // legacy compatibility
   { value: "scheduled", label: "Scheduled" },
   { value: "confirmed", label: "Confirmed" },
   { value: "completed", label: "Completed" },
-  { value: "converted", label: "Converted" },
   { value: "rescheduled", label: "Rescheduled" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "no_show", label: "No Show" },
 ];
 
-export const APPOINTMENT_FORM_STATUS_OPTIONS = APPOINTMENT_STATUS_OPTIONS.filter(
-  (status) => status.value !== "converted",
-);
+export const APPOINTMENT_FORM_STATUS_OPTIONS =
+  APPOINTMENT_STATUS_OPTIONS.filter(
+    (status) =>
+      ![
+        "converted",
+        "completed",
+        "scheduled",
+        "confirmed",
+        "rescheduled",
+      ].includes(status.value),
+  );
 
 export const APPOINTMENT_TYPE_OPTIONS: Array<{
   value: AppointmentType;
@@ -68,34 +82,49 @@ export const APPOINTMENT_TYPE_OPTIONS: Array<{
   { value: "Office Visit", label: "Office Visit" },
 ];
 
-export const formatAppointmentStatus = (status: AppointmentStatus) =>
-  status
+export const formatAppointmentStatus = (status: AppointmentStatus) => {
+  const normalized =
+    status === "scheduled" || status === "confirmed" || status === "rescheduled"
+      ? "reserved"
+      : status === "completed"
+        ? "attended"
+        : status;
+
+  return normalized
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-
-export const formatAppointmentType = (value: AppointmentType) =>
-  value;
-
-const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> = {
-  scheduled: "Pending",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  converted: "Completed",
-  rescheduled: "Tentative",
-  cancelled: "Cancelled",
-  no_show: "Overdue",
 };
 
-const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> = {
-  scheduled: "gold",
-  confirmed: "emerald",
-  completed: "blue",
-  converted: "blue",
-  rescheduled: "gold",
-  cancelled: "rose",
-  no_show: "blue",
-};
+export const formatAppointmentType = (value: AppointmentType) => value;
+
+const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> =
+  {
+    reserved: "Pending",
+    attended: "Confirmed",
+    converted: "Completed",
+    cancelled: "Cancelled",
+    no_show: "Overdue",
+
+    scheduled: "Pending",
+    confirmed: "Pending",
+    completed: "Confirmed",
+    rescheduled: "Tentative",
+  };
+
+const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> =
+  {
+    reserved: "gold",
+    attended: "emerald",
+    converted: "blue",
+    cancelled: "rose",
+    no_show: "blue",
+
+    scheduled: "gold",
+    confirmed: "gold",
+    completed: "emerald",
+    rescheduled: "gold",
+  };
 
 function combineDateTime(date: string, time: string) {
   return new Date(`${date}T${time}:00`);
@@ -103,7 +132,10 @@ function combineDateTime(date: string, time: string) {
 
 export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
   return appointments.map((appointment) => {
-    const startAt = combineDateTime(appointment.appointmentDate, appointment.startTime);
+    const startAt = combineDateTime(
+      appointment.appointmentDate,
+      appointment.startTime,
+    );
     const endAt = combineDateTime(
       appointment.appointmentDate,
       appointment.endTime || appointment.startTime,
@@ -112,6 +144,7 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       endAt.getTime() > startAt.getTime()
         ? endAt
         : new Date(startAt.getTime() + 60 * 60 * 1000);
+
     const customerName =
       appointment.customer?.fullName || `Customer #${appointment.customerId}`;
 
@@ -120,7 +153,7 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       bookingNumber: `APPT-${String(appointment.id).padStart(4, "0")}`,
       title: `${customerName} Appointment`,
       clientName: customerName,
-      venue: "-",
+      venue: appointment.venue?.name || "-",
       eventType: formatAppointmentType(appointment.type),
       status: CALENDAR_STATUS_MAP[appointment.status],
       packageName: formatAppointmentType(appointment.type),
@@ -134,7 +167,7 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       appointmentId: appointment.id,
       customerId: appointment.customerId,
       meetingType: appointment.type,
-      guestCount: null,
+      guestCount: appointment.guestCount ?? null,
     };
   });
 }
