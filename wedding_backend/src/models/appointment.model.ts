@@ -120,7 +120,7 @@ Appointment.init(
     status: {
       type: DataTypes.ENUM(...APPOINTMENT_STATUSES),
       allowNull: false,
-      defaultValue: "scheduled",
+      defaultValue: "reserved",
     },
     createdBy: {
       type: DataTypes.INTEGER.UNSIGNED,

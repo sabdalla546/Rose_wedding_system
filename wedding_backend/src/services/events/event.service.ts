@@ -4,7 +4,6 @@ import { Appointment, Customer, Event, User, Venue } from "../../models";
 import type { EventStatus } from "../../models/event.model";
 import {
   ACTIVE_EVENT_STATUSES,
-  EVENT_WORKFLOW_STATUSES,
   TERMINAL_APPOINTMENT_STATUSES,
 } from "../../constants/workflow-statuses";
 import { markAppointmentConverted } from "../appointments/appointment.workflow.service";
@@ -77,12 +76,16 @@ export const assertAppointmentCanConvertToEvent = async (
     throw new WorkflowDomainError("Source appointment not found", 404);
   }
 
-  if (TERMINAL_APPOINTMENT_STATUSES.has(normalizeAppointmentStatus(appointment.status))) {
+  const normalizedAppointmentStatus = normalizeAppointmentStatus(
+    appointment.status,
+  );
+
+  if (TERMINAL_APPOINTMENT_STATUSES.has(normalizedAppointmentStatus)) {
     recordWorkflowBlock({
       entityName: "appointment",
       entityId: appointment.id,
       actionName: "appointment.convert_to_event",
-      currentStatus: normalizeAppointmentStatus(appointment.status),
+      currentStatus: normalizedAppointmentStatus,
       attemptedBy: null,
       message: "Invalid appointment status transition",
       metadata: {
@@ -94,19 +97,22 @@ export const assertAppointmentCanConvertToEvent = async (
       },
     });
 
-    throw invalidStatusTransitionError();
+    throw invalidStatusTransitionError(
+      "Appointment cannot be converted from a terminal status",
+    );
   }
 
-  if (appointment.status !== "completed") {
+  if (normalizedAppointmentStatus !== "attended") {
     recordWorkflowBlock({
       entityName: "appointment",
       entityId: appointment.id,
       actionName: "appointment.convert_to_event",
-      currentStatus: normalizeAppointmentStatus(appointment.status),
+      currentStatus: normalizedAppointmentStatus,
       attemptedBy: null,
       message: "Invalid appointment status transition",
       metadata: {
         sourceAppointmentId,
+        expectedStatus: "attended",
       },
       sourceRefs: {
         appointmentId: appointment.id,
@@ -114,7 +120,9 @@ export const assertAppointmentCanConvertToEvent = async (
       },
     });
 
-    throw invalidStatusTransitionError();
+    throw invalidStatusTransitionError(
+      "Appointment must be attended before converting to event",
+    );
   }
 
   const existingEvent = await Event.findOne({
@@ -136,7 +144,7 @@ export const assertAppointmentCanConvertToEvent = async (
       entityName: "appointment",
       entityId: appointment.id,
       actionName: "appointment.convert_to_event",
-      currentStatus: normalizeAppointmentStatus(appointment.status),
+      currentStatus: normalizedAppointmentStatus,
       attemptedBy: null,
       message: "Appointment already converted",
       metadata: {

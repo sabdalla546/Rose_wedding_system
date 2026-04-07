@@ -21,8 +21,8 @@ export const APPOINTMENT_TRANSITIONS: Record<
   AppointmentWorkflowStatus,
   readonly AppointmentWorkflowStatus[]
 > = {
-  scheduled: ["completed", "cancelled", "no_show"],
-  completed: ["converted"],
+  reserved: ["attended", "cancelled", "no_show"],
+  attended: ["converted"],
   cancelled: [],
   converted: [],
   no_show: [],
@@ -85,8 +85,9 @@ export const normalizeAppointmentStatus = (
 ): AppointmentWorkflowStatus =>
   APPOINTMENT_STATUS_ALIASES[status] ?? (status as AppointmentWorkflowStatus);
 
-export const normalizeEventStatus = (status: EventStatus): EventWorkflowStatus =>
-  status;
+export const normalizeEventStatus = (
+  status: EventStatus,
+): EventWorkflowStatus => status;
 
 export const normalizeQuotationStatus = (
   status: QuotationStatus,
@@ -100,8 +101,8 @@ export const normalizeContractStatus = (
 export const normalizeExecutionBriefStatus = (
   status: ExecutionBriefStatus,
 ): ExecutionBriefWorkflowStatus =>
-  EXECUTION_BRIEF_STATUS_ALIASES[status]
-  ?? (status as ExecutionBriefWorkflowStatus);
+  EXECUTION_BRIEF_STATUS_ALIASES[status] ??
+  (status as ExecutionBriefWorkflowStatus);
 
 const assertValidTransition = <TWorkflowStatus extends string>({
   entityName,
@@ -142,9 +143,7 @@ export const resolveTransitionPath = <TWorkflowStatus extends string>(
 
   while (queue.length > 0) {
     const current = queue.shift();
-    if (!current) {
-      continue;
-    }
+    if (!current) continue;
 
     const nextStatuses = transitions[current.status] ?? [];
     for (const nextStatus of nextStatuses) {
@@ -224,8 +223,23 @@ export const assertValidExecutionBriefTransition = (
 
 export const expandAppointmentStatusesForQuery = (status: string) => {
   const normalized = APPOINTMENT_STATUS_ALIASES[status as AppointmentStatus];
-  if (normalized === "scheduled" || status === "scheduled") {
-    return ["scheduled", "confirmed", "rescheduled"];
+
+  if (
+    normalized === "reserved" ||
+    status === "reserved" ||
+    status === "scheduled" ||
+    status === "confirmed" ||
+    status === "rescheduled"
+  ) {
+    return ["reserved", "scheduled", "confirmed", "rescheduled"];
+  }
+
+  if (
+    normalized === "attended" ||
+    status === "attended" ||
+    status === "completed"
+  ) {
+    return ["attended", "completed"];
   }
 
   return [status];
@@ -249,11 +263,17 @@ export const expandExecutionBriefStatusesForQuery = (status: string) => {
 
 export const isContractTerminalForEdits = (status: ContractStatus) => {
   const normalized = normalizeContractStatus(status);
-  return normalized === "signed" || normalized === "active" || normalized === "completed";
+  return (
+    normalized === "signed" ||
+    normalized === "active" ||
+    normalized === "completed"
+  );
 };
 
 export const isEventCancellableStatus = (status: EventStatus) =>
   CANCELLABLE_EVENT_STATUSES.has(normalizeEventStatus(status));
 
-export const isSupportedContractStatus = (status: string): status is ContractStatus =>
+export const isSupportedContractStatus = (
+  status: string,
+): status is ContractStatus =>
   (CONTRACT_STATUSES as readonly string[]).includes(status);

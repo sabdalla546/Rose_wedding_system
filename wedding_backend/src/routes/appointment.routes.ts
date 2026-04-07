@@ -9,11 +9,11 @@ import {
   updateAppointment,
   deleteAppointment,
   getAppointmentsCalendar,
-  completeAppointment,
   cancelAppointment,
   rescheduleAppointment,
   confirmAppointment,
   exportAppointmentsPdf,
+  attendAppointment,
 } from "../controllers/appointment.controller";
 
 const router = Router();
@@ -65,10 +65,10 @@ router.patch(
 );
 
 router.patch(
-  "/:id/complete",
+  "/:id/attend",
   authMiddleware,
-  requirePermissions("appointments.complete"),
-  completeAppointment,
+  requirePermissions("appointments.update"),
+  attendAppointment,
 );
 
 router.patch(

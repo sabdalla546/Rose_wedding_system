@@ -14,8 +14,8 @@ import {
 } from "../validation/appointment.schemas";
 import { calendarFeedQuerySchema } from "../validation/calendar.schemas";
 import {
+  attendAppointmentSchema,
   cancelAppointmentSchema,
-  completeAppointmentSchema,
   confirmAppointmentSchema,
   rescheduleAppointmentSchema,
 } from "../validation/appointment-action.schemas";
@@ -26,8 +26,8 @@ import {
   expandAppointmentStatusesForQuery,
 } from "../services/workflow/workflow.status";
 import {
+  attendAppointmentWorkflow,
   cancelAppointmentWorkflow,
-  completeAppointmentWorkflow,
   confirmAppointmentWorkflow,
   markAppointmentNoShow,
   rescheduleAppointmentWorkflow,
@@ -48,6 +48,7 @@ class AppointmentSchedulingError extends Error {
     this.statusCode = statusCode;
   }
 }
+
 const escapeHtml = (value: unknown) =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -55,6 +56,7 @@ const escapeHtml = (value: unknown) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
 const appointmentInclude = [
   { model: Customer, as: "customer" },
   { model: Venue, as: "venue" },
@@ -180,7 +182,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       guestCount: data.guestCount ?? null,
       venueId: data.venueId ?? null,
       notes: data.notes ?? null,
-      status: data.status ?? "scheduled",
+      status: data.status ?? "reserved",
       createdBy: req.user?.id ?? null,
       updatedBy: req.user?.id ?? null,
     });
@@ -276,7 +278,7 @@ export const createAppointmentWithCustomer = async (
           guestCount: data.appointment.guestCount ?? null,
           venueId: data.appointment.venueId ?? null,
           notes: data.appointment.notes ?? null,
-          status: data.appointment.status ?? "scheduled",
+          status: data.appointment.status ?? "reserved",
           createdBy: req.user?.id ?? null,
           updatedBy: req.user?.id ?? null,
         },
@@ -411,7 +413,7 @@ export const confirmAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const completeAppointment = async (req: AuthRequest, res: Response) => {
+export const attendAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
 
@@ -419,14 +421,14 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: req.t("common.invalid_id") });
     }
 
-    const data = completeAppointmentSchema.parse(req.body);
+    const data = attendAppointmentSchema.parse(req.body);
     const appointment = await Appointment.findByPk(id);
 
     if (!appointment) {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    await completeAppointmentWorkflow(
+    const result = await attendAppointmentWorkflow(
       appointment,
       req.user?.id ?? null,
       data.notes,
@@ -437,8 +439,9 @@ export const completeAppointment = async (req: AuthRequest, res: Response) => {
     });
 
     return res.json({
-      message: "Appointment completed successfully",
+      message: "Appointment attended successfully",
       data: updated ? serializeAppointment(updated) : updated,
+      eventId: result.event.id,
     });
   } catch (err) {
     return handleAppointmentError(req, res, err);
@@ -571,7 +574,13 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
       ignoreAppointmentId: appointment.id,
     });
 
-    const nextStatus = data.status ?? appointment.status;
+    const nextStatus =
+      data.status === "scheduled"
+        ? "reserved"
+        : data.status === "completed"
+          ? "attended"
+          : (data.status ?? appointment.status);
+
     if (nextStatus === "converted" && appointment.status !== "converted") {
       throw invalidStatusTransitionError(
         "Appointment can only be converted through event conversion",
@@ -610,8 +619,8 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
           req.user?.id ?? null,
           data.notes,
         );
-      } else if (nextStatus === "completed") {
-        await completeAppointmentWorkflow(
+      } else if (nextStatus === "attended") {
+        await attendAppointmentWorkflow(
           appointment,
           req.user?.id ?? null,
           data.notes,
@@ -749,6 +758,7 @@ const exportAppointmentsPdfLegacy = async (req: Request, res: Response) => {
       if (dateFrom) where.appointmentDate[Op.gte] = dateFrom;
       if (dateTo) where.appointmentDate[Op.lte] = dateTo;
     }
+
     const appointments = await Appointment.findAll({
       where,
       include: appointmentInclude,
@@ -906,7 +916,7 @@ const exportAppointmentsPdfLegacy = async (req: Request, res: Response) => {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      executablePath: puppeteer.executablePath(), // مهم
+      executablePath: puppeteer.executablePath(),
     });
 
     try {

@@ -21,3 +21,6 @@ export const invalidStatusTransitionError = (
 
 export const cancelledEventQuotationError = () =>
   new WorkflowDomainError("Cannot create quotation for cancelled event", 400);
+
+export const appointmentEventAlreadyExistsError = () =>
+  new WorkflowDomainError("An event already exists for this appointment", 409);
