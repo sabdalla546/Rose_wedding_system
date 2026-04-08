@@ -5,11 +5,7 @@ export type AppointmentStatus =
   | "attended"
   | "converted"
   | "cancelled"
-  | "no_show"
-  | "scheduled"
-  | "confirmed"
-  | "completed"
-  | "rescheduled";
+  | "no_show";
 
 export type AppointmentType =
   | "New Appointment 1"
@@ -76,6 +72,7 @@ export interface AppointmentResponse {
 export interface AppointmentsCalendarResponse {
   data: Appointment[];
 }
+
 export type AppointmentFormData = {
   customerId: string;
   appointmentDate: string;
@@ -86,6 +83,7 @@ export type AppointmentFormData = {
   endTime?: string;
   type: AppointmentType;
   notes?: string;
+  status?: AppointmentStatus;
 };
 
 export interface ConfirmAppointmentData {

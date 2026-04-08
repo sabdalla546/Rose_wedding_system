@@ -28,11 +28,12 @@ const baseQuotationItemSchema = z.object({
 
 export const quotationItemSchema = baseQuotationItemSchema.superRefine(
   (item, ctx) => {
-    if (item.itemType === "vendor" && !item.eventVendorId) {
+    if (item.itemType === "vendor" && !item.eventVendorId && !item.vendorId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "eventVendorId is required for vendor quotation items",
-        path: ["eventVendorId"],
+        message:
+          "eventVendorId or vendorId is required for vendor quotation items",
+        path: ["vendorId"],
       });
     }
   },
@@ -92,11 +93,16 @@ export const createQuotationFromEventSchema = z
 export const updateQuotationItemSchema = baseQuotationItemSchema
   .partial()
   .superRefine((item, ctx) => {
-    if (item.itemType === "vendor" && item.eventVendorId === null) {
+    if (
+      item.itemType === "vendor" &&
+      item.eventVendorId === null &&
+      item.vendorId === null
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "eventVendorId cannot be null for vendor quotation items",
-        path: ["eventVendorId"],
+        message:
+          "eventVendorId or vendorId is required for vendor quotation items",
+        path: ["vendorId"],
       });
     }
   });

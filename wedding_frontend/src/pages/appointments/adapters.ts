@@ -19,12 +19,34 @@ export type TableAppointmentsResponse = {
   totalPages: number;
 };
 
+const LEGACY_APPOINTMENT_STATUS_MAP = {
+  scheduled: "reserved",
+  confirmed: "reserved",
+  rescheduled: "reserved",
+  completed: "attended",
+} as const;
+
+export function normalizeAppointmentStatus(
+  status?: string | null,
+): AppointmentStatus {
+  if (!status) {
+    return "reserved";
+  }
+
+  return (
+    LEGACY_APPOINTMENT_STATUS_MAP[
+      status as keyof typeof LEGACY_APPOINTMENT_STATUS_MAP
+    ] ?? (status as AppointmentStatus)
+  );
+}
+
 export function toTableAppointments(
   res?: AppointmentsResponse,
 ): TableAppointmentsResponse {
   const appointments = (res?.data ?? []).map<TableAppointment>(
     (appointment) => ({
       ...appointment,
+      status: normalizeAppointmentStatus(appointment.status),
       customerName:
         appointment.customer?.fullName || `Customer #${appointment.customerId}`,
       timeDisplay: appointment.endTime
@@ -50,24 +72,11 @@ export const APPOINTMENT_STATUS_OPTIONS: Array<{
   { value: "converted", label: "Converted" },
   { value: "cancelled", label: "Cancelled" },
   { value: "no_show", label: "No Show" },
-
-  // legacy compatibility
-  { value: "scheduled", label: "Scheduled" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "completed", label: "Completed" },
-  { value: "rescheduled", label: "Rescheduled" },
 ];
 
 export const APPOINTMENT_FORM_STATUS_OPTIONS =
   APPOINTMENT_STATUS_OPTIONS.filter(
-    (status) =>
-      ![
-        "converted",
-        "completed",
-        "scheduled",
-        "confirmed",
-        "rescheduled",
-      ].includes(status.value),
+    (status) => !["converted"].includes(status.value),
   );
 
 export const APPOINTMENT_TYPE_OPTIONS: Array<{
@@ -83,15 +92,8 @@ export const APPOINTMENT_TYPE_OPTIONS: Array<{
   { value: "Office Visit", label: "Office Visit" },
 ];
 
-export const formatAppointmentStatus = (status: AppointmentStatus) => {
-  const normalized =
-    status === "scheduled" || status === "confirmed" || status === "rescheduled"
-      ? "reserved"
-      : status === "completed"
-        ? "attended"
-        : status;
-
-  return normalized
+export const formatAppointmentStatus = (status: string) => {
+  return normalizeAppointmentStatus(status)
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
@@ -117,11 +119,6 @@ const CALENDAR_STATUS_MAP: Record<AppointmentStatus, CalendarEvent["status"]> =
     converted: "Completed",
     cancelled: "Cancelled",
     no_show: "Overdue",
-
-    scheduled: "Pending",
-    confirmed: "Pending",
-    completed: "Confirmed",
-    rescheduled: "Tentative",
   };
 
 const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> =
@@ -131,11 +128,6 @@ const CALENDAR_ACCENT_MAP: Record<AppointmentStatus, CalendarEvent["accent"]> =
     converted: "blue",
     cancelled: "rose",
     no_show: "blue",
-
-    scheduled: "gold",
-    confirmed: "gold",
-    completed: "emerald",
-    rescheduled: "gold",
   };
 
 function combineDateTime(date: string, time: string) {
@@ -144,6 +136,7 @@ function combineDateTime(date: string, time: string) {
 
 export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
   return appointments.map((appointment) => {
+    const normalizedStatus = normalizeAppointmentStatus(appointment.status);
     const startAt = combineDateTime(
       appointment.appointmentDate,
       appointment.startTime,
@@ -167,7 +160,7 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       clientName: customerName,
       venue: appointment.venue?.name || "-",
       eventType: formatAppointmentType(appointment.type),
-      status: CALENDAR_STATUS_MAP[appointment.status],
+      status: CALENDAR_STATUS_MAP[normalizedStatus],
       packageName: formatAppointmentType(appointment.type),
       coordinator: "-",
       totalAmount: 0,
@@ -175,7 +168,7 @@ export function toCalendarEvents(appointments: Appointment[]): CalendarEvent[] {
       notes: appointment.notes || "No notes added.",
       startAt,
       endAt: computedEndAt,
-      accent: CALENDAR_ACCENT_MAP[appointment.status],
+      accent: CALENDAR_ACCENT_MAP[normalizedStatus],
       appointmentId: appointment.id,
       customerId: appointment.customerId,
       meetingType: appointment.type,

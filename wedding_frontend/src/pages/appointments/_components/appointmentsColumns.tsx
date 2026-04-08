@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   formatAppointmentType,
+  normalizeAppointmentStatus,
   type TableAppointment,
 } from "@/pages/appointments/adapters";
 import { AppointmentStatusBadge } from "./appointmentStatusBadge";
@@ -131,11 +132,15 @@ export const useAppointmentsColumns = ({
           {t("appointments.statusLabel", { defaultValue: "Status" })}
         </div>
       ),
-      cell: ({ row }) => (
-        <div className={alignClass}>
-          <AppointmentStatusBadge status={row.original.status} />
-        </div>
-      ),
+      cell: ({ row }) => {
+        const normalizedStatus = normalizeAppointmentStatus(row.original.status);
+
+        return (
+          <div className={alignClass}>
+            <AppointmentStatusBadge status={normalizedStatus} />
+          </div>
+        );
+      },
     },
     {
       id: "actions",
@@ -144,126 +149,114 @@ export const useAppointmentsColumns = ({
           {t("common.actions", { defaultValue: "Actions" })}
         </div>
       ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-1.5">
-          <Button
-            size="icon"
-            variant="secondary"
-            aria-label={t("appointments.viewAppointment", {
-              defaultValue: "View Appointment",
-            })}
-            title={t("appointments.viewAppointment", {
-              defaultValue: "View Appointment",
-            })}
-            onClick={() => navigate(`/appointments/${row.original.id}`)}
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </Button>
+      cell: ({ row }) => {
+        const normalizedStatus = normalizeAppointmentStatus(row.original.status);
 
-          <ProtectedComponent permission={editPermission}>
+        return (
+          <div className="flex items-center justify-center gap-1.5">
             <Button
               size="icon"
-              variant="outline"
-              aria-label={t("appointments.editAppointment", {
-                defaultValue: "Edit Appointment",
+              variant="secondary"
+              aria-label={t("appointments.viewAppointment", {
+                defaultValue: "View Appointment",
               })}
-              title={t("appointments.editAppointment", {
-                defaultValue: "Edit Appointment",
+              title={t("appointments.viewAppointment", {
+                defaultValue: "View Appointment",
               })}
-              onClick={() => navigate(`/appointments/edit/${row.original.id}`)}
+              onClick={() => navigate(`/appointments/${row.original.id}`)}
             >
-              <Edit className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" />
             </Button>
-          </ProtectedComponent>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <ProtectedComponent permission={editPermission}>
               <Button
                 size="icon"
-                variant="ghost"
-                aria-label={t("common.actions", { defaultValue: "Actions" })}
-                title={t("common.actions", { defaultValue: "Actions" })}
+                variant="outline"
+                aria-label={t("appointments.editAppointment", {
+                  defaultValue: "Edit Appointment",
+                })}
+                title={t("appointments.editAppointment", {
+                  defaultValue: "Edit Appointment",
+                })}
+                onClick={() => navigate(`/appointments/edit/${row.original.id}`)}
               >
-                <MoreHorizontal className="h-3.5 w-3.5" />
+                <Edit className="h-3.5 w-3.5" />
               </Button>
-            </DropdownMenuTrigger>
+            </ProtectedComponent>
 
-            <DropdownMenuContent align="end">
-              <ProtectedComponent permission="appointments.confirm">
-                <DropdownMenuItem
-                  disabled={
-                    !["reserved", "scheduled", "rescheduled"].includes(
-                      row.original.status,
-                    )
-                  }
-                  onClick={() => onConfirm(row.original)}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={t("common.actions", { defaultValue: "Actions" })}
+                  title={t("common.actions", { defaultValue: "Actions" })}
                 >
-                  <CheckCheck className="me-2 h-4 w-4" />
-                  {t("appointments.confirm", { defaultValue: "Confirm" })}
-                </DropdownMenuItem>
-              </ProtectedComponent>
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
 
-              <ProtectedComponent permission="appointments.attend">
-                <DropdownMenuItem
-                  disabled={[
-                    "attended",
-                    "converted",
-                    "cancelled",
-                    "no_show",
-                    "completed",
-                  ].includes(row.original.status)}
-                  onClick={() => onAttend(row.original)}
-                >
-                  <CheckCheck className="me-2 h-4 w-4" />
-                  {t("appointments.attend", { defaultValue: "Attend" })}
-                </DropdownMenuItem>
-              </ProtectedComponent>
+              <DropdownMenuContent align="end">
+                <ProtectedComponent permission="appointments.confirm">
+                  <DropdownMenuItem
+                    disabled={normalizedStatus !== "reserved"}
+                    onClick={() => onConfirm(row.original)}
+                  >
+                    <CheckCheck className="me-2 h-4 w-4" />
+                    {t("appointments.confirm", { defaultValue: "Confirm" })}
+                  </DropdownMenuItem>
+                </ProtectedComponent>
 
-              <ProtectedComponent permission="appointments.reschedule">
-                <DropdownMenuItem
-                  disabled={[
-                    "converted",
-                    "cancelled",
-                    "no_show",
-                    "completed",
-                  ].includes(row.original.status)}
-                  onClick={() => onReschedule(row.original)}
-                >
-                  <RotateCcw className="me-2 h-4 w-4" />
-                  {t("appointments.reschedule", {
-                    defaultValue: "Reschedule",
-                  })}
-                </DropdownMenuItem>
-              </ProtectedComponent>
+                <ProtectedComponent permission="appointments.attend">
+                  <DropdownMenuItem
+                    disabled={normalizedStatus !== "reserved"}
+                    onClick={() => onAttend(row.original)}
+                  >
+                    <CheckCheck className="me-2 h-4 w-4" />
+                    {t("appointments.attend", { defaultValue: "Attend" })}
+                  </DropdownMenuItem>
+                </ProtectedComponent>
 
-              <ProtectedComponent permission="appointments.cancel">
-                <DropdownMenuItem
-                  disabled={[
-                    "converted",
-                    "cancelled",
-                    "no_show",
-                    "completed",
-                  ].includes(row.original.status)}
-                  onClick={() => onCancel(row.original)}
-                >
-                  <CircleOff className="me-2 h-4 w-4" />
-                  {t("appointments.cancelAction", { defaultValue: "Cancel" })}
-                </DropdownMenuItem>
-              </ProtectedComponent>
+                <ProtectedComponent permission="appointments.reschedule">
+                  <DropdownMenuItem
+                    disabled={["converted", "cancelled", "no_show"].includes(
+                      normalizedStatus,
+                    )}
+                    onClick={() => onReschedule(row.original)}
+                  >
+                    <RotateCcw className="me-2 h-4 w-4" />
+                    {t("appointments.reschedule", {
+                      defaultValue: "Reschedule",
+                    })}
+                  </DropdownMenuItem>
+                </ProtectedComponent>
 
-              <ProtectedComponent permission={deletePermission}>
-                <DropdownMenuItem
-                  className="text-[var(--lux-danger)] hover:text-[var(--lux-danger)] focus:text-[var(--lux-danger)]"
-                  onClick={() => onDelete(row.original)}
-                >
-                  <Trash2 className="me-2 h-4 w-4" />
-                  {t("common.delete", { defaultValue: "Delete" })}
-                </DropdownMenuItem>
-              </ProtectedComponent>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
+                <ProtectedComponent permission="appointments.cancel">
+                  <DropdownMenuItem
+                    disabled={["converted", "cancelled", "no_show"].includes(
+                      normalizedStatus,
+                    )}
+                    onClick={() => onCancel(row.original)}
+                  >
+                    <CircleOff className="me-2 h-4 w-4" />
+                    {t("appointments.cancelAction", { defaultValue: "Cancel" })}
+                  </DropdownMenuItem>
+                </ProtectedComponent>
+
+                <ProtectedComponent permission={deletePermission}>
+                  <DropdownMenuItem
+                    className="text-[var(--lux-danger)] hover:text-[var(--lux-danger)] focus:text-[var(--lux-danger)]"
+                    onClick={() => onDelete(row.original)}
+                  >
+                    <Trash2 className="me-2 h-4 w-4" />
+                    {t("common.delete", { defaultValue: "Delete" })}
+                  </DropdownMenuItem>
+                </ProtectedComponent>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
     },
   ];
 };

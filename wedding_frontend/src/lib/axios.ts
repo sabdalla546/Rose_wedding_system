@@ -114,6 +114,10 @@ api.interceptors.response.use(
 
 type ApiErrorPayload = {
   message?: string;
+  errors?: Array<{
+    message?: string;
+    path?: Array<string | number>;
+  }>;
 };
 
 export const isApiError = (
@@ -125,7 +129,16 @@ export const getApiErrorMessage = (
   fallbackMessage: string
 ) => {
   if (isApiError(error)) {
-    return error.response?.data?.message || error.message || fallbackMessage;
+    const validationMessage = error.response?.data?.errors
+      ?.map((entry) => entry.message?.trim())
+      .find(Boolean);
+
+    return (
+      error.response?.data?.message ||
+      validationMessage ||
+      error.message ||
+      fallbackMessage
+    );
   }
 
   if (error instanceof Error && error.message) {

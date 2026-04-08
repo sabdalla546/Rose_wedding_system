@@ -2180,9 +2180,9 @@ export const baseEn = {
         "visible": "Visible On This Page",
         "visibleHint": "Appointments currently loaded into the table.",
         "open": "Needs Follow-up",
-        "openHint": "Scheduled or rescheduled appointments awaiting closure.",
+        "openHint": "Reserved appointments awaiting attendance.",
         "filters": "Active Filters",
-        "filtersHint": "Confirmed appointments on this page."
+        "filtersHint": "Attended appointments on this page."
       }
     },
     "calendarPage": {
@@ -2211,6 +2211,10 @@ export const baseEn = {
         "totalHint": "Appointments in the visible calendar range.",
         "upcoming": "Upcoming Appointments",
         "upcomingHint": "Future appointments that still need follow-up.",
+        "attended": "Attended Appointments",
+        "attendedHint": "Appointments already attended and waiting for workflow conversion.",
+        "converted": "Converted Appointments",
+        "convertedHint": "Appointments already converted into the event workflow in this range.",
         "confirmed": "Confirmed Appointments",
         "confirmedHint": "Appointments confirmed with the client.",
         "completed": "Completed Appointments",
@@ -2354,12 +2358,12 @@ export const baseEn = {
     "noNotes": "No notes added.",
     "workflowEditHint": "Use appointment workflow actions from the detail page to change status safely.",
     "workflowDashboard": "Appointment Workflow Visibility",
-    "workflowDashboardHint": "Track intake load, completed appointments ready for conversion, and blocked appointments before they disappear into the table.",
+    "workflowDashboardHint": "Track intake load, attended appointments ready for conversion, and blocked appointments before they disappear into the table.",
     "workflowDashboardEyebrow": "Workflow Dashboard",
     "upcomingLabel": "Upcoming",
-    "upcomingLabelHint": "Scheduled, confirmed, and rescheduled appointments.",
+    "upcomingLabelHint": "Reserved appointments waiting for attendance.",
     "readyToConvertLabel": "Ready To Convert",
-    "readyToConvertLabelHint": "Completed appointments can move into the event workflow.",
+    "readyToConvertLabelHint": "Attended appointments can move into the event workflow.",
     "blockedLabel": "Blocked",
     "blockedLabelHint": "Cancelled and no-show appointments.",
     "statusDistributionTitle": "Status Distribution",
@@ -2385,6 +2389,8 @@ export const baseEn = {
       "venue_visit": "Venue Visit"
     },
     "status": {
+      "reserved": "Reserved",
+      "attended": "Attended",
       "scheduled": "Scheduled",
       "confirmed": "Confirmed",
       "completed": "Completed",
@@ -2402,6 +2408,8 @@ export const baseEn = {
       "deleteFailed": "Failed to delete appointment",
       "confirmed": "Appointment confirmed successfully",
       "confirmFailed": "Failed to confirm appointment",
+      "attended": "Appointment attended successfully",
+      "attendFailed": "Failed to mark appointment as attended",
       "completed": "Appointment completed successfully",
       "completeFailed": "Failed to complete appointment",
       "cancelled": "Appointment cancelled successfully",

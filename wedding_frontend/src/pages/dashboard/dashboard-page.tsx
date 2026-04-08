@@ -145,7 +145,7 @@ export function DashboardPage() {
                 id: "ready",
                 label: "Ready To Convert",
                 value: appointmentsSummary.metrics.readyToConvert,
-                helper: "Completed appointments that can move into events.",
+                helper: "Attended appointments that can move into events.",
               },
               {
                 id: "blocked",
@@ -156,19 +156,14 @@ export function DashboardPage() {
             ]}
             statuses={[
               {
-                key: "scheduled",
-                label: t("appointments.status.scheduled", { defaultValue: "Scheduled" }),
-                count: appointmentsSummary.statusCounts.scheduled,
+                key: "reserved",
+                label: t("appointments.status.reserved", { defaultValue: "Reserved" }),
+                count: appointmentsSummary.statusCounts.reserved,
               },
               {
-                key: "confirmed",
-                label: t("appointments.status.confirmed", { defaultValue: "Confirmed" }),
-                count: appointmentsSummary.statusCounts.confirmed,
-              },
-              {
-                key: "completed",
-                label: t("appointments.status.completed", { defaultValue: "Completed" }),
-                count: appointmentsSummary.statusCounts.completed,
+                key: "attended",
+                label: t("appointments.status.attended", { defaultValue: "Attended" }),
+                count: appointmentsSummary.statusCounts.attended,
               },
               {
                 key: "converted",
@@ -179,6 +174,11 @@ export function DashboardPage() {
                 key: "cancelled",
                 label: t("appointments.status.cancelled", { defaultValue: "Cancelled" }),
                 count: appointmentsSummary.statusCounts.cancelled,
+              },
+              {
+                key: "no_show",
+                label: t("appointments.status.no_show", { defaultValue: "No Show" }),
+                count: appointmentsSummary.statusCounts.no_show,
               },
             ]}
             footer={

@@ -11,10 +11,20 @@ const STATUS_STYLES: Record<
     color: string;
   }
 > = {
+  reserved: {
+    background: "color-mix(in srgb, var(--lux-gold) 14%, transparent)",
+    borderColor: "color-mix(in srgb, var(--lux-gold) 32%, transparent)",
+    color: "var(--lux-gold)",
+  },
   scheduled: {
     background: "color-mix(in srgb, var(--lux-gold) 14%, transparent)",
     borderColor: "color-mix(in srgb, var(--lux-gold) 32%, transparent)",
     color: "var(--lux-gold)",
+  },
+  attended: {
+    background: "var(--color-success-soft)",
+    borderColor: "color-mix(in srgb, var(--color-success) 34%, transparent)",
+    color: "var(--color-success)",
   },
   completed: {
     background: "color-mix(in srgb, #0284c7 14%, transparent)",
@@ -22,9 +32,9 @@ const STATUS_STYLES: Record<
     color: "#0369a1",
   },
   converted: {
-    background: "color-mix(in srgb, #7c3aed 12%, transparent)",
-    borderColor: "color-mix(in srgb, #7c3aed 32%, transparent)",
-    color: "#6d28d9",
+    background: "color-mix(in srgb, #0284c7 14%, transparent)",
+    borderColor: "color-mix(in srgb, #0284c7 34%, transparent)",
+    color: "#0369a1",
   },
   no_show: {
     background: "color-mix(in srgb, #6b7280 16%, transparent)",

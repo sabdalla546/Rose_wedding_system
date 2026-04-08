@@ -1853,9 +1853,9 @@ export const baseAr = {
         "visible": "الظاهرة في هذه الصفحة",
         "visibleHint": "المواعيد المعروضة حاليًا داخل الجدول.",
         "open": "تحتاج متابعة",
-        "openHint": "مواعيد مجدولة أو معاد جدولتها وما زالت تحتاج إلى إغلاق.",
+        "openHint": "المواعيد المحجوزة التي ما زالت بانتظار الحضور.",
         "filters": "الفلاتر النشطة",
-        "filtersHint": "المواعيد المؤكدة في هذه الصفحة."
+        "filtersHint": "المواعيد التي تم حضورها في هذه الصفحة."
       }
     },
     "calendarPage": {
@@ -1884,6 +1884,10 @@ export const baseAr = {
         "totalHint": "المواعيد داخل النطاق المعروض.",
         "upcoming": "المواعيد القادمة",
         "upcomingHint": "مواعيد قادمة ما زالت تحتاج إلى متابعة.",
+        "attended": "المواعيد التي تم حضورها",
+        "attendedHint": "مواعيد تم حضورها وتنتظر التحويل إلى سير عمل الحفل.",
+        "converted": "المواعيد المحولة",
+        "convertedHint": "مواعيد تم تحويلها إلى سير عمل الحفل داخل هذا النطاق.",
         "confirmed": "المواعيد المؤكدة",
         "confirmedHint": "مواعيد تم تأكيدها مع العميل.",
         "completed": "المواعيد المكتملة",
@@ -2024,12 +2028,12 @@ export const baseAr = {
     "noNotes": "لا توجد ملاحظات مضافة.",
     "workflowEditHint": "استخدم إجراءات سير عمل الموعد من صفحة التفاصيل لتغيير الحالة بأمان.",
     "workflowDashboard": "وضوح سير عمل المواعيد",
-    "workflowDashboardHint": "تابع ضغط الاستقبال والمواعيد المكتملة الجاهزة للتحويل والمواعيد المعطلة قبل أن تختفي داخل الجدول.",
+    "workflowDashboardHint": "تابع ضغط الاستقبال والمواعيد التي تم حضورها والجاهزة للتحويل والمواعيد المعطلة قبل أن تختفي داخل الجدول.",
     "workflowDashboardEyebrow": "لوحة سير العمل",
     "upcomingLabel": "القادمة",
-    "upcomingLabelHint": "المواعيد المجدولة والمؤكدة والمعاد جدولتها.",
+    "upcomingLabelHint": "المواعيد المحجوزة التي تنتظر الحضور.",
     "readyToConvertLabel": "جاهزة للتحويل",
-    "readyToConvertLabelHint": "يمكن نقل المواعيد المكتملة إلى سير عمل الحفل.",
+    "readyToConvertLabelHint": "يمكن نقل المواعيد التي تم حضورها إلى سير عمل الحفل.",
     "blockedLabel": "المعطلة",
     "blockedLabelHint": "المواعيد الملغاة وحالات عدم الحضور.",
     "statusDistributionTitle": "توزيع الحالات",
@@ -2055,6 +2059,8 @@ export const baseAr = {
       "venue_visit": "زيارة للصالة"
     },
     "status": {
+      "reserved": "محجوز",
+      "attended": "تم الحضور",
       "scheduled": "مجدول",
       "confirmed": "مؤكد",
       "completed": "مكتمل",
@@ -2072,6 +2078,8 @@ export const baseAr = {
       "deleteFailed": "تعذر حذف الموعد",
       "confirmed": "تم تأكيد الموعد بنجاح",
       "confirmFailed": "تعذر تأكيد الموعد",
+      "attended": "تم تسجيل حضور الموعد بنجاح",
+      "attendFailed": "تعذر تسجيل حضور الموعد",
       "completed": "تم إكمال الموعد بنجاح",
       "completeFailed": "تعذر إكمال الموعد",
       "cancelled": "تم إلغاء الموعد بنجاح",

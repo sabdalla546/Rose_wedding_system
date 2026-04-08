@@ -8,8 +8,10 @@ import type {
 } from "@/components/calendar/types";
 import { formatDateLabel, formatTimeLabel } from "@/lib/utils";
 import {
+  APPOINTMENT_STATUS_OPTIONS,
   formatAppointmentStatus,
   formatAppointmentType,
+  normalizeAppointmentStatus,
 } from "@/pages/appointments/adapters";
 import type { Appointment } from "@/pages/appointments/types";
 
@@ -17,11 +19,9 @@ export const APPOINTMENT_ACCENTS: Record<
   Appointment["status"],
   AppCalendarAccent
 > = {
-  scheduled: "gold",
-  confirmed: "emerald",
-  completed: "blue",
+  reserved: "gold",
+  attended: "emerald",
   converted: "blue",
-  rescheduled: "gold",
   cancelled: "rose",
   no_show: "slate",
 };
@@ -29,6 +29,7 @@ export const APPOINTMENT_ACCENTS: Record<
 export function appointmentToAppCalendarEvent(
   appointment: Appointment,
 ): AppCalendarEvent {
+  const normalizedStatus = normalizeAppointmentStatus(appointment.status);
   const customerName =
     appointment.customer?.fullName || `Customer #${appointment.customerId}`;
   const start = `${appointment.appointmentDate}T${appointment.startTime}:00`;
@@ -42,8 +43,8 @@ export function appointmentToAppCalendarEvent(
     start,
     end,
     allDay: false,
-    accent: APPOINTMENT_ACCENTS[appointment.status] ?? "slate",
-    statusLabel: formatAppointmentStatus(appointment.status),
+    accent: APPOINTMENT_ACCENTS[normalizedStatus] ?? "slate",
+    statusLabel: formatAppointmentStatus(normalizedStatus),
     typeLabel: formatAppointmentType(appointment.type),
     subtitle: appointment.createdByUser?.fullName || undefined,
     description: appointment.notes ?? undefined,
@@ -56,11 +57,13 @@ export function buildAppointmentCalendarSummary(
   t: TFunction,
 ) {
   const today = startOfToday();
-  const confirmed = appointments.filter(
-    (appointment) => appointment.status === "confirmed",
+  const attended = appointments.filter(
+    (appointment) => normalizeAppointmentStatus(appointment.status) === "attended",
   ).length;
   const upcoming = appointments.filter((appointment) => {
-    if (["completed", "cancelled", "no_show"].includes(appointment.status)) {
+    const status = normalizeAppointmentStatus(appointment.status);
+
+    if (["converted", "cancelled", "no_show"].includes(status)) {
       return false;
     }
 
@@ -70,11 +73,11 @@ export function buildAppointmentCalendarSummary(
 
     return isAfter(appointmentStart, today) || appointmentStart.getTime() === today.getTime();
   }).length;
-  const completed = appointments.filter(
-    (appointment) => appointment.status === "completed",
+  const converted = appointments.filter(
+    (appointment) => normalizeAppointmentStatus(appointment.status) === "converted",
   ).length;
   const cancelled = appointments.filter(
-    (appointment) => appointment.status === "cancelled",
+    (appointment) => normalizeAppointmentStatus(appointment.status) === "cancelled",
   ).length;
 
   return [
@@ -99,23 +102,25 @@ export function buildAppointmentCalendarSummary(
       }),
     },
     {
-      id: "confirmed",
-      label: t("appointments.calendarPage.summary.confirmed", {
-        defaultValue: "Confirmed Appointments",
+      id: "attended",
+      label: t("appointments.calendarPage.summary.attended", {
+        defaultValue: "Attended Appointments",
       }),
-      value: String(confirmed),
-      hint: t("appointments.calendarPage.summary.confirmedHint", {
-        defaultValue: "Appointments confirmed with the client.",
+      value: String(attended),
+      hint: t("appointments.calendarPage.summary.attendedHint", {
+        defaultValue:
+          "Appointments already attended and waiting for workflow conversion.",
       }),
     },
     {
-      id: "completed",
-      label: t("appointments.calendarPage.summary.completed", {
-        defaultValue: "Completed Appointments",
+      id: "converted",
+      label: t("appointments.calendarPage.summary.converted", {
+        defaultValue: "Converted Appointments",
       }),
-      value: String(completed),
-      hint: t("appointments.calendarPage.summary.completedHint", {
-        defaultValue: "Appointments already completed in this range.",
+      value: String(converted),
+      hint: t("appointments.calendarPage.summary.convertedHint", {
+        defaultValue:
+          "Appointments already converted into the event workflow in this range.",
       }),
     },
     {
@@ -138,10 +143,10 @@ export function buildAppointmentsTableSummary(
   t: TFunction,
 ) {
   const open = appointments.filter((appointment) =>
-    ["scheduled", "rescheduled"].includes(appointment.status),
+    normalizeAppointmentStatus(appointment.status) === "reserved",
   ).length;
-  const confirmed = appointments.filter(
-    (appointment) => appointment.status === "confirmed",
+  const attended = appointments.filter(
+    (appointment) => normalizeAppointmentStatus(appointment.status) === "attended",
   ).length;
 
   return [
@@ -172,7 +177,7 @@ export function buildAppointmentsTableSummary(
       }),
       value: String(open),
       hint: t("appointments.tablePage.summary.openHint", {
-        defaultValue: "Scheduled or rescheduled appointments awaiting closure.",
+        defaultValue: "Reserved appointments awaiting attendance.",
       }),
     },
     {
@@ -182,7 +187,7 @@ export function buildAppointmentsTableSummary(
       }),
       value: String(activeFiltersCount),
       hint: t("appointments.tablePage.summary.filtersHint", {
-        defaultValue: `${confirmed} confirmed appointments on this page.`,
+        defaultValue: `${attended} attended appointments on this page.`,
       }),
     },
   ];
@@ -191,33 +196,13 @@ export function buildAppointmentsTableSummary(
 export function getAppointmentCalendarLegendItems(
   t: TFunction,
 ): AppCalendarLegendItem[] {
-  return [
-    {
-      id: "scheduled",
-      label: t("appointments.status.scheduled", { defaultValue: "Scheduled" }),
-      accent: "gold",
-    },
-    {
-      id: "confirmed",
-      label: t("appointments.status.confirmed", { defaultValue: "Confirmed" }),
-      accent: "emerald",
-    },
-    {
-      id: "completed",
-      label: t("appointments.status.completed", { defaultValue: "Completed" }),
-      accent: "blue",
-    },
-    {
-      id: "cancelled",
-      label: t("appointments.status.cancelled", { defaultValue: "Cancelled" }),
-      accent: "rose",
-    },
-    {
-      id: "no-show",
-      label: t("appointments.status.no_show", { defaultValue: "No Show" }),
-      accent: "slate",
-    },
-  ];
+  return APPOINTMENT_STATUS_OPTIONS.map((status) => ({
+    id: status.value,
+    label: t(`appointments.status.${status.value}`, {
+      defaultValue: status.label,
+    }),
+    accent: APPOINTMENT_ACCENTS[status.value],
+  }));
 }
 
 export function getAppointmentDateLabel(appointment: Appointment) {

@@ -37,8 +37,8 @@ import {
   getAppointmentCalendarLegendItems,
 } from "@/features/appointments/appointment-calendar";
 import {
+  useAttendAppointment,
   useCancelAppointment,
-  useConfirmAppointment,
   useRescheduleAppointment,
 } from "@/hooks/appointments/useAppointmentActions";
 import { useAppointmentsCalendarView } from "@/hooks/appointments/useAppointmentsCalendarView";
@@ -246,6 +246,70 @@ function CancelDialog({
   );
 }
 
+function ActionDialog({
+  open,
+  onOpenChange,
+  appointment,
+  title,
+  description,
+  value,
+  onChange,
+  onSubmit,
+  isPending,
+  confirmLabel,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appointment: ActionTarget;
+  title: string;
+  description?: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+  confirmLabel: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <AppDialogShell size="sm">
+        <AppDialogHeader title={title} description={description} />
+        <textarea
+          className={textareaClassName}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={isPending || !appointment}
+          placeholder={t("appointments.notesPlaceholder", {
+            defaultValue: "Add notes...",
+          })}
+          style={{
+            background: "var(--color-surface-2)",
+            borderColor: "var(--color-border)",
+          }}
+        />
+        <AppDialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            {t("common.cancel", { defaultValue: "Cancel" })}
+          </Button>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || !appointment}
+          >
+            {confirmLabel}
+          </Button>
+        </AppDialogFooter>
+      </AppDialogShell>
+    </Dialog>
+  );
+}
+
 export function AppointmentsCalendarView({
   active,
 }: AppointmentsCalendarViewProps) {
@@ -265,24 +329,32 @@ export function AppointmentsCalendarView({
     isError,
     refetch,
   } = useAppointmentsCalendarView();
+
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<
     string | null
   >(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+
+  const [attendCandidate, setAttendCandidate] = useState<ActionTarget>(null);
+  const [attendNotes, setAttendNotes] = useState("");
+
   const [cancelCandidate, setCancelCandidate] = useState<ActionTarget>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelNotes, setCancelNotes] = useState("");
+
   const [rescheduleCandidate, setRescheduleCandidate] =
     useState<ActionTarget>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleEndTime, setRescheduleEndTime] = useState("");
   const [rescheduleNotes, setRescheduleNotes] = useState("");
+
   const [customerSearch, setCustomerSearch] = useState("");
 
-  const confirmAppointment = useConfirmAppointment();
+  const attendAppointment = useAttendAppointment();
   const cancelAppointment = useCancelAppointment();
   const rescheduleAppointment = useRescheduleAppointment();
+
   const { data: customersResponse } = useCustomers({
     currentPage: 1,
     itemsPerPage: 200,
@@ -327,6 +399,7 @@ export function AppointmentsCalendarView({
       })),
     [customersResponse?.data],
   );
+
   const filteredCustomerOptions = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
 
@@ -338,6 +411,12 @@ export function AppointmentsCalendarView({
       option.label.toLowerCase().includes(query),
     );
   }, [customerOptions, customerSearch]);
+
+  const openAttendDialog = (appointment: Appointment) => {
+    setDetailsDialogOpen(false);
+    setAttendCandidate(appointment);
+    setAttendNotes(appointment.notes ?? "");
+  };
 
   const openCancelDialog = (appointment: Appointment) => {
     setDetailsDialogOpen(false);
@@ -438,8 +517,7 @@ export function AppointmentsCalendarView({
                   }))
                 }
                 placeholder={t("appointments.calendarPage.searchPlaceholder", {
-                  defaultValue:
-                    "Search customers, notes, or mobile numbers...",
+                  defaultValue: "Search customers, notes, or mobile numbers...",
                 })}
               />
             </WorkspaceFilterField>
@@ -639,11 +717,9 @@ export function AppointmentsCalendarView({
               navigate(`/appointments/edit/${appointment.id}`)
             }
             onReschedule={openRescheduleDialog}
-            onConfirm={(appointment) =>
-              confirmAppointment.mutate({ id: appointment.id, values: {} })
-            }
+            onAttend={openAttendDialog}
             onCancel={openCancelDialog}
-            isConfirmPending={confirmAppointment.isPending}
+            isAttendPending={attendAppointment.isPending}
             isCancelPending={cancelAppointment.isPending}
             isReschedulePending={rescheduleAppointment.isPending}
             className="operations-side-panel 2xl:sticky 2xl:top-4"
@@ -660,13 +736,55 @@ export function AppointmentsCalendarView({
           navigate(`/appointments/edit/${appointment.id}`)
         }
         onReschedule={openRescheduleDialog}
-        onConfirm={(appointment) =>
-          confirmAppointment.mutate({ id: appointment.id, values: {} })
-        }
+        onAttend={openAttendDialog}
         onCancel={openCancelDialog}
-        isConfirmPending={confirmAppointment.isPending}
+        isAttendPending={attendAppointment.isPending}
         isCancelPending={cancelAppointment.isPending}
         isReschedulePending={rescheduleAppointment.isPending}
+      />
+
+      <ActionDialog
+        open={attendCandidate !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAttendCandidate(null);
+            setAttendNotes("");
+          }
+        }}
+        appointment={attendCandidate}
+        title={t("appointments.attendTitle", {
+          defaultValue: "Mark as Attended",
+        })}
+        description={t("appointments.calendarPage.attendDescription", {
+          defaultValue:
+            "Mark this appointment as attended and optionally add a note before converting it into the event workflow.",
+        })}
+        value={attendNotes}
+        onChange={setAttendNotes}
+        onSubmit={() => {
+          if (!attendCandidate) {
+            return;
+          }
+
+          attendAppointment.mutate(
+            {
+              id: attendCandidate.id,
+              values: {
+                notes: attendNotes.trim() || undefined,
+              },
+            },
+            {
+              onSuccess: () => {
+                setAttendCandidate(null);
+                setAttendNotes("");
+              },
+            },
+          );
+        }}
+        isPending={attendAppointment.isPending}
+        confirmLabel={t("appointments.attend", {
+          defaultValue: "Attend",
+        })}
       />
 
       <CancelDialog

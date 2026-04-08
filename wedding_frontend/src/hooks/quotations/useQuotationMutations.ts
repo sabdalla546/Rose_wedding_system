@@ -68,8 +68,9 @@ const buildCreateFromEventPayload = (values: QuotationFromEventFormData) => ({
   subtotal: normalizeOptionalNumber(values.subtotal),
   discountAmount: normalizeOptionalNumber(values.discountAmount),
   manualServicesTotal:
-    typeof (values as QuotationFromEventFormData & { manualServicesTotal?: number })
-      .manualServicesTotal === "number"
+    typeof (
+      values as QuotationFromEventFormData & { manualServicesTotal?: number }
+    ).manualServicesTotal === "number"
       ? (
           values as QuotationFromEventFormData & {
             manualServicesTotal?: number;
@@ -123,7 +124,10 @@ export const useCreateQuotation = (options?: {
 
   return useMutation({
     mutationFn: async (values: QuotationFormData) =>
-      api.post<QuotationResponse>("/quotations", buildCreateQuotationPayload(values)),
+      api.post<QuotationResponse>(
+        "/quotations",
+        buildCreateQuotationPayload(values),
+      ),
     onSuccess: (response) => {
       const createdQuotation = response.data.data;
 
@@ -135,13 +139,16 @@ export const useCreateQuotation = (options?: {
       });
 
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
-      queryClient.invalidateQueries({ queryKey: ["event", String(createdQuotation.eventId)] });
+      queryClient.invalidateQueries({
+        queryKey: ["event", String(createdQuotation.eventId)],
+      });
       options?.onSuccess?.(createdQuotation.id);
       if (options?.navigateOnSuccess !== false) {
         navigate(`/quotations/${createdQuotation.id}`);
       }
     },
     onError: (error) => {
+      console.log(error);
       toast({
         variant: "error",
         title: t("common.error", { defaultValue: "Error" }),
@@ -182,7 +189,9 @@ export const useCreateQuotationFromEvent = (options?: {
       });
 
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
-      queryClient.invalidateQueries({ queryKey: ["event", String(createdQuotation.eventId)] });
+      queryClient.invalidateQueries({
+        queryKey: ["event", String(createdQuotation.eventId)],
+      });
       options?.onSuccess?.(createdQuotation.id);
       if (options?.navigateOnSuccess !== false) {
         navigate(`/quotations/${createdQuotation.id}`);
@@ -218,7 +227,10 @@ export const useUpdateQuotation = (id?: string) => {
       const quotationItemRequests = values.items
         .filter((item) => typeof item.id === "number")
         .map((item) =>
-          api.put(`/quotations/items/${item.id}`, buildUpdateQuotationItemPayload(item)),
+          api.put(
+            `/quotations/items/${item.id}`,
+            buildUpdateQuotationItemPayload(item),
+          ),
         );
 
       await Promise.all(quotationItemRequests);
@@ -242,7 +254,9 @@ export const useUpdateQuotation = (id?: string) => {
 
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["quotation", id] });
-      queryClient.invalidateQueries({ queryKey: ["event", String(updatedQuotation.eventId)] });
+      queryClient.invalidateQueries({
+        queryKey: ["event", String(updatedQuotation.eventId)],
+      });
       navigate(`/quotations/${updatedQuotation.id}`);
     },
     onError: (error) => {

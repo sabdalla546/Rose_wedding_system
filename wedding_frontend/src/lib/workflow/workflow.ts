@@ -34,7 +34,7 @@ export const isAppointmentConverted = (
 
 export const canConvertAppointmentToEvent = (
   appointment: Pick<Appointment, "status">,
-) => appointment.status === "completed";
+) => appointment.status === "attended";
 
 export const getAppointmentConversionState = (
   appointment: Pick<Appointment, "status">,
@@ -60,10 +60,10 @@ export const getAppointmentConversionState = (
     };
   }
 
-  if (appointment.status !== "completed") {
+  if (appointment.status !== "attended") {
     return {
       canConvert: false,
-      message: "Complete the appointment before converting it to an event.",
+      message: "Mark the appointment as attended before converting it to an event.",
     };
   }
 

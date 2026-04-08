@@ -1,7 +1,10 @@
 import { CalendarClock, NotebookText, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { AppDialogFooter, AppDialogHeader } from "@/components/shared/app-dialog";
+import {
+  AppDialogFooter,
+  AppDialogHeader,
+} from "@/components/shared/app-dialog";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -21,9 +24,9 @@ type AppointmentQuickViewProps = {
   onView: (appointment: Appointment) => void;
   onEdit: (appointment: Appointment) => void;
   onReschedule: (appointment: Appointment) => void;
-  onConfirm: (appointment: Appointment) => void;
+  onAttend: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
-  isConfirmPending?: boolean;
+  isAttendPending?: boolean;
   isCancelPending?: boolean;
   isReschedulePending?: boolean;
   className?: string;
@@ -46,7 +49,10 @@ function QuickFact({
   return (
     <div
       className="appointment-quick-view__fact rounded-[18px] border px-3.5 py-3"
-      style={{ borderColor: "var(--color-border)", background: "var(--color-surface-2)" }}
+      style={{
+        borderColor: "var(--color-border)",
+        background: "var(--color-surface-2)",
+      }}
     >
       <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-control-hover)] text-[var(--color-primary)]">
         <Icon className="h-4 w-4" />
@@ -66,9 +72,9 @@ export function AppointmentQuickView({
   onView,
   onEdit,
   onReschedule,
-  onConfirm,
+  onAttend,
   onCancel,
-  isConfirmPending = false,
+  isAttendPending = false,
   isCancelPending = false,
   isReschedulePending = false,
   className,
@@ -76,6 +82,8 @@ export function AppointmentQuickView({
   const { t } = useTranslation();
   const canRead = useHasPermission("appointments.read");
   const canUpdate = useHasPermission("appointments.update");
+  const canCancelPermission = useHasPermission("appointments.cancel");
+  const canReschedulePermission = useHasPermission("appointments.reschedule");
 
   if (!appointment) {
     return (
@@ -100,19 +108,28 @@ export function AppointmentQuickView({
     );
   }
 
-  const canConfirm = canUpdate && ["scheduled", "rescheduled"].includes(appointment.status);
-  const canCancel = canUpdate && !["completed", "cancelled"].includes(appointment.status);
-  const canReschedule = canUpdate && !["completed", "cancelled"].includes(appointment.status);
+  const isReserved = appointment.status === "reserved";
+  const isTerminal = ["converted", "cancelled", "no_show"].includes(
+    appointment.status,
+  );
+
+  const canAttend = canUpdate && isReserved;
+  const canCancel = canCancelPermission && !isTerminal;
+  const canReschedule = canReschedulePermission && !isTerminal;
+
   const customerName =
     appointment.customer?.fullName || `Customer #${appointment.customerId}`;
 
   return (
-    <SectionCard className={cn("appointment-quick-view overflow-hidden p-0", className)}>
+    <SectionCard
+      className={cn("appointment-quick-view overflow-hidden p-0", className)}
+    >
       <div
         className="border-b px-5 py-4"
         style={{
           borderColor: "var(--color-border)",
-          background: "color-mix(in srgb, var(--color-surface-2) 84%, var(--color-surface))",
+          background:
+            "color-mix(in srgb, var(--color-surface-2) 84%, var(--color-surface))",
         }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -225,13 +242,13 @@ export function AppointmentQuickView({
             </Button>
           ) : null}
 
-          {canConfirm ? (
+          {canAttend ? (
             <Button
               type="button"
-              onClick={() => onConfirm(appointment)}
-              disabled={isConfirmPending}
+              onClick={() => onAttend(appointment)}
+              disabled={isAttendPending}
             >
-              {t("appointments.confirm", { defaultValue: "Confirm" })}
+              {t("appointments.attend", { defaultValue: "Attend" })}
             </Button>
           ) : null}
 
@@ -259,9 +276,9 @@ export function AppointmentQuickViewDialog({
   onView,
   onEdit,
   onReschedule,
-  onConfirm,
+  onAttend,
   onCancel,
-  isConfirmPending,
+  isAttendPending,
   isCancelPending,
   isReschedulePending,
 }: AppointmentQuickViewDialogProps) {
@@ -284,9 +301,9 @@ export function AppointmentQuickViewDialog({
           onView={onView}
           onEdit={onEdit}
           onReschedule={onReschedule}
-          onConfirm={onConfirm}
+          onAttend={onAttend}
           onCancel={onCancel}
-          isConfirmPending={isConfirmPending}
+          isAttendPending={isAttendPending}
           isCancelPending={isCancelPending}
           isReschedulePending={isReschedulePending}
           className="border-0 bg-transparent p-0 shadow-none"

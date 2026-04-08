@@ -125,10 +125,17 @@ function computeQuotationTotals(
 }
 
 function normalizeIdList(ids?: number[]) {
-  return [...new Set((ids ?? []).filter((value) => Number.isInteger(value) && value > 0))];
+  return [
+    ...new Set(
+      (ids ?? []).filter((value) => Number.isInteger(value) && value > 0),
+    ),
+  ];
 }
 
-async function loadEventServiceForEvent(eventId: number, eventServiceId: number) {
+async function loadEventServiceForEvent(
+  eventId: number,
+  eventServiceId: number,
+) {
   const eventService = await EventService.findOne({
     where: {
       id: eventServiceId,
@@ -176,11 +183,44 @@ async function loadEventVendorForEvent(eventId: number, eventVendorId: number) {
   return eventVendor;
 }
 
+async function loadVendorById(vendorId: number) {
+  const vendor = await Vendor.findByPk(vendorId);
+
+  if (!vendor) {
+    throw new HttpError(400, "Vendor not found");
+  }
+
+  if (vendor.isActive === false) {
+    throw new HttpError(400, "Inactive vendor cannot be used");
+  }
+
+  return vendor;
+}
+
+async function loadVendorPricingPlanById(pricingPlanId: number) {
+  const pricingPlan = await VendorPricingPlan.findByPk(pricingPlanId, {
+    include: [buildVendorSummaryInclude()],
+  });
+
+  if (!pricingPlan) {
+    throw new HttpError(400, "Vendor pricing plan not found");
+  }
+
+  if (pricingPlan.isActive === false) {
+    throw new HttpError(400, "Inactive vendor pricing plan cannot be used");
+  }
+
+  return pricingPlan;
+}
+
 function getValidAgreedPrice(eventVendor: EventVendor) {
   const agreedPrice = toNumberValue(eventVendor.agreedPrice);
 
   if (agreedPrice === null) {
-    throw new HttpError(400, "Selected event vendor must have a valid agreedPrice");
+    throw new HttpError(
+      400,
+      "Selected event vendor must have a valid agreedPrice",
+    );
   }
 
   return round3(agreedPrice);
@@ -229,9 +269,7 @@ function buildQuotationItemFromEventVendor(
     vendorId: eventVendor.vendorId ?? null,
     pricingPlanId: eventVendor.pricingPlanId ?? null,
     itemName:
-      eventVendor.vendor?.name
-      ?? eventVendor.companyNameSnapshot
-      ?? "Vendor",
+      eventVendor.vendor?.name ?? eventVendor.companyNameSnapshot ?? "Vendor",
     category: eventVendor.vendorType ?? null,
     quantity: 1,
     unitPrice: agreedPrice,
@@ -280,18 +318,78 @@ async function prepareQuotationItem(
     typeof item.sortOrder === "number" ? item.sortOrder : fallbackSortOrder;
 
   if (itemType === "vendor") {
-    if (!item.eventVendorId) {
-      throw new HttpError(400, "eventVendorId is required for vendor quotation items");
+    if (item.eventVendorId) {
+      const eventVendor = (await loadEventVendorForEvent(
+        eventId,
+        item.eventVendorId,
+      )) as EventVendor & {
+        vendor?: Vendor | null;
+      };
+
+      if (
+        typeof item.vendorId !== "undefined" &&
+        item.vendorId !== null &&
+        item.vendorId !== (eventVendor.vendorId ?? null)
+      ) {
+        throw new HttpError(
+          400,
+          "vendorId must match the selected event vendor",
+        );
+      }
+
+      if (
+        typeof item.pricingPlanId !== "undefined" &&
+        item.pricingPlanId !== null &&
+        item.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
+      ) {
+        throw new HttpError(
+          400,
+          "pricingPlanId must match the selected event vendor",
+        );
+      }
+
+      return buildQuotationItemFromEventVendor(eventVendor, userId, sortOrder);
     }
 
-    const eventVendor = (await loadEventVendorForEvent(
-      eventId,
-      item.eventVendorId,
-    )) as EventVendor & {
-      vendor?: Vendor | null;
-    };
+    if (!item.vendorId) {
+      throw new HttpError(
+        400,
+        "vendorId is required for vendor quotation items when eventVendorId is not provided",
+      );
+    }
 
-    return buildQuotationItemFromEventVendor(eventVendor, userId, sortOrder);
+    const vendor = await loadVendorById(item.vendorId);
+    const pricingPlan = item.pricingPlanId
+      ? await loadVendorPricingPlanById(item.pricingPlanId)
+      : null;
+
+    if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
+      throw new HttpError(
+        400,
+        "pricingPlanId must belong to the selected vendor",
+      );
+    }
+
+    const quantity = round3(item.quantity ?? 1);
+    const unitPrice = round3(item.unitPrice ?? 0);
+
+    return {
+      itemType: "vendor",
+      eventServiceId: null,
+      serviceId: null,
+      eventVendorId: null,
+      vendorId: vendor.id,
+      pricingPlanId: pricingPlan?.id ?? null,
+      itemName: item.itemName,
+      category: item.category ?? vendor.type ?? null,
+      quantity,
+      unitPrice,
+      totalPrice: computeItemTotal(quantity, unitPrice, item.totalPrice),
+      notes: item.notes ?? null,
+      sortOrder,
+      createdBy: userId,
+      updatedBy: userId,
+    };
   }
 
   if (item.eventServiceId) {
@@ -422,6 +520,7 @@ export const createQuotation = async (req: AuthRequest, res: Response) => {
       data: sanitizeQuotationPayload(created),
     });
   } catch (err) {
+    console.log(err);
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -691,16 +790,20 @@ export const updateQuotation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: req.t("common.not_found") });
     }
 
-    assertQuotationHeaderEditable(quotation, {
-      quotationNumber: data.quotationNumber,
-      issueDate: data.issueDate,
-      validUntil: data.validUntil,
-      discountAmount: data.discountAmount,
-      notes: data.notes,
-    }, {
-      userId: req.user?.id ?? null,
-      attemptedFields: Object.keys(data),
-    });
+    assertQuotationHeaderEditable(
+      quotation,
+      {
+        quotationNumber: data.quotationNumber,
+        issueDate: data.issueDate,
+        validUntil: data.validUntil,
+        discountAmount: data.discountAmount,
+        notes: data.notes,
+      },
+      {
+        userId: req.user?.id ?? null,
+        attemptedFields: Object.keys(data),
+      },
+    );
 
     const items = await QuotationItem.findAll({
       where: { quotationId: quotation.id },
@@ -808,36 +911,8 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
         typeof data.eventVendorId !== "undefined"
           ? data.eventVendorId
           : item.eventVendorId;
-
-      if (!nextEventVendorId) {
-        throw new HttpError(400, "eventVendorId is required for vendor quotation items");
-      }
-
-      const eventVendor = (await loadEventVendorForEvent(
-        quotation.eventId,
-        nextEventVendorId,
-      )) as EventVendor & {
-        vendor?: Vendor | null;
-      };
-
-      if (
-        typeof data.vendorId !== "undefined"
-        && data.vendorId !== null
-        && data.vendorId !== (eventVendor.vendorId ?? null)
-      ) {
-        throw new HttpError(400, "vendorId must match the selected event vendor");
-      }
-
-      if (
-        typeof data.pricingPlanId !== "undefined"
-        && data.pricingPlanId !== null
-        && data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-      ) {
-        throw new HttpError(
-          400,
-          "pricingPlanId must match the selected event vendor",
-        );
-      }
+      const nextVendorId =
+        typeof data.vendorId !== "undefined" ? data.vendorId : item.vendorId;
 
       const quantity =
         typeof data.quantity === "number"
@@ -848,24 +923,105 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
           ? round3(data.unitPrice)
           : round3(Number(item.unitPrice || 0));
 
-      await item.update({
-        itemType: "vendor",
-        eventServiceId: null,
-        serviceId: null,
-        eventVendorId: eventVendor.id,
-        vendorId: eventVendor.vendorId ?? null,
-        pricingPlanId: eventVendor.pricingPlanId ?? null,
-        itemName: data.itemName ?? item.itemName,
-        category:
-          typeof data.category !== "undefined" ? data.category : item.category,
-        quantity,
-        unitPrice,
-        totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
-        notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
-        sortOrder:
-          typeof data.sortOrder !== "undefined" ? data.sortOrder : item.sortOrder,
-        updatedBy: req.user?.id ?? null,
-      });
+      if (nextEventVendorId) {
+        const eventVendor = (await loadEventVendorForEvent(
+          quotation.eventId,
+          nextEventVendorId,
+        )) as EventVendor & {
+          vendor?: Vendor | null;
+        };
+
+        if (
+          typeof data.vendorId !== "undefined" &&
+          data.vendorId !== null &&
+          data.vendorId !== (eventVendor.vendorId ?? null)
+        ) {
+          throw new HttpError(
+            400,
+            "vendorId must match the selected event vendor",
+          );
+        }
+
+        if (
+          typeof data.pricingPlanId !== "undefined" &&
+          data.pricingPlanId !== null &&
+          data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
+        ) {
+          throw new HttpError(
+            400,
+            "pricingPlanId must match the selected event vendor",
+          );
+        }
+
+        await item.update({
+          itemType: "vendor",
+          eventServiceId: null,
+          serviceId: null,
+          eventVendorId: eventVendor.id,
+          vendorId: eventVendor.vendorId ?? null,
+          pricingPlanId: eventVendor.pricingPlanId ?? null,
+          itemName: data.itemName ?? item.itemName,
+          category:
+            typeof data.category !== "undefined"
+              ? data.category
+              : item.category,
+          quantity,
+          unitPrice,
+          totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
+          notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
+          sortOrder:
+            typeof data.sortOrder !== "undefined"
+              ? data.sortOrder
+              : item.sortOrder,
+          updatedBy: req.user?.id ?? null,
+        });
+      } else {
+        if (!nextVendorId) {
+          throw new HttpError(
+            400,
+            "vendorId is required for vendor quotation items when eventVendorId is not provided",
+          );
+        }
+
+        const vendor = await loadVendorById(nextVendorId);
+        const nextPricingPlanId =
+          typeof data.pricingPlanId !== "undefined"
+            ? data.pricingPlanId
+            : item.pricingPlanId;
+        const pricingPlan = nextPricingPlanId
+          ? await loadVendorPricingPlanById(nextPricingPlanId)
+          : null;
+
+        if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
+          throw new HttpError(
+            400,
+            "pricingPlanId must belong to the selected vendor",
+          );
+        }
+
+        await item.update({
+          itemType: "vendor",
+          eventServiceId: null,
+          serviceId: null,
+          eventVendorId: null,
+          vendorId: vendor.id,
+          pricingPlanId: pricingPlan?.id ?? null,
+          itemName: data.itemName ?? item.itemName,
+          category:
+            typeof data.category !== "undefined"
+              ? data.category
+              : (item.category ?? vendor.type),
+          quantity,
+          unitPrice,
+          totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
+          notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
+          sortOrder:
+            typeof data.sortOrder !== "undefined"
+              ? data.sortOrder
+              : item.sortOrder,
+          updatedBy: req.user?.id ?? null,
+        });
+      }
     } else {
       if (typeof data.eventServiceId !== "undefined" && data.eventServiceId) {
         await loadEventServiceForEvent(quotation.eventId, data.eventServiceId);
@@ -891,7 +1047,9 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
             ? data.eventServiceId
             : item.eventServiceId,
         serviceId:
-          typeof data.serviceId !== "undefined" ? data.serviceId : item.serviceId,
+          typeof data.serviceId !== "undefined"
+            ? data.serviceId
+            : item.serviceId,
         eventVendorId: null,
         vendorId: null,
         pricingPlanId: null,
@@ -903,7 +1061,9 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
         totalPrice: computeItemTotal(quantity, unitPrice, data.totalPrice),
         notes: typeof data.notes !== "undefined" ? data.notes : item.notes,
         sortOrder:
-          typeof data.sortOrder !== "undefined" ? data.sortOrder : item.sortOrder,
+          typeof data.sortOrder !== "undefined"
+            ? data.sortOrder
+            : item.sortOrder,
         updatedBy: req.user?.id ?? null,
       });
     }

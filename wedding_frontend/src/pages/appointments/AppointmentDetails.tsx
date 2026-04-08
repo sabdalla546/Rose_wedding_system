@@ -53,7 +53,10 @@ import {
   isAppointmentConverted,
 } from "@/lib/workflow/workflow";
 
-import { formatAppointmentType } from "./adapters";
+import {
+  formatAppointmentType,
+  normalizeAppointmentStatus,
+} from "./adapters";
 import { AppointmentStatusBadge } from "./_components/appointmentStatusBadge";
 
 function DetailItem({
@@ -71,19 +74,6 @@ function DetailItem({
       </p>
     </div>
   );
-}
-
-function normalizeAppointmentStatus(status?: string | null) {
-  switch (status) {
-    case "scheduled":
-    case "confirmed":
-    case "rescheduled":
-      return "reserved";
-    case "completed":
-      return "attended";
-    default:
-      return status ?? "reserved";
-  }
 }
 
 function getCustomerLabel(
@@ -290,8 +280,8 @@ const AppointmentDetailsPage = () => {
       title: t("appointments.timelineStatusUpdate", {
         defaultValue: "Appointment status updated",
       }),
-      description: t(`appointments.status.${appointment.status}`, {
-        defaultValue: appointment.status,
+      description: t(`appointments.status.${normalizedStatus}`, {
+        defaultValue: normalizedStatus,
       }),
       timestamp: appointment.updatedAt ?? appointment.appointmentDate,
       status:
@@ -494,7 +484,7 @@ const AppointmentDetailsPage = () => {
           description={t("appointments.detailsSubtitle", {
             defaultValue: "Appointment details and workflow actions",
           })}
-          status={<AppointmentStatusBadge status={appointment.status} />}
+          status={<AppointmentStatusBadge status={normalizedStatus} />}
           actions={
             <div className="flex flex-wrap items-center gap-2">
               {relatedEventId ? (
@@ -679,8 +669,8 @@ const AppointmentDetailsPage = () => {
                 />
                 <DetailItem
                   label={t("appointments.status", { defaultValue: "Status" })}
-                  value={t(`appointments.status.${appointment.status}`, {
-                    defaultValue: appointment.status,
+                  value={t(`appointments.status.${normalizedStatus}`, {
+                    defaultValue: normalizedStatus,
                   })}
                 />
               </div>

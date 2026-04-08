@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import api from "@/lib/axios";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
@@ -61,7 +60,6 @@ const fieldStyle = {
 
 export function AppointmentsTableView() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const workflowSummary = useAppointmentWorkflowSummary();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -296,8 +294,7 @@ export function AppointmentsTableView() {
             }),
             value: workflowSummary.metrics.upcoming,
             helper: t("appointments.upcomingLabelHint", {
-              defaultValue:
-                "Scheduled, confirmed, and rescheduled appointments.",
+              defaultValue: "Reserved appointments waiting for attendance.",
             }),
           },
           {
@@ -308,7 +305,7 @@ export function AppointmentsTableView() {
             value: workflowSummary.metrics.readyToConvert,
             helper: t("appointments.readyToConvertLabelHint", {
               defaultValue:
-                "Completed appointments can move into the event workflow.",
+                "Attended appointments can move into the event workflow.",
             }),
           },
           {
@@ -336,38 +333,26 @@ export function AppointmentsTableView() {
             },
           },
           {
-            key: "scheduled",
-            label: t("appointments.status.scheduled", {
-              defaultValue: "Scheduled",
+            key: "reserved",
+            label: t("appointments.status.reserved", {
+              defaultValue: "Reserved",
             }),
-            count: workflowSummary.statusCounts.scheduled,
-            active: statusFilter === "scheduled",
+            count: workflowSummary.statusCounts.reserved,
+            active: statusFilter === "reserved",
             onClick: () => {
-              setStatusFilter("scheduled");
+              setStatusFilter("reserved");
               setCurrentPage(1);
             },
           },
           {
-            key: "confirmed",
-            label: t("appointments.status.confirmed", {
-              defaultValue: "Confirmed",
+            key: "attended",
+            label: t("appointments.status.attended", {
+              defaultValue: "Attended",
             }),
-            count: workflowSummary.statusCounts.confirmed,
-            active: statusFilter === "confirmed",
+            count: workflowSummary.statusCounts.attended,
+            active: statusFilter === "attended",
             onClick: () => {
-              setStatusFilter("confirmed");
-              setCurrentPage(1);
-            },
-          },
-          {
-            key: "completed",
-            label: t("appointments.status.completed", {
-              defaultValue: "Completed",
-            }),
-            count: workflowSummary.statusCounts.completed,
-            active: statusFilter === "completed",
-            onClick: () => {
-              setStatusFilter("completed");
+              setStatusFilter("attended");
               setCurrentPage(1);
             },
           },
@@ -395,6 +380,18 @@ export function AppointmentsTableView() {
               setCurrentPage(1);
             },
           },
+          {
+            key: "no_show",
+            label: t("appointments.status.no_show", {
+              defaultValue: "No Show",
+            }),
+            count: workflowSummary.statusCounts.no_show,
+            active: statusFilter === "no_show",
+            onClick: () => {
+              setStatusFilter("no_show");
+              setCurrentPage(1);
+            },
+          },
         ]}
         footer={
           <div className="flex flex-wrap gap-2">
@@ -402,7 +399,7 @@ export function AppointmentsTableView() {
               type="button"
               variant="outline"
               onClick={() => {
-                setStatusFilter("completed");
+                setStatusFilter("attended");
                 setCurrentPage(1);
               }}
             >
