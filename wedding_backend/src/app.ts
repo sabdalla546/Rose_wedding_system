@@ -26,7 +26,7 @@ import contractRoutes from "./routes/contract.routes";
 import calendarRoutes from "./routes/calendar.routes";
 import executionRoutes from "./routes/execution.routes";
 import inventoryRoutes from "./routes/inventory.routes";
-
+import contractAmendmentRoutes from "./routes/contractAmendment.routes";
 export const createApp = async () => {
   const app = express();
 
@@ -81,6 +81,7 @@ export const createApp = async () => {
   app.use("/api/v1/quotations", quotationRoutes);
   app.use("/api/v1/contracts", contractRoutes);
   app.use("/api/v1/execution-briefs", executionRoutes);
+  app.use("/api/contract-amendments", contractAmendmentRoutes);
   app.use("/api/v1/inventory", inventoryRoutes);
   app.use(errorHandler);
 

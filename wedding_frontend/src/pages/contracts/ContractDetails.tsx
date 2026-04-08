@@ -80,6 +80,7 @@ import {
 } from "./adapters";
 import { ContractStatusBadge } from "./_components/contractStatusBadge";
 import { PaymentScheduleStatusBadge } from "./_components/paymentScheduleStatusBadge";
+import { ContractAmendmentsSection } from "./amendments/_components/ContractAmendmentsSection";
 import type {
   ContractItem,
   PaymentSchedule,
@@ -1341,6 +1342,8 @@ const ContractDetailsPage = () => {
               )}
             </CardContent>
           </Card>
+
+          <ContractAmendmentsSection contract={contract} />
 
           <Card>
             <CardHeader>

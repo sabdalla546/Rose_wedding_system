@@ -27,6 +27,8 @@ import { ExecutionBrief } from "./executionBrief.model";
 import { ExecutionServiceDetail } from "./executionServiceDetail.model";
 import { ExecutionAttachment } from "./executionAttachment.model";
 import { InventoryItem } from "./InventoryItem";
+import { ContractAmendment } from "./contractAmendment.model";
+import { ContractAmendmentItem } from "./contractAmendmentItem.model";
 // علاقات
 User.belongsToMany(Role, { through: UserRole, foreignKey: "userId" });
 Role.belongsToMany(User, { through: UserRole, foreignKey: "roleId" });
@@ -785,6 +787,132 @@ InventoryItem.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
 });
+
+// Contract -> ContractAmendment
+Contract.hasMany(ContractAmendment, {
+  foreignKey: "contractId",
+  as: "amendments",
+});
+ContractAmendment.belongsTo(Contract, {
+  foreignKey: "contractId",
+  as: "contract",
+});
+
+// Event -> ContractAmendment
+Event.hasMany(ContractAmendment, {
+  foreignKey: "eventId",
+  as: "contractAmendments",
+});
+ContractAmendment.belongsTo(Event, {
+  foreignKey: "eventId",
+  as: "event",
+});
+
+// ContractAmendment -> ContractAmendmentItem
+ContractAmendment.hasMany(ContractAmendmentItem, {
+  foreignKey: "amendmentId",
+  as: "items",
+});
+ContractAmendmentItem.belongsTo(ContractAmendment, {
+  foreignKey: "amendmentId",
+  as: "amendment",
+});
+
+// Service -> ContractAmendmentItem
+Service.hasMany(ContractAmendmentItem, {
+  foreignKey: "serviceId",
+  as: "contractAmendmentItems",
+});
+ContractAmendmentItem.belongsTo(Service, {
+  foreignKey: "serviceId",
+  as: "service",
+});
+
+// ContractItem -> ContractAmendmentItem
+ContractItem.hasMany(ContractAmendmentItem, {
+  foreignKey: "targetContractItemId",
+  as: "amendmentItems",
+});
+ContractAmendmentItem.belongsTo(ContractItem, {
+  foreignKey: "targetContractItemId",
+  as: "targetContractItem",
+});
+
+// EventService -> ContractAmendmentItem
+EventService.hasMany(ContractAmendmentItem, {
+  foreignKey: "targetEventServiceId",
+  as: "amendmentItems",
+});
+ContractAmendmentItem.belongsTo(EventService, {
+  foreignKey: "targetEventServiceId",
+  as: "targetEventService",
+});
+
+// ExecutionServiceDetail -> ContractAmendmentItem
+ExecutionServiceDetail.hasMany(ContractAmendmentItem, {
+  foreignKey: "targetExecutionServiceDetailId",
+  as: "amendmentItems",
+});
+ContractAmendmentItem.belongsTo(ExecutionServiceDetail, {
+  foreignKey: "targetExecutionServiceDetailId",
+  as: "targetExecutionServiceDetail",
+});
+
+// User audit -> ContractAmendment
+User.hasMany(ContractAmendment, {
+  foreignKey: "createdBy",
+  as: "createdContractAmendments",
+});
+ContractAmendment.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(ContractAmendment, {
+  foreignKey: "updatedBy",
+  as: "updatedContractAmendments",
+});
+ContractAmendment.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
+
+User.hasMany(ContractAmendment, {
+  foreignKey: "requestedBy",
+  as: "requestedContractAmendments",
+});
+ContractAmendment.belongsTo(User, {
+  foreignKey: "requestedBy",
+  as: "requestedByUser",
+});
+
+User.hasMany(ContractAmendment, {
+  foreignKey: "approvedBy",
+  as: "approvedContractAmendments",
+});
+ContractAmendment.belongsTo(User, {
+  foreignKey: "approvedBy",
+  as: "approvedByUser",
+});
+
+// User audit -> ContractAmendmentItem
+User.hasMany(ContractAmendmentItem, {
+  foreignKey: "createdBy",
+  as: "createdContractAmendmentItems",
+});
+ContractAmendmentItem.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "createdByUser",
+});
+
+User.hasMany(ContractAmendmentItem, {
+  foreignKey: "updatedBy",
+  as: "updatedContractAmendmentItems",
+});
+ContractAmendmentItem.belongsTo(User, {
+  foreignKey: "updatedBy",
+  as: "updatedByUser",
+});
 export {
   sequelize,
   User,
@@ -809,6 +937,8 @@ export {
   QuotationItem,
   Contract,
   ContractItem,
+  ContractAmendment,
+  ContractAmendmentItem,
   PaymentSchedule,
   ExecutionBrief,
   ExecutionServiceDetail,

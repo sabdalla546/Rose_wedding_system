@@ -26,6 +26,7 @@ import { DashboardPage } from "@/pages/dashboard/dashboard-page";
 import ContractDetailsPage from "@/pages/contracts/ContractDetails";
 import ContractFormPage from "@/pages/contracts/ContractForm";
 import ContractsPage from "@/pages/contracts/Contracts";
+import ContractAmendmentDetailsPage from "@/pages/contracts/amendments/ContractAmendmentDetails";
 import DesignerDetailsPage from "@/pages/designer-details/DesignerDetails";
 import ExecutionBriefDetailsPage from "@/pages/execution/ExecutionBriefDetails";
 import ExecutionBriefsPage from "@/pages/execution/ExecutionBriefs";
@@ -418,6 +419,10 @@ export const router = createBrowserRouter([
           {
             path: "contracts/:id",
             element: <ContractDetailsPage />,
+          },
+          {
+            path: "contracts/:id/amendments/:amendmentId",
+            element: <ContractAmendmentDetailsPage />,
           },
           {
             path: "execution-briefs",
