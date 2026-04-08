@@ -81,7 +81,7 @@ export const createApp = async () => {
   app.use("/api/v1/quotations", quotationRoutes);
   app.use("/api/v1/contracts", contractRoutes);
   app.use("/api/v1/execution-briefs", executionRoutes);
-  app.use("/api/contract-amendments", contractAmendmentRoutes);
+  app.use("/api/v1/contract-amendments", contractAmendmentRoutes);
   app.use("/api/v1/inventory", inventoryRoutes);
   app.use(errorHandler);
 

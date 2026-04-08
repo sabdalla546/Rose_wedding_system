@@ -161,7 +161,7 @@ const findMatchingVendorPricingPlan = (
 };
 
 const isServiceSummaryItem = (
-  item?: { itemType?: string; category?: string } | null,
+  item?: { itemType?: string; category?: string | null } | null,
 ) => item?.itemType === "service" && item?.category === "service_summary";
 
 const getContractPreviewItemPrice = (
@@ -1121,11 +1121,11 @@ const ContractFormPage = () => {
       }));
 
       if (!selectedItem.eventVendorId && selectedItem.vendorId) {
-        setCatalogVendorConfigs((current) => ({
+              setCatalogVendorConfigs((current) => ({
           ...current,
           [rowKey]: {
             ...(current[rowKey] ??
-              createDefaultCatalogVendorConfig(selectedItem.vendorId)),
+              createDefaultCatalogVendorConfig(selectedItem.vendorId ?? "")),
             vendorId: String(selectedItem.vendorId),
             pricingPlanId: selectedItem.pricingPlanId
               ? String(selectedItem.pricingPlanId)
@@ -4582,7 +4582,7 @@ function TypeBadge({
 }: {
   item?:
     | Partial<ContractItemFormData>
-    | { itemType?: ContractItemType; category?: string }
+    | { itemType?: ContractItemType; category?: string | null }
     | null;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {

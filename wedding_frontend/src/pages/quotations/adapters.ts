@@ -69,11 +69,10 @@ export const getQuotationDisplayNumber = (
 ) => quotation.quotationNumber?.trim() || `QT-${quotation.id}`;
 
 export const getQuotationPartyDisplay = (
-  quotation: Pick<Quotation, "customer" | "lead" | "event">,
+  quotation: Pick<Quotation, "customer" | "event">,
 ) =>
   quotation.event?.customer?.fullName ||
   quotation.customer?.fullName ||
-  quotation.lead?.fullName ||
   "-";
 
 export const isServiceItem = (

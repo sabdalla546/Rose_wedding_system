@@ -10,7 +10,6 @@ export interface ContractAttributes {
   quotationId?: number | null;
   eventId: number;
   customerId?: number | null;
-  leadId?: number | null;
 
   contractNumber?: string | null;
   signedDate: string;
@@ -32,7 +31,6 @@ type ContractCreationAttributes = Optional<
   | "id"
   | "quotationId"
   | "customerId"
-  | "leadId"
   | "contractNumber"
   | "eventDate"
   | "subtotal"
@@ -53,7 +51,6 @@ export class Contract
   public quotationId?: number | null;
   public eventId!: number;
   public customerId?: number | null;
-  public leadId?: number | null;
 
   public contractNumber?: string | null;
   public signedDate!: string;
@@ -89,11 +86,6 @@ Contract.init(
     },
 
     customerId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    leadId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -159,7 +151,6 @@ Contract.init(
       { fields: ["quotationId"] },
       { fields: ["eventId"] },
       { fields: ["customerId"] },
-      { fields: ["leadId"] },
       { fields: ["contractNumber"] },
       { fields: ["signedDate"] },
       { fields: ["status"] },

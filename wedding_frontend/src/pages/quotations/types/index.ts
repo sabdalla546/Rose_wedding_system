@@ -1,6 +1,5 @@
 import type { Customer } from "@/pages/customers/types";
 import type { Event } from "@/pages/events/types";
-import type { Lead } from "@/pages/leads/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type {
   EventVendorLink,
@@ -68,7 +67,6 @@ export interface Quotation {
   status: QuotationStatus;
   event?: Event | null;
   customer?: Customer | null;
-  lead?: Lead | null;
   items?: QuotationItem[];
   createdByUser?: QuotationUserSummary | null;
   updatedByUser?: QuotationUserSummary | null;

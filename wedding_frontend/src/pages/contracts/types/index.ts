@@ -1,6 +1,5 @@
 import type { Customer } from "@/pages/customers/types";
 import type { Event } from "@/pages/events/types";
-import type { Lead } from "@/pages/leads/types";
 import type { Quotation, QuotationItem } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type {
@@ -98,7 +97,6 @@ export interface Contract {
   quotation?: Quotation | null;
   event?: Event | null;
   customer?: Customer | null;
-  lead?: Lead | null;
   items?: ContractItem[];
   paymentSchedules?: PaymentSchedule[];
   createdByUser?: ContractUserSummary | null;

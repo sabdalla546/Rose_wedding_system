@@ -4,7 +4,7 @@ type PermissionCheckMode = "any" | "all";
 
 export const useHasPermission = (
   required: string | string[],
-  mode: PermissionCheckMode = "all"
+  mode: PermissionCheckMode = "all",
 ) => {
   const { isAuthenticated, user } = useAuth();
 
@@ -20,11 +20,11 @@ export const useHasPermission = (
 
   if (mode === "any") {
     return requiredPermissions.some((permission) =>
-      user.permissions.includes(permission)
+      user.permissions.includes(permission),
     );
   }
 
   return requiredPermissions.every((permission) =>
-    user.permissions.includes(permission)
+    user.permissions.includes(permission),
   );
 };

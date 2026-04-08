@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { PackageOpen } from "lucide-react";
-import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
+import {
+  useForm,
+  useWatch,
+  type Resolver,
+  type SubmitHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -67,7 +72,7 @@ const ServiceFormPage = () => {
   const updateMutation = useUpdateService(id);
 
   const form = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceSchema),
+    resolver: zodResolver(serviceSchema) as Resolver<ServiceFormValues>,
     defaultValues: {
       name: "",
       code: "",

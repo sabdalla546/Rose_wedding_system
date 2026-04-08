@@ -9,7 +9,6 @@ export interface QuotationAttributes {
 
   eventId: number;
   customerId?: number | null;
-  leadId?: number | null;
 
   quotationNumber?: string | null;
   issueDate: string;
@@ -30,7 +29,6 @@ type QuotationCreationAttributes = Optional<
   QuotationAttributes,
   | "id"
   | "customerId"
-  | "leadId"
   | "quotationNumber"
   | "validUntil"
   | "subtotal"
@@ -50,7 +48,6 @@ export class Quotation
 
   public eventId!: number;
   public customerId?: number | null;
-  public leadId?: number | null;
 
   public quotationNumber?: string | null;
   public issueDate!: string;
@@ -81,11 +78,6 @@ Quotation.init(
     },
 
     customerId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    leadId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -150,7 +142,6 @@ Quotation.init(
     indexes: [
       { fields: ["eventId"] },
       { fields: ["customerId"] },
-      { fields: ["leadId"] },
       { fields: ["quotationNumber"] },
       { fields: ["issueDate"] },
       { fields: ["status"] },

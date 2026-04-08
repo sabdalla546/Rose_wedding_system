@@ -51,13 +51,6 @@ const CompactHeader: React.FC<CompactHeaderProps> = ({
         "[&_button]:!h-10",
         "[&_button]:!items-center [&_button]:!justify-center",
         "[&_button]:!px-4 [&_button]:!text-[13px]",
-        // Let the header search area breathe on wide screens.
-        // PageHeader wraps (search/actions) in `lg:w-auto lg:max-w-[36rem] lg:shrink-0`.
-        // We override it so the search row can grow and take more horizontal space.
-        "[&_.lg\\:max-w-\\[36rem\\]]:lg:!max-w-none",
-        "[&_.lg\\:w-auto]:lg:!w-full",
-        "[&_.lg\\:shrink-0]:lg:!shrink",
-        "[&_.lg\\:items-end]:lg:!items-stretch",
         // Keep a compact but modern radius language across header surfaces.
         "[&_.app-icon-chip]:h-9 [&_.app-icon-chip]:w-9 [&_.app-icon-chip]:!rounded-[4px]",
         "[&_.app-icon-chip]:!border [&_.app-icon-chip]:!border-[var(--color-control-border)]",

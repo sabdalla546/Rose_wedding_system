@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { UsersRound } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, type Resolver, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -124,7 +124,7 @@ const CustomerFormPage = () => {
   const customerSchema = useMemo(() => buildCustomerSchema(t), [t]);
 
   const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerSchema),
+    resolver: zodResolver(customerSchema) as Resolver<CustomerFormValues>,
     defaultValues: {
       fullName: "",
       mobile: "",

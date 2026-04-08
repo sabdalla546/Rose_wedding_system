@@ -49,8 +49,6 @@ User.hasMany(RefreshToken, { foreignKey: "userId" });
 // Wedding starter relations
 // =========================
 
-// Venue -> Lead
-
 // Customer -> Appointment
 Customer.hasMany(Appointment, {
   foreignKey: "customerId",
@@ -428,8 +426,6 @@ Quotation.belongsTo(Customer, {
   foreignKey: "customerId",
   as: "customer",
 });
-
-// Lead -> Quotation
 
 // Quotation -> QuotationItem
 Quotation.hasMany(QuotationItem, {

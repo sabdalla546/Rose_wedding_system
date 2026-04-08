@@ -56,6 +56,13 @@ const filterFieldClassName =
 const fieldStyle = {
   background: "var(--lux-control-surface)",
   borderColor: "var(--lux-control-border)",
+  color: "var(--lux-text)",
+  colorScheme: "dark",
+} as const;
+
+const selectOptionStyle = {
+  background: "var(--lux-control-surface)",
+  color: "var(--lux-text)",
 } as const;
 
 export function AppointmentsTableView() {
@@ -488,9 +495,15 @@ export function AppointmentsTableView() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="all">{t("appointments.allStatuses")}</option>
+                <option style={selectOptionStyle} value="all">
+                  {t("appointments.allStatuses")}
+                </option>
                 {APPOINTMENT_STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
+                  <option
+                    key={status.value}
+                    style={selectOptionStyle}
+                    value={status.value}
+                  >
                     {t(`appointments.status.${status.value}`, {
                       defaultValue: status.label,
                     })}
@@ -509,9 +522,15 @@ export function AppointmentsTableView() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="">{t("appointments.allCustomers")}</option>
+                <option style={selectOptionStyle} value="">
+                  {t("appointments.allCustomers")}
+                </option>
                 {customers.map((customer) => (
-                  <option key={customer.id} value={String(customer.id)}>
+                  <option
+                    key={customer.id}
+                    style={selectOptionStyle}
+                    value={String(customer.id)}
+                  >
                     {customer.fullName}
                   </option>
                 ))}
