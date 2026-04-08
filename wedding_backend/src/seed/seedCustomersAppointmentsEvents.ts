@@ -1,4 +1,5 @@
 import { initDatabase, sequelize } from "../config/database";
+import { APPOINTMENT_STATUSES } from "../constants/workflow-statuses";
 import { Appointment, Customer, Event } from "../models";
 import { ensureSeedVenues } from "./seedVenues";
 
@@ -16,14 +17,7 @@ const appointmentTypes = [
   "Office Visit",
 ] as const;
 
-const appointmentStatuses = [
-  "scheduled",
-  "confirmed",
-  "completed",
-  "rescheduled",
-  "cancelled",
-  "no_show",
-] as const;
+const appointmentStatuses = APPOINTMENT_STATUSES;
 
 const eventStatuses = [
   "draft",
