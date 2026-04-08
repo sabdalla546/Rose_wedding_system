@@ -1,4 +1,4 @@
-import { Includeable, Op, Order } from "sequelize";
+import { Includeable, Op, Order, Transaction } from "sequelize";
 import type { ExecutionBriefStatus } from "../../models/executionBrief.model";
 import {
   Contract,
@@ -10,7 +10,9 @@ import {
   Quotation,
   Service,
   User,
+  sequelize,
 } from "../../models";
+import { syncContractItemsToEventOperationalData } from "./executionOperationalSync.service";
 import {
   recordWorkflowAction,
   recordWorkflowBlock,
@@ -38,9 +40,11 @@ export const getTemplateKeyFromService = (service: {
   name?: string | null;
   category?: string | null;
 }) => {
-  const source = `${service.category ?? ""} ${service.name ?? ""}`.toLowerCase();
+  const source =
+    `${service.category ?? ""} ${service.name ?? ""}`.toLowerCase();
 
-  if (source.includes("ÙƒÙˆØ´") || source.includes("kosha")) return "kosha_setup";
+  if (source.includes("ÙƒÙˆØ´") || source.includes("kosha"))
+    return "kosha_setup";
   if (source.includes("ÙˆØ±Ø¯") || source.includes("flower")) {
     return "flowers_setup";
   }
@@ -124,6 +128,75 @@ export const buildExecutionBriefInclude = (search?: string): Includeable[] => {
       required: false,
     },
   ];
+};
+const buildExecutionDetailRowsFromEventServices = async ({
+  briefId,
+  eventId,
+  transaction,
+}: {
+  briefId: number;
+  eventId: number;
+  transaction?: Transaction;
+}) => {
+  const eventServices = await EventService.findAll({
+    where: { eventId },
+    include: [
+      {
+        model: Service,
+        as: "service",
+        required: false,
+      },
+    ],
+    order: [
+      ["sortOrder", "ASC"],
+      ["id", "ASC"],
+    ],
+    transaction,
+  });
+
+  return eventServices
+    .filter((item) => {
+      const hasServiceId =
+        typeof item.serviceId === "number" && item.serviceId > 0;
+      const hasSnapshotName =
+        String(item.serviceNameSnapshot ?? "").trim() !== "";
+      const hasRelatedServiceName =
+        String(
+          (item as EventService & { service?: Service | null }).service?.name ??
+            "",
+        ).trim() !== "";
+
+      return hasServiceId || hasSnapshotName || hasRelatedServiceName;
+    })
+    .map((item, index) => {
+      const serviceRecord = (
+        item as EventService & { service?: Service | null }
+      ).service;
+
+      const serviceName =
+        item.serviceNameSnapshot ?? serviceRecord?.name ?? null;
+
+      const serviceCategory =
+        item.category ??
+        (serviceRecord as (Service & { category?: string | null }) | null)
+          ?.category ??
+        null;
+
+      return {
+        briefId,
+        eventId,
+        serviceId: item.serviceId as number,
+        serviceNameSnapshot: serviceName,
+        templateKey: getTemplateKeyFromService({
+          name: serviceName,
+          category: serviceCategory,
+        }),
+        sortOrder: index,
+        detailsJson: null,
+        status: "pending" as const,
+      };
+    })
+    .filter((row) => typeof row.serviceId === "number" && row.serviceId > 0);
 };
 
 export async function assertExecutionBriefReferences({
@@ -277,15 +350,18 @@ export async function assertExecutionBriefCommercialReady(
   if (refs.contract) {
     const contractStatus = normalizeContractStatus(refs.contract.status);
     if (
-      contractStatus === "signed"
-      || contractStatus === "active"
-      || contractStatus === "completed"
+      contractStatus === "signed" ||
+      contractStatus === "active" ||
+      contractStatus === "completed"
     ) {
       return refs;
     }
   }
 
-  if (!refs.quotation || normalizeQuotationStatus(refs.quotation.status) !== "approved") {
+  if (
+    !refs.quotation ||
+    normalizeQuotationStatus(refs.quotation.status) !== "approved"
+  ) {
     if (briefOrRefs instanceof ExecutionBrief) {
       recordWorkflowBlock({
         entityName: "execution_brief",
@@ -293,7 +369,8 @@ export async function assertExecutionBriefCommercialReady(
         actionName: "execution_brief.handoff",
         currentStatus: normalizeExecutionBriefStatus(briefOrRefs.status),
         attemptedBy: null,
-        message: "Execution brief handoff requires approved quotation or contract",
+        message:
+          "Execution brief handoff requires approved quotation or contract",
         sourceRefs: {
           eventId: briefOrRefs.eventId,
           quotationId: briefOrRefs.quotationId ?? null,
@@ -339,89 +416,73 @@ export async function createExecutionBriefWorkflow({
     contractId,
   });
 
-  const brief = await ExecutionBrief.create({
-    eventId,
-    quotationId,
-    contractId,
-    status,
-    generalNotes,
-    clientNotes,
-    designerNotes,
-    createdBy: userId,
-    updatedBy: userId,
-  });
+  return sequelize.transaction(async (transaction) => {
+    const brief = await ExecutionBrief.create(
+      {
+        eventId,
+        quotationId,
+        contractId,
+        status,
+        generalNotes,
+        clientNotes,
+        designerNotes,
+        createdBy: userId,
+        updatedBy: userId,
+      },
+      { transaction },
+    );
 
-  if (initializeFromEventServices) {
-    const eventServices = await EventService.findAll({
-      where: { eventId },
-      include: [
-        {
-          model: Service,
-          as: "service",
-          required: false,
-        },
-      ],
-      order: [["id", "ASC"]],
+    if (initializeFromEventServices) {
+      if (contractId) {
+        await syncContractItemsToEventOperationalData({
+          eventId,
+          contractId,
+          userId,
+          transaction,
+        });
+      }
+
+      const detailRows = await buildExecutionDetailRowsFromEventServices({
+        briefId: brief.id,
+        eventId,
+        transaction,
+      });
+
+      if (detailRows.length > 0) {
+        await ExecutionServiceDetail.bulkCreate(detailRows, {
+          ignoreDuplicates: true,
+          transaction,
+        });
+      }
+    }
+
+    recordWorkflowAction({
+      entityName: "execution_brief",
+      entityId: brief.id,
+      actionName: contractId
+        ? "execution_brief.create_from_contract"
+        : quotationId
+          ? "execution_brief.create_from_quotation"
+          : "execution_brief.create_from_event",
+      actorId: userId,
+      note: "Created execution brief operational snapshot",
+      sourceRefs: {
+        eventId,
+        quotationId,
+        contractId,
+        executionBriefId: brief.id,
+      },
+      metadata: {
+        initializeFromEventServices,
+      },
     });
 
-    const detailRows = eventServices
-      .filter((item) => typeof item.serviceId === "number" && item.serviceId > 0)
-      .map((item, index) => {
-        const serviceRecord = (item as EventService & { service?: Service | null })
-          .service;
-        const serviceName = serviceRecord?.name ?? null;
-        const serviceCategory = (
-          serviceRecord as (Service & { category?: string | null }) | null
-        )?.category ?? null;
-
-        return {
-          briefId: brief.id,
-          eventId,
-          serviceId: item.serviceId as number,
-          serviceNameSnapshot: serviceName,
-          templateKey: getTemplateKeyFromService({
-            name: serviceName,
-            category: serviceCategory,
-          }),
-          sortOrder: index,
-          detailsJson: null,
-          status: "pending" as const,
-        };
-      });
-
-    if (detailRows.length > 0) {
-      await ExecutionServiceDetail.bulkCreate(detailRows, {
-        ignoreDuplicates: true,
-      });
-    }
-  }
-
-  recordWorkflowAction({
-    entityName: "execution_brief",
-    entityId: brief.id,
-    actionName: contractId
-      ? "execution_brief.create_from_contract"
-      : quotationId
-        ? "execution_brief.create_from_quotation"
-        : "execution_brief.create_from_event",
-    actorId: userId,
-    note: "Created execution brief operational snapshot",
-    sourceRefs: {
-      eventId,
-      quotationId,
-      contractId,
-      executionBriefId: brief.id,
-    },
-    metadata: {
-      initializeFromEventServices,
-    },
-  });
-
-  return ExecutionBrief.findByPk(brief.id, {
-    include: buildExecutionBriefInclude(),
+    return ExecutionBrief.findByPk(brief.id, {
+      include: buildExecutionBriefInclude(),
+      transaction,
+    });
   });
 }
-
 type ExecutionBriefStatusActionInput = {
   brief: ExecutionBrief;
   nextStatus: ExecutionBriefStatus;
@@ -622,7 +683,9 @@ export const assertExecutionBriefStructureEditable = (
     area?: string;
   },
 ) => {
-  if (EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))) {
+  if (
+    EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))
+  ) {
     if (audit) {
       recordWorkflowBlock({
         entityName: "execution_brief",
@@ -663,16 +726,18 @@ export const assertExecutionBriefHeaderEditable = (
     attemptedFields?: string[];
   },
 ) => {
-  if (!EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))) {
+  if (
+    !EXECUTION_LOCKED_STATUSES.has(normalizeExecutionBriefStatus(brief.status))
+  ) {
     return;
   }
 
   const hasProtectedChange =
-    typeof payload.quotationId !== "undefined"
-    || typeof payload.contractId !== "undefined"
-    || typeof payload.generalNotes !== "undefined"
-    || typeof payload.clientNotes !== "undefined"
-    || typeof payload.designerNotes !== "undefined";
+    typeof payload.quotationId !== "undefined" ||
+    typeof payload.contractId !== "undefined" ||
+    typeof payload.generalNotes !== "undefined" ||
+    typeof payload.clientNotes !== "undefined" ||
+    typeof payload.designerNotes !== "undefined";
 
   if (hasProtectedChange) {
     if (audit) {

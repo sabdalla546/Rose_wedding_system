@@ -30,7 +30,7 @@ const buildRateLimiter = ({
 
 export const globalRateLimiter = buildRateLimiter({
   windowMs: FIFTEEN_MINUTES,
-  max: 300,
+  max: 3000,
   message: "Too many requests. Please try again later.",
 });
 
