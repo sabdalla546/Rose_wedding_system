@@ -16,18 +16,8 @@ import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
-import {
-  AppDialogBody,
-  AppDialogFooter,
-  AppDialogHeader,
-  AppDialogShell,
-} from "@/components/shared/app-dialog";
 import { SectionCard } from "@/components/shared/section-card";
-import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
 import { Button } from "@/components/ui/button";
-import ConfirmDialog from "@/components/ui/confirmDialog";
-import { Dialog } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -36,16 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useContracts } from "@/hooks/contracts/useContracts";
-import { useCustomers } from "@/hooks/customers/useCustomers";
-import { useEvent } from "@/hooks/events/useEvents";
 import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
-import { useUpdateEvent } from "@/hooks/events/useEventMutations";
-import { useDeleteEventService } from "@/hooks/services/useEventServiceMutations";
-import { useEventServiceItems } from "@/hooks/services/useServices";
-import { useDeleteEventVendor } from "@/hooks/vendors/useEventVendorMutations";
-import { useEventVendorLinks } from "@/hooks/vendors/useVendors";
-import { useVenues } from "@/hooks/venues/useVenues";
 import { EventServicesChecklistDialog } from "@/pages/events/_components/EventServicesChecklistDialog";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
 import {
@@ -58,7 +39,10 @@ import {
 } from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import {
+  DeleteEventServiceConfirmDialog,
+  DeleteEventVendorConfirmDialog,
   EventContractsPanel,
+  EventEditDialog,
   EventExecutionPanel,
   EventOverviewPanel,
   EventQuotationsPanel,
@@ -67,7 +51,9 @@ import {
   EventVendorAssignmentDialog,
   EventVendorsPanel,
 } from "@/features/events/components";
-import { useQuotations } from "@/hooks/quotations/useQuotations";
+import { useEventEditDialog } from "@/features/events/hooks/useEventEditDialog";
+import { useEventWorkspaceData } from "@/features/events/hooks/useEventWorkspaceData";
+import { useEventWorkspaceDeleteFlows } from "@/features/events/hooks/useEventWorkspaceDeleteFlows";
 import type { Contract } from "@/pages/contracts/types";
 import type { Quotation } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
@@ -97,33 +83,6 @@ function isWorkspaceTabValue(value: string | null): value is WorkspaceTabValue {
   );
 }
 
-type EventEditFormState = {
-  customerId: string;
-  eventDate: string;
-  venueId: string;
-  venueNameSnapshot: string;
-  groomName: string;
-  brideName: string;
-  guestCount: string;
-  title: string;
-  notes: string;
-};
-
-const textareaClassName =
-  "min-h-[110px] w-full rounded-[22px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
-
-const createDefaultEventEditState = (): EventEditFormState => ({
-  customerId: "",
-  eventDate: "",
-  venueId: "",
-  venueNameSnapshot: "",
-  groomName: "",
-  brideName: "",
-  guestCount: "",
-  title: "",
-  notes: "",
-});
-
 function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,61 +90,24 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const dateLocale = i18n.language === "ar" ? ar : enUS;
   const isRtl = i18n.dir() === "rtl";
 
-  const { data: event, isLoading: eventLoading } = useEvent(eventId);
-  const { data: eventServiceItemsResponse } = useEventServiceItems({
-    currentPage: 1,
-    itemsPerPage: 200,
-    eventId: Number(eventId),
-    category: "all",
-    status: "all",
-  });
-  const { data: eventVendorLinksResponse } = useEventVendorLinks({
-    currentPage: 1,
-    itemsPerPage: 200,
-    eventId: Number(eventId),
-    vendorType: "all",
-    providedBy: "all",
-    status: "all",
-  });
   const {
-    data: eventQuotationsResponse,
-    isLoading: quotationsLoading,
-    isError: quotationsLoadFailed,
-  } = useQuotations({
-    currentPage: 1,
-    itemsPerPage: 100,
-    searchQuery: "",
-    eventId,
-    status: "all",
-    issueDateFrom: "",
-    issueDateTo: "",
-  });
-  const {
-    data: eventContractsResponse,
-    isLoading: contractsLoading,
-    isError: contractsLoadFailed,
-  } = useContracts({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    quotationId: "",
-    eventId,
-    status: "all",
-    signedDateFrom: "",
-    signedDateTo: "",
-  });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-  });
-  const { data: venuesResponse } = useVenues({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    isActive: "all",
-  });
+    event,
+    eventLoading,
+    customers,
+    venues,
+    serviceItems,
+    existingServiceIds,
+    vendorLinks,
+    quotations,
+    quotationsLoading,
+    quotationsLoadFailed,
+    contracts,
+    contractsLoading,
+    contractsLoadFailed,
+    latestQuotation,
+    latestContract,
+    readiness,
+  } = useEventWorkspaceData(eventId);
 
   const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
   const [serviceChecklistOpen, setServiceChecklistOpen] = useState(false);
@@ -196,120 +118,30 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] =
     useState<EventVendorLink | null>(null);
-  const [deleteVendorCandidate, setDeleteVendorCandidate] =
-    useState<EventVendorLink | null>(null);
-  const [deleteServiceCandidate, setDeleteServiceCandidate] =
-    useState<EventServiceItem | null>(null);
-  const [editEventDialogOpen, setEditEventDialogOpen] = useState(false);
-  const [editEventForm, setEditEventForm] = useState<EventEditFormState>(
-    createDefaultEventEditState(),
-  );
-  const [editEventError, setEditEventError] = useState("");
-
-  const updateEventMutation = useUpdateEvent(eventId, {
-    navigateOnSuccess: false,
-    onSuccess: () => {
-      setEditEventDialogOpen(false);
-      setEditEventError("");
-    },
+  const {
+    deleteServiceCandidate,
+    setDeleteServiceCandidate,
+    deleteVendorCandidate,
+    setDeleteVendorCandidate,
+    confirmDeleteService,
+    confirmDeleteVendor,
+    deleteEventServiceMutation,
+    deleteEventVendorMutation,
+  } = useEventWorkspaceDeleteFlows(eventId);
+  const {
+    open: editEventDialogOpen,
+    setOpen: setEditEventDialogOpen,
+    form: editEventForm,
+    setForm: setEditEventForm,
+    error: editEventError,
+    openDialog: handleOpenEditEventDialog,
+    save: handleSaveEvent,
+    updateEventMutation,
+  } = useEventEditDialog({
+    eventId,
+    event,
+    eventDateRequiredMessage: t("designerDetails.eventDateRequired"),
   });
-  const deleteEventServiceMutation = useDeleteEventService(Number(eventId));
-  const deleteEventVendorMutation = useDeleteEventVendor(Number(eventId));
-
-  const customers = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
-  );
-  const venues = useMemo(
-    () => venuesResponse?.data ?? [],
-    [venuesResponse?.data],
-  );
-  const serviceItems = useMemo(
-    () =>
-      [...(eventServiceItemsResponse?.data ?? [])].sort((left, right) => {
-        if (left.sortOrder !== right.sortOrder) {
-          return left.sortOrder - right.sortOrder;
-        }
-
-        return left.id - right.id;
-      }),
-    [eventServiceItemsResponse?.data],
-  );
-  const existingServiceIds = useMemo(
-    () =>
-      serviceItems
-        .map((item) => item.serviceId)
-        .filter((value): value is number => typeof value === "number"),
-    [serviceItems],
-  );
-  const vendorLinks = useMemo(
-    () =>
-      [...(eventVendorLinksResponse?.data ?? [])].sort((left, right) => {
-        if (left.vendorType !== right.vendorType) {
-          return left.vendorType.localeCompare(right.vendorType);
-        }
-
-        return left.id - right.id;
-      }),
-    [eventVendorLinksResponse?.data],
-  );
-  const quotations = useMemo(
-    () =>
-      [...(eventQuotationsResponse?.data ?? [])].sort((left, right) => {
-        const leftTime = new Date(left.issueDate).getTime();
-        const rightTime = new Date(right.issueDate).getTime();
-
-        if (leftTime !== rightTime) {
-          return rightTime - leftTime;
-        }
-
-        return right.id - left.id;
-      }),
-    [eventQuotationsResponse?.data],
-  );
-  const contracts = useMemo(
-    () =>
-      [...(eventContractsResponse?.data ?? [])].sort((left, right) => {
-        const leftTime = new Date(left.signedDate).getTime();
-        const rightTime = new Date(right.signedDate).getTime();
-
-        if (leftTime !== rightTime) {
-          return rightTime - leftTime;
-        }
-
-        return right.id - left.id;
-      }),
-    [eventContractsResponse?.data],
-  );
-
-  const latestQuotation = quotations[0] ?? null;
-  const latestContract = contracts[0] ?? null;
-  const readiness = useMemo(() => {
-    const servicesReady = serviceItems.filter(
-      (item) => item.status === "confirmed" || item.status === "completed",
-    ).length;
-    const vendorsReady = vendorLinks.filter(
-      (link) => link.status === "approved" || link.status === "confirmed",
-    ).length;
-    const sections = event?.sections ?? [];
-    const sectionsReady = sections.filter(
-      (section) => section.isCompleted,
-    ).length;
-    const total = serviceItems.length + vendorLinks.length + sections.length;
-    const ready = servicesReady + vendorsReady + sectionsReady;
-
-    return {
-      ready,
-      total,
-      percent: total > 0 ? Math.round((ready / total) * 100) : null,
-      servicesReady,
-      servicesTotal: serviceItems.length,
-      vendorsReady,
-      vendorsTotal: vendorLinks.length,
-      sectionsReady,
-      sectionsTotal: sections.length,
-    };
-  }, [event?.sections, serviceItems, vendorLinks]);
   const requestedTab = searchParams.get("tab");
   const activeTab = isWorkspaceTabValue(requestedTab)
     ? requestedTab
@@ -386,43 +218,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     setServiceChecklistOpen(true);
   };
 
-  const handleOpenEditEventDialog = () => {
-    setEditEventError("");
-    setEditEventForm({
-      customerId: event.customerId ? String(event.customerId) : "",
-      eventDate: event.eventDate ? event.eventDate.slice(0, 10) : "",
-      venueId: event.venueId ? String(event.venueId) : "",
-      venueNameSnapshot: event.venueNameSnapshot || "",
-      groomName: event.groomName || "",
-      brideName: event.brideName || "",
-      guestCount:
-        typeof event.guestCount === "number" ? String(event.guestCount) : "",
-      title: event.title || "",
-      notes: event.notes || "",
-    });
-    setEditEventDialogOpen(true);
-  };
-
-  const handleSaveEvent = () => {
-    if (!editEventForm.eventDate.trim()) {
-      setEditEventError(t("designerDetails.eventDateRequired"));
-      return;
-    }
-
-    setEditEventError("");
-    updateEventMutation.mutate({
-      customerId: editEventForm.customerId,
-      eventDate: editEventForm.eventDate,
-      venueId: editEventForm.venueId,
-      venueNameSnapshot: editEventForm.venueNameSnapshot,
-      groomName: editEventForm.groomName,
-      brideName: editEventForm.brideName,
-      guestCount: editEventForm.guestCount,
-      title: editEventForm.title,
-      notes: editEventForm.notes,
-    });
-  };
-
   const handleCreateQuotation = () => {
     navigate(`/quotations/create?mode=from-event&eventId=${eventId}`);
   };
@@ -440,26 +235,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     }
 
     navigate(`/contracts/create?eventId=${eventId}`);
-  };
-
-  const handleDeleteService = () => {
-    if (!deleteServiceCandidate) {
-      return;
-    }
-
-    deleteEventServiceMutation.mutate(deleteServiceCandidate.id, {
-      onSuccess: () => setDeleteServiceCandidate(null),
-    });
-  };
-
-  const handleDeleteVendor = () => {
-    if (!deleteVendorCandidate) {
-      return;
-    }
-
-    deleteEventVendorMutation.mutate(deleteVendorCandidate.id, {
-      onSuccess: () => setDeleteVendorCandidate(null),
-    });
   };
 
   return (
@@ -719,13 +494,9 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         />
       ) : null}
 
-      <ConfirmDialog
+      <DeleteEventServiceConfirmDialog
         open={Boolean(deleteServiceCandidate)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteServiceCandidate(null);
-          }
-        }}
+        onOpenChange={(open) => !open && setDeleteServiceCandidate(null)}
         title={t("services.deleteEventItemTitle", {
           defaultValue: "Delete service item",
         })}
@@ -734,17 +505,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         })}
         confirmLabel={t("common.delete")}
         cancelLabel={t("designerDetails.cancel")}
-        onConfirm={handleDeleteService}
+        onConfirm={confirmDeleteService}
         isPending={deleteEventServiceMutation.isPending}
       />
 
-      <ConfirmDialog
+      <DeleteEventVendorConfirmDialog
         open={Boolean(deleteVendorCandidate)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteVendorCandidate(null);
-          }
-        }}
+        onOpenChange={(open) => !open && setDeleteVendorCandidate(null)}
         title={t("vendors.deleteEventVendorTitle", {
           defaultValue: "Delete linked vendor",
         })}
@@ -754,208 +521,49 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         })}
         confirmLabel={t("common.delete")}
         cancelLabel={t("designerDetails.cancel")}
-        onConfirm={handleDeleteVendor}
+        onConfirm={confirmDeleteVendor}
         isPending={deleteEventVendorMutation.isPending}
       />
 
-      <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
-        <AppDialogShell size="lg">
-          <AppDialogHeader
-            title={t("designerDetails.editDialogTitle")}
-            description={t("designerDetails.editDialogDescription")}
-          />
-          <AppDialogBody className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.customerField")}
-                </p>
-                <Select
-                  value={editEventForm.customerId || "none"}
-                  onValueChange={(value) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      customerId: value === "none" ? "" : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("events.selectCustomer")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      {t("designerDetails.noCustomer")}
-                    </SelectItem>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={String(customer.id)}>
-                        {customer.fullName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.eventDateField")}
-                </p>
-                <Input
-                  type="date"
-                  value={editEventForm.eventDate}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      eventDate: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.venueField")}
-                </p>
-                <Select
-                  value={editEventForm.venueId || "none"}
-                  onValueChange={(value) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      venueId: value === "none" ? "" : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("events.selectVenue")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      {t("designerDetails.noVenue")}
-                    </SelectItem>
-                    {venues.map((venue) => (
-                      <SelectItem key={venue.id} value={String(venue.id)}>
-                        {venue.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <WorkflowLockBanner
-                title={t("events.statusManagedByWorkflow", {
-                  defaultValue: "Status managed by workflow",
-                })}
-                message={t("events.statusManagedByWorkflowHint", {
-                  defaultValue:
-                    "Use the workflow action buttons on the event details page to change status safely.",
-                })}
-              />
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.eventTitleField")}
-                </p>
-                <Input
-                  value={editEventForm.title}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      title: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.guestCountField")}
-                </p>
-                <Input
-                  value={editEventForm.guestCount}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      guestCount: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.groomNameField")}
-                </p>
-                <Input
-                  value={editEventForm.groomName}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      groomName: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.brideNameField")}
-                </p>
-                <Input
-                  value={editEventForm.brideName}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      brideName: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--lux-text)]">
-                {t("designerDetails.eventNotesField")}
-              </p>
-              <textarea
-                className={textareaClassName}
-                value={editEventForm.notes}
-                onChange={(event) =>
-                  setEditEventForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            {editEventError ? (
-              <div className="rounded-[18px] border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {editEventError}
-              </div>
-            ) : null}
-          </AppDialogBody>
-
-          <AppDialogFooter>
-            <div className="flex w-full items-center justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditEventDialogOpen(false)}
-              >
-                {t("designerDetails.cancel")}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSaveEvent}
-                disabled={updateEventMutation.isPending}
-              >
-                {updateEventMutation.isPending
-                  ? t("common.processing")
-                  : t("designerDetails.saveChanges")}
-              </Button>
-            </div>
-          </AppDialogFooter>
-        </AppDialogShell>
-      </Dialog>
+      <EventEditDialog
+        open={editEventDialogOpen}
+        onOpenChange={setEditEventDialogOpen}
+        form={editEventForm}
+        setForm={setEditEventForm}
+        error={editEventError}
+        customers={customers}
+        venues={venues}
+        onSave={handleSaveEvent}
+        isPending={updateEventMutation.isPending}
+        variant="designer"
+        guestCountInputType="text"
+        labels={{
+          title: t("designerDetails.editDialogTitle"),
+          description: t("designerDetails.editDialogDescription"),
+          customer: t("designerDetails.customerField"),
+          selectCustomer: t("events.selectCustomer"),
+          noCustomerSelected: t("designerDetails.noCustomer"),
+          eventDate: t("designerDetails.eventDateField"),
+          venue: t("designerDetails.venueField"),
+          selectVenue: t("events.selectVenue"),
+          noVenueSelected: t("designerDetails.noVenue"),
+          statusManagedByWorkflow: t("events.statusManagedByWorkflow", {
+            defaultValue: "Status managed by workflow",
+          }),
+          statusManagedByWorkflowHint: t("events.statusManagedByWorkflowHint", {
+            defaultValue:
+              "Use the workflow action buttons on the event details page to change status safely.",
+          }),
+          titleField: t("designerDetails.eventTitleField"),
+          guestCount: t("designerDetails.guestCountField"),
+          groomName: t("designerDetails.groomNameField"),
+          brideName: t("designerDetails.brideNameField"),
+          notes: t("designerDetails.eventNotesField"),
+          cancel: t("designerDetails.cancel"),
+          submit: t("designerDetails.saveChanges"),
+          processing: t("common.processing"),
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,10 @@
-export type AppCalendarView = "month" | "week" | "day" | "list";
+export type AppCalendarView =
+  | "month"
+  | "threeMonths"
+  | "year"
+  | "week"
+  | "day"
+  | "list";
 
 export type AppCalendarAccent =
   | "gold"

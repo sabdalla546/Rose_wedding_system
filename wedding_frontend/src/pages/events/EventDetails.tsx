@@ -37,40 +37,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUpdateEvent } from "@/hooks/events/useEventMutations";
 import { useEventWorkflowAction } from "@/hooks/events/useEventWorkflowActions";
-import { useEvent } from "@/hooks/events/useEvents";
-import { useContracts } from "@/hooks/contracts/useContracts";
 import {
   useCreateContract,
   useCreateContractFromQuotation,
 } from "@/hooks/contracts/useContractMutations";
-import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useExecutionBriefByEvent } from "@/hooks/execution/useExecutionBriefs";
-import { useQuotations } from "@/hooks/quotations/useQuotations";
 import { useCreateQuotationFromEvent } from "@/hooks/quotations/useQuotationMutations";
 import {
   useCreateEventService,
-  useDeleteEventService,
   useUpdateEventService,
 } from "@/hooks/services/useEventServiceMutations";
-import {
-  useEventServiceItems,
-  useServices,
-} from "@/hooks/services/useServices";
+import { useServices } from "@/hooks/services/useServices";
 import {
   useCreateEventVendor,
-  useDeleteEventVendor,
   useUpdateEventVendor,
 } from "@/hooks/vendors/useEventVendorMutations";
 import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
-import { useVenues } from "@/hooks/venues/useVenues";
 import { EventDetailsHero } from "./_components/EventDetailsHero";
 import { EventServicesChecklistDialog } from "./_components/EventServicesChecklistDialog";
 import { EventWorkspaceSummary } from "./_components/EventWorkspaceSummary";
 import {
+  DeleteEventServiceConfirmDialog,
+  DeleteEventVendorConfirmDialog,
   EventContractsPanel,
+  EventEditDialog,
   EventExecutionPanel,
   EventOverviewPanel,
   EventQuotationsPanel,
@@ -90,7 +82,7 @@ import type {
 } from "@/pages/services/types";
 import type { ContractStatus } from "@/pages/contracts/types";
 import type { QuotationStatus } from "@/pages/quotations/types";
-import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
+import { useVendors } from "@/hooks/vendors/useVendors";
 import {
   EVENT_VENDOR_PROVIDED_BY_OPTIONS,
   EVENT_VENDOR_STATUS_OPTIONS,
@@ -110,6 +102,9 @@ import {
   getEventWorkflowActions,
   type WorkflowActionDefinition,
 } from "@/lib/workflow/workflow";
+import { useEventEditDialog } from "@/features/events/hooks/useEventEditDialog";
+import { useEventWorkspaceData } from "@/features/events/hooks/useEventWorkspaceData";
+import { useEventWorkspaceDeleteFlows } from "@/features/events/hooks/useEventWorkspaceDeleteFlows";
 
 import type { EventStatus } from "./types";
 
@@ -132,18 +127,6 @@ type EventServiceFormState = {
   notes: string;
   status: EventServiceStatus;
   sortOrder: string;
-};
-
-type EventEditFormState = {
-  customerId: string;
-  eventDate: string;
-  venueId: string;
-  venueNameSnapshot: string;
-  groomName: string;
-  brideName: string;
-  guestCount: string;
-  title: string;
-  notes: string;
 };
 
 type QuotationCreateFormState = {
@@ -267,18 +250,6 @@ const createDefaultEventServiceState = (
   sortOrder: String(sortOrder),
 });
 
-const createDefaultEventEditState = (): EventEditFormState => ({
-  customerId: "",
-  eventDate: "",
-  venueId: "",
-  venueNameSnapshot: "",
-  groomName: "",
-  brideName: "",
-  guestCount: "",
-  title: "",
-  notes: "",
-});
-
 const createDefaultQuotationCreateState = (): QuotationCreateFormState => ({
   quotationNumber: "",
   issueDate: "",
@@ -311,13 +282,10 @@ export const EventDetailsPage = ({
   const navigate = useNavigate();
   const { id } = useParams();
   const resolvedEventId = eventIdOverride ? String(eventIdOverride) : id;
-  const { data: event, isLoading } = useEvent(resolvedEventId);
   const dateLocale = i18n.language === "ar" ? ar : enUS;
 
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] =
-    useState<EventVendorLink | null>(null);
-  const [deleteVendorCandidate, setDeleteVendorCandidate] =
     useState<EventVendorLink | null>(null);
   const [vendorError, setVendorError] = useState("");
   const [vendorForm, setVendorForm] = useState<EventVendorFormState>(
@@ -327,18 +295,21 @@ export const EventDetailsPage = ({
   const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
   const [editingServiceItem, setEditingServiceItem] =
     useState<EventServiceItem | null>(null);
-  const [deleteServiceCandidate, setDeleteServiceCandidate] =
-    useState<EventServiceItem | null>(null);
+  const {
+    deleteServiceCandidate,
+    setDeleteServiceCandidate,
+    deleteVendorCandidate,
+    setDeleteVendorCandidate,
+    confirmDeleteService,
+    confirmDeleteVendor,
+    deleteEventServiceMutation,
+    deleteEventVendorMutation,
+  } = useEventWorkspaceDeleteFlows(resolvedEventId);
   const [serviceError, setServiceError] = useState("");
   const [serviceForm, setServiceForm] = useState<EventServiceFormState>(
     createDefaultEventServiceState(),
   );
   const [activeTab, setActiveTab] = useState<EventDetailsTabValue>("overview");
-  const [editEventDialogOpen, setEditEventDialogOpen] = useState(false);
-  const [editEventForm, setEditEventForm] = useState<EventEditFormState>(
-    createDefaultEventEditState(),
-  );
-  const [editEventError, setEditEventError] = useState("");
   const [createQuotationDialogOpen, setCreateQuotationDialogOpen] =
     useState(false);
   const [quotationCreateForm, setQuotationCreateForm] =
@@ -350,13 +321,6 @@ export const EventDetailsPage = ({
   const [pendingWorkflowAction, setPendingWorkflowAction] =
     useState<WorkflowActionDefinition | null>(null);
 
-  const updateEventMutation = useUpdateEvent(resolvedEventId, {
-    navigateOnSuccess: false,
-    onSuccess: () => {
-      setEditEventDialogOpen(false);
-      setEditEventError("");
-    },
-  });
   const workflowActionMutation = useEventWorkflowAction(resolvedEventId);
   const createQuotationFromEventMutation = useCreateQuotationFromEvent({
     navigateOnSuccess: false,
@@ -374,16 +338,10 @@ export const EventDetailsPage = ({
   const updateEventServiceMutation = useUpdateEventService(
     Number(resolvedEventId || 0),
   );
-  const deleteEventServiceMutation = useDeleteEventService(
-    Number(resolvedEventId || 0),
-  );
   const createEventVendorMutation = useCreateEventVendor(
     Number(resolvedEventId || 0),
   );
   const updateEventVendorMutation = useUpdateEventVendor(
-    Number(resolvedEventId || 0),
-  );
-  const deleteEventVendorMutation = useDeleteEventVendor(
     Number(resolvedEventId || 0),
   );
   const { data: vendorCatalogResponse } = useVendors({
@@ -392,14 +350,6 @@ export const EventDetailsPage = ({
     searchQuery: "",
     type: "all",
     isActive: "all",
-  });
-  const { data: eventVendorLinksResponse } = useEventVendorLinks({
-    currentPage: 1,
-    itemsPerPage: 200,
-    eventId: Number(resolvedEventId || 0),
-    vendorType: "all",
-    providedBy: "all",
-    status: "all",
   });
   const {
     data: vendorSubServicesResponse,
@@ -434,53 +384,34 @@ export const EventDetailsPage = ({
     category: "all",
     isActive: "all",
   });
-  const { data: customersResponse } = useCustomers({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    status: "all",
-  });
-  const { data: venuesResponse } = useVenues({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    isActive: "all",
-  });
-  const { data: eventServiceItemsResponse } = useEventServiceItems({
-    currentPage: 1,
-    itemsPerPage: 200,
-    eventId: Number(resolvedEventId || 0),
-    category: "all",
-    status: "all",
-  });
-  const { data: eventQuotationsResponse } = useQuotations({
-    currentPage: 1,
-    itemsPerPage: 100,
-    searchQuery: "",
-    eventId: String(resolvedEventId || ""),
-    status: "all",
-    issueDateFrom: "",
-    issueDateTo: "",
-  });
-  const { data: eventContractsResponse } = useContracts({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    quotationId: "",
-    eventId: String(resolvedEventId || ""),
-    status: "all",
-    signedDateFrom: "",
-    signedDateTo: "",
+  const {
+    event,
+    eventLoading: isLoading,
+    customers: customerCatalog,
+    venues: venueCatalog,
+    serviceItems: sortedEventServiceItems,
+    existingServiceIds: existingEventServiceIds,
+    vendorLinks: sortedEventVendorLinks,
+    quotations: sortedEventQuotations,
+    latestQuotation,
+    latestContract,
+    readiness: operationalReadiness,
+  } = useEventWorkspaceData(resolvedEventId, {
+    sortVendorLinks: (left, right) => {
+      if (left.vendorType !== right.vendorType) {
+        return left.vendorType.localeCompare(right.vendorType);
+      }
+
+      return getEventVendorDisplayName(left).localeCompare(
+        getEventVendorDisplayName(right),
+      );
+    },
   });
   const { data: executionBrief } = useExecutionBriefByEvent(resolvedEventId);
 
   const vendorCatalog = useMemo(
     () => vendorCatalogResponse?.data ?? [],
     [vendorCatalogResponse?.data],
-  );
-  const customerCatalog = useMemo(
-    () => customersResponse?.data ?? [],
-    [customersResponse?.data],
   );
   const vendorSubServices = useMemo(
     () => vendorSubServicesResponse?.data ?? [],
@@ -493,24 +424,6 @@ export const EventDetailsPage = ({
   const serviceCatalog = useMemo(
     () => serviceCatalogResponse?.data ?? [],
     [serviceCatalogResponse?.data],
-  );
-  const venueCatalog = useMemo(
-    () => venuesResponse?.data ?? [],
-    [venuesResponse?.data],
-  );
-
-  const sortedEventVendorLinks = useMemo(
-    () =>
-      [...(eventVendorLinksResponse?.data ?? [])].sort((left, right) => {
-        if (left.vendorType !== right.vendorType) {
-          return left.vendorType.localeCompare(right.vendorType);
-        }
-
-        return getEventVendorDisplayName(left).localeCompare(
-          getEventVendorDisplayName(right),
-        );
-      }),
-    [eventVendorLinksResponse?.data],
   );
   const filteredVendorCatalog = useMemo(
     () =>
@@ -588,24 +501,6 @@ export const EventDetailsPage = ({
     () => formatDecimalInput(calculatedVendorPricingPlan?.price),
     [calculatedVendorPricingPlan?.price],
   );
-  const sortedEventServiceItems = useMemo(
-    () =>
-      [...(eventServiceItemsResponse?.data ?? [])].sort((left, right) => {
-        if (left.sortOrder !== right.sortOrder) {
-          return left.sortOrder - right.sortOrder;
-        }
-
-        return left.id - right.id;
-      }),
-    [eventServiceItemsResponse?.data],
-  );
-  const existingEventServiceIds = useMemo(
-    () =>
-      sortedEventServiceItems
-        .map((item) => item.serviceId)
-        .filter((value): value is number => typeof value === "number"),
-    [sortedEventServiceItems],
-  );
   const selectableServiceCatalog = useMemo(
     () =>
       [...serviceCatalog]
@@ -622,65 +517,23 @@ export const EventDetailsPage = ({
         }),
     [serviceCatalog, serviceForm.serviceId],
   );
-  const sortedEventQuotations = useMemo(
-    () =>
-      [...(eventQuotationsResponse?.data ?? [])].sort((left, right) => {
-        const leftTime = new Date(left.issueDate).getTime();
-        const rightTime = new Date(right.issueDate).getTime();
-
-        if (leftTime !== rightTime) {
-          return rightTime - leftTime;
-        }
-
-        return right.id - left.id;
-      }),
-    [eventQuotationsResponse?.data],
-  );
-  const sortedEventContracts = useMemo(
-    () =>
-      [...(eventContractsResponse?.data ?? [])].sort((left, right) => {
-        const leftTime = new Date(left.signedDate).getTime();
-        const rightTime = new Date(right.signedDate).getTime();
-
-        if (leftTime !== rightTime) {
-          return rightTime - leftTime;
-        }
-
-        return right.id - left.id;
-      }),
-    [eventContractsResponse?.data],
-  );
-  const latestQuotation = sortedEventQuotations[0] ?? null;
-  const latestContract = sortedEventContracts[0] ?? null;
   const commercialSummary = event ? getEventCommercialSummary(event) : null;
-
-  const operationalReadiness = useMemo(() => {
-    const servicesReady = sortedEventServiceItems.filter(
-      (item) => item.status === "confirmed" || item.status === "completed",
-    ).length;
-    const vendorsReady = sortedEventVendorLinks.filter(
-      (link) => link.status === "approved" || link.status === "confirmed",
-    ).length;
-    const sections = event?.sections ?? [];
-    const sectionsReady = sections.filter((section) => section.isCompleted).length;
-    const total =
-      sortedEventServiceItems.length +
-      sortedEventVendorLinks.length +
-      sections.length;
-    const ready = servicesReady + vendorsReady + sectionsReady;
-
-    return {
-      ready,
-      total,
-      percent: total > 0 ? Math.round((ready / total) * 100) : null,
-      servicesReady,
-      servicesTotal: sortedEventServiceItems.length,
-      vendorsReady,
-      vendorsTotal: sortedEventVendorLinks.length,
-      sectionsReady,
-      sectionsTotal: sections.length,
-    };
-  }, [event?.sections, sortedEventServiceItems, sortedEventVendorLinks]);
+  const {
+    open: editEventDialogOpen,
+    setOpen: setEditEventDialogOpen,
+    form: editEventForm,
+    setForm: setEditEventForm,
+    error: editEventError,
+    openDialog: openEditEventDialog,
+    save: handleEventUpdateSave,
+    updateEventMutation,
+  } = useEventEditDialog({
+    eventId: resolvedEventId,
+    event,
+    eventDateRequiredMessage: t("events.validation.eventDateRequired", {
+      defaultValue: "Event date is required",
+    }),
+  });
 
   useEffect(() => {
     if (!vendorDialogOpen) {
@@ -770,25 +623,6 @@ export const EventDetailsPage = ({
       sortOrder: String(editingServiceItem.sortOrder ?? 0),
     });
   }, [editingServiceItem, serviceEditorOpen, sortedEventServiceItems.length]);
-
-  useEffect(() => {
-    if (!event) {
-      return;
-    }
-
-    setEditEventForm({
-      customerId: event.customerId ? String(event.customerId) : "",
-      eventDate: event.eventDate ? String(event.eventDate).slice(0, 10) : "",
-      venueId: event.venueId ? String(event.venueId) : "",
-      venueNameSnapshot: event.venueNameSnapshot ?? "",
-      groomName: event.groomName ?? "",
-      brideName: event.brideName ?? "",
-      guestCount:
-        typeof event.guestCount === "number" ? String(event.guestCount) : "",
-      title: event.title ?? "",
-      notes: event.notes ?? "",
-    });
-  }, [event]);
 
   useEffect(() => {
     if (!createQuotationDialogOpen) {
@@ -986,34 +820,6 @@ export const EventDetailsPage = ({
       { id: editingServiceItem.id, values: payload },
       { onSuccess: () => setServiceEditorOpen(false) },
     );
-  };
-
-  const handleEventUpdateSave = () => {
-    if (!resolvedEventId) {
-      return;
-    }
-
-    if (!editEventForm.eventDate.trim()) {
-      setEditEventError(
-        t("events.validation.eventDateRequired", {
-          defaultValue: "Event date is required",
-        }),
-      );
-      return;
-    }
-
-    setEditEventError("");
-    updateEventMutation.mutate({
-      customerId: editEventForm.customerId,
-      eventDate: editEventForm.eventDate,
-      venueId: editEventForm.venueId,
-      venueNameSnapshot: editEventForm.venueNameSnapshot,
-      groomName: editEventForm.groomName,
-      brideName: editEventForm.brideName,
-      guestCount: editEventForm.guestCount,
-      title: editEventForm.title,
-      notes: editEventForm.notes,
-    });
   };
 
   const handleEventWorkflowAction = (action: WorkflowActionDefinition) => {
@@ -1490,7 +1296,7 @@ export const EventDetailsPage = ({
               latestQuotation={latestQuotation}
               latestContract={latestContract}
               readiness={operationalReadiness}
-              onEditEvent={() => setEditEventDialogOpen(true)}
+              onEditEvent={openEditEventDialog}
               onAddService={() => {
                 setActiveTab("items");
                 setServiceChecklistOpen(true);
@@ -1635,214 +1441,57 @@ export const EventDetailsPage = ({
         </PageContainer>
       </ProtectedComponent>
 
-      <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
-        <AppDialogShell size="lg" className="h-[min(88dvh,820px)]">
-          <AppDialogHeader
-            title={t("events.editTitle", { defaultValue: "Edit Event" })}
-            description={t("events.editDescription", {
-              defaultValue: "Update event details, venue, and linked records.",
-            })}
-          />
-          <AppDialogBody className={dialogBodyClassName}>
-            <div className={dialogSectionClassName}>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.customer", { defaultValue: "Customer" })}
-                  </span>
-                  <Select
-                    value={editEventForm.customerId || "none"}
-                    onValueChange={(value) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        customerId: value === "none" ? "" : value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        {t("events.noCustomerSelected", {
-                          defaultValue: "No customer selected",
-                        })}
-                      </SelectItem>
-                      {customerCatalog.map((customer) => (
-                        <SelectItem
-                          key={customer.id}
-                          value={String(customer.id)}
-                        >
-                          {customer.fullName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.eventDate", { defaultValue: "Event Date" })}
-                  </span>
-                  <Input
-                    type="date"
-                    value={editEventForm.eventDate}
-                    onChange={(event) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        eventDate: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("common.venue", { defaultValue: "Venue" })}
-                  </span>
-                  <Select
-                    value={editEventForm.venueId || "none"}
-                    onValueChange={(value) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        venueId: value === "none" ? "" : value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        {t("events.noVenueSelected", {
-                          defaultValue: "No venue selected",
-                        })}
-                      </SelectItem>
-                      {venueCatalog.map((venue) => (
-                        <SelectItem key={venue.id} value={String(venue.id)}>
-                          {venue.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-
-                <div className="md:col-span-2">
-                  <WorkflowLockBanner
-                    title={t("events.statusManagedByWorkflow", {
-                      defaultValue: "Status Managed by Workflow",
-                    })}
-                    message={t("events.statusManagedByWorkflowHint", {
-                      defaultValue:
-                        "Use the workflow action buttons on the event details page to change status safely.",
-                    })}
-                  />
-                </div>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.titleField", { defaultValue: "Title" })}
-                  </span>
-                  <Input
-                    value={editEventForm.title}
-                    onChange={(event) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        title: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.guestCount", { defaultValue: "Guest Count" })}
-                  </span>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={editEventForm.guestCount}
-                    onChange={(event) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        guestCount: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.groomName", { defaultValue: "Groom Name" })}
-                  </span>
-                  <Input
-                    value={editEventForm.groomName}
-                    onChange={(event) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        groomName: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={fieldGroupClassName}>
-                  <span className={fieldLabelClassName}>
-                    {t("events.brideName", { defaultValue: "Bride Name" })}
-                  </span>
-                  <Input
-                    value={editEventForm.brideName}
-                    onChange={(event) =>
-                      setEditEventForm((current) => ({
-                        ...current,
-                        brideName: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-
-              <label className={fieldGroupClassName}>
-                <span className={fieldLabelClassName}>
-                  {t("common.notes", { defaultValue: "Notes" })}
-                </span>
-                <textarea
-                  className={textareaClassName}
-                  value={editEventForm.notes}
-                  onChange={(event) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      notes: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              {editEventError ? (
-                <p className="text-sm text-[var(--lux-danger)]">
-                  {editEventError}
-                </p>
-              ) : null}
-            </div>
-          </AppDialogBody>
-          <AppDialogFooter className="gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setEditEventDialogOpen(false)}
-            >
-              {t("common.cancel", { defaultValue: "Cancel" })}
-            </Button>
-            <Button
-              onClick={handleEventUpdateSave}
-              disabled={updateEventMutation.isPending}
-            >
-              {updateEventMutation.isPending
-                ? t("common.processing", { defaultValue: "Processing..." })
-                : t("common.update", { defaultValue: "Update" })}
-            </Button>
-          </AppDialogFooter>
-        </AppDialogShell>
-      </Dialog>
+      <EventEditDialog
+        open={editEventDialogOpen}
+        onOpenChange={setEditEventDialogOpen}
+        form={editEventForm}
+        setForm={setEditEventForm}
+        error={editEventError}
+        customers={customerCatalog}
+        venues={venueCatalog}
+        onSave={handleEventUpdateSave}
+        isPending={updateEventMutation.isPending}
+        variant="details"
+        shellClassName="h-[min(88dvh,820px)]"
+        labels={{
+          title: t("events.editTitle", { defaultValue: "Edit Event" }),
+          description: t("events.editDescription", {
+            defaultValue: "Update event details, venue, and linked records.",
+          }),
+          customer: t("events.customer", { defaultValue: "Customer" }),
+          selectCustomer: t("events.selectCustomer", {
+            defaultValue: "Select customer",
+          }),
+          noCustomerSelected: t("events.noCustomerSelected", {
+            defaultValue: "No customer selected",
+          }),
+          eventDate: t("events.eventDate", { defaultValue: "Event Date" }),
+          venue: t("common.venue", { defaultValue: "Venue" }),
+          selectVenue: t("events.selectVenue", {
+            defaultValue: "Select venue",
+          }),
+          noVenueSelected: t("events.noVenueSelected", {
+            defaultValue: "No venue selected",
+          }),
+          statusManagedByWorkflow: t("events.statusManagedByWorkflow", {
+            defaultValue: "Status Managed by Workflow",
+          }),
+          statusManagedByWorkflowHint: t("events.statusManagedByWorkflowHint", {
+            defaultValue:
+              "Use the workflow action buttons on the event details page to change status safely.",
+          }),
+          titleField: t("events.titleField", { defaultValue: "Title" }),
+          guestCount: t("events.guestCount", { defaultValue: "Guest Count" }),
+          groomName: t("events.groomName", { defaultValue: "Groom Name" }),
+          brideName: t("events.brideName", { defaultValue: "Bride Name" }),
+          notes: t("common.notes", { defaultValue: "Notes" }),
+          cancel: t("common.cancel", { defaultValue: "Cancel" }),
+          submit: t("common.update", { defaultValue: "Update" }),
+          processing: t("common.processing", {
+            defaultValue: "Processing...",
+          }),
+        }}
+      />
 
       <Dialog
         open={createQuotationDialogOpen}
@@ -3036,7 +2685,7 @@ export const EventDetailsPage = ({
         isPending={workflowActionMutation.isPending}
       />
 
-      <ConfirmDialog
+      <DeleteEventVendorConfirmDialog
         open={deleteVendorCandidate !== null}
         onOpenChange={(open) => !open && setDeleteVendorCandidate(null)}
         title={t("vendors.deleteLinkTitle", {
@@ -3048,16 +2697,11 @@ export const EventDetailsPage = ({
         })}
         confirmLabel={t("common.delete", { defaultValue: "Delete" })}
         cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-        onConfirm={() =>
-          deleteVendorCandidate &&
-          deleteEventVendorMutation.mutate(deleteVendorCandidate.id, {
-            onSettled: () => setDeleteVendorCandidate(null),
-          })
-        }
+        onConfirm={confirmDeleteVendor}
         isPending={deleteEventVendorMutation.isPending}
       />
 
-      <ConfirmDialog
+      <DeleteEventServiceConfirmDialog
         open={deleteServiceCandidate !== null}
         onOpenChange={(open) => !open && setDeleteServiceCandidate(null)}
         title={t("services.deleteEventItemTitle", {
@@ -3069,12 +2713,7 @@ export const EventDetailsPage = ({
         })}
         confirmLabel={t("common.delete", { defaultValue: "Delete" })}
         cancelLabel={t("common.cancel", { defaultValue: "Cancel" })}
-        onConfirm={() =>
-          deleteServiceCandidate &&
-          deleteEventServiceMutation.mutate(deleteServiceCandidate.id, {
-            onSettled: () => setDeleteServiceCandidate(null),
-          })
-        }
+        onConfirm={confirmDeleteService}
         isPending={deleteEventServiceMutation.isPending}
       />
     </>

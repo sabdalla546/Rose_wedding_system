@@ -1,5 +1,13 @@
 import type { ReactNode } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, List, Table2, TableProperties } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  List,
+  Table2,
+  TableProperties,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +31,8 @@ const viewOptions: Array<{
   icon: typeof Table2;
 }> = [
   { value: "month", label: "Month", icon: Table2 },
+  { value: "threeMonths", label: "3 Months", icon: CalendarRange },
+  { value: "year", label: "Year", icon: Table2 },
   { value: "week", label: "Week", icon: TableProperties },
   { value: "day", label: "Day", icon: CalendarDays },
   { value: "list", label: "List", icon: List },

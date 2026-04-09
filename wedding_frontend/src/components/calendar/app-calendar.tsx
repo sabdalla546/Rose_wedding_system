@@ -70,6 +70,10 @@ type CalendarExtendedProps = Omit<
 
 function viewToFullCalendarView(view: AppCalendarView) {
   switch (view) {
+    case "threeMonths":
+      return "dayGridThreeMonths";
+    case "year":
+      return "dayGridYear";
     case "week":
       return "timeGridWeek";
     case "day":
@@ -84,6 +88,10 @@ function viewToFullCalendarView(view: AppCalendarView) {
 
 function fullCalendarViewToAppView(viewType: string): AppCalendarView {
   switch (viewType) {
+    case "dayGridThreeMonths":
+      return "threeMonths";
+    case "dayGridYear":
+      return "year";
     case "timeGridWeek":
       return "week";
     case "timeGridDay":
@@ -342,6 +350,18 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
                     listPlugin,
                     interactionPlugin,
                   ]}
+                  views={{
+                    dayGridThreeMonths: {
+                      type: "dayGrid",
+                      duration: { months: 3 },
+                      dateIncrement: { months: 3 },
+                    },
+                    dayGridYear: {
+                      type: "dayGrid",
+                      duration: { years: 1 },
+                      dateIncrement: { years: 1 },
+                    },
+                  }}
                   initialView={viewToFullCalendarView(initialView)}
                   initialDate={initialDate}
                   headerToolbar={false}

@@ -29,6 +29,13 @@ export function getInitialCalendarRange(): AppCalendarRange {
   };
 }
 
+export function getCalendarRangeDateFilters(range: AppCalendarRange) {
+  return {
+    dateFrom: format(range.currentStart, "yyyy-MM-dd"),
+    dateTo: format(addDays(range.currentEnd, -1), "yyyy-MM-dd"),
+  };
+}
+
 export function matchesCalendarDatePreset(
   dateValue: Date | string,
   preset: CalendarDatePreset,

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { AppCalendar, type AppCalendarHandle } from "@/components/calendar/app-calendar";
+import type { AppCalendarRange } from "@/components/calendar/types";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { SectionCard } from "@/components/shared/section-card";
 import {
@@ -35,6 +36,10 @@ import {
   type EventsBusinessFilters,
 } from "@/pages/events/event-query-params";
 import { EVENT_STATUS_OPTIONS } from "@/pages/events/adapters";
+import {
+  getCalendarRangeDateFilters,
+  getInitialCalendarRange,
+} from "@/features/calendar/calendar-range";
 
 const filterFieldClassName =
   "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
@@ -60,15 +65,42 @@ export function EventsCalendarView({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const calendarRef = useRef<AppCalendarHandle | null>(null);
+  const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(
+    getInitialCalendarRange,
+  );
+  const derivedCalendarDateFilters = useMemo(
+    () => getCalendarRangeDateFilters(calendarRange),
+    [calendarRange],
+  );
+  const effectiveFilters = useMemo(
+    () => ({
+      ...filters,
+      dateFrom: filters.dateFrom.trim() || derivedCalendarDateFilters.dateFrom,
+      dateTo: filters.dateTo.trim() || derivedCalendarDateFilters.dateTo,
+    }),
+    [derivedCalendarDateFilters.dateFrom, derivedCalendarDateFilters.dateTo, filters],
+  );
   const {
     items,
     calendarEvents,
-    activeFiltersCount,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = useEventsCalendarView(filters);
+  } = useEventsCalendarView(effectiveFilters);
+
+  const activeFiltersCount = useMemo(
+    () =>
+      [
+        Boolean(filters.search.trim()),
+        filters.status !== "all",
+        Boolean(filters.venueId.trim()),
+        Boolean(filters.customerId.trim()),
+        Boolean(filters.dateFrom.trim()),
+        Boolean(filters.dateTo.trim()),
+      ].filter(Boolean).length,
+    [filters],
+  );
 
   const resetFilters = () => {
     onFiltersChange(getInitialEventsBusinessFilters());
@@ -498,6 +530,9 @@ export function EventsCalendarView({
               className="operations-calendar-panel"
               locale={i18n.language === "ar" ? "ar" : "en"}
               events={calendarEvents}
+              initialDate={
+                filters.dateFrom ? new Date(filters.dateFrom) : undefined
+              }
               loading={isLoading || isFetching}
               legends={getEventsCalendarLegendItems(t)}
               emptyTitle={t("events.calendarPage.emptyTitle", {
@@ -508,6 +543,7 @@ export function EventsCalendarView({
                   "Try changing the planning window or clearing one of the active filters.",
               })}
               variant="event"
+              onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
                 setSelectedEventId(event.id);
                 setDetailsDialogOpen(true);

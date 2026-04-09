@@ -1,8 +1,10 @@
-import { addDays, format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
-import { getInitialCalendarRange } from "@/features/calendar/calendar-range";
+import {
+  getCalendarRangeDateFilters,
+  getInitialCalendarRange,
+} from "@/features/calendar/calendar-range";
 import { appointmentToAppCalendarEvent } from "@/features/appointments/appointment-calendar";
 import { useAppointmentsCalendar } from "@/hooks/appointments/useAppointments";
 import type { Appointment } from "@/pages/appointments/types";
@@ -20,7 +22,7 @@ export function getInitialAppointmentCalendarFilters(): AppointmentCalendarFilte
     search: "",
     status: "all",
     customerId: "all",
-    dateFrom: format(new Date(), "yyyy-MM-dd"),
+    dateFrom: "",
     dateTo: "",
   };
 }
@@ -33,17 +35,20 @@ export function useAppointmentsCalendarView() {
     getInitialCalendarRange,
   );
 
-  const dateFrom = useMemo(() => {
-    return filters.dateFrom.trim()
-      ? filters.dateFrom.trim()
-      : format(calendarRange.start, "yyyy-MM-dd");
-  }, [calendarRange.start, filters.dateFrom]);
+  const derivedCalendarDateFilters = useMemo(
+    () => getCalendarRangeDateFilters(calendarRange),
+    [calendarRange],
+  );
 
-  const dateTo = useMemo(() => {
-    return filters.dateTo.trim()
-      ? filters.dateTo.trim()
-      : format(addDays(calendarRange.end, -1), "yyyy-MM-dd");
-  }, [calendarRange.end, filters.dateTo]);
+  const dateFrom = useMemo(
+    () => filters.dateFrom.trim() || derivedCalendarDateFilters.dateFrom,
+    [derivedCalendarDateFilters.dateFrom, filters.dateFrom],
+  );
+
+  const dateTo = useMemo(
+    () => filters.dateTo.trim() || derivedCalendarDateFilters.dateTo,
+    [derivedCalendarDateFilters.dateTo, filters.dateTo],
+  );
 
   useEffect(() => {
     const handle = window.setTimeout(() => {

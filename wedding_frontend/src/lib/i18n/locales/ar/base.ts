@@ -520,6 +520,8 @@ export const baseAr = {
     "today": "اليوم",
     "view": {
       "month": "شهر",
+      "threeMonths": "3 أشهر",
+      "year": "سنة",
       "week": "أسبوع",
       "day": "يوم",
       "list": "أجندة"

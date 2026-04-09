@@ -296,6 +296,8 @@ export const baseEn = {
     "today": "Today",
     "view": {
       "month": "Month",
+      "threeMonths": "3 Months",
+      "year": "Year",
       "week": "Week",
       "day": "Day",
       "list": "Agenda"
