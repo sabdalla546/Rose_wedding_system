@@ -42,13 +42,14 @@ export const getContractAmendmentDisplayNumber = (
 
 export const getContractAmendmentItemDisplayName = (
   item: ContractAmendmentItem,
+  fallbackLabel = "Service",
 ) =>
   item.itemName?.trim() ||
   item.service?.name ||
   item.targetContractItem?.itemName ||
   item.targetEventService?.serviceNameSnapshot ||
   item.targetExecutionServiceDetail?.serviceNameSnapshot ||
-  "Service";
+  fallbackLabel;
 
 export const formatContractAmendmentDelta = (
   value?: number | string | null,

@@ -42,9 +42,17 @@ import {
 import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
 const metricTrends = {
-  todayEvents: { value: "+12%", label: "vs last day", direction: "up" as const },
+  todayEvents: {
+    value: "+12%",
+    label: "vs last day",
+    direction: "up" as const,
+  },
   upcoming: { value: "+6%", label: "next 7 days", direction: "up" as const },
-  pendingQuotes: { value: "-4%", label: "follow-up load", direction: "down" as const },
+  pendingQuotes: {
+    value: "-4%",
+    label: "follow-up load",
+    direction: "down" as const,
+  },
   revenue: { value: "+18%", label: "month to date", direction: "up" as const },
 };
 
@@ -67,15 +75,13 @@ export function DashboardPage() {
         title: booking.clientName,
         start: new Date(booking.eventDate),
         end: new Date(booking.eventDate),
-        accent: (
-          booking.status === "Confirmed"
-            ? "emerald"
-            : booking.status === "Completed"
-              ? "blue"
-              : booking.status === "Pending"
-                ? "gold"
-                : "rose"
-        ) as AppCalendarEvent["accent"],
+        accent: (booking.status === "Confirmed"
+          ? "emerald"
+          : booking.status === "Completed"
+            ? "blue"
+            : booking.status === "Pending"
+              ? "gold"
+              : "rose") as AppCalendarEvent["accent"],
         statusLabel: booking.status,
         typeLabel: booking.venue,
         subtitle: booking.venue,
@@ -93,7 +99,9 @@ export function DashboardPage() {
   return (
     <DashboardPageLayout>
       <DashboardHeader
-        eyebrow={t("dashboard.operations", { defaultValue: "Daily Operations" })}
+        eyebrow={t("dashboard.operations", {
+          defaultValue: "Daily Operations",
+        })}
         title={t("dashboard.welcome")}
         description={t("dashboard.subtitle")}
         actions={
@@ -110,7 +118,8 @@ export function DashboardPage() {
         }
       />
 
-      <section className="space-y-4">
+      {/**
+       *   <section className="space-y-4">
         <div className="space-y-1.5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lux-text-muted)]">
             Workflow Overview
@@ -458,6 +467,7 @@ export function DashboardPage() {
           />
         </div>
       </section>
+       */}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboardMetrics.map((metric) => (
@@ -483,9 +493,7 @@ export function DashboardPage() {
               defaultValue: "Operational handoff for the current day.",
             })}
             actions={
-              <Button variant="outline">
-                {t("dashboard.viewCalendar")}
-              </Button>
+              <Button variant="outline">{t("dashboard.viewCalendar")}</Button>
             }
           >
             <div className="space-y-3">
@@ -512,7 +520,9 @@ export function DashboardPage() {
                     <p className="text-sm text-[var(--lux-text-secondary)]">
                       {item.venue}
                     </p>
-                    <p className="text-xs text-[var(--lux-text-muted)]">{item.focus}</p>
+                    <p className="text-xs text-[var(--lux-text-muted)]">
+                      {item.focus}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -522,7 +532,8 @@ export function DashboardPage() {
           <ChartCard
             title={t("dashboard.recentBookings")}
             description={t("dashboard.recentBookingsHint", {
-              defaultValue: "Latest confirmed and pending bookings across the operation.",
+              defaultValue:
+                "Latest confirmed and pending bookings across the operation.",
             })}
           >
             <div className="space-y-3">
@@ -570,10 +581,26 @@ export function DashboardPage() {
               defaultValue: "Revenue trend snapshot across the current cycle.",
             })}
           >
-            <div className="rounded-[18px] border p-4" style={{ background: "var(--lux-row-surface)", borderColor: "var(--lux-row-border)" }}>
-              <svg className="h-[120px] w-full" preserveAspectRatio="none" viewBox="0 0 264 120">
+            <div
+              className="rounded-[18px] border p-4"
+              style={{
+                background: "var(--lux-row-surface)",
+                borderColor: "var(--lux-row-border)",
+              }}
+            >
+              <svg
+                className="h-[120px] w-full"
+                preserveAspectRatio="none"
+                viewBox="0 0 264 120"
+              >
                 <defs>
-                  <linearGradient id="dashboardReportLine" x1="0%" x2="100%" y1="0%" y2="0%">
+                  <linearGradient
+                    id="dashboardReportLine"
+                    x1="0%"
+                    x2="100%"
+                    y1="0%"
+                    y2="0%"
+                  >
                     <stop offset="0%" stopColor="var(--color-info)" />
                     <stop offset="100%" stopColor="var(--color-primary)" />
                   </linearGradient>
@@ -615,7 +642,9 @@ export function DashboardPage() {
           />
 
           <SummaryCard
-            label={t("dashboard.bookingSummary", { defaultValue: "Booking Summary" })}
+            label={t("dashboard.bookingSummary", {
+              defaultValue: "Booking Summary",
+            })}
             value={bookingRingSummary.totalItems}
             hint={t("dashboard.totalItems", { defaultValue: "Total items" })}
             accent={
@@ -648,7 +677,8 @@ export function DashboardPage() {
           <ChartCard
             title={t("dashboard.calendar", { defaultValue: "Calendar" })}
             description={t("dashboard.calendarHint", {
-              defaultValue: "Monthly booking pulse using the shared calendar shell.",
+              defaultValue:
+                "Monthly booking pulse using the shared calendar shell.",
             })}
           >
             <AppCalendar
@@ -689,7 +719,9 @@ export function DashboardPage() {
                       <p className="text-sm font-semibold text-[var(--lux-heading)]">
                         {item.itemName}
                       </p>
-                      <p className="text-xs text-[var(--lux-text-muted)]">{item.status}</p>
+                      <p className="text-xs text-[var(--lux-text-muted)]">
+                        {item.status}
+                      </p>
                     </div>
                   </div>
                   <span className="crud-filter-pill">{item.quantity}</span>
@@ -717,7 +749,11 @@ export function DashboardPage() {
             {paymentRows.map((row) => (
               <SummaryCard
                 key={row.id}
-                label={row.id === "pay-1" ? t("dashboard.paymentRows.paid") : t("dashboard.paymentRows.due")}
+                label={
+                  row.id === "pay-1"
+                    ? t("dashboard.paymentRows.paid")
+                    : t("dashboard.paymentRows.due")
+                }
                 value={formatCurrency(row.amount)}
                 hint={t("dashboard.financeSummary", {
                   defaultValue: "Auto-calculated from active bookings.",
@@ -728,7 +764,9 @@ export function DashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title={t("dashboard.lowStockAlerts", { defaultValue: "Low Stock Alerts" })}
+          title={t("dashboard.lowStockAlerts", {
+            defaultValue: "Low Stock Alerts",
+          })}
           description={t("dashboard.lowStockHint", {
             defaultValue: "Inventory items that need attention soon.",
           })}
@@ -755,7 +793,9 @@ export function DashboardPage() {
                   <p className="text-sm font-semibold text-[var(--lux-heading)]">
                     {item.availableQty}
                   </p>
-                  <p className="text-xs text-[var(--color-danger)]">{item.status}</p>
+                  <p className="text-xs text-[var(--color-danger)]">
+                    {item.status}
+                  </p>
                 </div>
               </div>
             ))}
@@ -765,9 +805,12 @@ export function DashboardPage() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <ChartCard
-          title={t("dashboard.selectedBooking", { defaultValue: "Selected Booking" })}
+          title={t("dashboard.selectedBooking", {
+            defaultValue: "Selected Booking",
+          })}
           description={t("dashboard.selectedBookingHint", {
-            defaultValue: "Use the list or calendar to inspect one booking at a time.",
+            defaultValue:
+              "Use the list or calendar to inspect one booking at a time.",
           })}
         >
           {selectedBooking ? (
@@ -786,13 +829,22 @@ export function DashboardPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <SummaryCard
                   label={t("common.date", { defaultValue: "Date" })}
-                  value={formatDateLabel(selectedBooking.eventDate, "dd MMM yyyy")}
-                  hint={t("dashboard.eventDate", { defaultValue: "Planned event date" })}
+                  value={formatDateLabel(
+                    selectedBooking.eventDate,
+                    "dd MMM yyyy",
+                  )}
+                  hint={t("dashboard.eventDate", {
+                    defaultValue: "Planned event date",
+                  })}
                 />
                 <SummaryCard
                   label={t("dashboard.amount", { defaultValue: "Amount" })}
                   value={formatCurrency(selectedBooking.total)}
-                  hint={t("dashboard.balance", { defaultValue: "Current balance" }) + `: ${formatCurrency(selectedBooking.balance)}`}
+                  hint={
+                    t("dashboard.balance", {
+                      defaultValue: "Current balance",
+                    }) + `: ${formatCurrency(selectedBooking.balance)}`
+                  }
                 />
               </div>
             </div>
@@ -800,7 +852,9 @@ export function DashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title={t("dashboard.recentActivity", { defaultValue: "Recent Activity" })}
+          title={t("dashboard.recentActivity", {
+            defaultValue: "Recent Activity",
+          })}
           description={t("dashboard.recentActivityHint", {
             defaultValue: "Latest actions from the planning team.",
           })}

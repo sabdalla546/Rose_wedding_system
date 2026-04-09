@@ -24,6 +24,7 @@ function AmendmentItemStatusPill({
 }: {
   status: ContractAmendmentItem["status"];
 }) {
+  const { t } = useTranslation();
   const toneClassName =
     status === "applied"
       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
@@ -35,7 +36,9 @@ function AmendmentItemStatusPill({
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClassName}`}
     >
-      {CONTRACT_AMENDMENT_ITEM_STATUS_LABELS[status]}
+      {t(`contracts.amendments.itemStatus.${status}`, {
+        defaultValue: CONTRACT_AMENDMENT_ITEM_STATUS_LABELS[status],
+      })}
     </span>
   );
 }
@@ -68,7 +71,7 @@ export function ContractAmendmentItemsTable({
       <TableHeader>
         <TableRow className="border-[var(--lux-row-border)]">
           <TableHead>
-            {t("contracts.amendments.changeType", {
+            {t("contracts.amendments.changeType.label", {
               defaultValue: "Change Type",
             })}
           </TableHead>
@@ -96,7 +99,10 @@ export function ContractAmendmentItemsTable({
             <TableCell className="align-top">
               <div className="space-y-1">
                 <div className="font-medium text-[var(--lux-text)]">
-                  {getContractAmendmentItemDisplayName(item)}
+                  {getContractAmendmentItemDisplayName(
+                    item,
+                    t("contracts.service", { defaultValue: "Service" }),
+                  )}
                 </div>
                 {item.changeType === "remove_service" &&
                 item.targetContractItemId ? (

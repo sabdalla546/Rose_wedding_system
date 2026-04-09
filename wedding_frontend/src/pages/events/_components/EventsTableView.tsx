@@ -11,7 +11,6 @@ import { useTranslation } from "react-i18next";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { DataTableShell } from "@/components/shared/data-table-shell";
-import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import {
   WorkspaceFilterBar,
   WorkspaceFilterField,
@@ -30,7 +29,6 @@ import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
 import { useEvents } from "@/hooks/events/useEvents";
 import { useVenues } from "@/hooks/venues/useVenues";
-import { useEventWorkflowSummary } from "@/hooks/workflow/useWorkflowSummaries";
 
 import { useEventsColumns } from "../_components/eventsColumns";
 import {
@@ -62,7 +60,6 @@ export function EventsTableView({
   onFiltersChange,
 }: EventsTableViewProps) {
   const { t } = useTranslation();
-  const workflowSummary = useEventWorkflowSummary();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -299,7 +296,7 @@ export function EventsTableView({
   };
   return (
     <>
-      <WorkflowModuleDashboard
+      {/* <WorkflowModuleDashboard
         eyebrow={t("events.workflowDashboardEyebrow", {
           defaultValue: "Workflow Dashboard",
         })}
@@ -453,7 +450,7 @@ export function EventsTableView({
         hideContentLabel={t("events.hideWorkflowDashboard", {
           defaultValue: "Hide Dashboard",
         })}
-      />
+      /> */}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((summary) => (

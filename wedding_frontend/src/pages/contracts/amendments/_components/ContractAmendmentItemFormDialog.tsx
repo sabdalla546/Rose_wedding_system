@@ -312,8 +312,8 @@ export function ContractAmendmentItemFormDialog({
 
         <div className="grid gap-4">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--lux-text)]">
-              {t("contracts.amendments.changeType", {
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+              {t("contracts.amendments.changeType.label", {
                 defaultValue: "Change Type",
               })}
             </span>

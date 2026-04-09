@@ -130,8 +130,8 @@ export function LoginForm() {
           "linear-gradient(180deg, color-mix(in srgb, var(--lux-card) 96%, transparent), color-mix(in srgb, var(--lux-elevated) 98%, transparent))",
       }}
     >
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--lux-gold-border)] bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14),rgba(212,175,55,0.04)_70%)] shadow-[0_0_0_1px_rgba(212,175,55,0.06),0_10px_22px_rgba(212,175,55,0.08)]">
             <img
               alt="WeddingPro logo"
@@ -139,30 +139,30 @@ export function LoginForm() {
               src="/images/app_logo.jpg"
             />
           </div>
-          <div>
-            <p className="font-display text-[28px] leading-none text-[var(--lux-heading)]">
+          <div className="min-w-0">
+            <p className="truncate font-display text-[24px] leading-none text-[var(--lux-heading)] sm:text-[28px]">
               WeddingPro
             </p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.24em] text-[var(--lux-text-muted)]">
+            <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[var(--lux-text-muted)] sm:text-[11px] sm:tracking-[0.24em]">
               Premium Suite
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
           <div
-            className="flex items-center gap-1 rounded-[16px] border px-1.5 py-1"
+            className="flex min-w-0 flex-1 items-center gap-1 rounded-[16px] border px-1.5 py-1 sm:flex-initial"
             style={{
               background: "var(--lux-control-surface)",
               borderColor: "var(--lux-control-border)",
             }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-[12px] text-[var(--lux-text-muted)]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] text-[var(--lux-text-muted)]">
               <Globe2 className="h-4 w-4" />
             </span>
             <button
               className={cn(
-                "rounded-[12px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-colors",
+                "min-w-0 flex-1 rounded-[12px] px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors sm:flex-none sm:px-3 sm:text-xs sm:tracking-[0.14em]",
                 i18n.resolvedLanguage === "en"
                   ? "text-[var(--lux-text)]"
                   : "text-[var(--lux-text-secondary)]",
@@ -179,7 +179,7 @@ export function LoginForm() {
             </button>
             <button
               className={cn(
-                "rounded-[12px] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-colors",
+                "min-w-0 flex-1 rounded-[12px] px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors sm:flex-none sm:px-3 sm:text-xs sm:tracking-[0.14em]",
                 i18n.resolvedLanguage === "ar"
                   ? "text-[var(--lux-text)]"
                   : "text-[var(--lux-text-secondary)]",
@@ -197,7 +197,7 @@ export function LoginForm() {
           </div>
 
           <Button
-            className="h-11 w-11 rounded-[16px]"
+            className="h-11 w-11 shrink-0 rounded-[16px]"
             size="icon"
             type="button"
             variant="secondary"
