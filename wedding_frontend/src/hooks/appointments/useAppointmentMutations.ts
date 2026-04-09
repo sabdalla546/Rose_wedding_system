@@ -6,16 +6,21 @@ import {
   appointmentsApi,
   type CreateAppointmentWithCustomerValues,
 } from "@/lib/api/appointments";
+import { useHasPermission } from "@/hooks/useHasPermission";
 import { useToast } from "@/hooks/use-toast";
 import type {
   AppointmentFormData,
 } from "@/pages/appointments/types";
+
+const getAppointmentsSuccessRoute = (canReadCalendar: boolean) =>
+  canReadCalendar ? "/appointments?view=calendar" : "/appointments";
 
 export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const canReadCalendar = useHasPermission("appointments.calendar.read");
 
   return useMutation({
     mutationFn: (values: AppointmentFormData) => appointmentsApi.create(values),
@@ -30,7 +35,7 @@ export const useCreateAppointment = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      navigate("/appointments?view=calendar");
+      navigate(getAppointmentsSuccessRoute(canReadCalendar));
     },
     onError: (error) => {
       toast({
@@ -52,6 +57,7 @@ export const useCreateAppointmentWithCustomer = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const canReadCalendar = useHasPermission("appointments.calendar.read");
 
   return useMutation({
     mutationFn: (values: CreateAppointmentWithCustomerValues) =>
@@ -67,7 +73,7 @@ export const useCreateAppointmentWithCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      navigate("/appointments?view=calendar");
+      navigate(getAppointmentsSuccessRoute(canReadCalendar));
     },
     onError: (error) => {
       toast({
@@ -89,6 +95,7 @@ export const useUpdateAppointment = (id?: string) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const canReadCalendar = useHasPermission("appointments.calendar.read");
 
   return useMutation({
     mutationFn: (values: AppointmentFormData) =>
@@ -104,7 +111,7 @@ export const useUpdateAppointment = (id?: string) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["appointment", id] });
-      navigate("/appointments?view=calendar");
+      navigate(getAppointmentsSuccessRoute(canReadCalendar));
     },
     onError: (error) => {
       toast({

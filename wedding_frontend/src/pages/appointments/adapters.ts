@@ -74,11 +74,6 @@ export const APPOINTMENT_STATUS_OPTIONS: Array<{
   { value: "no_show", label: "No Show" },
 ];
 
-export const APPOINTMENT_FORM_STATUS_OPTIONS =
-  APPOINTMENT_STATUS_OPTIONS.filter(
-    (status) => !["converted"].includes(status.value),
-  );
-
 export const APPOINTMENT_TYPE_OPTIONS: Array<{
   value: AppointmentType;
   label: string;

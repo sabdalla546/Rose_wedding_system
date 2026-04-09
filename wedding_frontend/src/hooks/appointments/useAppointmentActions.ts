@@ -3,12 +3,14 @@ import {
   useQueryClient,
   type MutateOptions,
 } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "@/lib/axios";
 import { appointmentsApi } from "@/lib/api/appointments";
 import { useToast } from "@/hooks/use-toast";
 import type {
   AttendAppointmentData,
+  AttendAppointmentResponse,
   CancelAppointmentData,
   ConfirmAppointmentData,
   RescheduleAppointmentData,
@@ -84,14 +86,55 @@ export const useConfirmAppointment = () =>
     "Failed to confirm appointment",
   );
 
-export const useAttendAppointment = () =>
-  useAppointmentActionMutation<AttendAppointmentData>(
-    (id) => `/appointments/${id}/attend`,
-    "appointments.toast.attended",
-    "Appointment attended successfully",
-    "appointments.toast.attendFailed",
-    "Failed to mark appointment as attended",
-  );
+export const useAttendAppointment = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      values,
+    }: {
+      id: number;
+      values: AttendAppointmentData;
+    }) => appointmentsApi.attend(id, values),
+    onSuccess: (response, variables) => {
+      toast({
+        title: t("common.success", { defaultValue: "Success" }),
+        description: t("appointments.toast.attended", {
+          defaultValue: "Appointment attended successfully",
+        }),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments-calendar"] });
+      queryClient.invalidateQueries({
+        queryKey: ["appointment", String(variables.id)],
+      });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+
+      const eventId = (response.data as AttendAppointmentResponse).eventId;
+      if (typeof eventId === "number" && eventId > 0) {
+        navigate(`/events/${eventId}`);
+      }
+    },
+    onError: (error) => {
+      toast({
+        variant: "error",
+        title: t("common.error", { defaultValue: "Error" }),
+        description: getApiErrorMessage(
+          error,
+          t("appointments.toast.attendFailed", {
+            defaultValue: "Failed to mark appointment as attended",
+          }),
+        ),
+      });
+    },
+  });
+};
 
 export const useCancelAppointment = () =>
   useAppointmentActionMutation<CancelAppointmentData>(
@@ -106,7 +149,7 @@ export const useRescheduleAppointment = () => {
   const mutation = useAppointmentActionMutation<{
     appointmentDate: string;
     startTime: string;
-    endTime?: string | null;
+    endTime: string;
     notes?: string;
   }>(
     (id) => `/appointments/${id}/reschedule`,
@@ -134,7 +177,7 @@ export const useRescheduleAppointment = () => {
           values: {
             appointmentDate: string;
             startTime: string;
-            endTime?: string | null;
+            endTime: string;
             notes?: string;
           };
         },
@@ -147,7 +190,7 @@ export const useRescheduleAppointment = () => {
           values: {
             appointmentDate: values.appointmentDate,
             startTime: values.startTime,
-            endTime: values.endTime?.trim() || null,
+            endTime: values.endTime.trim(),
             notes: values.notes?.trim() || undefined,
           },
         },

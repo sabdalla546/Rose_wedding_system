@@ -6,7 +6,6 @@ import {
   Filter,
   Search,
 } from "lucide-react";
-import api from "@/lib/axios";
 import { useTranslation } from "react-i18next";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
@@ -37,6 +36,7 @@ import {
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useDeleteAppointment } from "@/hooks/appointments/useDeleteAppointment";
 import { useCustomers } from "@/hooks/customers/useCustomers";
+import { appointmentsApi } from "@/lib/api/appointments";
 
 import { useAppointmentsColumns } from "../_components/appointmentsColumns";
 import {
@@ -224,15 +224,12 @@ export function AppointmentsTableView() {
     try {
       setIsExportingPdf(true);
 
-      const response = await api.get("/appointments/export/pdf", {
-        params: {
-          status: statusFilter === "all" ? undefined : statusFilter,
-          customerId: customerFilter ? Number(customerFilter) : undefined,
-          search: searchQuery?.trim() ? searchQuery.trim() : undefined,
-          dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
-        },
-        responseType: "blob",
+      const response = await appointmentsApi.exportPdf({
+        status: statusFilter === "all" ? undefined : statusFilter,
+        customerId: customerFilter ? Number(customerFilter) : undefined,
+        search: searchQuery?.trim() ? searchQuery.trim() : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       });
 
       const contentDisposition = response.headers["content-disposition"] as
@@ -738,8 +735,17 @@ export function AppointmentsTableView() {
             <Input
               type="time"
               value={rescheduleEndTime}
+              required
               onChange={(event) => setRescheduleEndTime(event.target.value)}
             />
+            {!rescheduleEndTime.trim() ? (
+              <p className="text-xs text-[var(--lux-text-secondary)] md:col-span-2">
+                {t("appointments.endTimeRequiredHint", {
+                  defaultValue:
+                    "End time is required for scheduling and conflict checks.",
+                })}
+              </p>
+            ) : null}
             <textarea
               className={`${textareaClassName} md:col-span-2`}
               value={actionNotes}
@@ -766,14 +772,19 @@ export function AppointmentsTableView() {
                     values: {
                       appointmentDate: rescheduleDate,
                       startTime: rescheduleStartTime,
-                      endTime: rescheduleEndTime || undefined,
+                      endTime: rescheduleEndTime.trim(),
                       notes: actionNotes,
                     },
                   },
                   { onSuccess: () => setRescheduleCandidate(null) },
                 )
               }
-              disabled={rescheduleMutation.isPending}
+              disabled={
+                rescheduleMutation.isPending ||
+                !rescheduleDate ||
+                !rescheduleStartTime ||
+                !rescheduleEndTime.trim()
+              }
             >
               {t("appointments.reschedule")}
             </Button>

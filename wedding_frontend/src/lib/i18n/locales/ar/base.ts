@@ -2004,6 +2004,7 @@ export const baseAr = {
       "guestCountInvalid": "يجب أن يكون عدد الضيوف صفراً أو أكثر",
       "appointmentDateRequired": "تاريخ الموعد مطلوب",
       "startTimeRequired": "وقت البداية مطلوب",
+      "endTimeRequired": "وقت النهاية مطلوب",
       "customerRequired": "العميل مطلوب",
       "fullNameRequired": "الاسم الكامل مطلوب",
       "mobileRequired": "رقم الجوال مطلوب"
@@ -2013,6 +2014,8 @@ export const baseAr = {
     "rescheduleTitle": "إعادة جدولة الموعد",
     "rescheduleDescription": "حدّث توقيت الموعد وأي تعليمات متابعة مرتبطة به.",
     "reschedule": "إعادة الجدولة",
+    "endTimeRequiredHint": "وقت النهاية مطلوب من أجل الجدولة وفحص التعارضات.",
+    "exportPdf": "تصدير PDF",
     "viewLead": "عرض العميل المحتمل",
     "viewCustomer": "عرض العميل",
     "viewAppointment": "عرض الموعد",

@@ -214,8 +214,7 @@ const AppointmentDetailsPage = () => {
   );
 
   const canConfirm = normalizedStatus === "reserved";
-  const canAttend =
-    normalizedStatus === "reserved" || normalizedStatus === "attended";
+  const canAttend = normalizedStatus === "reserved";
   const canCancel =
     normalizedStatus !== "cancelled" &&
     normalizedStatus !== "no_show" &&
@@ -427,14 +426,16 @@ const AppointmentDetailsPage = () => {
   };
 
   const submitReschedule = () => {
-    if (!rescheduleDate || !rescheduleStartTime) return;
+    if (!rescheduleDate || !rescheduleStartTime || !rescheduleEndTime.trim()) {
+      return;
+    }
 
     mutateReschedule({
       id: Number(appointment.id),
       values: {
         appointmentDate: rescheduleDate,
         startTime: rescheduleStartTime,
-        endTime: rescheduleEndTime || undefined,
+        endTime: rescheduleEndTime.trim(),
         notes: rescheduleNotes || undefined,
       },
     });
@@ -786,16 +787,26 @@ const AppointmentDetailsPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="endTime">
-                {t("appointments.endTime", { defaultValue: "End Time" })}
+                {t("appointments.endTime", { defaultValue: "End Time" })}{" "}
+                <span className="text-[var(--lux-danger)]">*</span>
               </Label>
               <Input
                 id="endTime"
                 type="time"
                 value={rescheduleEndTime}
+                required
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setRescheduleEndTime(e.target.value)
                 }
               />
+              {!rescheduleEndTime.trim() ? (
+                <p className="text-xs text-[var(--lux-text-secondary)]">
+                  {t("appointments.endTimeRequiredHint", {
+                    defaultValue:
+                      "End time is required for scheduling and conflict checks.",
+                  })}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -817,7 +828,15 @@ const AppointmentDetailsPage = () => {
             <Button variant="outline" onClick={() => setRescheduleOpen(false)}>
               {t("common.cancel", { defaultValue: "Cancel" })}
             </Button>
-            <Button onClick={submitReschedule} disabled={isRescheduling}>
+            <Button
+              onClick={submitReschedule}
+              disabled={
+                isRescheduling ||
+                !rescheduleDate ||
+                !rescheduleStartTime ||
+                !rescheduleEndTime.trim()
+              }
+            >
               {t("common.save", { defaultValue: "Save" })}
             </Button>
           </DialogFooter>

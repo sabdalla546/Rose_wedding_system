@@ -125,10 +125,19 @@ function RescheduleDialog({
             <Input
               type="time"
               value={endTime}
+              required
               onChange={(event) => onEndTimeChange(event.target.value)}
               disabled={isPending || !appointment}
               className="sm:col-span-2"
             />
+            {!endTime.trim() ? (
+              <p className="text-xs text-[var(--color-text-subtle)] sm:col-span-2">
+                {t("appointments.endTimeRequiredHint", {
+                  defaultValue:
+                    "End time is required for scheduling and conflict checks.",
+                })}
+              </p>
+            ) : null}
           </div>
           <textarea
             className={textareaClassName}
@@ -156,7 +165,13 @@ function RescheduleDialog({
           <Button
             type="button"
             onClick={onSubmit}
-            disabled={isPending || !appointment}
+            disabled={
+              isPending ||
+              !appointment ||
+              !appointmentDate ||
+              !startTime ||
+              !endTime.trim()
+            }
           >
             {t("appointments.reschedule", { defaultValue: "Reschedule" })}
           </Button>
@@ -848,13 +863,13 @@ export function AppointmentsCalendarView({
           rescheduleAppointment.mutateReschedule(
             {
               id: rescheduleCandidate.id,
-              values: {
-                appointmentDate: rescheduleDate,
-                startTime: rescheduleStartTime,
-                endTime: rescheduleEndTime,
-                notes: rescheduleNotes,
+                values: {
+                  appointmentDate: rescheduleDate,
+                  startTime: rescheduleStartTime,
+                  endTime: rescheduleEndTime.trim(),
+                  notes: rescheduleNotes,
+                },
               },
-            },
             {
               onSuccess: () => {
                 setRescheduleCandidate(null);

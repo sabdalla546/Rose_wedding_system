@@ -112,7 +112,15 @@ const buildAppointmentSchema = (
           }),
         )
         .max(10),
-      endTime: z.string().max(10).optional(),
+      endTime: z
+        .string()
+        .min(
+          1,
+          t("appointments.validation.endTimeRequired", {
+            defaultValue: "End time is required",
+          }),
+        )
+        .max(10),
       type: z.enum(
         APPOINTMENT_TYPE_OPTIONS.map((item) => item.value) as [
           AppointmentType,
@@ -889,6 +897,7 @@ const AppointmentFormPage = () => {
                                 type="time"
                                 {...field}
                                 className="rounded-[4px]"
+                                required
                               />
                             </FormControl>
                             <FormMessage />
@@ -903,15 +912,23 @@ const AppointmentFormPage = () => {
                             <FormLabel>
                               {t("appointments.endTime", {
                                 defaultValue: "End Time",
-                              })}
+                              })}{" "}
+                              <span className="text-[var(--lux-danger)]">*</span>
                             </FormLabel>
                             <FormControl>
                               <Input
                                 type="time"
                                 {...field}
                                 className="rounded-[4px]"
+                                required
                               />
                             </FormControl>
+                            <p className="text-xs text-[var(--lux-text-secondary)]">
+                              {t("appointments.endTimeRequiredHint", {
+                                defaultValue:
+                                  "End time is required for scheduling and conflict checks.",
+                              })}
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}

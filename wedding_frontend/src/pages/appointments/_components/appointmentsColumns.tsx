@@ -207,7 +207,7 @@ export const useAppointmentsColumns = ({
                   </DropdownMenuItem>
                 </ProtectedComponent>
 
-                <ProtectedComponent permission="appointments.attend">
+                <ProtectedComponent permission="appointments.update">
                   <DropdownMenuItem
                     disabled={normalizedStatus !== "reserved"}
                     onClick={() => onAttend(row.original)}

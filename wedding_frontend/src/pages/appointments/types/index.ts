@@ -73,6 +73,15 @@ export interface AppointmentsCalendarResponse {
   data: Appointment[];
 }
 
+export interface AppointmentMutationResponse {
+  message?: string;
+  data: Appointment;
+}
+
+export interface AttendAppointmentResponse extends AppointmentMutationResponse {
+  eventId?: number;
+}
+
 export type AppointmentFormData = {
   customerId: string;
   appointmentDate: string;
@@ -80,10 +89,9 @@ export type AppointmentFormData = {
   guestCount?: string;
   venueId?: string;
   startTime: string;
-  endTime?: string;
+  endTime: string;
   type: AppointmentType;
   notes?: string;
-  status?: AppointmentStatus;
 };
 
 export interface ConfirmAppointmentData {
@@ -102,6 +110,6 @@ export interface CancelAppointmentData {
 export interface RescheduleAppointmentData {
   appointmentDate: string;
   startTime: string;
-  endTime?: string;
+  endTime: string;
   notes?: string;
 }

@@ -12,8 +12,6 @@ interface UseAppointmentsParams {
   status: "all" | Appointment["status"];
   customerId: string;
   search?: string;
-  venueId?: string;
-  assignedToUserId?: string;
   dateFrom: string;
   dateTo: string;
 }

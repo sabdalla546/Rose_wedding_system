@@ -2334,6 +2334,7 @@ export const baseEn = {
       "guestCountInvalid": "Guest count must be zero or greater",
       "appointmentDateRequired": "Appointment date is required",
       "startTimeRequired": "Start time is required",
+      "endTimeRequired": "End time is required",
       "customerRequired": "Customer is required",
       "fullNameRequired": "Full name is required",
       "mobileRequired": "Mobile is required"
@@ -2343,6 +2344,8 @@ export const baseEn = {
     "rescheduleTitle": "Reschedule Appointment",
     "rescheduleDescription": "Update the appointment timing and any follow-up instructions.",
     "reschedule": "Reschedule",
+    "endTimeRequiredHint": "End time is required for scheduling and conflict checks.",
+    "exportPdf": "Export PDF",
     "viewLead": "View Lead",
     "viewCustomer": "View Customer",
     "viewAppointment": "View Appointment",
