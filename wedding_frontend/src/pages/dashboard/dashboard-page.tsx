@@ -7,7 +7,6 @@ import {
   Plus,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 import { AppCalendar } from "@/components/calendar/app-calendar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -17,7 +16,6 @@ import { SummaryCard } from "@/components/dashboard/summary-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { WorkflowModuleDashboard } from "@/components/workflow/workflow-module-dashboard";
 import { Button } from "@/components/ui/button";
 import type { AppCalendarEvent } from "@/components/calendar/types";
 import {
@@ -32,13 +30,6 @@ import {
   reportSeries,
   todaysSchedule,
 } from "@/data/mock/dashboard";
-import {
-  useAppointmentWorkflowSummary,
-  useContractWorkflowSummary,
-  useEventWorkflowSummary,
-  useExecutionWorkflowSummary,
-  useQuotationWorkflowSummary,
-} from "@/hooks/workflow/useWorkflowSummaries";
 import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
 const metricTrends = {
@@ -58,15 +49,9 @@ const metricTrends = {
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [selectedBookingId, setSelectedBookingId] = useState<string>(
     recentBookings[0]?.id ?? "",
   );
-  const appointmentsSummary = useAppointmentWorkflowSummary();
-  const eventsSummary = useEventWorkflowSummary();
-  const quotationsSummary = useQuotationWorkflowSummary();
-  const contractsSummary = useContractWorkflowSummary();
-  const executionSummary = useExecutionWorkflowSummary();
 
   const dashboardCalendarEvents = useMemo<AppCalendarEvent[]>(
     () =>
