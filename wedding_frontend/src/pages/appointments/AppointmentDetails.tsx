@@ -76,12 +76,9 @@ function DetailItem({
   );
 }
 
-function getCustomerLabel(
-  customer: unknown,
-  customerId?: number | string | null,
-) {
+function getCustomerLabel(customer: unknown) {
   if (!customer || typeof customer !== "object") {
-    return customerId ? `Customer #${customerId}` : null;
+    return null;
   }
 
   const record = customer as Record<string, unknown>;
@@ -118,7 +115,7 @@ function getCustomerLabel(
     return record.email;
   }
 
-  return customerId ? `Customer #${customerId}` : null;
+  return null;
 }
 
 function getRelatedEventLabel(event: unknown) {
@@ -136,10 +133,6 @@ function getRelatedEventLabel(event: unknown) {
 
   if (typeof record.eventTitle === "string" && record.eventTitle.trim()) {
     return record.eventTitle;
-  }
-
-  if (typeof record.id === "number" || typeof record.id === "string") {
-    return `Event #${record.id}`;
   }
 
   return null;
@@ -200,10 +193,14 @@ const AppointmentDetailsPage = () => {
   const relatedEvent = getAppointmentRelatedEvent(appointment);
   const relatedEventId = getRelatedEventId(relatedEvent);
   const relatedEventLabel = getRelatedEventLabel(relatedEvent);
-  const customerLabel = getCustomerLabel(
-    appointment.customer,
-    appointment.customerId,
-  );
+  const customerLabel =
+    getCustomerLabel(appointment.customer) ??
+    (appointment.customerId
+      ? t("appointments.customerOptionFallback", {
+          id: appointment.customerId,
+          defaultValue: `Customer #${appointment.customerId}`,
+        })
+      : null);
 
   const converted =
     isAppointmentConverted(appointment.status) ||
@@ -453,7 +450,11 @@ const AppointmentDetailsPage = () => {
         className="inline-flex items-center gap-2 text-sm font-medium text-[var(--lux-gold)] hover:underline"
       >
         <Link2 className="h-4 w-4" />
-        {relatedEventLabel || `Event #${relatedEventId}`}
+        {relatedEventLabel ||
+          t("appointments.relatedEventFallback", {
+            id: relatedEventId,
+            defaultValue: `Event #${relatedEventId}`,
+          })}
       </button>
     ) : converted ? (
       t("appointments.convertedEventExists", {
@@ -480,7 +481,13 @@ const AppointmentDetailsPage = () => {
         </button>
 
         <WorkflowEntityHeader
-          title={customerLabel || `Appointment #${appointment.id}`}
+          title={
+            customerLabel ||
+            t("appointments.recordLabel", {
+              id: appointment.id,
+              defaultValue: `Appointment #${appointment.id}`,
+            })
+          }
           description={t("appointments.detailsSubtitle", {
             defaultValue: "Appointment details and workflow actions",
           })}
@@ -668,7 +675,9 @@ const AppointmentDetailsPage = () => {
                   value={appointment.venue?.name ?? null}
                 />
                 <DetailItem
-                  label={t("appointments.status", { defaultValue: "Status" })}
+                  label={t("appointments.statusLabel", {
+                    defaultValue: "Status",
+                  })}
                   value={t(`appointments.status.${normalizedStatus}`, {
                     defaultValue: normalizedStatus,
                   })}
