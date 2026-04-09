@@ -32,6 +32,7 @@ const viewOptions: Array<{
 }> = [
   { value: "month", label: "Month", icon: Table2 },
   { value: "threeMonths", label: "3 Months", icon: CalendarRange },
+  { value: "sixMonths", label: "6 Months", icon: CalendarRange },
   { value: "year", label: "Year", icon: Table2 },
   { value: "week", label: "Week", icon: TableProperties },
   { value: "day", label: "Day", icon: CalendarDays },

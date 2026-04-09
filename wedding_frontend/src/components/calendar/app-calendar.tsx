@@ -72,6 +72,8 @@ function viewToFullCalendarView(view: AppCalendarView) {
   switch (view) {
     case "threeMonths":
       return "dayGridThreeMonths";
+    case "sixMonths":
+      return "dayGridSixMonths";
     case "year":
       return "dayGridYear";
     case "week":
@@ -90,6 +92,8 @@ function fullCalendarViewToAppView(viewType: string): AppCalendarView {
   switch (viewType) {
     case "dayGridThreeMonths":
       return "threeMonths";
+    case "dayGridSixMonths":
+      return "sixMonths";
     case "dayGridYear":
       return "year";
     case "timeGridWeek":
@@ -355,6 +359,11 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
                       type: "dayGrid",
                       duration: { months: 3 },
                       dateIncrement: { months: 3 },
+                    },
+                    dayGridSixMonths: {
+                      type: "dayGrid",
+                      duration: { months: 6 },
+                      dateIncrement: { months: 6 },
                     },
                     dayGridYear: {
                       type: "dayGrid",

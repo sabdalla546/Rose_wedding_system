@@ -114,9 +114,14 @@ export const baseAr = {
       "events": "الحفلات",
       "appointmentsCalendar": "حجز المواعيد",
       "eventsCalendar": "حجز الحفلات",
+      "allEvents": "كل الحفلات",
+      "allCustomers": "كل العملاء",
+      "venues": "الصالات",
       "vendors": "الشركات الخارجيه",
       "services": "تجهيز الديكورات",
+      "designerDetails": "تفاصيل المصمم",
       "quotations": "عروض الأسعار",
+      "contracts": "العقود",
       "bookings": "الحجوزات",
       "operations": "العمليات",
       "inventory": "المخزون",
@@ -521,6 +526,7 @@ export const baseAr = {
     "view": {
       "month": "شهر",
       "threeMonths": "3 أشهر",
+      "sixMonths": "6 أشهر",
       "year": "سنة",
       "week": "أسبوع",
       "day": "يوم",
@@ -2120,7 +2126,9 @@ export const baseAr = {
       "Details Appointment 1": "موعد تفاصيل 1",
       "Details Appointment 2": "موعد تفاصيل 2",
       "Details Appointment 3": "موعد تفاصيل 3",
-      "Office Visit": "زيارة للمكتب"
+      "Office Visit 1": "زيارة للمكتب 1",
+      "Office Visit 2": "زيارة للمكتب 2",
+      "Office Visit 3": "زيارة للمكتب 3"
     },
     "meetingTypeOptions": {
       "office_visit": "زيارة للمكتب",

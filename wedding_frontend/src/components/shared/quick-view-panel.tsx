@@ -71,7 +71,7 @@ export function QuickViewPanel({ event, onView, onEdit }: QuickViewPanelProps) {
           label={t('appointments.meetingType', { defaultValue: 'Meeting Type' })}
           value={
             event.meetingType
-              ? t(`appointments.meetingTypeOptions.${event.meetingType}`, {
+              ? t(`appointments.typeOptions.${event.meetingType}`, {
                   defaultValue: event.packageName,
                 })
               : event.packageName

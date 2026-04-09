@@ -11,7 +11,9 @@ export type AppointmentType =
   | "Details Appointment 1"
   | "Details Appointment 2"
   | "Details Appointment 3"
-  | "Office Visit";
+  | "Office Visit 1"
+  | "Office Visit 2"
+  | "Office Visit 3";
 
 export interface AppointmentAttributes {
   id: number;
@@ -95,10 +97,12 @@ Appointment.init(
         "Details Appointment 1",
         "Details Appointment 2",
         "Details Appointment 3",
-        "Office Visit",
+        "Office Visit 1",
+        "Office Visit 2",
+        "Office Visit 3",
       ),
       allowNull: false,
-      defaultValue: "Office Visit",
+      defaultValue: "Office Visit 1",
       field: "meetingType",
     },
     weddingDate: {

@@ -84,7 +84,9 @@ export const APPOINTMENT_TYPE_OPTIONS: Array<{
   { value: "Details Appointment 1", label: "Details Appointment 1" },
   { value: "Details Appointment 2", label: "Details Appointment 2" },
   { value: "Details Appointment 3", label: "Details Appointment 3" },
-  { value: "Office Visit", label: "Office Visit" },
+  { value: "Office Visit 1", label: "Office Visit 1" },
+  { value: "Office Visit 2", label: "Office Visit 2" },
+  { value: "Office Visit 3", label: "Office Visit 3" },
 ];
 
 export const formatAppointmentStatus = (status: string) => {

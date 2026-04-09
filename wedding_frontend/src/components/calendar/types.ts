@@ -1,6 +1,7 @@
 export type AppCalendarView =
   | "month"
   | "threeMonths"
+  | "sixMonths"
   | "year"
   | "week"
   | "day"

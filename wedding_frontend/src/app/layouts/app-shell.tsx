@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { DesignerDetailsSectionBar } from "@/components/layout/designer-details-section-bar";
 import { SecretarialSectionBar } from "@/components/layout/secretarial-section-bar";
 import { InventorySectionBar } from "@/components/layout/inventory-section-bar";
 import { ReportsSectionBar } from "@/components/layout/reports-section-bar";
 import { SettingsSectionBar } from "@/components/layout/settings-section-bar";
 import {
+  designerDetailsNavigationLeaves,
   inventoryNavigationLeaves,
   matchesNavigationHref,
   reportsNavigationLeaves,
@@ -120,6 +122,7 @@ export function AppShell() {
     matchesNavigationHref(location.pathname, location.search, href);
   const hasSectionBar =
     secretarialNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||
+    designerDetailsNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||
     inventoryNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||
     reportsNavigationLeaves.some((leaf) => matchesLeaf(leaf.href)) ||
     settingsNavigationLeaves.some((leaf) => matchesLeaf(leaf.href));
@@ -199,6 +202,7 @@ export function AppShell() {
             >
               <div style={sectionBarBleedStyle}>
                 <SecretarialSectionBar />
+                <DesignerDetailsSectionBar />
                 <InventorySectionBar />
                 <ReportsSectionBar />
                 <SettingsSectionBar />

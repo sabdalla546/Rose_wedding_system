@@ -43,7 +43,9 @@ const appointmentTypeValues = [
   'Details Appointment 1',
   'Details Appointment 2',
   'Details Appointment 3',
-  'Office Visit',
+  'Office Visit 1',
+  'Office Visit 2',
+  'Office Visit 3',
 ];
 
 const appointmentStatusValues = [
@@ -372,7 +374,7 @@ const tableDefinitions = [
       appointmentEndTime: string(10, { allowNull: true }),
       meetingType: enumColumn(appointmentTypeValues, {
         allowNull: false,
-        defaultValue: 'Office Visit',
+        defaultValue: 'Office Visit 1',
       }),
       weddingDate: dateOnly({ allowNull: true }),
       guestCount: unsignedInteger({ allowNull: true }),

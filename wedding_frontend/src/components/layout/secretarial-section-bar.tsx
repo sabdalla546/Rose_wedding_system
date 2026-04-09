@@ -9,22 +9,11 @@ import {
   matchesNavigationHref,
   navigationItems,
   secretarialNavigationLeaves,
-  type NavigationLeaf,
   type NavigationItem,
 } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 
 const HIDDEN_SECRETARIAL_IDS = new Set(["events-all", "calendar-appointments"]);
-const DESIGNER_DETAILS_ID = "designer-details";
-const DESIGNER_DETAILS_CHILD_IDS = [
-  "settings-team-vendors",
-  "settings-team-services",
-  "quotations-all",
-  "contracts-all",
-] as const;
-const DESIGNER_DETAILS_CHILD_ID_SET = new Set<string>(
-  DESIGNER_DETAILS_CHILD_IDS,
-);
 
 function getSectionTargetHref(item: NavigationItem) {
   if (item.href) {
@@ -36,7 +25,7 @@ function getSectionTargetHref(item: NavigationItem) {
 }
 
 function getVisiblePrimaryItems(items: NavigationItem[]) {
-  const nextItems = items.flatMap((item) => {
+  return items.flatMap((item) => {
     if (HIDDEN_SECRETARIAL_IDS.has(item.id)) {
       return [];
     }
@@ -49,29 +38,6 @@ function getVisiblePrimaryItems(items: NavigationItem[]) {
       (child) => !HIDDEN_SECRETARIAL_IDS.has(child.id),
     );
   });
-  const filteredItems = nextItems.filter(
-    (item) => !DESIGNER_DETAILS_CHILD_ID_SET.has(item.id),
-  );
-
-  const designerDetailsIndex = filteredItems.findIndex(
-    (item) => item.id === DESIGNER_DETAILS_ID,
-  );
-  const eventsCalendarIndex = filteredItems.findIndex(
-    (item) => item.id === "events-calendar",
-  );
-
-  if (
-    designerDetailsIndex === -1 ||
-    eventsCalendarIndex === -1 ||
-    designerDetailsIndex === eventsCalendarIndex + 1
-  ) {
-    return filteredItems;
-  }
-
-  const [designerDetailsItem] = filteredItems.splice(designerDetailsIndex, 1);
-  filteredItems.splice(eventsCalendarIndex + 1, 0, designerDetailsItem);
-
-  return filteredItems;
 }
 
 export function SecretarialSectionBar() {
@@ -87,20 +53,6 @@ export function SecretarialSectionBar() {
   const primaryNavigationItems = useMemo(
     () => getVisiblePrimaryItems(secretarialRoot?.children ?? []),
     [secretarialRoot],
-  );
-  const secretarialLeafById = useMemo(
-    () =>
-      new Map(
-        secretarialNavigationLeaves.map((item) => [item.id, item] as const),
-      ),
-    [],
-  );
-  const designerDetailsSecondaryItems = useMemo(
-    () =>
-      DESIGNER_DETAILS_CHILD_IDS.map((id) =>
-        secretarialLeafById.get(id),
-      ).filter((item): item is NavigationLeaf => Boolean(item)),
-    [secretarialLeafById],
   );
 
   const activeLeaf = useMemo(() => {
@@ -120,12 +72,6 @@ export function SecretarialSectionBar() {
       return undefined;
     }
 
-    if (DESIGNER_DETAILS_CHILD_ID_SET.has(activeLeaf.id)) {
-      return primaryNavigationItems.find(
-        (item) => item.id === DESIGNER_DETAILS_ID,
-      );
-    }
-
     return primaryNavigationItems.find(
       (item) =>
         item.id === activeLeaf.id || activeLeaf.parents.includes(item.id),
@@ -133,14 +79,9 @@ export function SecretarialSectionBar() {
   }, [activeLeaf, primaryNavigationItems]);
 
   const secondaryNavigationItems = useMemo(
-    () =>
-      activePrimaryItem?.id === DESIGNER_DETAILS_ID
-        ? designerDetailsSecondaryItems
-        : (activePrimaryItem?.children ?? []),
-    [activePrimaryItem, designerDetailsSecondaryItems],
+    () => activePrimaryItem?.children ?? [],
+    [activePrimaryItem],
   );
-  const isDesignerDetailsSecondaryRow =
-    activePrimaryItem?.id === DESIGNER_DETAILS_ID;
 
   if (!activeLeaf) {
     return null;
@@ -391,7 +332,7 @@ export function SecretarialSectionBar() {
         ? renderSecondaryNavigationRow(
             secondaryNavigationItems,
             activeLeaf.id,
-            isDesignerDetailsSecondaryRow,
+            false,
           )
         : null}
     </section>

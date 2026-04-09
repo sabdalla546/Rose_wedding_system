@@ -10,7 +10,9 @@ export const appointmentTypeEnum = z.enum([
   "Details Appointment 1",
   "Details Appointment 2",
   "Details Appointment 3",
-  "Office Visit",
+  "Office Visit 1",
+  "Office Visit 2",
+  "Office Visit 3",
 ]);
 
 export const appointmentTypeInputSchema = appointmentTypeEnum;

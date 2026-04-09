@@ -10,11 +10,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/axios";
 import {
+  DESIGNER_DETAILS_ROOT_ID,
   INVENTORY_ROOT_ID,
   REPORTS_ROOT_ID,
   SECRETARIAL_ROOT_ID,
   SETTINGS_ROOT_ID,
   collectExpandedNavigationIds,
+  designerDetailsNavigationLeaves,
   matchesNavigationHref,
   navigationItems,
   inventoryNavigationLeaves,
@@ -87,6 +89,12 @@ export function AppSidebar({
 
   const isInventoryActive = useMemo(() => {
     return inventoryNavigationLeaves.some((leaf: NavigationLeaf) =>
+      matchesNavigationHref(location.pathname, location.search, leaf.href),
+    );
+  }, [location.pathname, location.search]);
+
+  const isDesignerDetailsActive = useMemo(() => {
+    return designerDetailsNavigationLeaves.some((leaf: NavigationLeaf) =>
       matchesNavigationHref(location.pathname, location.search, leaf.href),
     );
   }, [location.pathname, location.search]);
@@ -322,6 +330,7 @@ export function AppSidebar({
     const collapseChildrenInSidebar =
       depth === 0 &&
       (item.id === SECRETARIAL_ROOT_ID ||
+        item.id === DESIGNER_DETAILS_ROOT_ID ||
         item.id === INVENTORY_ROOT_ID ||
         item.id === REPORTS_ROOT_ID ||
         item.id === SETTINGS_ROOT_ID);
@@ -332,6 +341,8 @@ export function AppSidebar({
     const active =
       item.id === SECRETARIAL_ROOT_ID
         ? isSecretarialActive
+        : item.id === DESIGNER_DETAILS_ROOT_ID
+          ? isDesignerDetailsActive
         : item.id === INVENTORY_ROOT_ID
           ? isInventoryActive
           : item.id === REPORTS_ROOT_ID

@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+﻿import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Building2,
@@ -86,6 +86,7 @@ export function matchesNavigationHref(
 }
 
 export const SECRETARIAL_ROOT_ID = "Secretarial";
+export const DESIGNER_DETAILS_ROOT_ID = "designer-details";
 export const INVENTORY_ROOT_ID = "inventory";
 export const REPORTS_ROOT_ID = "reports";
 export const SETTINGS_ROOT_ID = "settings";
@@ -97,7 +98,7 @@ const navigationTree: NavigationItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     subtitle: "Overview of bookings, quotations, payments, and operations.",
-    subtitleAr: "نظرة عامة على الحجوزات وعروض الأسعار والمدفوعات والعمليات.",
+    subtitleAr: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØ¹Ø±ÙˆØ¶ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± ÙˆØ§Ù„Ù…Ø¯ÙÙˆØ¹Ø§Øª ÙˆØ§Ù„Ø¹Ù…Ù„ÙŠØ§Øª.",
   },
   {
     id: SECRETARIAL_ROOT_ID,
@@ -109,56 +110,116 @@ const navigationTree: NavigationItem[] = [
         id: "appointments-calendar",
         labelKey: "sidebar.nav.appointmentsCalendar",
         label: "Appointments Calendar",
-        labelAr: "الموعيد اليوميه",
+        labelAr: "Ø§Ù„Ù…ÙˆØ¹ÙŠØ¯ Ø§Ù„ÙŠÙˆÙ…ÙŠÙ‡",
         href: "/appointments?view=calendar",
         icon: CalendarDays,
         subtitle:
           "Operational calendar for customer appointments and follow-ups.",
-        subtitleAr: "إدارة مواعيد الفعاليات والحجوزات وتوفر المواقع.",
+        subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª ÙˆØ§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØªÙˆÙØ± Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹.",
       },
       {
         id: "events-calendar",
         labelKey: "sidebar.nav.eventsCalendar",
         label: "Events Calendar",
-        labelAr: "تقويم الحفلات",
+        labelAr: "ØªÙ‚ÙˆÙŠÙ… Ø§Ù„Ø­ÙÙ„Ø§Øª",
         href: "/events?view=calendar",
         icon: CalendarRange,
         subtitle: "Operational calendar for wedding events and venue planning.",
-        subtitleAr: "تقويم تشغيلي للحفلات وتخطيط القاعات.",
+        subtitleAr: "ØªÙ‚ÙˆÙŠÙ… ØªØ´ØºÙŠÙ„ÙŠ Ù„Ù„Ø­ÙÙ„Ø§Øª ÙˆØªØ®Ø·ÙŠØ· Ø§Ù„Ù‚Ø§Ø¹Ø§Øª.",
       },
       {
         id: "events-all",
         labelKey: "sidebar.nav.allEvents",
         label: "All Events",
-        labelAr: "حجز حفلة",
+        labelAr: "Ø­Ø¬Ø² Ø­ÙÙ„Ø©",
         href: "/events",
         icon: CalendarRange,
         subtitle:
           "Manage wedding events, planning sections, and linked records.",
-        subtitleAr: "إدارة الحفلات وأقسام التخطيط والروابط المرتبطة.",
+        subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø­ÙÙ„Ø§Øª ÙˆØ£Ù‚Ø³Ø§Ù… Ø§Ù„ØªØ®Ø·ÙŠØ· ÙˆØ§Ù„Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø©.",
       },
       {
         id: "calendar-appointments",
         labelKey: "sidebar.nav.appointments",
         label: "Appointments",
-        labelAr: "المواعيد",
+        labelAr: "Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯",
         href: "/appointments",
         icon: CalendarCheck2,
         subtitle:
           "Manage lead appointments, meeting statuses, and team assignment.",
         subtitleAr:
-          "إدارة مواعيد العملاء المحتملين وحالة الاجتماع وتوزيع الفريق.",
+          "Ø¥Ø¯Ø§Ø±Ø© Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙ…Ù„ÙŠÙ† ÙˆØ­Ø§Ù„Ø© Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ ÙˆØªÙˆØ²ÙŠØ¹ Ø§Ù„ÙØ±ÙŠÙ‚.",
       },
       {
         id: "customers-all",
         labelKey: "sidebar.nav.allCustomers",
         label: "All Customers",
-        labelAr: "كل العملاء",
+        labelAr: "ÙƒÙ„ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡",
         href: "/customers",
         icon: UsersRound,
         subtitle:
           "Access complete customer profiles, history, and touchpoints.",
-        subtitleAr: "الوصول إلى ملفات العملاء الكاملة وسجل التعاملات.",
+        subtitleAr: "Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ù…Ù„ÙØ§Øª Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙƒØ§Ù…Ù„Ø© ÙˆØ³Ø¬Ù„ Ø§Ù„ØªØ¹Ø§Ù…Ù„Ø§Øª.",
+      },
+    ],
+  },
+  {
+    id: DESIGNER_DETAILS_ROOT_ID,
+    labelKey: "sidebar.nav.designerDetails",
+    label: "Designer Details",
+    labelAr: "تفاصيل المصمم",
+    href: "/designer-details",
+    icon: Handshake,
+    subtitle:
+      "Operational hub for wedding management, external vendors, and service catalog control.",
+    subtitleAr: "مركز تشغيلي لإدارة الحفل والشركات والخدمات.",
+    children: [
+      {
+        id: "settings-team-vendors",
+        labelKey: "sidebar.nav.vendors",
+        label: "Vendors",
+        labelAr: "الشركات الخارجه",
+        href: "/settings/vendors",
+        icon: Handshake,
+        subtitle:
+          "Manage external vendors, service types, and operational contacts.",
+        subtitleAr:
+          "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
+      },
+      {
+        id: "settings-team-services",
+        labelKey: "sidebar.nav.services",
+        label: "Services",
+        labelAr: "الخدمات",
+        href: "/settings/services",
+        icon: PackageOpen,
+        subtitle:
+          "Manage catalog services, pricing types, and operational event items.",
+        subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
+      },
+      {
+        id: "quotations-all",
+        labelKey: "sidebar.nav.quotations",
+        label: "Quotations",
+        labelAr: "عروض الأسعار",
+        href: "/quotations",
+        icon: FileText,
+        subtitle:
+          "Manage quotation documents, issue dates, totals, and linked event pricing.",
+        subtitleAr:
+          "إدارة عروض الأسعار وتواريخ إصدارها وإجمالياتها وارتباطها بالحفل.",
+      },
+      {
+        id: "contracts-all",
+        labelKey: "sidebar.nav.contracts",
+        label: "Contracts",
+        labelAr: "العقود",
+        href: "/contracts",
+        icon: FileSignature,
+        subtitle:
+          "Manage contract documents, payment plans, and linked event commitments.",
+        subtitleAr:
+          "إدارة وثائق العقود وخطط الدفعات والالتزامات المرتبطة بالحفل.",
       },
     ],
   },
@@ -181,33 +242,33 @@ const navigationTree: NavigationItem[] = [
         id: "inventory-stock",
         labelKey: "inventory.title",
         label: "Inventory",
-        labelAr: "أصناف المخزون",
+        labelAr: "Ø£ØµÙ†Ø§Ù Ø§Ù„Ù…Ø®Ø²ÙˆÙ†",
         href: "/inventory",
         icon: PackageOpen,
         subtitle:
           "Monitor inventory quantities, categories, and condition status.",
-        subtitleAr: "متابعة كميات المخزون وتصنيفاته وحالته.",
+        subtitleAr: "Ù…ØªØ§Ø¨Ø¹Ø© ÙƒÙ…ÙŠØ§Øª Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙˆØªØµÙ†ÙŠÙØ§ØªÙ‡ ÙˆØ­Ø§Ù„ØªÙ‡.",
       },
       {
         id: "inventory-reservations",
         labelKey: "sidebar.nav.inventoryReservations",
         label: "Reservations",
-        labelAr: "الحجوزات المخزنية",
+        labelAr: "Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„Ù…Ø®Ø²Ù†ÙŠØ©",
         href: "/inventory/reservations",
         icon: ClipboardCheck,
         subtitle:
           "Reserve decor, furniture, and technical items for upcoming events.",
-        subtitleAr: "حجز عناصر الديكور والأثاث والمعدات للفعاليات القادمة.",
+        subtitleAr: "Ø­Ø¬Ø² Ø¹Ù†Ø§ØµØ± Ø§Ù„Ø¯ÙŠÙƒÙˆØ± ÙˆØ§Ù„Ø£Ø«Ø§Ø« ÙˆØ§Ù„Ù…Ø¹Ø¯Ø§Øª Ù„Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©.",
       },
       {
         id: "inventory-orders",
         labelKey: "sidebar.nav.purchaseOrders",
         label: "Purchase Orders",
-        labelAr: "أوامر الشراء",
+        labelAr: "Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ø´Ø±Ø§Ø¡",
         href: "/inventory/purchase-orders",
         icon: PackagePlus,
         subtitle: "Track replenishment orders and supplier delivery readiness.",
-        subtitleAr: "متابعة أوامر التوريد وجاهزية التسليم من الموردين.",
+        subtitleAr: "Ù…ØªØ§Ø¨Ø¹Ø© Ø£ÙˆØ§Ù…Ø± Ø§Ù„ØªÙˆØ±ÙŠØ¯ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„ØªØ³Ù„ÙŠÙ… Ù…Ù† Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†.",
       },
     ],
   },
@@ -220,33 +281,33 @@ const navigationTree: NavigationItem[] = [
         id: "reports-revenue",
         labelKey: "sidebar.nav.revenueOverview",
         label: "Revenue Overview",
-        labelAr: "نظرة عامة على الإيرادات",
+        labelAr: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª",
         href: "/reports/revenue",
         icon: TrendingUp,
         subtitle:
           "Track revenue trends, collection velocity, and monthly targets.",
-        subtitleAr: "متابعة اتجاهات الإيرادات وسرعة التحصيل والأهداف الشهرية.",
+        subtitleAr: "Ù…ØªØ§Ø¨Ø¹Ø© Ø§ØªØ¬Ø§Ù‡Ø§Øª Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ³Ø±Ø¹Ø© Ø§Ù„ØªØ­ØµÙŠÙ„ ÙˆØ§Ù„Ø£Ù‡Ø¯Ø§Ù Ø§Ù„Ø´Ù‡Ø±ÙŠØ©.",
       },
       {
         id: "reports-bookings",
         labelKey: "sidebar.nav.bookingAnalytics",
         label: "Booking Analytics",
-        labelAr: "تحليلات الحجوزات",
+        labelAr: "ØªØ­Ù„ÙŠÙ„Ø§Øª Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª",
         href: "/reports/bookings",
         icon: CalendarRange,
         subtitle: "Analyze conversion, booking volume, and seasonal demand.",
-        subtitleAr: "تحليل التحويلات وحجم الحجوزات والطلب الموسمي.",
+        subtitleAr: "ØªØ­Ù„ÙŠÙ„ Ø§Ù„ØªØ­ÙˆÙŠÙ„Ø§Øª ÙˆØ­Ø¬Ù… Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØ§Ù„Ø·Ù„Ø¨ Ø§Ù„Ù…ÙˆØ³Ù…ÙŠ.",
       },
       {
         id: "reports-utilization",
         labelKey: "sidebar.nav.resourceUtilization",
         label: "Resource Utilization",
-        labelAr: "استخدام الموارد",
+        labelAr: "Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ù…ÙˆØ§Ø±Ø¯",
         href: "/reports/utilization",
         icon: ChartColumnBig,
         subtitle:
           "Measure hall, staff, and inventory utilization across events.",
-        subtitleAr: "قياس استخدام القاعات والموظفين والمخزون عبر الفعاليات.",
+        subtitleAr: "Ù‚ÙŠØ§Ø³ Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ù‚Ø§Ø¹Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ¸ÙÙŠÙ† ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ† Ø¹Ø¨Ø± Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª.",
       },
     ],
   },
@@ -259,12 +320,12 @@ const navigationTree: NavigationItem[] = [
         id: "settings-team",
         labelKey: "sidebar.nav.teamRoles",
         label: "Team Roles",
-        labelAr: "أدوار الفريق",
+        labelAr: "Ø£Ø¯ÙˆØ§Ø± Ø§Ù„ÙØ±ÙŠÙ‚",
         href: "/settings/team",
         icon: UserCog,
         subtitle:
           "Configure access levels, coordinators, and team responsibilities.",
-        subtitleAr: "إعداد مستويات الوصول والمنسقين ومسؤوليات الفريق.",
+        subtitleAr: "Ø¥Ø¹Ø¯Ø§Ø¯ Ù…Ø³ØªÙˆÙŠØ§Øª Ø§Ù„ÙˆØµÙˆÙ„ ÙˆØ§Ù„Ù…Ù†Ø³Ù‚ÙŠÙ† ÙˆÙ…Ø³Ø¤ÙˆÙ„ÙŠØ§Øª Ø§Ù„ÙØ±ÙŠÙ‚.",
       },
     ],
   },
@@ -280,21 +341,21 @@ if (settingsTeamItem) {
       id: "settings-team-users",
       labelKey: "sidebar.nav.users",
       label: "Users",
-      labelAr: "المستخدمون",
+      labelAr: "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†",
       href: "/settings/team/users",
       icon: Users,
       subtitle: "Manage system users, status, and assigned roles.",
-      subtitleAr: "إدارة المستخدمين والحالة والأدوار المسندة.",
+      subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙˆØ§Ù„Ø­Ø§Ù„Ø© ÙˆØ§Ù„Ø£Ø¯ÙˆØ§Ø± Ø§Ù„Ù…Ø³Ù†Ø¯Ø©.",
     },
     {
       id: "settings-team-roles",
       labelKey: "sidebar.nav.roles",
       label: "Roles",
-      labelAr: "الأدوار",
+      labelAr: "Ø§Ù„Ø£Ø¯ÙˆØ§Ø±",
       href: "/settings/team/roles",
       icon: ShieldCheck,
       subtitle: "Configure role definitions and permission bundles.",
-      subtitleAr: "إعداد تعريفات الأدوار وحزم الصلاحيات.",
+      subtitleAr: "Ø¥Ø¹Ø¯Ø§Ø¯ ØªØ¹Ø±ÙŠÙØ§Øª Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙˆØ­Ø²Ù… Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª.",
     },
   ];
 }
@@ -310,79 +371,19 @@ if (secretarialRootItem?.children) {
       id: "events-app",
       labelKey: "sidebar.nav.events",
       label: "Events",
-      labelAr: "الحفلات",
+      labelAr: "Ø§Ù„Ø­ÙÙ„Ø§Øª",
       icon: CalendarRange,
       children: [
-        {
-          id: "quotations-all",
-          labelKey: "sidebar.nav.quotations",
-          label: "Quotations",
-          labelAr: "عروض الأسعار",
-          href: "/quotations",
-          icon: FileText,
-          subtitle:
-            "Manage quotation documents, issue dates, totals, and linked event pricing.",
-          subtitleAr:
-            "إدارة عروض الأسعار وتواريخ إصدارها وإجمالياتها وارتباطها بالحفل.",
-        },
-        {
-          id: "contracts-all",
-          labelKey: "sidebar.nav.contracts",
-          label: "Contracts",
-          labelAr: "العقود",
-          href: "/contracts",
-          icon: FileSignature,
-          subtitle:
-            "Manage contract documents, payment plans, and linked event commitments.",
-          subtitleAr:
-            "إدارة وثائق العقود وخطط الدفعات والالتزامات المرتبطة بالحفل.",
-        },
         {
           id: "settings-team-venues",
           labelKey: "sidebar.nav.venues",
           label: "Venues",
-          labelAr: "القاعات",
+          labelAr: "Ø§Ù„Ù‚Ø§Ø¹Ø§Øª",
           href: "/settings/venues",
           icon: Building2,
           subtitle:
             "Manage wedding halls, venue contacts, and location readiness.",
-          subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
-        },
-        {
-          id: "designer-details",
-          labelKey: "sidebar.nav.designerDetails",
-          label: "Designer Details",
-          labelAr: "تفاصيل المصمم",
-          href: "/designer-details",
-          icon: Handshake,
-          subtitle:
-            "Operational hub for wedding management, external vendors, and service catalog control.",
-          subtitleAr: "مركز تشغيلي لإدارة الحفل والشركات والخدمات.",
-          children: [
-            {
-              id: "settings-team-vendors",
-              labelKey: "sidebar.nav.vendors",
-              label: "Vendors",
-              labelAr: "الشركات الخارجه",
-              href: "/settings/vendors",
-              icon: Handshake,
-              subtitle:
-                "Manage external vendors, service types, and operational contacts.",
-              subtitleAr:
-                "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
-            },
-            {
-              id: "settings-team-services",
-              labelKey: "sidebar.nav.services",
-              label: "Services",
-              labelAr: "الخدمات",
-              href: "/settings/services",
-              icon: PackageOpen,
-              subtitle:
-                "Manage catalog services, pricing types, and operational event items.",
-              subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
-            },
-          ],
+          subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‚Ø§Ø¹Ø§Øª ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙˆØ§ØµÙ„ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹.",
         },
       ],
     },
@@ -468,6 +469,18 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
   );
 })();
 
+export const designerDetailsNavigationLeaves: NavigationLeaf[] = (() => {
+  const designerDetailsRoot = navigationItems.find(
+    (item) => item.id === DESIGNER_DETAILS_ROOT_ID,
+  );
+
+  if (!designerDetailsRoot) {
+    return [];
+  }
+
+  return flattenNavigationLeaves([designerDetailsRoot], []);
+})();
+
 export const reportsNavigationLeaves: NavigationLeaf[] = (() => {
   const reportsRoot = navigationItems.find(
     (item) => item.id === REPORTS_ROOT_ID,
@@ -542,3 +555,5 @@ export function collectExpandedNavigationIds(
 
   return [];
 }
+
+

@@ -226,7 +226,7 @@ const AppointmentFormPage = () => {
       venueId: "",
       startTime: "",
       endTime: "",
-      type: "Office Visit",
+      type: "Office Visit 1",
       notes: "",
     },
   });
