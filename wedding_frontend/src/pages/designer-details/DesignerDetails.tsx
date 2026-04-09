@@ -23,6 +23,7 @@ import {
   AppDialogShell,
 } from "@/components/shared/app-dialog";
 import { SectionCard } from "@/components/shared/section-card";
+import { WorkflowLockBanner } from "@/components/workflow/workflow-lock-banner";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirmDialog";
 import { Dialog } from "@/components/ui/dialog";
@@ -53,11 +54,9 @@ import {
 } from "@/pages/events/_components/EventDetailsPrimitives";
 import { EventWorkspaceSummary } from "@/pages/events/_components/EventWorkspaceSummary";
 import {
-  EVENT_STATUS_OPTIONS,
   getEventDisplayTitle,
 } from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
-import type { EventStatus } from "@/pages/events/types";
 import {
   EventContractsPanel,
   EventExecutionPanel,
@@ -108,7 +107,6 @@ type EventEditFormState = {
   guestCount: string;
   title: string;
   notes: string;
-  status: EventStatus | "";
 };
 
 const textareaClassName =
@@ -124,7 +122,6 @@ const createDefaultEventEditState = (): EventEditFormState => ({
   guestCount: "",
   title: "",
   notes: "",
-  status: "",
 });
 
 function DesignerEventWorkspace({ eventId }: { eventId: string }) {
@@ -402,7 +399,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         typeof event.guestCount === "number" ? String(event.guestCount) : "",
       title: event.title || "",
       notes: event.notes || "",
-      status: event.status,
     });
     setEditEventDialogOpen(true);
   };
@@ -424,7 +420,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       guestCount: editEventForm.guestCount,
       title: editEventForm.title,
       notes: editEventForm.notes,
-      status: editEventForm.status,
     });
   };
 
@@ -845,33 +840,15 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.eventStatusField")}
-                </p>
-                <Select
-                  value={editEventForm.status || "draft"}
-                  onValueChange={(value) =>
-                    setEditEventForm((current) => ({
-                      ...current,
-                      status: value as EventStatus,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("events.selectStatus")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {t(`events.status.${option.value}`, {
-                          defaultValue: option.label,
-                        })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <WorkflowLockBanner
+                title={t("events.statusManagedByWorkflow", {
+                  defaultValue: "Status managed by workflow",
+                })}
+                message={t("events.statusManagedByWorkflowHint", {
+                  defaultValue:
+                    "Use the workflow action buttons on the event details page to change status safely.",
+                })}
+              />
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-[var(--lux-text)]">

@@ -73,7 +73,7 @@ export interface Event {
   customer?: Customer | null;
   venue?: Venue | null;
   sourceAppointment?: EventSourceAppointmentSummary | null;
-  sections?: EventSection[];
+  sections?: EventSection[] | null;
   createdByUser?: EventUserSummary | null;
   updatedByUser?: EventUserSummary | null;
   createdAt?: string;
@@ -108,6 +108,11 @@ export interface EventCalendarRecord {
   notes?: string | null;
   status: EventStatus;
   customerName?: string | null;
+  customer?: Customer | null;
+  venue?: Venue | null;
+  sourceAppointment?: EventSourceAppointmentSummary | null;
+  createdByUser?: EventUserSummary | null;
+  updatedByUser?: EventUserSummary | null;
   assignedUserId?: number | null;
   assignedUserName?: string | null;
 }
@@ -127,5 +132,4 @@ export interface EventFormData {
   guestCount?: string;
   title?: string;
   notes?: string;
-  status?: EventStatus | "";
 }

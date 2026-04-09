@@ -1,9 +1,15 @@
 import api from "@/lib/axios";
 import {
+  buildEventsCalendarQueryParams,
   buildEventsListQueryParams,
   type EventsBusinessFilters,
 } from "@/pages/events/event-query-params";
-import type { EventFormData, EventResponse, EventsResponse } from "@/pages/events/types";
+import type {
+  EventFormData,
+  EventResponse,
+  EventsResponse,
+  EventStatus,
+} from "@/pages/events/types";
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
@@ -25,29 +31,45 @@ const normalizeGuestCountForUpdate = (value?: string) => {
   return trimmed ? Number(trimmed) : null;
 };
 
+const normalizeOptionalId = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? Number(trimmed) : undefined;
+};
+
+const normalizeNullableId = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? Number(trimmed) : null;
+};
+
+const requireTrimmedValue = (value: string | undefined, field: string) => {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    throw new Error(`${field} is required`);
+  }
+
+  return trimmed;
+};
+
 const buildCreateEventPayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
-  eventDate: values.eventDate,
-  venueId: values.venueId ? Number(values.venueId) : null,
+  customerId: Number(requireTrimmedValue(values.customerId, "customerId")),
+  eventDate: requireTrimmedValue(values.eventDate, "eventDate"),
+  sourceAppointmentId: normalizeOptionalId(values.sourceAppointmentId),
+  venueId: normalizeOptionalId(values.venueId),
   venueNameSnapshot: normalizeOptionalString(values.venueNameSnapshot),
   groomName: normalizeOptionalString(values.groomName),
   brideName: normalizeOptionalString(values.brideName),
   guestCount: normalizeGuestCountForCreate(values.guestCount),
   title: normalizeOptionalString(values.title),
   notes: normalizeOptionalString(values.notes),
-  status: values.status || undefined,
 });
 
 const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
+  sourceAppointmentId: Number(
+    requireTrimmedValue(values.sourceAppointmentId, "sourceAppointmentId"),
+  ),
   eventDate: normalizeOptionalString(values.eventDate),
-  venueId: values.venueId ? Number(values.venueId) : null,
+  venueId: normalizeOptionalId(values.venueId),
   venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
@@ -57,19 +79,15 @@ const buildCreateEventFromSourcePayload = (values: EventFormData) => ({
 });
 
 const buildUpdateEventPayload = (values: EventFormData) => ({
-  customerId: values.customerId ? Number(values.customerId) : null,
-  sourceAppointmentId: values.sourceAppointmentId
-    ? Number(values.sourceAppointmentId)
-    : null,
-  eventDate: normalizeOptionalString(values.eventDate),
-  venueId: values.venueId ? Number(values.venueId) : null,
+  customerId: normalizeNullableId(values.customerId),
+  eventDate: requireTrimmedValue(values.eventDate, "eventDate"),
+  venueId: normalizeNullableId(values.venueId),
   venueNameSnapshot: normalizeNullableString(values.venueNameSnapshot),
   groomName: normalizeNullableString(values.groomName),
   brideName: normalizeNullableString(values.brideName),
   guestCount: normalizeGuestCountForUpdate(values.guestCount),
   title: normalizeNullableString(values.title),
   notes: normalizeNullableString(values.notes),
-  status: values.status || undefined,
 });
 
 export const eventsApi = {
@@ -93,6 +111,13 @@ export const eventsApi = {
     return response.data.data;
   },
 
+  exportPdf(filters: EventsBusinessFilters) {
+    return api.get<Blob>("/events/export/pdf", {
+      params: buildEventsCalendarQueryParams(filters),
+      responseType: "blob",
+    });
+  },
+
   create(values: EventFormData) {
     return api.post("/events", buildCreateEventPayload(values));
   },
@@ -107,7 +132,7 @@ export const eventsApi = {
 
   updateWorkflowStatus(
     id: string | number,
-    status: EventFormData["status"],
+    status: EventStatus,
     notes?: string,
   ) {
     return api.put(`/events/${id}`, {

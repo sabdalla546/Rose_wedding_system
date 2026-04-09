@@ -6,7 +6,6 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import api from "@/lib/axios";
 import { useTranslation } from "react-i18next";
 
 import { SummaryCard } from "@/components/dashboard/summary-card";
@@ -29,6 +28,7 @@ import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useDeleteEvent } from "@/hooks/events/useDeleteEvent";
 import { useEvents } from "@/hooks/events/useEvents";
 import { useVenues } from "@/hooks/venues/useVenues";
+import { eventsApi } from "@/lib/api/events";
 
 import { useEventsColumns } from "../_components/eventsColumns";
 import {
@@ -238,31 +238,11 @@ export function EventsTableView({
     try {
       setIsExportingPdf(true);
 
-      const response = await api.get("/events/export/pdf", {
-        params: {
-          search: filters.search.trim() ? filters.search.trim() : undefined,
-          status: filters.status === "all" ? undefined : filters.status,
-          customerId: filters.customerId
-            ? Number(filters.customerId)
-            : undefined,
-          venueId: filters.venueId ? Number(filters.venueId) : undefined,
-          dateFrom: filters.dateFrom || undefined,
-          dateTo: filters.dateTo || undefined,
-        },
-        responseType: "blob",
-        validateStatus: () => true,
-      });
-
-      const contentType = String(
-        response.headers["content-type"] || "",
-      ).toLowerCase();
+      const response = await eventsApi.exportPdf(filters);
+      const contentType = String(response.headers["content-type"] || "").toLowerCase();
 
       if (!contentType.includes("application/pdf")) {
-        const errorText = await response.data.text();
-        console.error("Events PDF export failed response:", errorText);
-        throw new Error(
-          errorText || "Server did not return a valid PDF document.",
-        );
+        throw new Error("Server did not return a valid PDF document.");
       }
 
       const contentDisposition = response.headers["content-disposition"] as

@@ -144,7 +144,6 @@ type EventEditFormState = {
   guestCount: string;
   title: string;
   notes: string;
-  status: EventStatus | "";
 };
 
 type QuotationCreateFormState = {
@@ -278,7 +277,6 @@ const createDefaultEventEditState = (): EventEditFormState => ({
   guestCount: "",
   title: "",
   notes: "",
-  status: "",
 });
 
 const createDefaultQuotationCreateState = (): QuotationCreateFormState => ({
@@ -789,7 +787,6 @@ export const EventDetailsPage = ({
         typeof event.guestCount === "number" ? String(event.guestCount) : "",
       title: event.title ?? "",
       notes: event.notes ?? "",
-      status: event.status,
     });
   }, [event]);
 

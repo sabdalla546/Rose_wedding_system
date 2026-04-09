@@ -36,14 +36,10 @@ import {
   SearchableSelectItem,
 } from "@/components/ui/searchable-select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  useAppointment,
+  useAppointments,
+} from "@/hooks/appointments/useAppointments";
 import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
-import { useAppointment } from "@/hooks/appointments/useAppointments";
 import {
   useCreateEvent,
   useCreateEventFromSource,
@@ -52,8 +48,8 @@ import {
 import { useEvent } from "@/hooks/events/useEvents";
 import { useVenue, useVenues } from "@/hooks/venues/useVenues";
 
-import { EVENT_STATUS_OPTIONS, getEventDisplayTitle } from "./adapters";
-import type { EventFormData, EventStatus } from "./types";
+import { getEventDisplayTitle } from "./adapters";
+import type { EventFormData } from "./types";
 
 type EventFormMode = "manual" | "source";
 
@@ -68,7 +64,6 @@ type EventFormValues = {
   guestCount: string;
   title: string;
   notes: string;
-  status: EventStatus | "";
 };
 
 const EMPTY_VALUE = "__empty__";
@@ -76,11 +71,6 @@ const sectionTitleClass = "text-lg font-semibold text-[var(--lux-heading)]";
 const sectionHintClass = "text-sm text-[var(--lux-text-secondary)]";
 const textareaClassName =
   "min-h-[130px] w-full rounded-[4px] border px-4 py-3 text-sm text-[var(--lux-text)] placeholder:text-[var(--lux-text-muted)] outline-none transition-all focus:border-[var(--lux-gold-border)] focus:ring-2 focus:ring-[var(--lux-gold-glow)]";
-
-const statusValues = EVENT_STATUS_OPTIONS.map((item) => item.value) as [
-  EventStatus,
-  ...EventStatus[],
-];
 
 const defaultValues: EventFormValues = {
   customerId: "",
@@ -93,13 +83,13 @@ const defaultValues: EventFormValues = {
   guestCount: "",
   title: "",
   notes: "",
-  status: "",
 };
 
 const eventSchema = (t: TFunction, mode: EventFormMode, isEditMode: boolean) =>
   z
     .object({
       customerId: z.string().optional(),
+      sourceAppointmentId: z.string().optional(),
       eventDate: z.string().optional(),
       venueId: z.string().optional(),
       venueNameSnapshot: z.string().max(150).optional(),
@@ -117,10 +107,9 @@ const eventSchema = (t: TFunction, mode: EventFormMode, isEditMode: boolean) =>
         ),
       title: z.string().max(200).optional(),
       notes: z.string().optional(),
-      status: z.union([z.literal(""), z.enum(statusValues)]),
     })
     .superRefine((values, ctx) => {
-      if (!isEditMode && !values.customerId?.trim()) {
+      if (!isEditMode && mode === "manual" && !values.customerId?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["customerId"],
@@ -136,6 +125,16 @@ const eventSchema = (t: TFunction, mode: EventFormMode, isEditMode: boolean) =>
           path: ["eventDate"],
           message: t("events.validation.eventDateRequired", {
             defaultValue: "Event date is required",
+          }),
+        });
+      }
+
+      if (!isEditMode && mode === "source" && !values.sourceAppointmentId?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["sourceAppointmentId"],
+          message: t("events.validation.sourceAppointmentRequired", {
+            defaultValue: "Source appointment is required",
           }),
         });
       }
@@ -316,57 +315,6 @@ function SearchableSelectField({
   );
 }
 
-function SelectField({
-  control,
-  name,
-  label,
-  placeholder,
-  options,
-  emptyLabel,
-}: {
-  control: Control<EventFormValues>;
-  name: keyof EventFormValues;
-  label: string;
-  placeholder: string;
-  options: Array<{ value: string; label: string }>;
-  emptyLabel?: string;
-}) {
-  return (
-    <FormField
-      control={control}
-      name={name as any}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <Select
-            value={field.value || EMPTY_VALUE}
-            onValueChange={(value) =>
-              field.onChange(value === EMPTY_VALUE ? "" : value)
-            }
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder={placeholder} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {emptyLabel ? (
-                <SelectItem value={EMPTY_VALUE}>{emptyLabel}</SelectItem>
-              ) : null}
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
 function ModeButton({
   active,
   icon,
@@ -429,8 +377,6 @@ const EventFormPage = () => {
   );
 
   const { data: event, isLoading: eventLoading } = useEvent(id);
-  const { data: sourceAppointment, isLoading: sourceAppointmentLoading } =
-    useAppointment(fromAppointmentId || undefined);
   const { data: customersResponse, isLoading: customersLoading } = useCustomers(
     {
       currentPage: 1,
@@ -448,6 +394,16 @@ const EventFormPage = () => {
     searchQuery: "",
     isActive: "all",
   });
+  const { data: sourceAppointmentsResponse, isLoading: sourceAppointmentsLoading } =
+    useAppointments({
+      currentPage: 1,
+      itemsPerPage: 200,
+      status: "attended",
+      customerId: "",
+      search: "",
+      dateFrom: "",
+      dateTo: "",
+    });
   const createMutation = useCreateEvent();
   const createFromSourceMutation = useCreateEventFromSource();
   const updateMutation = useUpdateEvent(id);
@@ -456,10 +412,19 @@ const EventFormPage = () => {
     resolver: zodResolver(schema) as any,
     defaultValues,
   });
+  const watchedSourceAppointmentId =
+    useWatch({ control: form.control, name: "sourceAppointmentId" })?.trim() ||
+    "";
   const watchedCustomerId =
     useWatch({ control: form.control, name: "customerId" })?.trim() || "";
   const watchedVenueId =
     useWatch({ control: form.control, name: "venueId" })?.trim() || "";
+  const selectedSourceAppointmentId =
+    !isEditMode && effectiveMode === "source"
+      ? watchedSourceAppointmentId || fromAppointmentId
+      : "";
+  const { data: sourceAppointment, isLoading: sourceAppointmentLoading } =
+    useAppointment(selectedSourceAppointmentId || undefined);
   const selectedCustomerId =
     (isEditMode
       ? watchedCustomerId || String(event?.customerId ?? "")
@@ -552,6 +517,47 @@ const EventFormPage = () => {
     sourceAppointment?.venue?.name,
     venuesResponse?.data,
   ]);
+  const sourceAppointmentOptions = useMemo(() => {
+    const base = (sourceAppointmentsResponse?.data ?? []).map((appointment) => ({
+      value: String(appointment.id),
+      label: [
+        appointment.customer?.fullName || `Appointment #${appointment.id}`,
+        appointment.weddingDate || appointment.appointmentDate,
+      ]
+        .filter(Boolean)
+        .join(" - "),
+    }));
+    const exists = base.some((item) => item.value === selectedSourceAppointmentId);
+
+    if (!selectedSourceAppointmentId || exists) {
+      return base;
+    }
+
+    if (sourceAppointment?.id) {
+      return [
+        {
+          value: String(sourceAppointment.id),
+          label: [
+            sourceAppointment.customer?.fullName ||
+              `Appointment #${sourceAppointment.id}`,
+            sourceAppointment.weddingDate || sourceAppointment.appointmentDate,
+          ]
+            .filter(Boolean)
+            .join(" - "),
+        },
+        ...base,
+      ];
+    }
+
+    return base;
+  }, [
+    selectedSourceAppointmentId,
+    sourceAppointment?.appointmentDate,
+    sourceAppointment?.customer?.fullName,
+    sourceAppointment?.id,
+    sourceAppointment?.weddingDate,
+    sourceAppointmentsResponse?.data,
+  ]);
 
   useEffect(() => {
     form.clearErrors();
@@ -578,12 +584,11 @@ const EventFormPage = () => {
         typeof event.guestCount === "number" ? String(event.guestCount) : "",
       title: event.title ?? "",
       notes: event.notes ?? "",
-      status: event.status,
     });
   }, [event, form, isEditMode]);
 
   useEffect(() => {
-    if (isEditMode || !sourceAppointment) {
+    if (isEditMode || effectiveMode !== "source" || !sourceAppointment) {
       return;
     }
 
@@ -605,11 +610,12 @@ const EventFormPage = () => {
           ? String(sourceAppointment.guestCount)
           : "",
     });
-  }, [form, isEditMode, sourceAppointment]);
+  }, [effectiveMode, form, isEditMode, sourceAppointment]);
 
   const isBusy =
     eventLoading ||
     sourceAppointmentLoading ||
+    sourceAppointmentsLoading ||
     customersLoading ||
     venuesLoading ||
     createMutation.isPending ||
@@ -627,8 +633,11 @@ const EventFormPage = () => {
 
     const payload: EventFormData = {
       ...values,
+      customerId: effectiveMode === "source" ? undefined : values.customerId,
       sourceAppointmentId:
-        values.sourceAppointmentId || fromAppointmentId || undefined,
+        effectiveMode === "source"
+          ? values.sourceAppointmentId || fromAppointmentId || undefined
+          : undefined,
       venueNameSnapshot:
         values.venueNameSnapshot.trim() || selectedVenueOption?.label || "",
     };
@@ -638,7 +647,7 @@ const EventFormPage = () => {
       return;
     }
 
-    if (effectiveMode === "source" && payload.sourceAppointmentId) {
+    if (effectiveMode === "source") {
       createFromSourceMutation.mutate(payload);
       return;
     }
@@ -649,6 +658,7 @@ const EventFormPage = () => {
   if (
     eventLoading ||
     sourceAppointmentLoading ||
+    sourceAppointmentsLoading ||
     customersLoading ||
     venuesLoading
   ) {
@@ -724,9 +734,9 @@ const EventFormPage = () => {
                     title={t("events.createMode", {
                       defaultValue: "Creation Flow",
                     })}
-                    hint={t("events.createModeHint", {
+                    hint={t("events.createModeHintAppointment", {
                       defaultValue:
-                        "Choose whether this event starts as a manual record or from an existing customer.",
+                        "Choose whether this event starts as a manual record or from a source appointment.",
                     })}
                   />
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -740,7 +750,10 @@ const EventFormPage = () => {
                         defaultValue:
                           "Enter the event information directly and choose linked records when needed.",
                       })}
-                      onClick={() => setMode("manual")}
+                      onClick={() => {
+                        form.setValue("sourceAppointmentId", "");
+                        setMode("manual");
+                      }}
                     />
                     <ModeButton
                       active={mode === "source"}
@@ -748,9 +761,9 @@ const EventFormPage = () => {
                       title={t("events.createFromSource", {
                         defaultValue: "Create From Source",
                       })}
-                      hint={t("events.createFromSourceHint", {
+                      hint={t("events.createFromSourceHintAppointment", {
                         defaultValue:
-                          "Start from an existing customer and inherit the source context.",
+                          "Start from an attended appointment and inherit its source context.",
                       })}
                       onClick={() => setMode("source")}
                     />
@@ -797,12 +810,45 @@ const EventFormPage = () => {
                       title={t("events.linkedRecords", {
                         defaultValue: "Linked Records",
                       })}
-                      hint={t("events.linkedRecordsHint", {
-                        defaultValue:
-                          "Link the event to a customer when available.",
-                      })}
+                      hint={
+                        effectiveMode === "source" && !isEditMode
+                          ? t("events.linkedRecordsHintAppointment", {
+                              defaultValue:
+                                "Select the attended appointment that this event should be created from.",
+                            })
+                          : t("events.linkedRecordsHint", {
+                              defaultValue:
+                                "Link the event to a customer when available.",
+                            })
+                      }
                     />
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {effectiveMode === "source" && !isEditMode ? (
+                        <SearchableSelectField
+                          control={form.control}
+                          name="sourceAppointmentId"
+                          label={t("events.sourceAppointment", {
+                            defaultValue: "Source Appointment",
+                          })}
+                          placeholder={t("events.selectSourceAppointment", {
+                            defaultValue: "Select source appointment",
+                          })}
+                          searchPlaceholder={t("events.searchSourceAppointments", {
+                            defaultValue: "Search attended appointments...",
+                          })}
+                          emptyMessage={t("common.noResultsTitle", {
+                            defaultValue: isArabic
+                              ? "Ã™â€žÃ˜Â§ Ã˜ÂªÃ™Ë†Ã˜Â¬Ã˜Â¯ Ã™â€ Ã˜ÂªÃ˜Â§Ã˜Â¦Ã˜Â¬"
+                              : "No results found",
+                          })}
+                          emptyLabel={t("events.noSourceAppointmentSelected", {
+                            defaultValue: "No source appointment selected",
+                          })}
+                          options={sourceAppointmentOptions}
+                          required
+                        />
+                      ) : null}
+                      {effectiveMode !== "source" || isEditMode ? (
                       <SearchableSelectField
                         control={form.control}
                         name="customerId"
@@ -828,6 +874,7 @@ const EventFormPage = () => {
                         options={customerOptions}
                         required={!isEditMode}
                       />
+                      ) : null}
                     </div>
                   </section>
 
@@ -836,12 +883,17 @@ const EventFormPage = () => {
                       title={t("events.generalInfo", {
                         defaultValue: "General Info",
                       })}
-                      hint={t("events.generalInfoHint", {
-                        defaultValue:
-                          effectiveMode === "source" && !isEditMode
-                            ? "Add any optional overrides before creating the event from the selected source."
-                            : "Capture the main event details, party names, venue, and planning status.",
-                      })}
+                      hint={
+                        effectiveMode === "source" && !isEditMode
+                          ? t("events.generalInfoHintAppointment", {
+                              defaultValue:
+                                "Add any optional overrides before creating the event from the selected appointment.",
+                            })
+                          : t("events.generalInfoHint", {
+                              defaultValue:
+                                "Capture the main event details, party names, and venue context.",
+                            })
+                      }
                     />
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <TextField
@@ -937,27 +989,7 @@ const EventFormPage = () => {
                           })}
                         />
                       ) : null}
-                      {effectiveMode !== "source" && !isEditMode ? (
-                        <SelectField
-                          control={form.control}
-                          name="status"
-                          label={t("events.statusLabel", {
-                            defaultValue: "Status",
-                          })}
-                          placeholder={t("events.selectStatus", {
-                            defaultValue: "Select status",
-                          })}
-                          emptyLabel={t("events.useDefaultStatus", {
-                            defaultValue: "Use default status",
-                          })}
-                          options={EVENT_STATUS_OPTIONS.map((item) => ({
-                            value: item.value,
-                            label: t(`events.status.${item.value}`, {
-                              defaultValue: item.label,
-                            }),
-                          }))}
-                        />
-                      ) : isEditMode ? (
+                      {isEditMode ? (
                         <FormFeedbackBanner
                           title={t("events.statusManagedByWorkflow", {
                             defaultValue: "Status managed by workflow",
