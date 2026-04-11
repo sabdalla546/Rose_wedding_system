@@ -32,7 +32,7 @@ export function ReportsSectionBar() {
 
   return (
     <section
-      className="flex h-[40px] border-b"
+      className="flex h-[56px] border-b"
       style={{
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
@@ -58,7 +58,7 @@ export function ReportsSectionBar() {
             const isActive = item.href === activeHref;
 
             const sharedClassName = cn(
-              "inline-flex h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border px-3 text-[12px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-2.5",
+              "inline-flex h-[56px] shrink-0 items-center justify-center gap-2 whitespace-nowrap border px-4 text-[13px] font-semibold transition-colors duration-200 md:min-w-0 md:flex-1 md:px-3",
               "rounded-none",
               isActive ? "text-white" : "text-[var(--lux-shell-chrome-text)]",
             );
@@ -81,7 +81,7 @@ export function ReportsSectionBar() {
                     }}
                     type="button"
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="h-[18px] w-[18px] shrink-0" />
                     <span className="truncate">{label}</span>
                   </button>
                 }
@@ -100,7 +100,7 @@ export function ReportsSectionBar() {
                   }}
                   to={item.href}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
                   <span className="truncate">{label}</span>
                 </NavLink>
               </ProtectedComponent>

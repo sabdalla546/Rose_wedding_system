@@ -1,7 +1,12 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
-import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
+import {
+  useForm,
+  useWatch,
+  type Resolver,
+  type SubmitHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -46,11 +51,31 @@ import {
 import { useAppointment } from "@/hooks/appointments/useAppointments";
 import { useCustomer, useCustomers } from "@/hooks/customers/useCustomers";
 import { useVenues } from "@/hooks/venues/useVenues";
+import {
+  CUSTOMER_SOURCE_OPTIONS,
+  CUSTOMER_SOURCE_VALUES,
+} from "@/pages/customers/adapters";
+import type { CustomerSource } from "@/pages/customers/types";
 
 import { APPOINTMENT_TYPE_OPTIONS } from "./adapters";
 import type { AppointmentFormData, AppointmentType } from "./types";
 
 type AppointmentMode = "existing" | "new";
+const EMPTY_VALUE = "__empty__";
+const EMPTY_SOURCE_VALUE = "__empty_source__";
+
+const optionalTrimmedString = (max: number) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed === "" ? "" : trimmed;
+    },
+    z.union([z.literal(""), z.string().max(max)]),
+  );
 
 const buildAppointmentSchema = (
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -83,7 +108,12 @@ const buildAppointmentSchema = (
             }),
           ),
       ]),
-      customerAddress: z.string().max(255).optional(),
+      customerAddress: optionalTrimmedString(255).optional(),
+      customerSource: z.union([
+        z.literal(""),
+        z.enum(CUSTOMER_SOURCE_VALUES as [CustomerSource, ...CustomerSource[]]),
+      ]),
+      customerSourceDetails: optionalTrimmedString(255).optional(),
       customerNotes: z.string().optional(),
       appointmentDate: z.string().min(
         1,
@@ -168,11 +198,19 @@ const buildAppointmentSchema = (
           }),
         });
       }
+
+      if (!values.customerSource) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["customerSource"],
+          message: t("customers.validation.sourceRequired", {
+            defaultValue: "Please select how the customer heard about you",
+          }),
+        });
+      }
     });
 
 type AppointmentFormValues = z.infer<ReturnType<typeof buildAppointmentSchema>>;
-
-const EMPTY_VALUE = "__empty__";
 
 const AppointmentFormPage = () => {
   const { t, i18n } = useTranslation();
@@ -210,7 +248,7 @@ const AppointmentFormPage = () => {
   const preselectedAppointmentDate = searchParams.get("date") || "";
 
   const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
+    resolver: zodResolver(appointmentSchema) as Resolver<AppointmentFormValues>,
     defaultValues: {
       customerId: preselectedCustomerId,
       customerFullName: "",
@@ -219,6 +257,8 @@ const AppointmentFormPage = () => {
       customerEmail: "",
       customerNationalId: "",
       customerAddress: "",
+      customerSource: "",
+      customerSourceDetails: "",
       customerNotes: "",
       appointmentDate: preselectedAppointmentDate,
       weddingDate: "",
@@ -357,6 +397,8 @@ const AppointmentFormPage = () => {
       customerEmail: "",
       customerNationalId: "",
       customerAddress: "",
+      customerSource: "",
+      customerSourceDetails: "",
       customerNotes: "",
       appointmentDate: appointment.appointmentDate,
       weddingDate: appointment.weddingDate ?? "",
@@ -403,6 +445,8 @@ const AppointmentFormPage = () => {
         email: values.customerEmail,
         nationalId: values.customerNationalId,
         address: values.customerAddress,
+        source: values.customerSource || null,
+        sourceDetails: values.customerSourceDetails || null,
         notes: values.customerNotes,
       },
       appointment: {
@@ -758,6 +802,79 @@ const AppointmentFormPage = () => {
                                     "customers.addressPlaceholder",
                                     {
                                       defaultValue: "Enter customer address",
+                                    },
+                                  )}
+                                />
+                              </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                        <FormField
+                          control={form.control}
+                          name="customerSource"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.source", {
+                                  defaultValue: "How did you hear about us?",
+                                })}
+                              </FormLabel>
+                              <Select
+                                value={field.value || EMPTY_SOURCE_VALUE}
+                                onValueChange={(value) =>
+                                  field.onChange(
+                                    value === EMPTY_SOURCE_VALUE ? "" : value,
+                                  )
+                                }
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="rounded-[4px]">
+                                    <SelectValue
+                                      placeholder={t("customers.selectSource", {
+                                        defaultValue: "Select source",
+                                      })}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value={EMPTY_SOURCE_VALUE}>
+                                    {t("customers.selectSource", {
+                                      defaultValue: "Select source",
+                                    })}
+                                  </SelectItem>
+                                  {CUSTOMER_SOURCE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {i18n.language === "ar"
+                                        ? option.labelAr
+                                        : option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="customerSourceDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t("customers.sourceDetails", {
+                                  defaultValue: "Source details",
+                                })}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  className="rounded-[4px]"
+                                  placeholder={t(
+                                    "customers.sourceDetailsPlaceholder",
+                                    {
+                                      defaultValue:
+                                        "Add referral name, campaign, branch, or other context",
                                     },
                                   )}
                                 />

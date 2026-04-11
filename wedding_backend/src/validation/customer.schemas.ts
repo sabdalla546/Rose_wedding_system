@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { CUSTOMER_SOURCE_VALUES } from "../constants/customer-source";
 
 export const customerStatusEnum = z.enum(["active", "inactive"]);
+export const customerSourceEnum = z.enum(CUSTOMER_SOURCE_VALUES);
 
 const normalizeOptionalNullableString = (value: unknown) => {
   if (typeof value !== "string") {
@@ -21,6 +23,11 @@ const optionalNullableEmail = z.preprocess(
   z.string().email().nullable().optional(),
 );
 
+export const optionalNullableCustomerSource = z.preprocess(
+  normalizeOptionalNullableString,
+  customerSourceEnum.nullable().optional(),
+);
+
 export const optionalNullableNationalId = z.preprocess(
   normalizeOptionalNullableString,
   z
@@ -35,6 +42,11 @@ export const optionalNullableAddress = z.preprocess(
   z.string().max(255).nullable().optional(),
 );
 
+export const optionalNullableSourceDetails = z.preprocess(
+  normalizeOptionalNullableString,
+  z.string().max(255).nullable().optional(),
+);
+
 export const createCustomerSchema = z.object({
   fullName: z.string().trim().min(2).max(150),
   mobile: z.string().trim().min(3).max(30),
@@ -42,6 +54,8 @@ export const createCustomerSchema = z.object({
   email: optionalNullableEmail,
   nationalId: optionalNullableNationalId,
   address: optionalNullableAddress,
+  source: optionalNullableCustomerSource,
+  sourceDetails: optionalNullableSourceDetails,
   notes: z.string().optional().nullable(),
   status: customerStatusEnum.optional(),
 });
@@ -53,6 +67,8 @@ export const updateCustomerSchema = z.object({
   email: optionalNullableEmail,
   nationalId: optionalNullableNationalId,
   address: optionalNullableAddress,
+  source: optionalNullableCustomerSource,
+  sourceDetails: optionalNullableSourceDetails,
   notes: z.string().optional().nullable(),
   status: customerStatusEnum.optional(),
 });
@@ -67,6 +83,8 @@ export const convertLeadToCustomerRealSchema = z.object({
       email: optionalNullableEmail,
       nationalId: optionalNullableNationalId,
       address: optionalNullableAddress,
+      source: optionalNullableCustomerSource,
+      sourceDetails: optionalNullableSourceDetails,
       notes: z.string().optional().nullable(),
       status: customerStatusEnum.optional(),
     })

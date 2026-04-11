@@ -36,8 +36,12 @@ import {
 } from "@/hooks/customers/useCustomerMutations";
 import { useCustomer } from "@/hooks/customers/useCustomers";
 
-import { CUSTOMER_STATUS_OPTIONS } from "./adapters";
-import type { CustomerFormData, CustomerStatus } from "./types";
+import {
+  CUSTOMER_SOURCE_OPTIONS,
+  CUSTOMER_SOURCE_VALUES,
+  CUSTOMER_STATUS_OPTIONS,
+} from "./adapters";
+import type { CustomerFormData, CustomerSource, CustomerStatus } from "./types";
 
 const optionalTrimmedString = (max: number) =>
   z.preprocess(
@@ -52,63 +56,83 @@ const optionalTrimmedString = (max: number) =>
     z.union([z.literal(""), z.string().max(max)]),
   );
 
+const EMPTY_SOURCE_VALUE = "__empty_source__";
+
 const buildCustomerSchema = (
   t: (key: string, options?: Record<string, unknown>) => string,
+  isEditMode: boolean,
 ) =>
-  z.object({
-    fullName: z
-      .string()
-      .trim()
-      .min(
-        2,
-        t("customers.validation.fullNameRequired", {
-          defaultValue: "Full name is required",
-        }),
-      )
-      .max(150),
-    mobile: z
-      .string()
-      .trim()
-      .min(
-        3,
-        t("customers.validation.mobileRequired", {
-          defaultValue: "Primary mobile is required",
-        }),
-      )
-      .max(30),
-    mobile2: optionalTrimmedString(30).optional(),
-    email: z.union([
-      z.literal(""),
-      z
+  z
+    .object({
+      fullName: z
         .string()
         .trim()
-        .email(
-          t("customers.validation.emailInvalid", {
-            defaultValue: "Invalid email address",
+        .min(
+          2,
+          t("customers.validation.fullNameRequired", {
+            defaultValue: "Full name is required",
           }),
-        ),
-    ]),
-    nationalId: z.union([
-      z.literal(""),
-      z
+        )
+        .max(150),
+      mobile: z
         .string()
         .trim()
-        .regex(
-          /^\d{12}$/,
-          t("customers.validation.nationalIdInvalid", {
-            defaultValue: "National ID must be exactly 12 digits",
+        .min(
+          3,
+          t("customers.validation.mobileRequired", {
+            defaultValue: "Primary mobile is required",
           }),
-        ),
-    ]),
-    address: optionalTrimmedString(255).optional(),
-    notes: z.string().optional(),
-    status: z.enum(
-      CUSTOMER_STATUS_OPTIONS.map((status) => status.value) as [
-        CustomerStatus,
-        ...CustomerStatus[],
-      ],
-    ),
-  });
+        )
+        .max(30),
+      mobile2: optionalTrimmedString(30).optional(),
+      email: z.union([
+        z.literal(""),
+        z
+          .string()
+          .trim()
+          .email(
+            t("customers.validation.emailInvalid", {
+              defaultValue: "Invalid email address",
+            }),
+          ),
+      ]),
+      nationalId: z.union([
+        z.literal(""),
+        z
+          .string()
+          .trim()
+          .regex(
+            /^\d{12}$/,
+            t("customers.validation.nationalIdInvalid", {
+              defaultValue: "National ID must be exactly 12 digits",
+            }),
+          ),
+      ]),
+      address: optionalTrimmedString(255).optional(),
+      source: z.union([
+        z.literal(""),
+        z.enum(CUSTOMER_SOURCE_VALUES as [CustomerSource, ...CustomerSource[]]),
+      ]),
+      sourceDetails: optionalTrimmedString(255).optional(),
+      notes: z.string().optional(),
+      status: z.enum(
+        CUSTOMER_STATUS_OPTIONS.map((status) => status.value) as [
+          CustomerStatus,
+          ...CustomerStatus[],
+        ],
+      ),
+    })
+    .superRefine((values, ctx) => {
+      if (!isEditMode && !values.source) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["source"],
+          message: t("customers.validation.sourceRequired", {
+            defaultValue: "Please select how the customer heard about you",
+          }),
+        });
+      }
+    });
 
 type CustomerFormValues = z.infer<ReturnType<typeof buildCustomerSchema>>;
 
@@ -121,7 +145,10 @@ const CustomerFormPage = () => {
   const { data: customer, isLoading } = useCustomer(id);
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer(id);
-  const customerSchema = useMemo(() => buildCustomerSchema(t), [t]);
+  const customerSchema = useMemo(
+    () => buildCustomerSchema(t, isEditMode),
+    [t, isEditMode],
+  );
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema) as Resolver<CustomerFormValues>,
@@ -132,6 +159,8 @@ const CustomerFormPage = () => {
       email: "",
       nationalId: "",
       address: "",
+      source: "",
+      sourceDetails: "",
       notes: "",
       status: "active",
     },
@@ -149,13 +178,26 @@ const CustomerFormPage = () => {
       email: customer.email ?? "",
       nationalId: customer.nationalId ?? "",
       address: customer.address ?? "",
+      source: customer.source ?? "",
+      sourceDetails: customer.sourceDetails ?? "",
       notes: customer.notes ?? "",
       status: customer.status,
     });
   }, [customer, form, isEditMode]);
 
   const onSubmit: SubmitHandler<CustomerFormValues> = (values) => {
-    const payload: CustomerFormData = values;
+    const payload: CustomerFormData = {
+      fullName: values.fullName,
+      mobile: values.mobile,
+      mobile2: values.mobile2,
+      email: values.email,
+      nationalId: values.nationalId,
+      address: values.address,
+      source: values.source || null,
+      sourceDetails: values.sourceDetails || null,
+      notes: values.notes || null,
+      status: values.status,
+    };
 
     if (isEditMode) {
       updateMutation.mutate(payload);
@@ -327,6 +369,53 @@ const CustomerFormPage = () => {
 
                       <FormField
                         control={form.control}
+                        name="source"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("customers.source", {
+                                defaultValue: "How did you hear about us?",
+                              })}
+                            </FormLabel>
+                            <Select
+                              value={field.value || EMPTY_SOURCE_VALUE}
+                              onValueChange={(value) =>
+                                field.onChange(
+                                  value === EMPTY_SOURCE_VALUE ? "" : value,
+                                )
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t("customers.selectSource", {
+                                      defaultValue: "Select source",
+                                    })}
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value={EMPTY_SOURCE_VALUE}>
+                                  {t("customers.selectSource", {
+                                    defaultValue: "Select source",
+                                  })}
+                                </SelectItem>
+                                {CUSTOMER_SOURCE_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {i18n.language === "ar"
+                                      ? option.labelAr
+                                      : option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="status"
                         render={({ field }) => (
                           <FormItem>
@@ -370,6 +459,30 @@ const CustomerFormPage = () => {
                               {...field}
                               placeholder={t("customers.addressPlaceholder", {
                                 defaultValue: "Enter customer address",
+                              })}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="sourceDetails"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("customers.sourceDetails", {
+                              defaultValue: "Source details",
+                            })}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder={t("customers.sourceDetailsPlaceholder", {
+                                defaultValue:
+                                  "Add referral name, campaign, branch, or other context",
                               })}
                             />
                           </FormControl>

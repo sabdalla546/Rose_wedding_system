@@ -44,6 +44,14 @@ export type AppCalendarHandle = {
   updateSize: () => void;
 };
 
+export type AppCalendarDayMarker = {
+  date: string;
+  label?: string;
+  appointmentId: string;
+  customerName?: string;
+  raw?: unknown;
+};
+
 type AppCalendarProps = {
   events: AppCalendarEvent[];
   initialView?: AppCalendarView;
@@ -61,6 +69,8 @@ type AppCalendarProps = {
   className?: string;
   hideToolbar?: boolean;
   variant?: "default" | "event" | "appointment";
+  dayMarkers?: AppCalendarDayMarker[];
+  onDayMarkerSelect?: (marker: AppCalendarDayMarker) => void;
 };
 
 type CalendarExtendedProps = Omit<
@@ -120,12 +130,25 @@ function toEventInputs(events: AppCalendarEvent[]): EventInput[] {
       statusLabel: event.statusLabel,
       typeLabel: event.typeLabel,
       subtitle: event.subtitle,
+      secondaryMeta: event.secondaryMeta,
       description: event.description,
       location: event.location,
       badgeLabel: event.badgeLabel,
       raw: event.raw,
     } satisfies CalendarExtendedProps,
   }));
+}
+
+function normalizeDateKey(value: Date | string) {
+  if (typeof value === "string") {
+    return value.slice(0, 10);
+  }
+
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function renderEventContent(
@@ -164,6 +187,11 @@ function renderEventContent(
       <div className="app-calendar-event__title">{content.event.title}</div>
       {extendedProps.subtitle ? (
         <div className="app-calendar-event__meta">{extendedProps.subtitle}</div>
+      ) : null}
+      {showAppointmentDetails && extendedProps.secondaryMeta ? (
+        <div className="app-calendar-event__meta">
+          {extendedProps.secondaryMeta}
+        </div>
       ) : null}
       {showAppointmentDetails && extendedProps.description ? (
         <div className="app-calendar-event__description">
@@ -238,15 +266,31 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
       className,
       hideToolbar = false,
       variant = "default",
+      dayMarkers = [],
+      onDayMarkerSelect,
     },
     ref,
   ) {
     const calendarRef = useRef<FullCalendar | null>(null);
+    const suppressNextDateClickRef = useRef(false);
     const [currentView, setCurrentView] =
       useState<AppCalendarView>(initialView);
     const [currentTitle, setCurrentTitle] = useState("");
 
     const eventInputs = useMemo(() => toEventInputs(events), [events]);
+
+    const dayMarkersMap = useMemo(() => {
+      const map = new Map<string, AppCalendarDayMarker[]>();
+
+      for (const marker of dayMarkers) {
+        const key = normalizeDateKey(marker.date);
+        const current = map.get(key) ?? [];
+        current.push(marker);
+        map.set(key, current);
+      }
+
+      return map;
+    }, [dayMarkers]);
 
     useEffect(() => {
       const api = calendarRef.current?.getApi();
@@ -300,6 +344,7 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
         statusLabel: extendedProps.statusLabel,
         typeLabel: extendedProps.typeLabel,
         subtitle: extendedProps.subtitle,
+        secondaryMeta: extendedProps.secondaryMeta,
         description: extendedProps.description,
         location: extendedProps.location,
         raw: extendedProps.raw,
@@ -311,6 +356,11 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
     };
 
     const handleDateClick = (arg: DateClickArg) => {
+      if (suppressNextDateClickRef.current) {
+        suppressNextDateClickRef.current = false;
+        return;
+      }
+
       onDateSelect?.(arg.date);
     };
 
@@ -383,6 +433,44 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
                   eventContent={(content) =>
                     renderEventContent(content, variant)
                   }
+                  dayCellContent={(arg) => {
+                    const key = normalizeDateKey(arg.date);
+                    const markers = dayMarkersMap.get(key) ?? [];
+                    const firstMarker = markers[0] ?? null;
+                    const extraCount =
+                      markers.length > 1 ? markers.length - 1 : 0;
+
+                    return (
+                      <div className="app-calendar-day-cell">
+                        <div className="app-calendar-day-number">
+                          {arg.dayNumberText}
+                        </div>
+
+                        {firstMarker ? (
+                          <div className="app-calendar-day-markers">
+                            <button
+                              type="button"
+                              className="app-calendar-day-marker"
+                              title={
+                                extraCount > 0
+                                  ? `${firstMarker.customerName ?? ""} +${extraCount}`
+                                  : (firstMarker.customerName ?? "Wedding date")
+                              }
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                suppressNextDateClickRef.current = true;
+                                onDayMarkerSelect?.(firstMarker);
+                              }}
+                            >
+                              {firstMarker.label ?? "★"}
+                              {extraCount > 0 ? ` +${extraCount}` : ""}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }}
                   datesSet={handleDatesSet}
                   eventClick={handleEventClick}
                   dateClick={handleDateClick}
@@ -411,6 +499,43 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
             ) : null}
           </div>
         </div>
+
+        <style>{`
+          .app-calendar-day-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 100%;
+          }
+
+          .app-calendar-day-number {
+            font-weight: 600;
+          }
+
+          .app-calendar-day-markers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+          }
+
+          .app-calendar-day-marker {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            color: var(--lux-gold, var(--color-primary));
+            padding: 0;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+          }
+
+          .app-calendar-day-marker:hover {
+            transform: scale(1.08);
+          }
+        `}</style>
       </SectionCard>
     );
   },

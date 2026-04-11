@@ -74,7 +74,7 @@ const CustomersPage = () => {
           search={{
             placeholder: t("customers.searchPlaceholder", {
               defaultValue:
-                "Search customers by name, mobile, email, national ID, or address",
+                "Search customers by name, mobile, email, national ID, source, or address",
             }),
             value: searchQuery,
             onChange: (value) => {

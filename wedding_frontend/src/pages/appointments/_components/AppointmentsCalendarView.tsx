@@ -334,6 +334,7 @@ export function AppointmentsCalendarView({
   const {
     items,
     calendarEvents,
+    weddingDayMarkers,
     filters,
     setFilters,
     resetFilters,
@@ -691,6 +692,7 @@ export function AppointmentsCalendarView({
               className="operations-calendar-panel"
               locale={i18n.language === "ar" ? "ar" : "en"}
               events={calendarEvents}
+              dayMarkers={weddingDayMarkers}
               initialView="month"
               initialDate={
                 filters.dateFrom ? new Date(filters.dateFrom) : undefined
@@ -711,6 +713,10 @@ export function AppointmentsCalendarView({
               onRangeChange={setCalendarRange}
               onEventSelect={(event) => {
                 setSelectedAppointmentId(event.id);
+                setDetailsDialogOpen(true);
+              }}
+              onDayMarkerSelect={(marker) => {
+                setSelectedAppointmentId(marker.appointmentId);
                 setDetailsDialogOpen(true);
               }}
               onDateSelect={(date) =>
@@ -863,13 +869,13 @@ export function AppointmentsCalendarView({
           rescheduleAppointment.mutateReschedule(
             {
               id: rescheduleCandidate.id,
-                values: {
-                  appointmentDate: rescheduleDate,
-                  startTime: rescheduleStartTime,
-                  endTime: rescheduleEndTime.trim(),
-                  notes: rescheduleNotes,
-                },
+              values: {
+                appointmentDate: rescheduleDate,
+                startTime: rescheduleStartTime,
+                endTime: rescheduleEndTime.trim(),
+                notes: rescheduleNotes,
               },
+            },
             {
               onSuccess: () => {
                 setRescheduleCandidate(null);

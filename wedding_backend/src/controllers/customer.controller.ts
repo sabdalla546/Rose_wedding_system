@@ -24,6 +24,8 @@ export const createCustomer = async (req: AuthRequest, res: Response) => {
       email: data.email?.trim() || null,
       nationalId: data.nationalId?.trim() || null,
       address: data.address?.trim() || null,
+      source: data.source ?? null,
+      sourceDetails: data.sourceDetails ?? null,
       notes: data.notes ?? null,
       status: data.status ?? "active",
       createdBy: req.user?.id ?? null,
@@ -57,14 +59,17 @@ export const getCustomers = async (req: Request, res: Response) => {
   const where: any = {};
 
   if (search) {
+    const like = `%${search}%`;
     where[Op.or] = [
-      { fullName: { [Op.like]: `%${search}%` } },
-      { mobile: { [Op.like]: `%${search}%` } },
-      { mobile2: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } },
-      { nationalId: { [Op.like]: `%${search}%` } },
-      { address: { [Op.like]: `%${search}%` } },
-      { notes: { [Op.like]: `%${search}%` } },
+      { fullName: { [Op.like]: like } },
+      { mobile: { [Op.like]: like } },
+      { mobile2: { [Op.like]: like } },
+      { email: { [Op.like]: like } },
+      { nationalId: { [Op.like]: like } },
+      { address: { [Op.like]: like } },
+      { source: { [Op.like]: like } },
+      { sourceDetails: { [Op.like]: like } },
+      { notes: { [Op.like]: like } },
     ];
   }
 
@@ -149,6 +154,11 @@ export const updateCustomer = async (req: AuthRequest, res: Response) => {
         typeof data.address !== "undefined"
           ? data.address?.trim() || null
           : customer.address,
+      source: typeof data.source !== "undefined" ? data.source : customer.source,
+      sourceDetails:
+        typeof data.sourceDetails !== "undefined"
+          ? data.sourceDetails?.trim() || null
+          : customer.sourceDetails,
       notes: typeof data.notes !== "undefined" ? data.notes : customer.notes,
       status: data.status ?? customer.status,
       updatedBy: req.user?.id ?? null,

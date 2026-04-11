@@ -116,6 +116,12 @@ export const baseAr = {
       events: "الحفلات",
       appointmentsCalendar: "حجز المواعيد",
       eventsCalendar: "حجز الحفلات",
+      revenueOverview: "نظرة عامة على الإيرادات",
+      bookingAnalytics: "تحليلات الحجوزات",
+      resourceUtilization: "استخدام الموارد",
+      teamRoles: "أدوار الفريق",
+      users: "المستخدمون",
+      roles: "الأدوار",
       allEvents: "كل الحفلات",
       allCustomers: "كل العملاء",
       venues: "الصالات",
@@ -787,7 +793,7 @@ export const baseAr = {
     title: "العملاء",
     totalCustomers: "إجمالي العملاء",
     searchPlaceholder:
-      "ابحث بالاسم أو الجوال أو البريد أو الرقم المدني أو العنوان...",
+      "ابحث بالاسم أو الجوال أو البريد أو الرقم المدني أو المصدر أو العنوان...",
     create: "إضافة عميل",
     createTitle: "إضافة عميل",
     editTitle: "تعديل العميل",
@@ -810,6 +816,11 @@ export const baseAr = {
     nationalIdPlaceholder: "أدخل رقماً مدنياً من 12 رقماً",
     address: "العنوان",
     addressPlaceholder: "أدخل عنوان العميل",
+    source: "كيف تعرف علينا العميل",
+    selectSource: "اختر المصدر",
+    sourceDetails: "تفاصيل المصدر",
+    sourceDetailsPlaceholder:
+      "أضف اسم المُحيل أو الحملة أو الفرع أو أي تفاصيل إضافية",
     eventDetails: "تفاصيل المناسبة",
     eventProfile: "ملف المناسبة",
     eventProfileHint: "تاريخ الزفاف والصالة وعدد الضيوف.",
@@ -856,6 +867,7 @@ export const baseAr = {
       mobileRequired: "رقم الجوال الأساسي مطلوب",
       emailInvalid: "البريد الإلكتروني غير صحيح",
       nationalIdInvalid: "يجب أن يكون الرقم المدني 12 رقماً بالضبط",
+      sourceRequired: "يرجى اختيار كيف تعرف علينا العميل",
     },
     status: {
       active: "نشط",
@@ -2094,6 +2106,8 @@ export const baseAr = {
       errorTitle: "تعذر تحميل تقويم المواعيد",
       errorDescription:
         "لم يمكن تحميل جدول المواعيد حالياً. حاول مرة أخرى لتحديث النطاق المعروض.",
+      attendDescription:
+        "سجل حضور هذا الموعد وأضف ملاحظة اختيارية قبل تحويله إلى سير عمل الحفل.",
       rescheduleDescription: "حدّث التاريخ والوقت وأي ملاحظة مرتبطة بالموعد.",
       cancelDescription:
         "أضف سبب الإلغاء وأي ملاحظة يجب الاحتفاظ بها مع الموعد.",
@@ -2239,6 +2253,7 @@ export const baseAr = {
     },
     cancel: "إلغاء",
     cancelReasonPlaceholder: "أدخل سبب الإلغاء",
+    attendTitle: "تسجيل الحضور",
     rescheduleTitle: "إعادة جدولة الموعد",
     rescheduleDescription: "حدّث توقيت الموعد وأي تعليمات متابعة مرتبطة به.",
     reschedule: "إعادة الجدولة",

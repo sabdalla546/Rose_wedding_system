@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { APPOINTMENT_STATUSES } from "../constants/workflow-statuses";
+import {
+  optionalNullableCustomerSource,
+  optionalNullableSourceDetails,
+} from "./customer.schemas";
 
 export const appointmentStatusEnum = z.enum(APPOINTMENT_STATUSES);
 
@@ -116,6 +120,8 @@ const appointmentCustomerPayloadSchema = z.object({
   email: optionalNullableEmail,
   nationalId: optionalNullableNationalId,
   address: optionalNullableAddress,
+  source: optionalNullableCustomerSource,
+  sourceDetails: optionalNullableSourceDetails,
   notes: z.string().optional().nullable(),
 });
 

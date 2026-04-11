@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { AppCalendarRange } from "@/components/calendar/types";
 import {
@@ -28,8 +29,10 @@ export function getInitialAppointmentCalendarFilters(): AppointmentCalendarFilte
 }
 
 export function useAppointmentsCalendarView() {
-  const [filters, setFilters] =
-    useState<AppointmentCalendarFilters>(getInitialAppointmentCalendarFilters);
+  const { t } = useTranslation();
+  const [filters, setFilters] = useState<AppointmentCalendarFilters>(
+    getInitialAppointmentCalendarFilters,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [calendarRange, setCalendarRange] = useState<AppCalendarRange>(
     getInitialCalendarRange,
@@ -68,14 +71,25 @@ export function useAppointmentsCalendarView() {
 
   const items = useMemo(() => {
     return query.data ?? [];
-  }, [
-    query.data,
-  ]);
+  }, [query.data]);
 
   const calendarEvents = useMemo(
-    () => items.map(appointmentToAppCalendarEvent),
-    [items],
+    () =>
+      items.map((appointment) => appointmentToAppCalendarEvent(appointment, t)),
+    [items, t],
   );
+
+  const weddingDayMarkers = useMemo(() => {
+    return items
+      .filter((item) => Boolean(item.weddingDate))
+      .map((item) => ({
+        date: String(item.weddingDate),
+        appointmentId: String(item.id),
+        customerName: item.customer?.fullName ?? "",
+        label: "★",
+        raw: item,
+      }));
+  }, [items]);
 
   const activeFiltersCount = useMemo(
     () =>
@@ -92,6 +106,7 @@ export function useAppointmentsCalendarView() {
   return {
     items,
     calendarEvents,
+    weddingDayMarkers,
     filters,
     setFilters,
     resetFilters: () => setFilters(getInitialAppointmentCalendarFilters()),

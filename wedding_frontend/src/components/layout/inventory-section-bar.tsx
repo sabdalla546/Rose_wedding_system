@@ -32,14 +32,14 @@ export function InventorySectionBar() {
 
   return (
     <section
-      className="flex h-[40px] overflow-hidden"
+      className="flex h-[52px] overflow-hidden"
       style={{
         background: "var(--lux-shell-chrome-surface)",
         borderColor: "var(--lux-shell-border)",
       }}
     >
       <div
-        className="subtle-scrollbar flex w-full items-center overflow-x-auto overflow-y-hidden px-2 py-1 md:justify-center md:px-3"
+        className="subtle-scrollbar flex w-full items-center overflow-x-auto overflow-y-hidden px-2 py-1.5 md:justify-center md:px-3"
         dir={isRtl ? "rtl" : "ltr"}
       >
         <div
@@ -69,7 +69,7 @@ export function InventorySectionBar() {
             const isActive = item.href === activeHref;
 
             const sharedClassName = cn(
-              "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-[12px] font-semibold transition-all duration-200",
+              "inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-5 text-[13px] font-semibold transition-all duration-200",
               isActive
                 ? "text-[var(--lux-shell-bg)]"
                 : "text-[var(--lux-shell-chrome-text)] hover:text-white",
@@ -95,7 +95,7 @@ export function InventorySectionBar() {
                     }}
                     type="button"
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="h-[18px] w-[18px] shrink-0" />
                     <span className="truncate">{label}</span>
                   </button>
                 }
@@ -113,7 +113,7 @@ export function InventorySectionBar() {
                   }}
                   to={item.href}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
                   <span className="truncate">{label}</span>
                 </NavLink>
               </ProtectedComponent>

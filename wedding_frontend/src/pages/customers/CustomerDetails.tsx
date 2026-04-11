@@ -6,6 +6,7 @@ import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCustomer } from "@/hooks/customers/useCustomers";
+import { getCustomerSourceLabel } from "./adapters";
 import { CustomerStatusBadge } from "./_components/customerStatusBadge";
 
 function DetailItem({
@@ -136,6 +137,12 @@ const CustomerDetailsPage = () => {
                 value={customer.nationalId}
               />
               <DetailItem
+                label={t("customers.source", {
+                  defaultValue: "How did you hear about us?",
+                })}
+                value={getCustomerSourceLabel(customer.source, i18n.language)}
+              />
+              <DetailItem
                 label={t("customers.statusLabel", { defaultValue: "Status" })}
                 value={t(`customers.status.${customer.status}`, {
                   defaultValue: customer.status,
@@ -145,6 +152,16 @@ const CustomerDetailsPage = () => {
                 label={t("customers.createdBy", { defaultValue: "Created By" })}
                 value={customer.createdByUser?.fullName}
               />
+              {customer.sourceDetails ? (
+                <div className="md:col-span-2">
+                  <DetailItem
+                    label={t("customers.sourceDetails", {
+                      defaultValue: "Source details",
+                    })}
+                    value={customer.sourceDetails}
+                  />
+                </div>
+              ) : null}
               <div className="md:col-span-2">
                 <DetailItem
                   label={t("customers.address", { defaultValue: "Address" })}

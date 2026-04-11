@@ -28,6 +28,7 @@ export const APPOINTMENT_ACCENTS: Record<
 
 export function appointmentToAppCalendarEvent(
   appointment: Appointment,
+  t: TFunction,
 ): AppCalendarEvent {
   const normalizedStatus = normalizeAppointmentStatus(appointment.status);
   const customerName =
@@ -35,6 +36,11 @@ export function appointmentToAppCalendarEvent(
   const start = `${appointment.appointmentDate}T${appointment.startTime}:00`;
   const end = appointment.endTime
     ? `${appointment.appointmentDate}T${appointment.endTime}:00`
+    : undefined;
+  const weddingDateLabel = appointment.weddingDate
+    ? `${t("appointments.weddingDate", {
+        defaultValue: "Wedding Date",
+      })}: ${formatDateLabel(new Date(`${appointment.weddingDate}T00:00:00`))}`
     : undefined;
 
   return {
@@ -44,9 +50,12 @@ export function appointmentToAppCalendarEvent(
     end,
     allDay: false,
     accent: APPOINTMENT_ACCENTS[normalizedStatus] ?? "slate",
-    statusLabel: formatAppointmentStatus(normalizedStatus),
-    typeLabel: formatAppointmentType(appointment.type),
+    statusLabel: t(`appointments.status.${normalizedStatus}`, {
+      defaultValue: formatAppointmentStatus(normalizedStatus),
+    }),
+    typeLabel: formatAppointmentType(appointment.type, t),
     subtitle: appointment.createdByUser?.fullName || undefined,
+    secondaryMeta: weddingDateLabel,
     description: appointment.notes ?? undefined,
     raw: appointment,
   };

@@ -24,6 +24,7 @@ export type AppCalendarEvent = {
   statusLabel?: string;
   typeLabel?: string;
   subtitle?: string;
+  secondaryMeta?: string;
   description?: string;
   location?: string;
   badgeLabel?: string;

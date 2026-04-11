@@ -6,12 +6,12 @@ import api, { getApiErrorMessage } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomerFormData } from "@/pages/customers/types";
 
-const normalizeOptionalString = (value?: string) => {
+const normalizeOptionalString = (value?: string | null) => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 };
 
-const normalizeNullableString = (value?: string) => {
+const normalizeNullableString = (value?: string | null) => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 };
@@ -23,6 +23,8 @@ const buildCreateCustomerPayload = (values: CustomerFormData) => ({
   email: normalizeOptionalString(values.email),
   nationalId: normalizeOptionalString(values.nationalId),
   address: normalizeOptionalString(values.address),
+  source: normalizeOptionalString(values.source ?? undefined),
+  sourceDetails: normalizeOptionalString(values.sourceDetails ?? undefined),
   notes: normalizeOptionalString(values.notes),
   status: values.status,
 });
@@ -34,6 +36,8 @@ const buildUpdateCustomerPayload = (values: CustomerFormData) => ({
   email: normalizeNullableString(values.email),
   nationalId: normalizeNullableString(values.nationalId),
   address: normalizeNullableString(values.address),
+  source: normalizeNullableString(values.source ?? undefined),
+  sourceDetails: normalizeNullableString(values.sourceDetails ?? undefined),
   notes: normalizeNullableString(values.notes),
   status: values.status,
 });

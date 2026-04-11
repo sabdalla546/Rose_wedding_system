@@ -117,6 +117,12 @@ export const baseEn = {
       events: "Events",
       appointmentsCalendar: "Appointments Calendar",
       eventsCalendar: "Events Calendar",
+      revenueOverview: "Revenue Overview",
+      bookingAnalytics: "Booking Analytics",
+      resourceUtilization: "Resource Utilization",
+      teamRoles: "Team Roles",
+      users: "Users",
+      roles: "Roles",
       vendors: "Vendors",
       services: "Services",
       quotations: "Quotations",
@@ -465,7 +471,7 @@ export const baseEn = {
     title: "Customers",
     totalCustomers: "total customers",
     searchPlaceholder:
-      "Search by name, mobile, email, national ID, or address...",
+      "Search by name, mobile, email, national ID, source, or address...",
     create: "Create Customer",
     createTitle: "Create Customer",
     editTitle: "Edit Customer",
@@ -491,6 +497,11 @@ export const baseEn = {
     nationalIdPlaceholder: "Enter 12-digit national ID",
     address: "Address",
     addressPlaceholder: "Enter customer address",
+    source: "How did you hear about us?",
+    selectSource: "Select source",
+    sourceDetails: "Source details",
+    sourceDetailsPlaceholder:
+      "Add referral name, campaign, branch, or other context",
     eventDetails: "Event Details",
     eventProfile: "Event Profile",
     eventProfileHint: "Wedding date, venue, and guest volume.",
@@ -538,6 +549,7 @@ export const baseEn = {
       mobileRequired: "Primary mobile is required",
       emailInvalid: "Invalid email address",
       nationalIdInvalid: "National ID must be exactly 12 digits",
+      sourceRequired: "Please select how the customer heard about you",
     },
     status: {
       active: "Active",
@@ -2506,6 +2518,8 @@ export const baseEn = {
       errorTitle: "Unable to load the appointments calendar",
       errorDescription:
         "The appointment schedule could not be loaded right now. Try again to refresh the visible range.",
+      attendDescription:
+        "Mark this appointment as attended and optionally add a note before converting it into the event workflow.",
       rescheduleDescription:
         "Adjust the appointment date, time, and any follow-up note.",
       cancelDescription:
@@ -2665,6 +2679,7 @@ export const baseEn = {
     },
     cancel: "Cancel",
     cancelReasonPlaceholder: "Enter cancellation reason",
+    attendTitle: "Mark as Attended",
     rescheduleTitle: "Reschedule Appointment",
     rescheduleDescription:
       "Update the appointment timing and any follow-up instructions.",

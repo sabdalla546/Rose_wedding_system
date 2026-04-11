@@ -1,5 +1,9 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
+import {
+  CUSTOMER_SOURCE_VALUES,
+  type CustomerSource,
+} from "../constants/customer-source";
 
 export type CustomerStatus = "active" | "inactive";
 
@@ -11,6 +15,8 @@ export interface CustomerAttributes {
   email?: string | null;
   nationalId?: string | null;
   address?: string | null;
+  source?: CustomerSource | null;
+  sourceDetails?: string | null;
   notes?: string | null;
   status: CustomerStatus;
   createdBy?: number | null;
@@ -24,6 +30,8 @@ type CustomerCreationAttributes = Optional<
   | "email"
   | "nationalId"
   | "address"
+  | "source"
+  | "sourceDetails"
   | "notes"
   | "status"
   | "createdBy"
@@ -41,6 +49,8 @@ export class Customer
   public email?: string | null;
   public nationalId?: string | null;
   public address?: string | null;
+  public source?: CustomerSource | null;
+  public sourceDetails?: string | null;
   public notes?: string | null;
   public status!: CustomerStatus;
   public createdBy?: number | null;
@@ -81,6 +91,17 @@ Customer.init(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    source: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      validate: {
+        isIn: [CUSTOMER_SOURCE_VALUES],
+      },
+    },
+    sourceDetails: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -107,6 +128,7 @@ Customer.init(
     indexes: [
       { fields: ["mobile"] },
       { fields: ["nationalId"] },
+      { fields: ["source"] },
       { fields: ["status"] },
     ],
   },

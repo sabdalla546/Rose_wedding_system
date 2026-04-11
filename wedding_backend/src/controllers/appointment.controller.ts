@@ -233,6 +233,8 @@ export const createAppointmentWithCustomer = async (
               email: data.customer.email?.trim() || null,
               nationalId: data.customer.nationalId?.trim() || null,
               address: data.customer.address?.trim() || null,
+              source: data.customer.source ?? null,
+              sourceDetails: data.customer.sourceDetails?.trim() || null,
               notes: data.customer.notes ?? null,
               status: "active",
               createdBy: req.user?.id ?? null,

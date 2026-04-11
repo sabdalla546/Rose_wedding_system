@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import type { CustomerSource } from "@/pages/customers/types";
 import type {
   AppointmentFormData,
   AppointmentMutationResponse,
@@ -36,6 +37,8 @@ export type CreateAppointmentWithCustomerValues = {
     email?: string;
     nationalId?: string;
     address?: string;
+    source?: CustomerSource | null;
+    sourceDetails?: string | null;
     notes?: string;
   };
   customerId?: string;
@@ -107,6 +110,10 @@ const buildCreateAppointmentWithCustomerPayload = (
         email: normalizeOptionalString(values.customer.email),
         nationalId: normalizeOptionalString(values.customer.nationalId),
         address: normalizeOptionalString(values.customer.address),
+        source: normalizeOptionalString(values.customer.source ?? undefined),
+        sourceDetails: normalizeOptionalString(
+          values.customer.sourceDetails ?? undefined,
+        ),
         notes: normalizeOptionalString(values.customer.notes),
       }
     : undefined,

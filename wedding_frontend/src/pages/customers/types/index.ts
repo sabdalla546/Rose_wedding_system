@@ -1,4 +1,20 @@
 export type CustomerStatus = "active" | "inactive";
+export type CustomerSource =
+  | "facebook"
+  | "instagram"
+  | "tiktok"
+  | "google_search"
+  | "google_maps"
+  | "snapchat"
+  | "whatsapp"
+  | "friend_referral"
+  | "family_referral"
+  | "existing_customer"
+  | "walk_in"
+  | "advertisement"
+  | "exhibition"
+  | "website"
+  | "other";
 
 export interface CustomerUserSummary {
   id: number;
@@ -13,6 +29,8 @@ export interface Customer {
   email?: string | null;
   nationalId?: string | null;
   address?: string | null;
+  source?: CustomerSource | null;
+  sourceDetails?: string | null;
   notes?: string | null;
   status: CustomerStatus;
   createdByUser?: CustomerUserSummary | null;
@@ -43,6 +61,8 @@ export interface CustomerFormData {
   email?: string;
   nationalId?: string;
   address?: string;
-  notes?: string;
+  source?: CustomerSource | null;
+  sourceDetails?: string | null;
+  notes?: string | null;
   status: CustomerStatus;
 }

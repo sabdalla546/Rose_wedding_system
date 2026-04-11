@@ -125,7 +125,7 @@ export function SecretarialSectionBar() {
             const isActive = item.id === activeId;
 
             const sharedClassName = cn(
-              "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-[12px] font-semibold transition-all duration-200",
+              "inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-5 text-[13px] font-semibold transition-all duration-200",
               isActive
                 ? "text-[var(--lux-shell-bg)]"
                 : "text-[var(--lux-shell-chrome-text)] hover:text-white",
@@ -151,7 +151,7 @@ export function SecretarialSectionBar() {
                     }}
                     type="button"
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="h-[18px] w-[18px] shrink-0" />
                     <span className="truncate">{label}</span>
                   </button>
                 }
@@ -169,7 +169,7 @@ export function SecretarialSectionBar() {
                   }}
                   to={targetHref}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
                   <span className="truncate">{label}</span>
                 </NavLink>
               </ProtectedComponent>
@@ -188,7 +188,7 @@ export function SecretarialSectionBar() {
     <div
       className={cn(
         "flex items-center",
-        compact ? "h-8 px-2 md:px-3" : "h-9 px-2 md:px-3",
+        compact ? "h-10 px-2 md:px-3" : "h-11 px-2 md:px-3",
       )}
     >
       <div
@@ -231,8 +231,8 @@ export function SecretarialSectionBar() {
             const sharedClassName = cn(
               "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full border font-semibold transition-all duration-200",
               compact
-                ? "h-6 gap-1 px-2.5 text-[10px] md:text-[11px]"
-                : "h-7 gap-1.5 px-3 text-[11px]",
+                ? "h-8 gap-1.5 px-3 text-[11px] md:text-[12px]"
+                : "h-9 gap-2 px-4 text-[12px]",
               isActive
                 ? "text-[var(--lux-shell-bg)]"
                 : "text-[var(--lux-shell-chrome-text)] hover:text-white",
@@ -263,7 +263,9 @@ export function SecretarialSectionBar() {
                     <item.icon
                       className={cn(
                         "shrink-0",
-                        compact ? "h-3 w-3 md:h-3.5 md:w-3.5" : "h-3.5 w-3.5",
+                        compact
+                          ? "h-3.5 w-3.5 md:h-4 md:w-4"
+                          : "h-4 w-4",
                       )}
                     />
                     <span>{label}</span>
@@ -296,7 +298,9 @@ export function SecretarialSectionBar() {
                   <item.icon
                     className={cn(
                       "shrink-0",
-                      compact ? "h-3 w-3 md:h-3.5 md:w-3.5" : "h-3.5 w-3.5",
+                      compact
+                        ? "h-3.5 w-3.5 md:h-4 md:w-4"
+                        : "h-4 w-4",
                     )}
                   />
                   <span>{label}</span>
@@ -313,7 +317,7 @@ export function SecretarialSectionBar() {
     <section
       className={cn(
         "flex flex-col overflow-hidden",
-        secondaryNavigationItems.length > 0 ? "h-full" : "h-[40px]",
+        secondaryNavigationItems.length > 0 ? "h-full" : "h-[52px]",
       )}
       style={{
         background: "var(--lux-shell-chrome-surface)",
@@ -324,8 +328,8 @@ export function SecretarialSectionBar() {
         primaryNavigationItems,
         activePrimaryItem?.id ?? activeLeaf.id,
         cn(
-          "flex border-b px-2 py-1 md:px-3",
-          secondaryNavigationItems.length > 0 ? "h-10" : "h-full",
+          "flex border-b px-2 py-1.5 md:px-3",
+          secondaryNavigationItems.length > 0 ? "h-12" : "h-full",
         ),
       )}
       {secondaryNavigationItems.length > 0
