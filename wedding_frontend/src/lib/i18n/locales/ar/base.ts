@@ -2060,6 +2060,7 @@ export const baseAr = {
     showFilters: "عرض الفلاتر",
     hideFilters: "إخفاء الفلاتر",
     primaryFilters: "الفلاتر الأساسية",
+    activeFiltersCount: "عدد الفلاتر النشطه",
     primaryFiltersHint: "استخدم الفلاتر الرئيسية لتضييق تقويم المواعيد بسرعة.",
     dateFilters: "نطاق التاريخ",
     dateFiltersHint: "حدّد نطاقًا زمنيًا معيّنًا لتقويم المواعيد.",

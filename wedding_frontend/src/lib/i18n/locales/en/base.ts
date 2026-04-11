@@ -2468,6 +2468,7 @@ export const baseEn = {
     showFilters: "Show Filters",
     hideFilters: "Hide Filters",
     primaryFilters: "Primary Filters",
+    activeFiltersCount: "Active Filters Count",
     primaryFiltersHint:
       "Use the main filters to narrow the appointment calendar quickly.",
     dateFilters: "Date Range",

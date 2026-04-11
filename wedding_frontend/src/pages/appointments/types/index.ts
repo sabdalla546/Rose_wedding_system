@@ -1,4 +1,5 @@
 import type { Venue } from "@/pages/venues/types";
+import type { CustomerSource } from "@/pages/customers/types";
 
 export type AppointmentStatus =
   | "reserved"
@@ -26,6 +27,8 @@ export interface AppointmentCustomer {
   email?: string | null;
   nationalId?: string | null;
   address?: string | null;
+  source?: CustomerSource | null;
+  sourceDetails?: string | null;
   notes?: string | null;
   status?: string;
 }

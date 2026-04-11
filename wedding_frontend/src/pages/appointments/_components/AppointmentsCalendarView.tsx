@@ -3,11 +3,12 @@ import { CalendarClock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
+import type { EChartsOption } from "echarts";
 import {
   AppCalendar,
   type AppCalendarHandle,
 } from "@/components/calendar/app-calendar";
+import { EChart } from "@/components/charts/EChart";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import {
   AppDialogFooter,
@@ -44,7 +45,11 @@ import {
 import { useAppointmentsCalendarView } from "@/hooks/appointments/useAppointmentsCalendarView";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { APPOINTMENT_STATUS_OPTIONS } from "@/pages/appointments/adapters";
-import type { Appointment } from "@/pages/appointments/types";
+import type {
+  Appointment,
+  AppointmentStatus,
+} from "@/pages/appointments/types";
+import type { CustomerSource } from "@/pages/customers/types";
 
 const filterFieldClassName =
   "h-11 w-full rounded-[6px] border px-3 text-sm text-[var(--lux-text)] outline-none transition focus:border-[var(--lux-gold-border)]";
@@ -60,11 +65,221 @@ const textareaClassName =
 const FILTER_ALL_VALUE = "all";
 
 type ActionTarget = Appointment | null;
+type AppointmentsCalendarViewProps = { active: boolean };
+type AnalyticsSourceKey = CustomerSource | "unknown";
 
-type AppointmentsCalendarViewProps = {
-  active: boolean;
+const SOURCE_LABELS: Record<AnalyticsSourceKey, string> = {
+  facebook: "فيسبوك",
+  instagram: "إنستجرام",
+  tiktok: "تيك توك",
+  google_search: "بحث جوجل",
+  google_maps: "خرائط جوجل",
+  snapchat: "سناب شات",
+  whatsapp: "واتساب",
+  friend_referral: "ترشيح من صديق",
+  family_referral: "ترشيح من العائلة",
+  existing_customer: "عميل حالي",
+  walk_in: "زيارة مباشرة",
+  advertisement: "إعلان",
+  exhibition: "معرض",
+  website: "الموقع الإلكتروني",
+  other: "أخرى",
+  unknown: "غير محدد",
 };
 
+const STATUS_LABELS: Record<AppointmentStatus, string> = {
+  reserved: "محجوز",
+  attended: "حضر",
+  converted: "تم التحويل",
+  cancelled: "ملغي",
+  no_show: "لم يحضر",
+};
+
+const STATUS_COLORS: Record<AppointmentStatus, string> = {
+  reserved: "#C5A05A",
+  attended: "#2E8B57",
+  converted: "#3B82F6",
+  cancelled: "#DC2626",
+  no_show: "#6B7280",
+};
+
+const SOURCE_COLORS = [
+  "#C5A05A",
+  "#3B82F6",
+  "#2E8B57",
+  "#DC2626",
+  "#8B5CF6",
+  "#06B6D4",
+  "#F59E0B",
+  "#10B981",
+  "#EC4899",
+  "#6366F1",
+  "#84CC16",
+  "#14B8A6",
+  "#F97316",
+  "#64748B",
+  "#A855F7",
+];
+
+function AnalyticsSection({ items }: { items: Appointment[] }) {
+  const total = items.length;
+
+  const sourceRows = useMemo(() => {
+    const map = new Map<AnalyticsSourceKey, number>();
+
+    for (const item of items) {
+      const key = (item.customer?.source ?? "unknown") as AnalyticsSourceKey;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(map.entries())
+      .map(([key, count], index) => ({
+        key,
+        label: SOURCE_LABELS[key] ?? SOURCE_LABELS.unknown,
+        count,
+        color: SOURCE_COLORS[index % SOURCE_COLORS.length],
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [items]);
+
+  const statusRows = useMemo(() => {
+    const map: Record<AppointmentStatus, number> = {
+      reserved: 0,
+      attended: 0,
+      converted: 0,
+      cancelled: 0,
+      no_show: 0,
+    };
+
+    for (const item of items) {
+      map[item.status] += 1;
+    }
+
+    return (Object.keys(map) as AppointmentStatus[]).map((status) => ({
+      key: status,
+      label: STATUS_LABELS[status],
+      count: map[status],
+      color: STATUS_COLORS[status],
+    }));
+  }, [items]);
+
+  const sourcePieOption = useMemo<EChartsOption>(
+    () => ({
+      tooltip: {
+        trigger: "item",
+        formatter: "{b}: {c} ({d}%)",
+      },
+      legend: {
+        bottom: 0,
+        left: "center",
+        textStyle: {
+          color: "#6B7280",
+        },
+      },
+      series: [
+        {
+          name: "مصدر العميل",
+          type: "pie",
+          radius: ["45%", "72%"],
+          center: ["50%", "42%"],
+          avoidLabelOverlap: true,
+          label: {
+            formatter: "{b}",
+            color: "#374151",
+          },
+          data: sourceRows.map((row) => ({
+            value: row.count,
+            name: row.label,
+            itemStyle: { color: row.color },
+          })),
+        },
+      ],
+    }),
+    [sourceRows],
+  );
+
+  const statusBarOption = useMemo<EChartsOption>(
+    () => ({
+      tooltip: {
+        trigger: "axis",
+        axisPointer: {
+          type: "shadow",
+        },
+      },
+      grid: {
+        left: 24,
+        right: 24,
+        top: 20,
+        bottom: 40,
+      },
+      xAxis: {
+        type: "category",
+        data: statusRows.map((row) => row.label),
+        axisLabel: {
+          color: "#6B7280",
+        },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: {
+          color: "#6B7280",
+        },
+      },
+      series: [
+        {
+          type: "bar",
+          data: statusRows.map((row) => ({
+            value: row.count,
+            itemStyle: {
+              color: row.color,
+              borderRadius: [10, 10, 0, 0],
+            },
+          })),
+          barMaxWidth: 54,
+        },
+      ],
+    }),
+    [statusRows],
+  );
+
+  if (total === 0) {
+    return (
+      <SectionCard>
+        <div className="py-6 text-sm text-[var(--lux-text-secondary)]">
+          لا توجد بيانات إحصائية ضمن الفلاتر الحالية.
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <section className="grid gap-6 xl:grid-cols-2">
+      <SectionCard className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
+            نسبة مصادر العملاء
+          </h3>
+          <p className="text-sm text-[var(--lux-text-secondary)]">
+            توزيع المواعيد الحالية حسب مصدر معرفة العميل.
+          </p>
+        </div>
+        <EChart option={sourcePieOption} height={360} />
+      </SectionCard>
+
+      <SectionCard className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
+            حالات المواعيد
+          </h3>
+          <p className="text-sm text-[var(--lux-text-secondary)]">
+            توزيع الحالات للمواعيد المعروضة حاليًا.
+          </p>
+        </div>
+        <EChart option={statusBarOption} height={360} />
+      </SectionCard>
+    </section>
+  );
+}
 function RescheduleDialog({
   open,
   onOpenChange,
@@ -379,9 +594,7 @@ export function AppointmentsCalendarView({
   });
 
   useEffect(() => {
-    if (!active) {
-      return;
-    }
+    if (!active) return;
 
     const frame = window.requestAnimationFrame(() => {
       calendarRef.current?.updateSize();
@@ -391,17 +604,13 @@ export function AppointmentsCalendarView({
   }, [active]);
 
   const selectedAppointment = useMemo(() => {
-    if (!items.length) {
-      return null;
-    }
+    if (!items.length) return null;
 
     if (selectedAppointmentId) {
       const matchedItem =
         items.find((item) => String(item.id) === selectedAppointmentId) ?? null;
 
-      if (matchedItem) {
-        return matchedItem;
-      }
+      if (matchedItem) return matchedItem;
     }
 
     return items[0] ?? null;
@@ -419,9 +628,7 @@ export function AppointmentsCalendarView({
   const filteredCustomerOptions = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
 
-    if (!query) {
-      return customerOptions;
-    }
+    if (!query) return customerOptions;
 
     return customerOptions.filter((option) =>
       option.label.toLowerCase().includes(query),
@@ -505,6 +712,7 @@ export function AppointmentsCalendarView({
         ))}
       </section>
 
+      <AnalyticsSection items={items} />
       <WorkspaceFilterBar
         title={t("common.filters")}
         description={t("appointments.calendarPage.filtersDescription")}
@@ -783,9 +991,7 @@ export function AppointmentsCalendarView({
         value={attendNotes}
         onChange={setAttendNotes}
         onSubmit={() => {
-          if (!attendCandidate) {
-            return;
-          }
+          if (!attendCandidate) return;
 
           attendAppointment.mutate(
             {
@@ -803,9 +1009,7 @@ export function AppointmentsCalendarView({
           );
         }}
         isPending={attendAppointment.isPending}
-        confirmLabel={t("appointments.attend", {
-          defaultValue: "Attend",
-        })}
+        confirmLabel={t("appointments.attend", { defaultValue: "Attend" })}
       />
 
       <CancelDialog
@@ -821,9 +1025,7 @@ export function AppointmentsCalendarView({
         onReasonChange={setCancelReason}
         onNotesChange={setCancelNotes}
         onSubmit={() => {
-          if (!cancelCandidate) {
-            return;
-          }
+          if (!cancelCandidate) return;
 
           cancelAppointment.mutate(
             {
@@ -862,9 +1064,7 @@ export function AppointmentsCalendarView({
         onEndTimeChange={setRescheduleEndTime}
         onNotesChange={setRescheduleNotes}
         onSubmit={() => {
-          if (!rescheduleCandidate) {
-            return;
-          }
+          if (!rescheduleCandidate) return;
 
           rescheduleAppointment.mutateReschedule(
             {
