@@ -9,7 +9,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "echarts": ["./node_modules/echarts/index.d.ts"],
+      "echarts/*": ["./node_modules/echarts/*"]
     },
 
     /* Bundler mode */
