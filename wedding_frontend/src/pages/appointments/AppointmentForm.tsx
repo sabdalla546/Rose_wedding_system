@@ -773,7 +773,9 @@ const AppointmentFormPage = () => {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
-                                  {t("common.notes", { defaultValue: "Notes" })}
+                                  {t("customers.notes", {
+                                    defaultValue: "Notes",
+                                  })}
                                 </FormLabel>
                                 <FormControl>
                                   <textarea
@@ -856,34 +858,6 @@ const AppointmentFormPage = () => {
 
                       <FormField
                         control={form.control}
-                        name="guestCount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t("appointments.guestCount", {
-                                defaultValue: "Guest Count",
-                              })}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                {...field}
-                                className="rounded-[4px]"
-                                placeholder={t(
-                                  "appointments.guestCountPlaceholder",
-                                  {
-                                    defaultValue: "Enter expected guest count",
-                                  },
-                                )}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
                         name="startTime"
                         render={({ field }) => (
                           <FormItem>
@@ -913,7 +887,9 @@ const AppointmentFormPage = () => {
                               {t("appointments.endTime", {
                                 defaultValue: "End Time",
                               })}{" "}
-                              <span className="text-[var(--lux-danger)]">*</span>
+                              <span className="text-[var(--lux-danger)]">
+                                *
+                              </span>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -929,6 +905,34 @@ const AppointmentFormPage = () => {
                                   "End time is required for scheduling and conflict checks.",
                               })}
                             </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="guestCount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("appointments.guestCount", {
+                                defaultValue: "Guest Count",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                className="rounded-[4px]"
+                                placeholder={t(
+                                  "appointments.guestCountPlaceholder",
+                                  {
+                                    defaultValue: "Enter expected guest count",
+                                  },
+                                )}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

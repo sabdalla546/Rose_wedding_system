@@ -221,6 +221,17 @@ const navigationTree: NavigationItem[] = [
         subtitleAr:
           "إدارة وثائق العقود وخطط الدفعات والالتزامات المرتبطة بالحفل.",
       },
+      {
+        id: "settings-team-venues",
+        labelKey: "sidebar.nav.venues",
+        label: "Venues",
+        labelAr: "القاعات",
+        href: "/settings/venues",
+        icon: Building2,
+        subtitle:
+          "Manage wedding halls, venue contacts, and location readiness.",
+        subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
+      },
     ],
   },
   {
@@ -356,36 +367,6 @@ if (settingsTeamItem) {
       icon: ShieldCheck,
       subtitle: "Configure role definitions and permission bundles.",
       subtitleAr: "Ø¥Ø¹Ø¯Ø§Ø¯ ØªØ¹Ø±ÙŠÙØ§Øª Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙˆØ­Ø²Ù… Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª.",
-    },
-  ];
-}
-
-const secretarialRootItem = navigationTree.find(
-  (item) => item.id === SECRETARIAL_ROOT_ID,
-);
-
-if (secretarialRootItem?.children) {
-  secretarialRootItem.children = [
-    ...secretarialRootItem.children,
-    {
-      id: "events-app",
-      labelKey: "sidebar.nav.events",
-      label: "Events",
-      labelAr: "Ø§Ù„Ø­ÙÙ„Ø§Øª",
-      icon: CalendarRange,
-      children: [
-        {
-          id: "settings-team-venues",
-          labelKey: "sidebar.nav.venues",
-          label: "Venues",
-          labelAr: "Ø§Ù„Ù‚Ø§Ø¹Ø§Øª",
-          href: "/settings/venues",
-          icon: Building2,
-          subtitle:
-            "Manage wedding halls, venue contacts, and location readiness.",
-          subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‚Ø§Ø¹Ø§Øª ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙˆØ§ØµÙ„ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹.",
-        },
-      ],
     },
   ];
 }
