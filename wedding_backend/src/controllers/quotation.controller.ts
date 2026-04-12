@@ -10,7 +10,6 @@ import {
   EventVendor,
   EventVendorSubService,
   VendorSubService,
-  VendorPricingPlan,
   Vendor,
   Service,
 } from "../models";
@@ -48,7 +47,6 @@ type PreparedQuotationItem = {
   serviceId: number | null;
   eventVendorId: number | null;
   vendorId: number | null;
-  pricingPlanId: number | null;
   itemName: string;
   category: string | null;
   quantity: number;
@@ -66,7 +64,6 @@ type QuotationRequestItem = {
   serviceId?: number | null;
   eventVendorId?: number | null;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
   itemName: string;
   category?: string | null;
   quantity?: number;
@@ -197,22 +194,6 @@ async function loadVendorById(vendorId: number) {
   return vendor;
 }
 
-async function loadVendorPricingPlanById(pricingPlanId: number) {
-  const pricingPlan = await VendorPricingPlan.findByPk(pricingPlanId, {
-    include: [buildVendorSummaryInclude()],
-  });
-
-  if (!pricingPlan) {
-    throw new HttpError(400, "Vendor pricing plan not found");
-  }
-
-  if (pricingPlan.isActive === false) {
-    throw new HttpError(400, "Inactive vendor pricing plan cannot be used");
-  }
-
-  return pricingPlan;
-}
-
 function getValidAgreedPrice(eventVendor: EventVendor) {
   const agreedPrice = toNumberValue(eventVendor.agreedPrice);
 
@@ -239,7 +220,6 @@ function buildQuotationItemFromEventService(
     serviceId: eventService.serviceId ?? null,
     eventVendorId: null,
     vendorId: null,
-    pricingPlanId: null,
     itemName: eventService.serviceNameSnapshot,
     category: eventService.category ?? null,
     quantity,
@@ -267,7 +247,6 @@ function buildQuotationItemFromEventVendor(
     serviceId: null,
     eventVendorId: eventVendor.id,
     vendorId: eventVendor.vendorId ?? null,
-    pricingPlanId: eventVendor.pricingPlanId ?? null,
     itemName:
       eventVendor.vendor?.name ?? eventVendor.companyNameSnapshot ?? "Vendor",
     category: eventVendor.vendorType ?? null,
@@ -294,7 +273,6 @@ function buildManualServiceSummaryItem(
     serviceId: null,
     eventVendorId: null,
     vendorId: null,
-    pricingPlanId: null,
     itemName: MANUAL_SERVICES_SUMMARY_NAME,
     category: MANUAL_SERVICES_SUMMARY_CATEGORY,
     quantity: 1,
@@ -337,17 +315,6 @@ async function prepareQuotationItem(
         );
       }
 
-      if (
-        typeof item.pricingPlanId !== "undefined" &&
-        item.pricingPlanId !== null &&
-        item.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-      ) {
-        throw new HttpError(
-          400,
-          "pricingPlanId must match the selected event vendor",
-        );
-      }
-
       return buildQuotationItemFromEventVendor(eventVendor, userId, sortOrder);
     }
 
@@ -359,16 +326,6 @@ async function prepareQuotationItem(
     }
 
     const vendor = await loadVendorById(item.vendorId);
-    const pricingPlan = item.pricingPlanId
-      ? await loadVendorPricingPlanById(item.pricingPlanId)
-      : null;
-
-    if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
-      throw new HttpError(
-        400,
-        "pricingPlanId must belong to the selected vendor",
-      );
-    }
 
     const quantity = round3(item.quantity ?? 1);
     const unitPrice = round3(item.unitPrice ?? 0);
@@ -379,7 +336,6 @@ async function prepareQuotationItem(
       serviceId: null,
       eventVendorId: null,
       vendorId: vendor.id,
-      pricingPlanId: pricingPlan?.id ?? null,
       itemName: item.itemName,
       category: item.category ?? vendor.type ?? null,
       quantity,
@@ -409,7 +365,6 @@ async function prepareQuotationItem(
     serviceId: item.serviceId ?? null,
     eventVendorId: null,
     vendorId: null,
-    pricingPlanId: null,
     itemName: item.itemName,
     category: item.category ?? null,
     quantity,
@@ -582,11 +537,6 @@ export const createQuotationFromEvent = async (
         },
         include: [
           buildVendorSummaryInclude(),
-          {
-            model: VendorPricingPlan,
-            as: "pricingPlan",
-            include: [buildVendorSummaryInclude()],
-          },
           {
             model: EventVendorSubService,
             as: "selectedSubServices",
@@ -942,24 +892,12 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
           );
         }
 
-        if (
-          typeof data.pricingPlanId !== "undefined" &&
-          data.pricingPlanId !== null &&
-          data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-        ) {
-          throw new HttpError(
-            400,
-            "pricingPlanId must match the selected event vendor",
-          );
-        }
-
         await item.update({
           itemType: "vendor",
           eventServiceId: null,
           serviceId: null,
           eventVendorId: eventVendor.id,
           vendorId: eventVendor.vendorId ?? null,
-          pricingPlanId: eventVendor.pricingPlanId ?? null,
           itemName: data.itemName ?? item.itemName,
           category:
             typeof data.category !== "undefined"
@@ -984,20 +922,6 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
         }
 
         const vendor = await loadVendorById(nextVendorId);
-        const nextPricingPlanId =
-          typeof data.pricingPlanId !== "undefined"
-            ? data.pricingPlanId
-            : item.pricingPlanId;
-        const pricingPlan = nextPricingPlanId
-          ? await loadVendorPricingPlanById(nextPricingPlanId)
-          : null;
-
-        if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
-          throw new HttpError(
-            400,
-            "pricingPlanId must belong to the selected vendor",
-          );
-        }
 
         await item.update({
           itemType: "vendor",
@@ -1005,7 +929,6 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
           serviceId: null,
           eventVendorId: null,
           vendorId: vendor.id,
-          pricingPlanId: pricingPlan?.id ?? null,
           itemName: data.itemName ?? item.itemName,
           category:
             typeof data.category !== "undefined"
@@ -1052,7 +975,6 @@ export const updateQuotationItem = async (req: AuthRequest, res: Response) => {
             : item.serviceId,
         eventVendorId: null,
         vendorId: null,
-        pricingPlanId: null,
         itemName: data.itemName ?? item.itemName,
         category:
           typeof data.category !== "undefined" ? data.category : item.category,

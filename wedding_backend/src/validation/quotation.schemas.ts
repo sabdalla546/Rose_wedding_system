@@ -16,7 +16,6 @@ const baseQuotationItemSchema = z.object({
   serviceId: z.number().int().positive().optional().nullable(),
   eventVendorId: z.number().int().positive().optional().nullable(),
   vendorId: z.number().int().positive().optional().nullable(),
-  pricingPlanId: z.number().int().positive().optional().nullable(),
   itemName: z.string().min(2).max(150),
   category: z.string().max(100).optional().nullable(),
   quantity: z.number().positive().optional(),

@@ -15,7 +15,6 @@ import {
   Event,
   EventService,
   EventVendor,
-  VendorPricingPlan,
   Vendor,
   Service,
 } from "../models";
@@ -57,7 +56,6 @@ type PreparedContractItem = {
   serviceId: number | null;
   eventVendorId: number | null;
   vendorId: number | null;
-  pricingPlanId: number | null;
   itemName: string;
   category: string | null;
   quantity: number;
@@ -76,7 +74,6 @@ type ContractRequestItem = {
   serviceId?: number | null;
   eventVendorId?: number | null;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
   itemName: string;
   category?: string | null;
   quantity: number;
@@ -199,22 +196,6 @@ async function loadVendorById(vendorId: number) {
   return vendor;
 }
 
-async function loadVendorPricingPlanById(pricingPlanId: number) {
-  const pricingPlan = await VendorPricingPlan.findByPk(pricingPlanId, {
-    include: [buildVendorSummaryInclude()],
-  });
-
-  if (!pricingPlan) {
-    throw new HttpError(400, "Vendor pricing plan not found");
-  }
-
-  if (pricingPlan.isActive === false) {
-    throw new HttpError(400, "Inactive vendor pricing plan cannot be used");
-  }
-
-  return pricingPlan;
-}
-
 async function prepareContractItem(
   item: ContractRequestItem,
   eventId: number,
@@ -244,17 +225,6 @@ async function prepareContractItem(
         throw new HttpError(400, "vendorId must match the selected event vendor");
       }
 
-      if (
-        typeof item.pricingPlanId !== "undefined"
-        && item.pricingPlanId !== null
-        && item.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-      ) {
-        throw new HttpError(
-          400,
-          "pricingPlanId must match the selected event vendor",
-        );
-      }
-
       return {
         itemType: "vendor",
         quotationItemId: item.quotationItemId ?? null,
@@ -262,7 +232,6 @@ async function prepareContractItem(
         serviceId: null,
         eventVendorId: eventVendor.id,
         vendorId: eventVendor.vendorId ?? null,
-        pricingPlanId: eventVendor.pricingPlanId ?? null,
         itemName: item.itemName,
         category: item.category ?? eventVendor.vendorType ?? null,
         quantity,
@@ -283,16 +252,6 @@ async function prepareContractItem(
     }
 
     const vendor = await loadVendorById(item.vendorId);
-    const pricingPlan = item.pricingPlanId
-      ? await loadVendorPricingPlanById(item.pricingPlanId)
-      : null;
-
-    if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
-      throw new HttpError(
-        400,
-        "pricingPlanId must belong to the selected vendor",
-      );
-    }
 
     return {
       itemType: "vendor",
@@ -301,7 +260,6 @@ async function prepareContractItem(
       serviceId: null,
       eventVendorId: null,
       vendorId: vendor.id,
-      pricingPlanId: pricingPlan?.id ?? null,
       itemName: item.itemName,
       category: item.category ?? vendor.type ?? null,
       quantity,
@@ -329,7 +287,6 @@ async function prepareContractItem(
     serviceId: item.serviceId ?? null,
     eventVendorId: null,
     vendorId: null,
-    pricingPlanId: null,
     itemName: item.itemName,
     category: item.category ?? null,
     quantity,
@@ -540,7 +497,6 @@ export const createContractFromQuotation = async (
         serviceId: item.serviceId ?? null,
         eventVendorId: item.eventVendorId ?? null,
         vendorId: item.vendorId ?? null,
-        pricingPlanId: item.pricingPlanId ?? null,
         itemName: item.itemName,
         category: item.category ?? null,
         quantity,
@@ -901,17 +857,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
           throw new HttpError(400, "vendorId must match the selected event vendor");
         }
 
-        if (
-          typeof data.pricingPlanId !== "undefined"
-          && data.pricingPlanId !== null
-          && data.pricingPlanId !== (eventVendor.pricingPlanId ?? null)
-        ) {
-          throw new HttpError(
-            400,
-            "pricingPlanId must match the selected event vendor",
-          );
-        }
-
         await item.update({
           itemType: "vendor",
           quotationItemId:
@@ -922,7 +867,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
           serviceId: null,
           eventVendorId: eventVendor.id,
           vendorId: eventVendor.vendorId ?? null,
-          pricingPlanId: eventVendor.pricingPlanId ?? null,
           itemName: data.itemName ?? item.itemName,
           category:
             typeof data.category !== "undefined" ? data.category : item.category,
@@ -945,21 +889,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
         }
 
         const vendor = await loadVendorById(nextVendorId);
-        const nextPricingPlanId =
-          typeof data.pricingPlanId !== "undefined"
-            ? data.pricingPlanId
-            : item.pricingPlanId;
-        const pricingPlan = nextPricingPlanId
-          ? await loadVendorPricingPlanById(nextPricingPlanId)
-          : null;
-
-        if (pricingPlan && pricingPlan.vendorId !== vendor.id) {
-          throw new HttpError(
-            400,
-            "pricingPlanId must belong to the selected vendor",
-          );
-        }
-
         await item.update({
           itemType: "vendor",
           quotationItemId:
@@ -970,7 +899,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
           serviceId: null,
           eventVendorId: null,
           vendorId: vendor.id,
-          pricingPlanId: pricingPlan?.id ?? null,
           itemName: data.itemName ?? item.itemName,
           category:
             typeof data.category !== "undefined"
@@ -1019,7 +947,6 @@ export const updateContractItem = async (req: AuthRequest, res: Response) => {
           typeof data.serviceId !== "undefined" ? data.serviceId : item.serviceId,
         eventVendorId: null,
         vendorId: null,
-        pricingPlanId: null,
         itemName: data.itemName ?? item.itemName,
         category:
           typeof data.category !== "undefined" ? data.category : item.category,

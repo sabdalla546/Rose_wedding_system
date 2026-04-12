@@ -13,7 +13,6 @@ import { Event } from "./event.model";
 import { Vendor } from "./vendor.model";
 import { VendorType } from "./vendorType.model";
 import { VendorSubService } from "./vendorSubService.model";
-import { VendorPricingPlan } from "./vendorPricingPlan.model";
 import { EventVendor } from "./eventVendor.model";
 import { EventVendorSubService } from "./eventVendorSubService.model";
 import { Service } from "./service.model";
@@ -205,16 +204,6 @@ VendorSubService.belongsTo(Vendor, {
   as: "vendor",
 });
 
-// Vendor -> VendorPricingPlan
-Vendor.hasMany(VendorPricingPlan, {
-  foreignKey: "vendorId",
-  as: "pricingPlans",
-});
-VendorPricingPlan.belongsTo(Vendor, {
-  foreignKey: "vendorId",
-  as: "vendor",
-});
-
 // Event -> EventVendor
 Event.hasMany(EventVendor, {
   foreignKey: "eventId",
@@ -223,16 +212,6 @@ Event.hasMany(EventVendor, {
 EventVendor.belongsTo(Event, {
   foreignKey: "eventId",
   as: "event",
-});
-
-// VendorPricingPlan -> EventVendor
-VendorPricingPlan.hasMany(EventVendor, {
-  foreignKey: "pricingPlanId",
-  as: "eventVendors",
-});
-EventVendor.belongsTo(VendorPricingPlan, {
-  foreignKey: "pricingPlanId",
-  as: "pricingPlan",
 });
 
 // EventVendor -> EventVendorSubService
@@ -289,25 +268,6 @@ User.hasMany(VendorSubService, {
   as: "updatedVendorSubServices",
 });
 VendorSubService.belongsTo(User, {
-  foreignKey: "updatedBy",
-  as: "updatedByUser",
-});
-
-// User -> VendorPricingPlan audit
-User.hasMany(VendorPricingPlan, {
-  foreignKey: "createdBy",
-  as: "createdVendorPricingPlans",
-});
-VendorPricingPlan.belongsTo(User, {
-  foreignKey: "createdBy",
-  as: "createdByUser",
-});
-
-User.hasMany(VendorPricingPlan, {
-  foreignKey: "updatedBy",
-  as: "updatedVendorPricingPlans",
-});
-VendorPricingPlan.belongsTo(User, {
   foreignKey: "updatedBy",
   as: "updatedByUser",
 });
@@ -477,16 +437,6 @@ QuotationItem.belongsTo(Vendor, {
   as: "vendor",
 });
 
-// VendorPricingPlan -> QuotationItem
-VendorPricingPlan.hasMany(QuotationItem, {
-  foreignKey: "pricingPlanId",
-  as: "quotationItems",
-});
-QuotationItem.belongsTo(VendorPricingPlan, {
-  foreignKey: "pricingPlanId",
-  as: "pricingPlan",
-});
-
 // User -> Quotation audit
 User.hasMany(Quotation, {
   foreignKey: "createdBy",
@@ -623,16 +573,6 @@ Vendor.hasMany(ContractItem, {
 ContractItem.belongsTo(Vendor, {
   foreignKey: "vendorId",
   as: "vendor",
-});
-
-// VendorPricingPlan -> ContractItem
-VendorPricingPlan.hasMany(ContractItem, {
-  foreignKey: "pricingPlanId",
-  as: "contractItems",
-});
-ContractItem.belongsTo(VendorPricingPlan, {
-  foreignKey: "pricingPlanId",
-  as: "pricingPlan",
 });
 
 // User -> Contract audit
@@ -924,7 +864,6 @@ export {
   Vendor,
   VendorType,
   VendorSubService,
-  VendorPricingPlan,
   EventVendor,
   EventVendorSubService,
   Service,

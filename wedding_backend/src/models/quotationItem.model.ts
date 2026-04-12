@@ -10,7 +10,6 @@ export interface QuotationItemAttributes {
   serviceId?: number | null;
   eventVendorId?: number | null;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
 
   itemName: string;
   category?: string | null;
@@ -33,7 +32,6 @@ type QuotationItemCreationAttributes = Optional<
   | "serviceId"
   | "eventVendorId"
   | "vendorId"
-  | "pricingPlanId"
   | "category"
   | "quantity"
   | "unitPrice"
@@ -56,7 +54,6 @@ export class QuotationItem
   public serviceId?: number | null;
   public eventVendorId?: number | null;
   public vendorId?: number | null;
-  public pricingPlanId?: number | null;
 
   public itemName!: string;
   public category?: string | null;
@@ -106,11 +103,6 @@ QuotationItem.init(
     },
 
     vendorId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    pricingPlanId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -176,7 +168,6 @@ QuotationItem.init(
       { fields: ["serviceId"] },
       { fields: ["eventVendorId"] },
       { fields: ["vendorId"] },
-      { fields: ["pricingPlanId"] },
       { fields: ["category"] },
       { fields: ["sortOrder"] },
     ],

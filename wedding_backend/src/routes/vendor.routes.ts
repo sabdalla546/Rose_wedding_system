@@ -11,10 +11,6 @@ import {
   listVendorSubServices,
   getVendorSubServiceById,
   updateVendorSubService,
-  createVendorPricingPlan,
-  listVendorPricingPlans,
-  getVendorPricingPlanById,
-  updateVendorPricingPlan,
   createEventVendor,
   getEventVendors,
   getEventVendorById,
@@ -48,30 +44,6 @@ router.put(
   authMiddleware,
   requirePermissions("vendors.update"),
   updateVendorSubService,
-);
-router.get(
-  "/pricing-plans",
-  authMiddleware,
-  requirePermissions("vendors.read"),
-  listVendorPricingPlans,
-);
-router.get(
-  "/pricing-plans/:id",
-  authMiddleware,
-  requirePermissions("vendors.read"),
-  getVendorPricingPlanById,
-);
-router.post(
-  "/pricing-plans",
-  authMiddleware,
-  requirePermissions("vendors.create"),
-  createVendorPricingPlan,
-);
-router.put(
-  "/pricing-plans/:id",
-  authMiddleware,
-  requirePermissions("vendors.update"),
-  updateVendorPricingPlan,
 );
 router.get(
   "/:id",

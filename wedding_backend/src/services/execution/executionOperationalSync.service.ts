@@ -6,7 +6,6 @@ import {
   EventVendorSubService,
   Service,
   Vendor,
-  VendorPricingPlan,
   VendorSubService,
 } from "../../models";
 
@@ -116,13 +115,11 @@ const getNextEventVendorSubServiceSortOrder = async (
 const findMatchingEventVendor = async ({
   eventId,
   vendorId,
-  pricingPlanId,
   companyNameSnapshot,
   transaction,
 }: {
   eventId: number;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
   companyNameSnapshot?: string | null;
   transaction?: Transaction;
 }) => {
@@ -131,7 +128,6 @@ const findMatchingEventVendor = async ({
       where: {
         eventId,
         vendorId,
-        pricingPlanId: pricingPlanId ?? null,
       },
       order: [["id", "ASC"]],
       transaction,
@@ -156,7 +152,7 @@ const findMatchingEventVendor = async ({
   );
 };
 
-const loadVendorSubServicesForPricingPlan = async ({
+const loadVendorSubServicesForEventVendor = async ({
   vendorId,
   vendorType,
   transaction,
@@ -189,14 +185,12 @@ const loadVendorSubServicesForPricingPlan = async ({
 
 const ensureEventVendorSubServices = async ({
   eventVendor,
-  pricingPlanId,
   vendorId,
   vendorType,
   userId,
   transaction,
 }: {
   eventVendor: EventVendor;
-  pricingPlanId?: number | null;
   vendorId?: number | null;
   vendorType?: string | null;
   userId: number | null;
@@ -219,24 +213,7 @@ const ensureEventVendorSubServices = async ({
     return existingSelections;
   }
 
-  if (pricingPlanId) {
-    const pricingPlan = await VendorPricingPlan.findByPk(pricingPlanId, {
-      transaction,
-    });
-
-    if (!pricingPlan) {
-      await eventVendor.update(
-        {
-          selectedSubServicesCount: 0,
-          updatedBy: userId,
-        },
-        { transaction },
-      );
-      return [];
-    }
-  }
-
-  const subServices = await loadVendorSubServicesForPricingPlan({
+  const subServices = await loadVendorSubServicesForEventVendor({
     vendorId,
     vendorType,
     transaction,
@@ -410,7 +387,6 @@ const ensureEventVendorFromContractItem = async ({
     if (existingLinked) {
       await ensureEventVendorSubServices({
         eventVendor: existingLinked,
-        pricingPlanId: existingLinked.pricingPlanId ?? null,
         vendorId: existingLinked.vendorId ?? null,
         vendorType: existingLinked.vendorType,
         userId,
@@ -432,22 +408,11 @@ const ensureEventVendorFromContractItem = async ({
     }
   }
 
-  let pricingPlanVendorType: string | null = null;
-  if (item.pricingPlanId) {
-    const pricingPlan = await VendorPricingPlan.findByPk(item.pricingPlanId, {
-      transaction,
-    });
-    if (pricingPlan) {
-      pricingPlanVendorType = pricingPlan.vendorType ?? null;
-    }
-  }
-
-  vendorType = vendorType ?? pricingPlanVendorType ?? "external_vendor";
+  vendorType = vendorType ?? "external_vendor";
 
   const existing = await findMatchingEventVendor({
     eventId,
     vendorId: item.vendorId ?? null,
-    pricingPlanId: item.pricingPlanId ?? null,
     companyNameSnapshot,
     transaction,
   });
@@ -455,7 +420,6 @@ const ensureEventVendorFromContractItem = async ({
   if (existing) {
     await ensureEventVendorSubServices({
       eventVendor: existing,
-      pricingPlanId: existing.pricingPlanId ?? null,
       vendorId: existing.vendorId ?? null,
       vendorType: existing.vendorType,
       userId,
@@ -475,10 +439,6 @@ const ensureEventVendorFromContractItem = async ({
           ? item.vendorId
           : null,
       companyNameSnapshot: companyNameSnapshot ?? "Vendor",
-      pricingPlanId:
-        typeof item.pricingPlanId === "number" && item.pricingPlanId > 0
-          ? item.pricingPlanId
-          : null,
       selectedSubServicesCount: 0,
       agreedPrice: round3(item.totalPrice ?? item.unitPrice),
       notes: item.notes ?? null,
@@ -491,7 +451,6 @@ const ensureEventVendorFromContractItem = async ({
 
   await ensureEventVendorSubServices({
     eventVendor: created,
-    pricingPlanId: created.pricingPlanId ?? null,
     vendorId: created.vendorId ?? null,
     vendorType: created.vendorType,
     userId,

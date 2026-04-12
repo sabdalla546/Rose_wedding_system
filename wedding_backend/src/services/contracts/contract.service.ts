@@ -13,7 +13,6 @@ import {
   Service,
   User,
   Vendor,
-  VendorPricingPlan,
   VendorSubService,
   Venue,
 } from "../../models";
@@ -46,11 +45,6 @@ export function buildVendorSummaryInclude() {
 export const eventVendorDetailInclude = [
   buildVendorSummaryInclude(),
   {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
-  {
     model: EventVendorSubService,
     as: "selectedSubServices",
     include: [
@@ -73,11 +67,6 @@ export const contractItemDetailInclude: any[] = [
     include: eventVendorDetailInclude,
   },
   { model: Vendor, as: "vendor" },
-  {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
 ];
 
 export function buildContractInclude(): any[] {

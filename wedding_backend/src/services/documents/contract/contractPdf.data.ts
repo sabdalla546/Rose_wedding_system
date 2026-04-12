@@ -10,7 +10,6 @@ import {
   QuotationItem,
   Service,
   Vendor,
-  VendorPricingPlan,
   Venue,
 } from "../../../models";
 import dayjs from "dayjs";
@@ -322,19 +321,9 @@ export async function buildContractPdfData(contractId: number): Promise<Contract
             as: "eventVendor",
             include: [
               { model: Vendor, as: "vendor" },
-              {
-                model: VendorPricingPlan,
-                as: "pricingPlan",
-                include: [{ model: Vendor, as: "vendor" }],
-              },
             ],
           },
           { model: Vendor, as: "vendor" },
-          {
-            model: VendorPricingPlan,
-            as: "pricingPlan",
-            include: [{ model: Vendor, as: "vendor" }],
-          },
         ],
       },
       {

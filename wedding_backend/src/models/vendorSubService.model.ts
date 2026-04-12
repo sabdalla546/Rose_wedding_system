@@ -9,6 +9,7 @@ export interface VendorSubServiceAttributes {
   name: string;
   code?: string | null;
   description?: string | null;
+  price: number;
   sortOrder: number;
   isActive: boolean;
   createdBy?: number | null;
@@ -21,6 +22,7 @@ type VendorSubServiceCreationAttributes = Optional<
   | "vendorId"
   | "code"
   | "description"
+  | "price"
   | "sortOrder"
   | "isActive"
   | "createdBy"
@@ -37,6 +39,7 @@ export class VendorSubService
   public name!: string;
   public code?: string | null;
   public description?: string | null;
+  public price!: number;
   public sortOrder!: number;
   public isActive!: boolean;
   public createdBy?: number | null;
@@ -70,6 +73,11 @@ VendorSubService.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    price: {
+      type: DataTypes.DECIMAL(12, 3),
+      allowNull: false,
+      defaultValue: 0,
+    },
     sortOrder: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
@@ -99,6 +107,7 @@ VendorSubService.init(
       { fields: ["vendorType"] },
       { fields: ["name"] },
       { fields: ["code"] },
+      { fields: ["price"] },
       { fields: ["sortOrder"] },
       { fields: ["isActive"] },
     ],

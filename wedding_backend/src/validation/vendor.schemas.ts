@@ -73,6 +73,7 @@ export const createVendorSubServiceSchema = z.object({
   name: z.string().min(2).max(150),
   code: z.string().max(50).optional(),
   description: z.string().optional(),
+  price: z.coerce.number().min(0),
   sortOrder: z.coerce.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
 });
@@ -83,53 +84,7 @@ export const updateVendorSubServiceSchema = z.object({
   name: z.string().min(2).max(150).optional(),
   code: z.string().max(50).optional().nullable(),
   description: z.string().optional().nullable(),
+  price: z.coerce.number().min(0).optional(),
   sortOrder: z.coerce.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
 });
-
-const vendorPricingPlanShape = {
-  vendorId: z.number().int().positive(),
-  vendorType: vendorTypeEnum.optional(),
-  name: z.string().min(2).max(150),
-  minSubServices: z.coerce.number().int().min(0),
-  maxSubServices: z.coerce.number().int().min(0).optional().nullable(),
-  price: z.coerce.number().min(0),
-  notes: z.string().optional(),
-  isActive: z.boolean().optional(),
-};
-
-export const createVendorPricingPlanSchema = z
-  .object(vendorPricingPlanShape)
-  .refine(
-    (data) =>
-      data.maxSubServices === null ||
-      typeof data.maxSubServices === "undefined" ||
-      data.maxSubServices >= data.minSubServices,
-    {
-      message: "maxSubServices must be greater than or equal to minSubServices",
-      path: ["maxSubServices"],
-    },
-  );
-
-export const updateVendorPricingPlanSchema = z
-  .object({
-    vendorId: z.number().int().positive().optional(),
-    vendorType: vendorTypeEnum.optional(),
-    name: z.string().min(2).max(150).optional(),
-    minSubServices: z.coerce.number().int().min(0).optional(),
-    maxSubServices: z.coerce.number().int().min(0).optional().nullable(),
-    price: z.coerce.number().min(0).optional(),
-    notes: z.string().optional().nullable(),
-    isActive: z.boolean().optional(),
-  })
-  .refine(
-    (data) =>
-      typeof data.minSubServices === "undefined" ||
-      data.maxSubServices === null ||
-      typeof data.maxSubServices === "undefined" ||
-      data.maxSubServices >= data.minSubServices,
-    {
-      message: "maxSubServices must be greater than or equal to minSubServices",
-      path: ["maxSubServices"],
-    },
-  );

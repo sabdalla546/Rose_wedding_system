@@ -10,7 +10,6 @@ import {
   Service,
   User,
   Vendor,
-  VendorPricingPlan,
   VendorSubService,
   Venue,
 } from "../../models";
@@ -51,11 +50,6 @@ export const quotationItemDetailInclude: any[] = [
     include: [
       buildVendorSummaryInclude(),
       {
-        model: VendorPricingPlan,
-        as: "pricingPlan",
-        include: [buildVendorSummaryInclude()],
-      },
-      {
         model: EventVendorSubService,
         as: "selectedSubServices",
         include: [
@@ -69,11 +63,6 @@ export const quotationItemDetailInclude: any[] = [
     ],
   },
   { model: Vendor, as: "vendor" },
-  {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
 ];
 
 export function buildQuotationInclude(): any[] {
@@ -136,21 +125,6 @@ function sanitizeVendorPayload(vendor: any) {
   return typeof vendor.toJSON === "function" ? vendor.toJSON() : vendor;
 }
 
-function sanitizePricingPlanPayload(pricingPlan: any) {
-  if (!pricingPlan) {
-    return pricingPlan;
-  }
-
-  const plain =
-    typeof pricingPlan.toJSON === "function" ? pricingPlan.toJSON() : pricingPlan;
-
-  if (plain.vendor) {
-    plain.vendor = sanitizeVendorPayload(plain.vendor);
-  }
-
-  return plain;
-}
-
 function sanitizeEventVendorPayload(eventVendor: any) {
   if (!eventVendor) {
     return eventVendor;
@@ -161,10 +135,6 @@ function sanitizeEventVendorPayload(eventVendor: any) {
 
   if (plain.vendor) {
     plain.vendor = sanitizeVendorPayload(plain.vendor);
-  }
-
-  if (plain.pricingPlan) {
-    plain.pricingPlan = sanitizePricingPlanPayload(plain.pricingPlan);
   }
 
   if (Array.isArray(plain.selectedSubServices)) {
@@ -212,10 +182,6 @@ export function sanitizeQuotationItemPayload(item: any) {
 
   if (plain.vendor) {
     plain.vendor = sanitizeVendorPayload(plain.vendor);
-  }
-
-  if (plain.pricingPlan) {
-    plain.pricingPlan = sanitizePricingPlanPayload(plain.pricingPlan);
   }
 
   return plain;

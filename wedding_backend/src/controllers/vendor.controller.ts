@@ -7,7 +7,6 @@ import {
   Vendor,
   VendorType,
   VendorSubService,
-  VendorPricingPlan,
   EventVendor,
   EventVendorSubService,
   Event,
@@ -18,8 +17,6 @@ import {
   updateVendorSchema,
   createVendorSubServiceSchema,
   updateVendorSubServiceSchema,
-  createVendorPricingPlanSchema,
-  updateVendorPricingPlanSchema,
   createEventVendorSchema,
   updateEventVendorSchema,
 } from "../validation/vendor.schemas";
@@ -60,11 +57,6 @@ const buildEventVendorInclude = () => [
   buildVendorSummaryInclude(),
   { model: Event, as: "event" },
   {
-    model: VendorPricingPlan,
-    as: "pricingPlan",
-    include: [buildVendorSummaryInclude()],
-  },
-  {
     model: EventVendorSubService,
     as: "selectedSubServices",
     include: [
@@ -79,10 +71,6 @@ const buildEventVendorInclude = () => [
 ];
 
 const buildVendorSubServiceInclude = () => [
-  buildVendorSummaryInclude(),
-  ...buildUserAuditInclude(),
-];
-const buildVendorPricingPlanInclude = () => [
   buildVendorSummaryInclude(),
   ...buildUserAuditInclude(),
 ];
@@ -108,6 +96,17 @@ const toNumberValue = (value?: number | string | null) => {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+const calculateSubServicesTotal = (
+  selectedSubServices: Array<{
+    price?: number | string | null;
+    priceSnapshot?: number | string | null;
+  }>,
+) => {
+  return selectedSubServices.reduce((sum, sub) => {
+    return sum + Number(sub.price ?? sub.priceSnapshot ?? 0);
+  }, 0);
 };
 
 const resolveVendorTypeSelection = async ({
@@ -176,17 +175,14 @@ const sanitizeEventVendorPayload = (eventVendor: any) => {
   plain.resolvedCompanyName =
     plain.vendor?.name ?? plain.companyNameSnapshot ?? null;
 
-  plain.resolvedPricingLabel = plain.pricingPlan
-    ? plain.pricingPlan.name
-    : null;
-
   const agreedPriceValue = toNumberValue(plain.agreedPrice);
-  const pricingPlanPriceValue = toNumberValue(plain.pricingPlan?.price);
+  const selectedSubServicesTotal = Array.isArray(plain.selectedSubServices)
+    ? calculateSubServicesTotal(plain.selectedSubServices)
+    : 0;
 
   plain.hasManualPriceOverride =
     agreedPriceValue !== null &&
-    (pricingPlanPriceValue === null ||
-      agreedPriceValue !== pricingPlanPriceValue);
+    agreedPriceValue !== selectedSubServicesTotal;
 
   return plain;
 };
@@ -205,38 +201,6 @@ const resolveVendorById = async ({
   }
 
   return vendor;
-};
-
-const findMatchingPricingPlan = async ({
-  vendorId,
-  selectedSubServicesCount,
-  transaction,
-}: {
-  vendorId: number;
-  selectedSubServicesCount: number;
-  transaction: Transaction;
-}) => {
-  if (selectedSubServicesCount <= 0) {
-    return null;
-  }
-
-  return VendorPricingPlan.findOne({
-    where: {
-      vendorId,
-      isActive: true,
-      minSubServices: { [Op.lte]: selectedSubServicesCount },
-      [Op.or]: [
-        { maxSubServices: { [Op.gte]: selectedSubServicesCount } },
-        { maxSubServices: null },
-      ],
-    },
-    order: [
-      ["minSubServices", "DESC"],
-      ["maxSubServices", "ASC"],
-      ["id", "ASC"],
-    ],
-    transaction,
-  });
 };
 
 const parseEventVendorOrder = (
@@ -329,6 +293,7 @@ const syncEventVendorSubServices = async ({
       eventVendorId,
       vendorSubServiceId: subService.id,
       nameSnapshot: subService.name,
+      priceSnapshot: subService.price,
       notes: null,
       sortOrder:
         typeof subService.sortOrder === "number" ? subService.sortOrder : index,
@@ -559,6 +524,7 @@ export const createVendorSubService = async (
       name: data.name.trim(),
       code: data.code ?? null,
       description: data.description ?? null,
+      price: data.price,
       sortOrder: data.sortOrder ?? 0,
       isActive: data.isActive ?? true,
       createdBy: req.user?.id ?? null,
@@ -691,6 +657,7 @@ export const updateVendorSubService = async (
         typeof data.description !== "undefined"
           ? data.description
           : subService.description,
+      price: typeof data.price !== "undefined" ? data.price : subService.price,
       sortOrder:
         typeof data.sortOrder !== "undefined"
           ? data.sortOrder
@@ -704,203 +671,6 @@ export const updateVendorSubService = async (
 
     const updated = await VendorSubService.findByPk(id, {
       include: buildVendorSubServiceInclude(),
-    });
-
-    return res.json({
-      message: req.t("common.updated_successfully"),
-      data: updated,
-    });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-    if (err instanceof Error && err.message === "Vendor not found") {
-      return res.status(404).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
-  }
-};
-
-export const createVendorPricingPlan = async (
-  req: AuthRequest,
-  res: Response,
-) => {
-  try {
-    const data = createVendorPricingPlanSchema.parse(req.body);
-    const vendor = await resolveVendorById({ vendorId: data.vendorId });
-
-    const pricingPlan = await VendorPricingPlan.create({
-      vendorId: vendor.id,
-      vendorType: vendor.type,
-      name: data.name.trim(),
-      minSubServices: data.minSubServices,
-      maxSubServices: data.maxSubServices ?? null,
-      price: data.price,
-      notes: data.notes ?? null,
-      isActive: data.isActive ?? true,
-      createdBy: req.user?.id ?? null,
-      updatedBy: req.user?.id ?? null,
-    });
-
-    const created = await VendorPricingPlan.findByPk(pricingPlan.id, {
-      include: buildVendorPricingPlanInclude(),
-    });
-
-    return res.status(201).json({
-      message: "Vendor pricing plan created successfully",
-      data: created,
-    });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({ errors: err.errors });
-    }
-    if (err instanceof Error && err.message === "Vendor not found") {
-      return res.status(404).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: req.t("common.unexpected_error") });
-  }
-};
-
-export const listVendorPricingPlans = async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 20;
-  const offset = (page - 1) * limit;
-
-  const search = String(req.query.search ?? "").trim();
-  const vendorId = Number(req.query.vendorId) || undefined;
-  const vendorType = String(req.query.vendorType ?? "").trim();
-  const isActive = parseBooleanQuery(req.query.isActive);
-
-  const where: any = {};
-
-  if (search) {
-    where[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { notes: { [Op.like]: `%${search}%` } },
-    ];
-  }
-
-  if (vendorId) where.vendorId = vendorId;
-  if (vendorType) where.vendorType = vendorType;
-  if (typeof isActive === "boolean") where.isActive = isActive;
-
-  const { count, rows } = await VendorPricingPlan.findAndCountAll({
-    where,
-    include: buildVendorPricingPlanInclude(),
-    order: [
-      ["vendorId", "ASC"],
-      ["minSubServices", "ASC"],
-      ["id", "ASC"],
-    ],
-    limit,
-    offset,
-  });
-
-  return res.json({
-    data: rows,
-    meta: {
-      total: count,
-      page,
-      limit,
-      pages: Math.ceil(count / limit),
-    },
-  });
-};
-
-export const getVendorPricingPlanById = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ message: req.t("common.invalid_id") });
-  }
-
-  const pricingPlan = await VendorPricingPlan.findByPk(id, {
-    include: buildVendorPricingPlanInclude(),
-  });
-
-  if (!pricingPlan) {
-    return res.status(404).json({ message: req.t("common.not_found") });
-  }
-
-  return res.json({ data: pricingPlan });
-};
-
-export const updateVendorPricingPlan = async (
-  req: AuthRequest,
-  res: Response,
-) => {
-  try {
-    const id = Number(req.params.id);
-
-    if (!id) {
-      return res.status(400).json({ message: req.t("common.invalid_id") });
-    }
-
-    const data = updateVendorPricingPlanSchema.parse(req.body);
-
-    const pricingPlan = await VendorPricingPlan.findByPk(id);
-    if (!pricingPlan) {
-      return res.status(404).json({ message: req.t("common.not_found") });
-    }
-
-    const vendor =
-      typeof data.vendorId !== "undefined"
-        ? await resolveVendorById({ vendorId: data.vendorId })
-        : pricingPlan.vendorId
-          ? await resolveVendorById({ vendorId: pricingPlan.vendorId })
-          : null;
-
-    if (!vendor) {
-      return res.status(400).json({
-        message: "Vendor pricing plan must be linked to a vendor",
-      });
-    }
-
-    const minSubServices =
-      typeof data.minSubServices !== "undefined"
-        ? data.minSubServices
-        : pricingPlan.minSubServices;
-
-    const maxSubServices =
-      typeof data.maxSubServices !== "undefined"
-        ? data.maxSubServices
-        : pricingPlan.maxSubServices;
-
-    if (
-      maxSubServices !== null &&
-      typeof maxSubServices !== "undefined" &&
-      maxSubServices < minSubServices
-    ) {
-      return res.status(400).json({
-        errors: [
-          {
-            path: ["maxSubServices"],
-            message:
-              "maxSubServices must be greater than or equal to minSubServices",
-          },
-        ],
-      });
-    }
-
-    await pricingPlan.update({
-      vendorId: vendor.id,
-      vendorType: vendor.type,
-      name: data.name ?? pricingPlan.name,
-      minSubServices,
-      maxSubServices: maxSubServices ?? null,
-      price: typeof data.price !== "undefined" ? data.price : pricingPlan.price,
-      notes: typeof data.notes !== "undefined" ? data.notes : pricingPlan.notes,
-      isActive:
-        typeof data.isActive !== "undefined"
-          ? data.isActive
-          : pricingPlan.isActive,
-      updatedBy: req.user?.id ?? null,
-    });
-
-    const updated = await VendorPricingPlan.findByPk(id, {
-      include: buildVendorPricingPlanInclude(),
     });
 
     return res.json({
@@ -955,17 +725,11 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
           })
         : [];
       const selectedSubServicesCount = selectedSubServices.length;
-      const pricingPlan = selectedVendor
-        ? await findMatchingPricingPlan({
-            vendorId: selectedVendor.id,
-            selectedSubServicesCount,
-            transaction,
-          })
-        : null;
+      const calculatedTotal = calculateSubServicesTotal(selectedSubServices);
       const agreedPrice =
         typeof data.agreedPrice !== "undefined"
           ? data.agreedPrice
-          : (pricingPlan?.price ?? null);
+          : calculatedTotal;
 
       const createdEventVendor = await EventVendor.create(
         {
@@ -975,7 +739,6 @@ export const createEventVendor = async (req: AuthRequest, res: Response) => {
           vendorId: data.vendorId ?? null,
           companyNameSnapshot:
             data.companyNameSnapshot ?? selectedVendor?.name ?? null,
-          pricingPlanId: pricingPlan?.id ?? null,
           selectedSubServicesCount,
           agreedPrice,
           notes: data.notes ?? null,
@@ -1139,7 +902,6 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
         nextProvidedBy !== eventVendor.providedBy;
 
       let selectedSubServicesCount = eventVendor.selectedSubServicesCount ?? 0;
-      let pricingPlanId = eventVendor.pricingPlanId ?? null;
       let agreedPrice = eventVendor.agreedPrice ?? null;
 
       if (shouldReplaceSelectedSubServices) {
@@ -1154,19 +916,11 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
           : [];
 
         selectedSubServicesCount = selectedSubServices.length;
-        const pricingPlan = nextVendor
-          ? await findMatchingPricingPlan({
-              vendorId: nextVendor.id,
-              selectedSubServicesCount,
-              transaction,
-            })
-          : null;
-
-        pricingPlanId = pricingPlan?.id ?? null;
+        const calculatedTotal = calculateSubServicesTotal(selectedSubServices);
         agreedPrice =
           typeof data.agreedPrice !== "undefined"
             ? data.agreedPrice
-            : (pricingPlan?.price ?? null);
+            : calculatedTotal;
 
         await syncEventVendorSubServices({
           eventVendorId: eventVendor.id,
@@ -1196,7 +950,6 @@ export const updateEventVendor = async (req: AuthRequest, res: Response) => {
           providedBy: nextProvidedBy,
           vendorId: nextVendorId,
           companyNameSnapshot: nextCompanyNameSnapshot,
-          pricingPlanId,
           selectedSubServicesCount,
           agreedPrice,
           notes:

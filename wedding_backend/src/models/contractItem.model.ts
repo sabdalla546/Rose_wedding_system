@@ -11,7 +11,6 @@ export interface ContractItemAttributes {
   serviceId?: number | null;
   eventVendorId?: number | null;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
 
   itemName: string;
   category?: string | null;
@@ -36,7 +35,6 @@ type ContractItemCreationAttributes = Optional<
   | "serviceId"
   | "eventVendorId"
   | "vendorId"
-  | "pricingPlanId"
   | "category"
   | "notes"
   | "sortOrder"
@@ -57,7 +55,6 @@ export class ContractItem
   public serviceId?: number | null;
   public eventVendorId?: number | null;
   public vendorId?: number | null;
-  public pricingPlanId?: number | null;
 
   public itemName!: string;
   public category?: string | null;
@@ -113,11 +110,6 @@ ContractItem.init(
     },
 
     vendorId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-
-    pricingPlanId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
     },
@@ -182,7 +174,6 @@ ContractItem.init(
       { fields: ["serviceId"] },
       { fields: ["eventVendorId"] },
       { fields: ["vendorId"] },
-      { fields: ["pricingPlanId"] },
       { fields: ["category"] },
       { fields: ["sortOrder"] },
     ],

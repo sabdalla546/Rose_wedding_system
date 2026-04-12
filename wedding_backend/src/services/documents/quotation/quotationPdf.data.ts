@@ -7,7 +7,6 @@ import {
   QuotationItem,
   Service,
   Vendor,
-  VendorPricingPlan,
   Venue,
 } from "../../../models";
 import type {
@@ -109,19 +108,9 @@ export async function buildQuotationPdfData(quotationId: number): Promise<Quotat
             as: "eventVendor",
             include: [
               { model: Vendor, as: "vendor" },
-              {
-                model: VendorPricingPlan,
-                as: "pricingPlan",
-                include: [{ model: Vendor, as: "vendor" }],
-              },
             ],
           },
           { model: Vendor, as: "vendor" },
-          {
-            model: VendorPricingPlan,
-            as: "pricingPlan",
-            include: [{ model: Vendor, as: "vendor" }],
-          },
         ],
       },
     ],
