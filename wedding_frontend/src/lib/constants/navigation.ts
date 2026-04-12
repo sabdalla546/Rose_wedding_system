@@ -1,4 +1,4 @@
-﻿import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Building2,
@@ -98,7 +98,8 @@ const navigationTree: NavigationItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     subtitle: "Overview of bookings, quotations, payments, and operations.",
-    subtitleAr: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØ¹Ø±ÙˆØ¶ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± ÙˆØ§Ù„Ù…Ø¯ÙÙˆØ¹Ø§Øª ÙˆØ§Ù„Ø¹Ù…Ù„ÙŠØ§Øª.",
+    subtitleAr:
+      "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØ¹Ø±ÙˆØ¶ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± ÙˆØ§Ù„Ù…Ø¯ÙÙˆØ¹Ø§Øª ÙˆØ§Ù„Ø¹Ù…Ù„ÙŠØ§Øª.",
   },
   {
     id: SECRETARIAL_ROOT_ID,
@@ -115,7 +116,8 @@ const navigationTree: NavigationItem[] = [
         icon: CalendarDays,
         subtitle:
           "Operational calendar for customer appointments and follow-ups.",
-        subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª ÙˆØ§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØªÙˆÙØ± Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹.",
+        subtitleAr:
+          "Ø¥Ø¯Ø§Ø±Ø© Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª ÙˆØ§Ù„Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØªÙˆÙØ± Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹.",
       },
       {
         id: "events-calendar",
@@ -125,7 +127,8 @@ const navigationTree: NavigationItem[] = [
         href: "/events?view=calendar",
         icon: CalendarRange,
         subtitle: "Operational calendar for wedding events and venue planning.",
-        subtitleAr: "ØªÙ‚ÙˆÙŠÙ… ØªØ´ØºÙŠÙ„ÙŠ Ù„Ù„Ø­ÙÙ„Ø§Øª ÙˆØªØ®Ø·ÙŠØ· Ø§Ù„Ù‚Ø§Ø¹Ø§Øª.",
+        subtitleAr:
+          "ØªÙ‚ÙˆÙŠÙ… ØªØ´ØºÙŠÙ„ÙŠ Ù„Ù„Ø­ÙÙ„Ø§Øª ÙˆØªØ®Ø·ÙŠØ· Ø§Ù„Ù‚Ø§Ø¹Ø§Øª.",
       },
       {
         id: "events-all",
@@ -136,7 +139,8 @@ const navigationTree: NavigationItem[] = [
         icon: CalendarRange,
         subtitle:
           "Manage wedding events, planning sections, and linked records.",
-        subtitleAr: "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø­ÙÙ„Ø§Øª ÙˆØ£Ù‚Ø³Ø§Ù… Ø§Ù„ØªØ®Ø·ÙŠØ· ÙˆØ§Ù„Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø©.",
+        subtitleAr:
+          "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø­ÙÙ„Ø§Øª ÙˆØ£Ù‚Ø³Ø§Ù… Ø§Ù„ØªØ®Ø·ÙŠØ· ÙˆØ§Ù„Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø©.",
       },
       {
         id: "calendar-appointments",
@@ -159,7 +163,8 @@ const navigationTree: NavigationItem[] = [
         icon: UsersRound,
         subtitle:
           "Access complete customer profiles, history, and touchpoints.",
-        subtitleAr: "Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ù…Ù„ÙØ§Øª Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙƒØ§Ù…Ù„Ø© ÙˆØ³Ø¬Ù„ Ø§Ù„ØªØ¹Ø§Ù…Ù„Ø§Øª.",
+        subtitleAr:
+          "Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ù…Ù„ÙØ§Øª Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„ÙƒØ§Ù…Ù„Ø© ÙˆØ³Ø¬Ù„ Ø§Ù„ØªØ¹Ø§Ù…Ù„Ø§Øª.",
       },
     ],
   },
@@ -174,29 +179,6 @@ const navigationTree: NavigationItem[] = [
       "Operational hub for wedding management, external vendors, and service catalog control.",
     subtitleAr: "مركز تشغيلي لإدارة الحفل والشركات والخدمات.",
     children: [
-      {
-        id: "settings-team-vendors",
-        labelKey: "sidebar.nav.vendors",
-        label: "Vendors",
-        labelAr: "الشركات الخارجه",
-        href: "/settings/vendors",
-        icon: Handshake,
-        subtitle:
-          "Manage external vendors, service types, and operational contacts.",
-        subtitleAr:
-          "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
-      },
-      {
-        id: "settings-team-services",
-        labelKey: "sidebar.nav.services",
-        label: "Services",
-        labelAr: "الخدمات",
-        href: "/settings/services",
-        icon: PackageOpen,
-        subtitle:
-          "Manage catalog services, pricing types, and operational event items.",
-        subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
-      },
       {
         id: "quotations-all",
         labelKey: "sidebar.nav.quotations",
@@ -220,17 +202,6 @@ const navigationTree: NavigationItem[] = [
           "Manage contract documents, payment plans, and linked event commitments.",
         subtitleAr:
           "إدارة وثائق العقود وخطط الدفعات والالتزامات المرتبطة بالحفل.",
-      },
-      {
-        id: "settings-team-venues",
-        labelKey: "sidebar.nav.venues",
-        label: "Venues",
-        labelAr: "القاعات",
-        href: "/settings/venues",
-        icon: Building2,
-        subtitle:
-          "Manage wedding halls, venue contacts, and location readiness.",
-        subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
       },
     ],
   },
@@ -258,7 +229,8 @@ const navigationTree: NavigationItem[] = [
         icon: PackageOpen,
         subtitle:
           "Monitor inventory quantities, categories, and condition status.",
-        subtitleAr: "Ù…ØªØ§Ø¨Ø¹Ø© ÙƒÙ…ÙŠØ§Øª Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙˆØªØµÙ†ÙŠÙØ§ØªÙ‡ ÙˆØ­Ø§Ù„ØªÙ‡.",
+        subtitleAr:
+          "Ù…ØªØ§Ø¨Ø¹Ø© ÙƒÙ…ÙŠØ§Øª Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙˆØªØµÙ†ÙŠÙØ§ØªÙ‡ ÙˆØ­Ø§Ù„ØªÙ‡.",
       },
       {
         id: "inventory-reservations",
@@ -269,7 +241,8 @@ const navigationTree: NavigationItem[] = [
         icon: ClipboardCheck,
         subtitle:
           "Reserve decor, furniture, and technical items for upcoming events.",
-        subtitleAr: "Ø­Ø¬Ø² Ø¹Ù†Ø§ØµØ± Ø§Ù„Ø¯ÙŠÙƒÙˆØ± ÙˆØ§Ù„Ø£Ø«Ø§Ø« ÙˆØ§Ù„Ù…Ø¹Ø¯Ø§Øª Ù„Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©.",
+        subtitleAr:
+          "Ø­Ø¬Ø² Ø¹Ù†Ø§ØµØ± Ø§Ù„Ø¯ÙŠÙƒÙˆØ± ÙˆØ§Ù„Ø£Ø«Ø§Ø« ÙˆØ§Ù„Ù…Ø¹Ø¯Ø§Øª Ù„Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©.",
       },
       {
         id: "inventory-orders",
@@ -279,7 +252,8 @@ const navigationTree: NavigationItem[] = [
         href: "/inventory/purchase-orders",
         icon: PackagePlus,
         subtitle: "Track replenishment orders and supplier delivery readiness.",
-        subtitleAr: "Ù…ØªØ§Ø¨Ø¹Ø© Ø£ÙˆØ§Ù…Ø± Ø§Ù„ØªÙˆØ±ÙŠØ¯ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„ØªØ³Ù„ÙŠÙ… Ù…Ù† Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†.",
+        subtitleAr:
+          "Ù…ØªØ§Ø¨Ø¹Ø© Ø£ÙˆØ§Ù…Ø± Ø§Ù„ØªÙˆØ±ÙŠØ¯ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„ØªØ³Ù„ÙŠÙ… Ù…Ù† Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†.",
       },
     ],
   },
@@ -337,6 +311,39 @@ const navigationTree: NavigationItem[] = [
         subtitle:
           "Configure access levels, coordinators, and team responsibilities.",
         subtitleAr: "إعداد مستويات الوصول والمنسقين ومسؤوليات الفريق.",
+      },
+      {
+        id: "settings-vendors",
+        labelKey: "sidebar.nav.vendors",
+        label: "Vendors",
+        labelAr: "الشركات الخارجه",
+        href: "/settings/vendors",
+        icon: Handshake,
+        subtitle:
+          "Manage external vendors, service types, and operational contacts.",
+        subtitleAr: "إدارة الشركات الخارجية وأنواع الخدمات وبيانات التواصل.",
+      },
+      {
+        id: "settings-services",
+        labelKey: "sidebar.nav.services",
+        label: "Services",
+        labelAr: "الخدمات",
+        href: "/settings/services",
+        icon: PackageOpen,
+        subtitle:
+          "Manage catalog services, pricing types, and operational event items.",
+        subtitleAr: "إدارة الخدمات وأنواع التسعير وبنود الحفل التشغيلية.",
+      },
+      {
+        id: "settings-venues",
+        labelKey: "sidebar.nav.venues",
+        label: "Venues",
+        labelAr: "القاعات",
+        href: "/settings/venues",
+        icon: Building2,
+        subtitle:
+          "Manage wedding halls, venue contacts, and location readiness.",
+        subtitleAr: "إدارة القاعات وبيانات التواصل وجاهزية المواقع.",
       },
     ],
   },
@@ -445,9 +452,9 @@ export const inventoryNavigationLeaves: NavigationLeaf[] = (() => {
     return [];
   }
 
-  return flattenNavigationLeaves(inventoryRoot.children, [INVENTORY_ROOT_ID]).filter(
-    (item) => item.href === "/inventory",
-  );
+  return flattenNavigationLeaves(inventoryRoot.children, [
+    INVENTORY_ROOT_ID,
+  ]).filter((item) => item.href === "/inventory");
 })();
 
 export const designerDetailsNavigationLeaves: NavigationLeaf[] = (() => {
@@ -478,18 +485,14 @@ export const settingsNavigationLeaves: NavigationLeaf[] = (() => {
   const settingsRoot = navigationItems.find(
     (item) => item.id === SETTINGS_ROOT_ID,
   );
-  const teamRoot = settingsRoot?.children?.find(
-    (item) => item.id === "settings-team",
-  );
 
-  if (!teamRoot?.children?.length) {
+  if (!settingsRoot?.children?.length) {
     return [];
   }
 
-  return flattenNavigationLeaves(teamRoot.children, [
-    SETTINGS_ROOT_ID,
-    teamRoot.id,
-  ]);
+  return flattenNavigationLeaves(settingsRoot.children, [SETTINGS_ROOT_ID]).filter(
+    (item) => item.id !== "settings-team",
+  );
 })();
 
 export function flattenNavigationLeaves(
@@ -536,5 +539,3 @@ export function collectExpandedNavigationIds(
 
   return [];
 }
-
-

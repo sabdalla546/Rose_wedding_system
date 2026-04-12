@@ -1,4 +1,4 @@
-import {
+﻿import {
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -436,36 +436,31 @@ export const AppCalendar = forwardRef<AppCalendarHandle, AppCalendarProps>(
                   dayCellContent={(arg) => {
                     const key = normalizeDateKey(arg.date);
                     const markers = dayMarkersMap.get(key) ?? [];
-                    const firstMarker = markers[0] ?? null;
-                    const extraCount =
-                      markers.length > 1 ? markers.length - 1 : 0;
-
                     return (
                       <div className="app-calendar-day-cell">
                         <div className="app-calendar-day-number">
                           {arg.dayNumberText}
                         </div>
 
-                        {firstMarker ? (
+                        {markers.length > 0 ? (
                           <div className="app-calendar-day-markers">
-                            <button
-                              type="button"
-                              className="app-calendar-day-marker"
-                              title={
-                                extraCount > 0
-                                  ? `${firstMarker.customerName ?? ""} +${extraCount}`
-                                  : (firstMarker.customerName ?? "Wedding date")
-                              }
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                suppressNextDateClickRef.current = true;
-                                onDayMarkerSelect?.(firstMarker);
-                              }}
-                            >
-                              {firstMarker.label ?? "★"}
-                              {extraCount > 0 ? ` +${extraCount}` : ""}
-                            </button>
+                            {markers.map((marker) => (
+                              <button
+                                key={`${marker.appointmentId}-${marker.date}`}
+                                type="button"
+                                aria-label={marker.customerName ?? "Wedding date"}
+                                className="app-calendar-day-marker"
+                                title={marker.customerName ?? "Wedding date"}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  suppressNextDateClickRef.current = true;
+                                  onDayMarkerSelect?.(marker);
+                                }}
+                              >
+                                {"\u2605"}
+                              </button>
+                            ))}
                           </div>
                         ) : null}
                       </div>
