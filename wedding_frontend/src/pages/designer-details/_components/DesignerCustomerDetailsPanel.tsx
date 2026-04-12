@@ -1,19 +1,21 @@
-import type { ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Loader2, ReceiptText, Save, ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  EventEmptyState,
-} from "@/pages/events/_components/EventDetailsPrimitives";
-import { cn } from "@/lib/utils";
-import type { Quotation } from "@/pages/quotations/types";
+import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
+import { EventEmptyState } from "@/pages/events/_components/EventDetailsPrimitives";
 import { formatMoney as formatServiceMoney } from "@/pages/services/adapters";
 import type { EventServiceItem } from "@/pages/services/types";
-import { formatMoney as formatVendorMoney } from "@/pages/vendors/adapters";
+import {
+  formatMoney as formatVendorMoney,
+  sumSelectedVendorSubServicePrices,
+} from "@/pages/vendors/adapters";
 import type { EventVendorLink } from "@/pages/vendors/types";
+import { cn } from "@/lib/utils";
+import type { Quotation } from "@/pages/quotations/types";
 import { useDesignerCustomerDetails } from "../hooks/useDesignerCustomerDetails";
 
 type Props = {
@@ -36,9 +38,18 @@ function ChecklistCard({
   emptyDescription: string;
   children: ReactNode;
 }) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <div className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-[24px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)]">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--lux-row-border)] px-5 py-5">
+      <div
+        dir={i18n.dir()}
+        className={cn(
+          "flex items-center justify-between gap-3 border-b border-[var(--lux-row-border)] px-5 py-5",
+          isRtl ? "flex-row-reverse" : "flex-row",
+        )}
+      >
         <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
           {title}
         </h3>
@@ -76,7 +87,6 @@ function ChecklistRow({
   description,
   meta,
   value,
-  isRtl,
 }: {
   checked: boolean;
   disabled?: boolean;
@@ -86,12 +96,16 @@ function ChecklistRow({
   description?: string | null;
   meta: string[];
   value?: string | null;
-  isRtl: boolean;
 }) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <label
+      dir={i18n.dir()}
       className={cn(
-        "flex gap-4 px-5 py-5 transition-all",
+        "flex items-start gap-4 px-5 py-5 transition-all",
+        isRtl ? "flex-row-reverse" : "flex-row",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
         checked
           ? "bg-[color-mix(in_srgb,var(--lux-gold)_6%,var(--lux-control-surface))]"
@@ -106,13 +120,13 @@ function ChecklistRow({
       />
 
       <div className="min-w-0 flex-1 space-y-2">
-        <div
-          className={cn(
-            "flex flex-wrap items-start justify-between gap-3",
-            isRtl ? "text-right" : "text-left",
-          )}
-        >
-          <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div
+            className={cn(
+              "min-w-0 flex-1 space-y-1",
+              isRtl ? "text-right" : "text-left",
+            )}
+          >
             <p className="break-words text-base font-semibold text-[var(--lux-heading)]">
               {title}
             </p>
@@ -124,7 +138,12 @@ function ChecklistRow({
           </div>
 
           {value ? (
-            <div className="text-sm font-semibold text-[var(--lux-gold)]">
+            <div
+              className={cn(
+                "shrink-0 text-sm font-semibold text-[var(--lux-gold)]",
+                isRtl ? "text-left" : "text-right",
+              )}
+            >
               {value}
             </div>
           ) : null}
@@ -145,7 +164,7 @@ function ChecklistRow({
           <div
             className={cn(
               "flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--lux-text-secondary)]",
-              isRtl ? "justify-start" : "justify-start",
+              isRtl ? "justify-end text-right" : "justify-start text-left",
             )}
           >
             {meta.map((item) => (
@@ -158,6 +177,185 @@ function ChecklistRow({
   );
 }
 
+function VendorChecklistItem({
+  vendor,
+  linkedVendor,
+  isBusy,
+  selectedSubServiceIds,
+  onToggleVendor,
+  onToggleSubService,
+  onCalculatedPriceChange,
+}: {
+  vendor: ReturnType<typeof useDesignerCustomerDetails>["vendorOptions"][number];
+  linkedVendor?: EventVendorLink;
+  isBusy: boolean;
+  selectedSubServiceIds: number[];
+  onToggleVendor: (checked: boolean) => void;
+  onToggleSubService: (subServiceId: number, checked: boolean) => void;
+  onCalculatedPriceChange: (value: string) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+  const { data: subServicesResponse, isLoading: subServicesLoading } =
+    useVendorSubServices({
+      currentPage: 1,
+      itemsPerPage: 200,
+      searchQuery: "",
+      vendorId: vendor.id,
+      vendorType: "all",
+      isActive: "all",
+      enabled: vendor.selected,
+    });
+
+  const subServices = useMemo(
+    () =>
+      [...(subServicesResponse?.data ?? [])].sort((left, right) => {
+        if (left.isActive !== right.isActive) {
+          return left.isActive ? -1 : 1;
+        }
+
+        if (left.sortOrder !== right.sortOrder) {
+          return left.sortOrder - right.sortOrder;
+        }
+
+        return left.name.localeCompare(right.name);
+      }),
+    [subServicesResponse?.data],
+  );
+
+  const calculatedPrice = useMemo(
+    () =>
+      Number(
+        sumSelectedVendorSubServicePrices(subServices, selectedSubServiceIds),
+      ).toFixed(3),
+    [selectedSubServiceIds, subServices],
+  );
+
+  useEffect(() => {
+    if (!vendor.selected) {
+      return;
+    }
+
+    onCalculatedPriceChange(calculatedPrice);
+  }, [calculatedPrice, onCalculatedPriceChange, vendor.selected]);
+
+  const rowValue =
+    vendor.selected && selectedSubServiceIds.length > 0
+      ? formatVendorMoney(calculatedPrice)
+      : linkedVendor?.agreedPrice != null
+        ? formatVendorMoney(linkedVendor.agreedPrice)
+        : null;
+
+  return (
+    <div>
+      <ChecklistRow
+        checked={vendor.selected}
+        disabled={isBusy}
+        onCheckedChange={onToggleVendor}
+        title={vendor.name}
+        subtitle={vendor.typeLabel}
+        description={vendor.description}
+        value={rowValue}
+        meta={[
+          vendor.contactPerson
+            ? `${t("designer.contact")}: ${vendor.contactPerson}`
+            : t("designer.catalogVendor"),
+          vendor.phone
+            ? `${t("designer.phone")}: ${vendor.phone}`
+            : vendor.isActive
+              ? t("designer.active")
+              : t("designer.inactive"),
+          linkedVendor?.notes ? linkedVendor.notes : t("designer.notLinked"),
+        ]}
+      />
+
+      {vendor.selected ? (
+        <div className="border-t border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-5 py-4">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className="rounded-full border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs text-[var(--lux-gold)]"
+            >
+              {t("designer.subServices")} {selectedSubServiceIds.length}
+            </Badge>
+            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
+              {t("designer.price")} {formatVendorMoney(calculatedPrice)}
+            </Badge>
+          </div>
+
+          {subServicesLoading ? (
+            <div className="flex items-center text-sm text-[var(--lux-text-secondary)]">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="ms-2">
+                {t("common.loading", { defaultValue: "Loading..." })}
+              </span>
+            </div>
+          ) : subServices.length ? (
+            <div className="grid grid-cols-1 gap-2">
+              {subServices.map((subService) => {
+                const checked = selectedSubServiceIds.includes(subService.id);
+
+                return (
+                  <label
+                    key={subService.id}
+                    dir={i18n.dir()}
+                    className={cn(
+                      "flex items-start gap-3 rounded-[8px] border px-4 py-3 transition-all",
+                      isRtl ? "flex-row-reverse" : "flex-row",
+                      checked
+                        ? "border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)]"
+                        : "border-[var(--lux-row-border)] bg-[var(--lux-control-surface)]",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      disabled={isBusy}
+                      onCheckedChange={(value) =>
+                        onToggleSubService(subService.id, Boolean(value))
+                      }
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--lux-heading)]">
+                          {subService.name}
+                        </p>
+                        <span
+                          className={cn(
+                            "shrink-0 text-sm font-semibold text-[var(--lux-gold)]",
+                            isRtl ? "text-left" : "text-right",
+                          )}
+                        >
+                          {formatVendorMoney(subService.price)}
+                        </span>
+                      </div>
+                      <p
+                        className={cn(
+                          "text-xs leading-5 text-[var(--lux-text-secondary)]",
+                          isRtl ? "text-right" : "text-left",
+                        )}
+                      >
+                        {subService.description ||
+                          subService.code ||
+                          t("designer.noDescription")}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <EventEmptyState
+              title={t("designer.noSubServicesTitle")}
+              description={t("designer.noSubServicesDescription")}
+              className="flex min-h-[120px] items-center justify-center"
+            />
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function DesignerCustomerDetailsPanel({
   eventId,
   serviceItems,
@@ -165,6 +363,7 @@ export function DesignerCustomerDetailsPanel({
   latestQuotation,
 }: Props) {
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
   const model = useDesignerCustomerDetails({
     eventId,
     serviceItems,
@@ -173,184 +372,103 @@ export function DesignerCustomerDetailsPanel({
   });
 
   const isBusy = model.isSaving;
-  const saveLabel =
-    i18n.language === "ar" ? "حفظ" : t("common.save", { defaultValue: "Save" });
-  const createQuotationLabel =
-    i18n.language === "ar"
-      ? "إنشاء عرض سعر"
-      : t("quotations.create", { defaultValue: "Create Quotation" });
-  const createContractLabel =
-    i18n.language === "ar"
-      ? "إنشاء عقد"
-      : t("contracts.create", { defaultValue: "Create Contract" });
 
   if (model.servicesLoadFailed || model.vendorsLoadFailed) {
     return (
       <EventEmptyState
-        title={
-          i18n.language === "ar"
-            ? "تعذر تحميل تفاصيل العميل"
-            : "Unable to load client details"
-        }
-        description={
-          i18n.language === "ar"
-            ? "حدث خطأ أثناء تحميل الخدمات أو الموردين المتاحين لهذا الحدث."
-            : "An error occurred while loading the available services or vendors for this event."
-        }
+        title={t("designer.loadClientDetailsFailedTitle")}
+        description={t("designer.loadClientDetailsFailedDescription")}
       />
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {model.isDirty ? (
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end">
           <Badge
             variant="outline"
             className="rounded-full border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs text-[var(--lux-gold)]"
           >
-            {i18n.language === "ar" ? "تغييرات غير محفوظة" : "Unsaved changes"}
+            {t("designer.unsavedChanges")}
           </Badge>
         </div>
       ) : null}
 
       {model.servicesLoading || model.vendorsLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center text-sm text-[var(--lux-text-secondary)]">
+        <div className="flex min-h-[280px] items-center justify-center text-sm text-[var(--lux-text-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="ms-2">
             {t("common.loading", { defaultValue: "Loading..." })}
           </span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2 xl:gap-6">
           <ChecklistCard
-            title={i18n.language === "ar" ? "الخدمات" : "Services"}
-            count={model.serviceOptions.length}
-            emptyTitle={
-              i18n.language === "ar" ? "لا توجد خدمات متاحة" : "No services found"
-            }
-            emptyDescription={
-              i18n.language === "ar"
-                ? "لم يتم العثور على خدمات متاحة في كاتالوج النظام."
-                : "No available services were found in the catalog."
-            }
+            title={t("designer.vendors")}
+            count={model.vendorOptions.length}
+            emptyTitle={t("designer.noVendorsTitle")}
+            emptyDescription={t("designer.noVendorsDescription")}
           >
-            {model.serviceOptions.map((service) => (
-              (() => {
-                const linkedItem = model.serviceItemsByServiceId.get(service.id);
-                const displayValue =
-                  linkedItem?.totalPrice != null
-                    ? formatServiceMoney(linkedItem.totalPrice)
-                    : linkedItem?.unitPrice != null
-                      ? formatServiceMoney(linkedItem.unitPrice)
-                      : null;
-
-                return (
-              <ChecklistRow
-                key={service.id}
-                checked={service.selected}
-                disabled={isBusy}
-                onCheckedChange={(checked) =>
-                  model.toggleService(service.id, checked)
+            {model.vendorOptions.map((vendor) => (
+              <VendorChecklistItem
+                key={vendor.id}
+                vendor={vendor}
+                linkedVendor={model.vendorLinksByVendorId.get(vendor.id)}
+                isBusy={isBusy}
+                selectedSubServiceIds={
+                  model.selectedVendorSubServices[vendor.id] ?? []
                 }
-                title={service.name}
-                subtitle={service.categoryLabel}
-                description={service.description}
-                value={displayValue}
-                meta={[
-                  service.code
-                    ? i18n.language === "ar"
-                      ? `الكود: ${service.code}`
-                      : `Code: ${service.code}`
-                    : i18n.language === "ar"
-                      ? "خدمة من كاتالوج النظام"
-                      : "Catalog service",
-                  !service.isActive
-                    ? i18n.language === "ar"
-                      ? "غير نشطة"
-                      : "Inactive"
-                    : i18n.language === "ar"
-                      ? "نشطة"
-                      : "Active",
-                  linkedItem?.notes
-                    ? linkedItem.notes
-                    : i18n.language === "ar"
-                      ? "غير مرتبطة بعد"
-                      : "Not linked yet",
-                ]}
-                isRtl={model.isRtl}
+                onToggleVendor={(checked) => model.toggleVendor(vendor.id, checked)}
+                onToggleSubService={(subServiceId, checked) =>
+                  model.toggleVendorSubService(vendor.id, subServiceId, checked)
+                }
+                onCalculatedPriceChange={(value) =>
+                  model.setVendorCalculatedAgreedPrice(vendor.id, value)
+                }
               />
-                );
-              })()
             ))}
           </ChecklistCard>
 
           <ChecklistCard
-            title={
-              i18n.language === "ar"
-                ? "الشركات الخارجية / الموردين"
-                : "External Companies / Vendors"
-            }
-            count={model.vendorOptions.length}
-            emptyTitle={
-              i18n.language === "ar" ? "لا توجد شركات متاحة" : "No vendors found"
-            }
-            emptyDescription={
-              i18n.language === "ar"
-                ? "لم يتم العثور على شركات أو موردين متاحين في كاتالوج النظام."
-                : "No available companies or vendors were found in the catalog."
-            }
+            title={t("designer.services")}
+            count={model.serviceOptions.length}
+            emptyTitle={t("designer.noServicesTitle")}
+            emptyDescription={t("designer.noServicesDescription")}
           >
-            {model.vendorOptions.map((vendor) => (
-              (() => {
-                const linkedVendor = model.vendorLinksByVendorId.get(vendor.id);
-                const displayValue =
-                  linkedVendor?.agreedPrice != null
-                    ? formatVendorMoney(linkedVendor.agreedPrice)
+            {model.serviceOptions.map((service) => {
+              const linkedItem = model.serviceItemsByServiceId.get(service.id);
+              const displayValue =
+                linkedItem?.totalPrice != null
+                  ? formatServiceMoney(linkedItem.totalPrice)
+                  : linkedItem?.unitPrice != null
+                    ? formatServiceMoney(linkedItem.unitPrice)
                     : null;
 
-                return (
-              <ChecklistRow
-                key={vendor.id}
-                checked={vendor.selected}
-                disabled={isBusy}
-                onCheckedChange={(checked) =>
-                  model.toggleVendor(vendor.id, checked)
-                }
-                title={vendor.name}
-                subtitle={vendor.typeLabel}
-                description={vendor.description}
-                value={displayValue}
-                meta={[
-                  vendor.contactPerson
-                    ? i18n.language === "ar"
-                      ? `المسؤول: ${vendor.contactPerson}`
-                      : `Contact: ${vendor.contactPerson}`
-                    : i18n.language === "ar"
-                      ? "شركة من كاتالوج النظام"
-                      : "Catalog vendor",
-                  vendor.phone
-                    ? i18n.language === "ar"
-                      ? `الهاتف: ${vendor.phone}`
-                      : `Phone: ${vendor.phone}`
-                    : !vendor.isActive
-                      ? i18n.language === "ar"
-                      ? "غير نشط"
-                      : "Inactive"
-                      : i18n.language === "ar"
-                        ? "نشط"
-                        : "Active",
-                  linkedVendor?.notes
-                    ? linkedVendor.notes
-                    : i18n.language === "ar"
-                      ? "غير مرتبط بعد"
-                      : "Not linked yet",
-                ]}
-                isRtl={model.isRtl}
-              />
-                );
-              })()
-            ))}
+              return (
+                <ChecklistRow
+                  key={service.id}
+                  checked={service.selected}
+                  disabled={isBusy}
+                  onCheckedChange={(checked) =>
+                    model.toggleService(service.id, checked)
+                  }
+                  title={service.name}
+                  subtitle={service.categoryLabel}
+                  description={service.description}
+                  value={displayValue}
+                  meta={[
+                    service.code
+                      ? `${t("designer.code")}: ${service.code}`
+                      : t("designer.catalogService"),
+                    service.isActive
+                      ? t("designer.active")
+                      : t("designer.inactive"),
+                    linkedItem?.notes ? linkedItem.notes : t("designer.notLinked"),
+                  ]}
+                />
+              );
+            })}
           </ChecklistCard>
         </div>
       )}
@@ -358,14 +476,20 @@ export function DesignerCustomerDetailsPanel({
       {(model.linkedCatalogOnlyCounts.manualServices > 0 ||
         model.linkedCatalogOnlyCounts.manualVendors > 0) && (
         <p className="text-xs leading-5 text-[var(--lux-text-muted)]">
-          {i18n.language === "ar"
-            ? `العناصر اليدوية غير المرتبطة بكاتالوج النظام ستبقى كما هي: ${model.linkedCatalogOnlyCounts.manualServices} خدمة و ${model.linkedCatalogOnlyCounts.manualVendors} مورد.`
-            : `Manual items not linked to the system catalog remain unchanged: ${model.linkedCatalogOnlyCounts.manualServices} services and ${model.linkedCatalogOnlyCounts.manualVendors} vendors.`}
+          {t("designer.manualItemsRemain", {
+            services: model.linkedCatalogOnlyCounts.manualServices,
+            vendors: model.linkedCatalogOnlyCounts.manualVendors,
+          })}
         </p>
       )}
 
-      <div className="border-t border-[var(--lux-row-border)] pt-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+      <div className="border-t border-[var(--lux-row-border)] pt-4 sm:pt-5">
+        <div
+          className={cn(
+            "flex flex-col gap-3 sm:flex-wrap sm:justify-center",
+            isRtl ? "sm:flex-row-reverse" : "sm:flex-row",
+          )}
+        >
           <Button
             type="button"
             variant="outline"
@@ -378,7 +502,7 @@ export function DesignerCustomerDetailsPanel({
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {saveLabel}
+            {t("designer.save")}
           </Button>
 
           <Button
@@ -392,7 +516,7 @@ export function DesignerCustomerDetailsPanel({
             ) : (
               <ReceiptText className="h-4 w-4" />
             )}
-            {createQuotationLabel}
+            {t("designer.createQuotation")}
           </Button>
 
           <Button
@@ -406,7 +530,7 @@ export function DesignerCustomerDetailsPanel({
             ) : (
               <ScrollText className="h-4 w-4" />
             )}
-            {createContractLabel}
+            {t("designer.createContract")}
           </Button>
         </div>
       </div>

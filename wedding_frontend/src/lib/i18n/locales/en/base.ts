@@ -1624,6 +1624,38 @@ export const baseEn = {
     loadingEventsPlaceholder: "Loading events...",
     currentEventBadge: "Current Event",
   },
+  designer: {
+    services: "Services",
+    vendors: "External Companies / Vendors",
+    save: "Save",
+    createQuotation: "Create Quotation",
+    createContract: "Create Contract",
+    unsavedChanges: "Unsaved changes",
+    notLinked: "Not linked yet",
+    active: "Active",
+    inactive: "Inactive",
+    code: "Code",
+    contact: "Contact",
+    phone: "Phone",
+    price: "Price",
+    subServices: "Sub-services",
+    catalogService: "Catalog service",
+    catalogVendor: "Catalog vendor",
+    noDescription: "No description",
+    noServicesTitle: "No services found",
+    noServicesDescription: "No available services were found in the catalog.",
+    noVendorsTitle: "No vendors found",
+    noVendorsDescription:
+      "No available companies or vendors were found in the catalog.",
+    noSubServicesTitle: "No sub-services found",
+    noSubServicesDescription:
+      "This vendor does not have configured sub-services yet.",
+    loadClientDetailsFailedTitle: "Unable to load client details",
+    loadClientDetailsFailedDescription:
+      "An error occurred while loading the available services or vendors for this event.",
+    manualItemsRemain:
+      "Manual items not linked to the system catalog remain unchanged: {{services}} services and {{vendors}} vendors.",
+  },
   execution: {
     workspaceTitle: "Execution Workspace",
     workspaceDescription:

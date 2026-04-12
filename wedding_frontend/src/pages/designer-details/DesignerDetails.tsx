@@ -5,11 +5,9 @@ import {
   CalendarRange,
   ClipboardList,
   Handshake,
-  Layers3,
   PackageOpen,
   PenSquare,
   Plus,
-  Sparkles,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -38,6 +36,7 @@ import {
   getEventDisplayTitle,
 } from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
+import type { EventCalendarRecord } from "@/pages/events/types";
 import {
   DeleteEventServiceConfirmDialog,
   DeleteEventVendorConfirmDialog,
@@ -86,7 +85,19 @@ function isWorkspaceTabValue(value: string | null): value is WorkspaceTabValue {
   );
 }
 
-function DesignerEventWorkspace({ eventId }: { eventId: string }) {
+type DesignerEventWorkspaceProps = {
+  eventId: string;
+  availableEvents: EventCalendarRecord[];
+  eventsLoading: boolean;
+  onEventChange: (value: string) => void;
+};
+
+function DesignerEventWorkspace({
+  eventId,
+  availableEvents,
+  eventsLoading,
+  onEventChange,
+}: DesignerEventWorkspaceProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
@@ -149,6 +160,46 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const activeTab = isWorkspaceTabValue(requestedTab)
     ? requestedTab
     : "client-details";
+  const eventSelector = (
+    <div className="w-full sm:max-w-[320px]">
+      <Select
+        value={eventId}
+        onValueChange={onEventChange}
+        disabled={eventsLoading || availableEvents.length === 0}
+      >
+        <SelectTrigger
+          dir={i18n.dir()}
+          className={cn(
+            "h-12",
+            isRtl
+              ? "text-right [&_span]:text-right"
+              : "text-left [&_span]:text-left",
+          )}
+        >
+          <SelectValue
+            placeholder={
+              eventsLoading
+                ? t("designerDetails.loadingEventsPlaceholder")
+                : t("designerDetails.selectEventPlaceholder")
+            }
+          />
+        </SelectTrigger>
+        <SelectContent dir={i18n.dir()}>
+          {availableEvents.map((eventOption) => (
+            <SelectItem
+              key={eventOption.id}
+              value={String(eventOption.id)}
+              className={cn(isRtl ? "text-right" : "text-left")}
+            >
+              <span dir="auto" className="block w-full">
+                {getEventDisplayTitle(eventOption)}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   useEffect(() => {
     if (!requestedTab) {
@@ -250,7 +301,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   return (
     <div className="space-y-6">
       <Tabs
-        className="space-y-5"
+        className="space-y-0"
         value={activeTab}
         onValueChange={(value) => {
           if (isWorkspaceTabValue(value)) {
@@ -260,7 +311,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
       >
         <SectionCard className="overflow-hidden border border-[var(--lux-row-border)] p-0">
           <div
-            className="border-b border-[var(--lux-row-border)] px-5 py-5 sm:px-6"
+            className="px-5 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-6"
             style={{
               background:
                 activeTab === "client-details"
@@ -268,90 +319,105 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
                   : "transparent",
             }}
           >
-            <div
-              className={cn(
-                "flex flex-col gap-4 lg:items-start lg:justify-between",
-                "lg:flex-row",
-              )}
-            >
-              <div className={cn(isRtl ? "text-right" : "text-left")}>
-                <h3
+            {activeTab === "client-details" ? (
+              <div className="relative space-y-4">
+                <div
                   className={cn(
-                    "text-lg font-semibold sm:text-xl",
-                    activeTab === "client-details"
-                      ? "text-[var(--lux-gold)]"
-                      : "text-[var(--lux-heading)]",
+                    "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+                    isRtl ? "sm:flex-row-reverse" : "sm:flex-row",
                   )}
                 >
-                  {activeTab === "client-details"
-                    ? i18n.language === "ar"
-                      ? "تفاصيل العميل"
-                      : "Client Details"
-                    : t("designerDetails.currentEventBadge")}
-                </h3>
-                <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
-                  {activeTab === "client-details"
-                    ? i18n.language === "ar"
-                      ? "حدّد الخدمات والشركات المطلوبة للحدث ثم احفظها أو أنشئ منها عرض السعر أو العقد."
-                      : "Select the required services and companies for the event, then save them or create the quotation or contract."
-                    : t("designerDetails.shortcutsDescription")}
-                </p>
-              </div>
+                  {eventSelector}
 
-              <div className="flex flex-wrap items-center gap-2">
-                {activeTab === "client-details" ? (
-                  <>
-                    <span className="rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs font-semibold text-[var(--lux-gold)]">
-                      {i18n.language === "ar"
-                        ? `${serviceItems.length} خدمة`
-                        : `${serviceItems.length} Services`}
-                    </span>
+                  <div
+                    className={cn(
+                      "flex flex-wrap gap-2",
+                      isRtl ? "justify-end" : "justify-start",
+                    )}
+                  >
                     <span className="rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs font-semibold text-[var(--lux-gold)]">
                       {i18n.language === "ar"
                         ? `${vendorLinks.length} مورد`
                         : `${vendorLinks.length} Vendors`}
                     </span>
-                  </>
-                ) : (
-                  <>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/settings/vendors">
-                        <Handshake className="h-4 w-4" />
-                        {t("designerDetails.openVendors")}
-                      </Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/settings/services">
-                        <PackageOpen className="h-4 w-4" />
-                        {t("designerDetails.openServices")}
-                      </Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+                    <span className="rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs font-semibold text-[var(--lux-gold)]">
+                      {i18n.language === "ar"
+                        ? `${serviceItems.length} خدمة`
+                        : `${serviceItems.length} Services`}
+                    </span>
+                  </div>
+                </div>
 
-          <TabsList
-            className={cn(
-              "w-full justify-start gap-0 rounded-none border-0 bg-transparent p-0 shadow-none",
-              isRtl ? "flex-row-reverse" : "flex-row",
-            )}
-          >
-            {workspaceTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
+                <div className="mx-auto flex max-w-3xl flex-col items-center gap-2 text-center">
+                  <h3 className="text-2xl font-semibold text-[var(--lux-gold)] sm:text-3xl">
+                    {i18n.language === "ar"
+                      ? "تفاصيل العميل"
+                      : "Client Details"}
+                  </h3>
+                  <p className="max-w-2xl text-sm leading-6 text-[var(--lux-text-secondary)] sm:text-[15px]">
+                    {i18n.language === "ar"
+                      ? "حدّد الخدمات والشركات المطلوبة للحدث ثم احفظها أو أنشئ منها عرض السعر أو العقد."
+                      : "Select the required services and companies for the event, then save them or create the quotation or contract."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div
                 className={cn(
-                  "min-h-[58px] flex-none rounded-none border-b-2 border-transparent px-5 py-3 text-sm font-semibold data-[state=active]:border-[var(--lux-gold)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--lux-gold)] data-[state=active]:shadow-none",
+                  "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between",
                   isRtl ? "text-right" : "text-left",
                 )}
               >
-                <span className="truncate">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <div className="border-t border-[var(--lux-row-border)] px-4 py-5 sm:px-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--lux-heading)] sm:text-xl">
+                    {t("designerDetails.currentEventBadge")}
+                  </h3>
+                  <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
+                    {t("designerDetails.shortcutsDescription")}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {eventSelector}
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/settings/vendors">
+                      <Handshake className="h-4 w-4" />
+                      {t("designerDetails.openVendors")}
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/settings/services">
+                      <PackageOpen className="h-4 w-4" />
+                      {t("designerDetails.openServices")}
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-y border-[var(--lux-row-border)] px-2 sm:px-4">
+            <TabsList
+              className={cn(
+                "h-auto w-full justify-start gap-1 rounded-none border-0 bg-transparent p-0 shadow-none",
+                isRtl ? "flex-row-reverse" : "flex-row",
+              )}
+            >
+              {workspaceTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={cn(
+                    "min-h-[52px] flex-1 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-semibold data-[state=active]:border-[var(--lux-gold)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--lux-gold)] data-[state=active]:shadow-none sm:flex-none",
+                    isRtl ? "text-right" : "text-left",
+                  )}
+                >
+                  <span className="truncate">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-6">
             <TabsContent value="overview" className="mt-0">
               <EventOverviewPanel eventId={eventId} />
             </TabsContent>
@@ -633,7 +699,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 
 export default function DesignerDetailsPage() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.dir() === "rtl";
   const [searchParams, setSearchParams] = useSearchParams();
   const eventFilters = useMemo(getInitialEventsBusinessFilters, []);
 
@@ -697,151 +762,7 @@ export default function DesignerDetailsPage() {
     >
       <PageContainer className="pb-4 pt-4 text-foreground">
         <div dir={i18n.dir()} className="mx-auto w-full max-w-7xl space-y-6">
-          <SectionCard
-            className="relative overflow-hidden border border-[var(--lux-row-border)]"
-            style={{
-              background:
-                "radial-gradient(circle at top right, color-mix(in srgb, var(--lux-gold) 12%, transparent), transparent 42%), linear-gradient(135deg, color-mix(in srgb, var(--lux-panel-surface) 92%, black), color-mix(in srgb, var(--lux-control-hover) 52%, transparent))",
-            }}
-          >
-            <div
-              className={cn(
-                "flex flex-col gap-5 lg:items-start lg:justify-between",
-                "lg:flex-row",
-              )}
-            >
-              <div
-                className={cn(
-                  "max-w-3xl space-y-4",
-                  isRtl ? "text-right" : "text-left",
-                )}
-              >
-                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-4 py-2 text-xs font-semibold text-[var(--lux-gold)]">
-                  <Sparkles className="h-4 w-4" />
-                  {t("designerDetails.title")}
-                </div>
-                <div className="space-y-3">
-                  <h1 className="text-3xl font-semibold text-[var(--lux-heading)]">
-                    {t("designerDetails.title")}
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-[var(--lux-text-secondary)]">
-                    {t("designerDetails.subtitle")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-[var(--lux-gold-border)] bg-[color-mix(in_srgb,var(--lux-gold)_10%,transparent)] text-[var(--lux-gold)] shadow-[0_20px_60px_color-mix(in_srgb,var(--lux-gold)_18%,transparent)]">
-                <Layers3 className="h-9 w-9" />
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard className="space-y-5">
-            <div
-              className={cn(
-                "flex flex-col gap-3 xl:items-end xl:justify-between",
-                "xl:flex-row",
-              )}
-            >
-              <div
-                className={cn("space-y-2", isRtl ? "text-right" : "text-left")}
-              >
-                <h2 className="text-xl font-semibold text-[var(--lux-heading)]">
-                  {t("designerDetails.selectorTitle")}
-                </h2>
-                <p className="max-w-3xl text-sm leading-7 text-[var(--lux-text-secondary)]">
-                  {t("designerDetails.selectorDescription")}
-                </p>
-              </div>
-
-              <div className="w-full xl:max-w-md">
-                <Select
-                  value={effectiveSelectedEventId || undefined}
-                  onValueChange={handleEventChange}
-                  disabled={eventsLoading || availableEvents.length === 0}
-                >
-                  <SelectTrigger
-                    dir={i18n.dir()}
-                    className={cn(
-                      "h-12",
-                      isRtl
-                        ? "text-right [&_span]:text-right"
-                        : "text-left [&_span]:text-left",
-                    )}
-                  >
-                    <SelectValue
-                      placeholder={
-                        eventsLoading
-                          ? t("designerDetails.loadingEventsPlaceholder")
-                          : t("designerDetails.selectEventPlaceholder")
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent dir={i18n.dir()}>
-                    {availableEvents.map((event) => (
-                      <SelectItem
-                        key={event.id}
-                        value={String(event.id)}
-                        className={cn(isRtl ? "text-right" : "text-left")}
-                      >
-                        <span dir="auto" className="block w-full">
-                          {getEventDisplayTitle(event)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p
-                  className={cn(
-                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl
-                      ? "tracking-normal text-right"
-                      : "uppercase tracking-[0.16em] text-left",
-                  )}
-                >
-                  {t("designerDetails.capabilityEvent")}
-                </p>
-                <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.capabilityEventDescription")}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p
-                  className={cn(
-                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl
-                      ? "tracking-normal text-right"
-                      : "uppercase tracking-[0.16em] text-left",
-                  )}
-                >
-                  {t("designerDetails.capabilityVendors")}
-                </p>
-                <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.capabilityVendorsDescription")}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-panel-surface)] px-4 py-4">
-                <p
-                  className={cn(
-                    "text-[11px] font-semibold text-[var(--lux-text-muted)]",
-                    isRtl
-                      ? "tracking-normal text-right"
-                      : "uppercase tracking-[0.16em] text-left",
-                  )}
-                >
-                  {t("designerDetails.capabilityServices")}
-                </p>
-                <p className="mt-2 text-sm font-medium text-[var(--lux-text)]">
-                  {t("designerDetails.capabilityServicesDescription")}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
+          {/* DesignerDetails hero intentionally disabled per updated page layout. */}
 
           {eventsLoading ? (
             <EventEmptyState
@@ -879,7 +800,12 @@ export default function DesignerDetailsPage() {
               }
             />
           ) : effectiveSelectedEventId ? (
-            <DesignerEventWorkspace eventId={effectiveSelectedEventId} />
+            <DesignerEventWorkspace
+              eventId={effectiveSelectedEventId}
+              availableEvents={availableEvents}
+              eventsLoading={eventsLoading}
+              onEventChange={handleEventChange}
+            />
           ) : (
             <EventEmptyState
               title={t("designerDetails.chooseEventTitle")}

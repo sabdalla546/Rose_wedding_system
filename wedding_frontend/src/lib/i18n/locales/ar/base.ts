@@ -257,6 +257,38 @@ export const baseAr = {
     loadingEventsPlaceholder: "جاري تحميل الفعاليات...",
     currentEventBadge: "الفعالية الحالية",
   },
+  designer: {
+    services: "الخدمات",
+    vendors: "الشركات الخارجية / الموردين",
+    save: "حفظ",
+    createQuotation: "إنشاء عرض سعر",
+    createContract: "إنشاء عقد",
+    unsavedChanges: "تغييرات غير محفوظة",
+    notLinked: "غير مرتبط بعد",
+    active: "نشط",
+    inactive: "غير نشط",
+    code: "الكود",
+    contact: "المسؤول",
+    phone: "الهاتف",
+    price: "السعر",
+    subServices: "الخدمات الفرعية",
+    catalogService: "خدمة من كاتالوج النظام",
+    catalogVendor: "شركة من كاتالوج النظام",
+    noDescription: "لا يوجد وصف",
+    noServicesTitle: "لا توجد خدمات متاحة",
+    noServicesDescription: "لم يتم العثور على خدمات متاحة في كاتالوج النظام.",
+    noVendorsTitle: "لا توجد شركات متاحة",
+    noVendorsDescription:
+      "لم يتم العثور على شركات أو موردين متاحين في كاتالوج النظام.",
+    noSubServicesTitle: "لا توجد خدمات فرعية",
+    noSubServicesDescription:
+      "هذا المورد لا يحتوي على خدمات فرعية مهيأة حتى الآن.",
+    loadClientDetailsFailedTitle: "تعذر تحميل تفاصيل العميل",
+    loadClientDetailsFailedDescription:
+      "حدث خطأ أثناء تحميل الخدمات أو الموردين المتاحين لهذا الحدث.",
+    manualItemsRemain:
+      "العناصر اليدوية غير المرتبطة بكاتالوج النظام ستبقى كما هي: {{services}} خدمة و {{vendors}} مورد.",
+  },
   execution: {
     workspaceTitle: "مساحة التنفيذ",
     workspaceDescription:

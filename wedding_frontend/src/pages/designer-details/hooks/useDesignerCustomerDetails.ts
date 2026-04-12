@@ -2,10 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { useCreateEventService, useDeleteEventService } from "@/hooks/services/useEventServiceMutations";
+import {
+  useCreateEventService,
+  useDeleteEventService,
+} from "@/hooks/services/useEventServiceMutations";
 import { useServices } from "@/hooks/services/useServices";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateEventVendor, useDeleteEventVendor } from "@/hooks/vendors/useEventVendorMutations";
+import {
+  useCreateEventVendor,
+  useDeleteEventVendor,
+  useUpdateEventVendor,
+} from "@/hooks/vendors/useEventVendorMutations";
 import { useVendors } from "@/hooks/vendors/useVendors";
 import { formatVendorType } from "@/pages/vendors/adapters";
 import type { Quotation } from "@/pages/quotations/types";
@@ -49,6 +56,7 @@ export type DesignerChecklistVendorOption = {
 };
 
 type PendingAction = "save" | "quotation" | "contract" | null;
+type VendorSubServiceSelectionMap = Record<number, number[]>;
 
 const DEFAULT_EVENT_SERVICE_STATUS = "confirmed";
 const DEFAULT_EVENT_VENDOR_STATUS = "pending";
@@ -56,11 +64,44 @@ const DEFAULT_EVENT_VENDOR_STATUS = "pending";
 const normalizeIds = (values: number[]) =>
   Array.from(new Set(values)).sort((left, right) => left - right);
 
-const buildSignature = (serviceIds: number[], vendorIds: number[]) =>
+const normalizeVendorSubServiceSelections = (
+  record: VendorSubServiceSelectionMap,
+  selectedVendorIds: number[],
+) =>
+  normalizeIds(selectedVendorIds).reduce<VendorSubServiceSelectionMap>(
+    (accumulator, vendorId) => {
+      accumulator[vendorId] = normalizeIds(record[vendorId] ?? []);
+      return accumulator;
+    },
+    {},
+  );
+
+const buildSignature = (
+  serviceIds: number[],
+  vendorIds: number[],
+  vendorSubServices: VendorSubServiceSelectionMap,
+) =>
   JSON.stringify({
     services: normalizeIds(serviceIds),
     vendors: normalizeIds(vendorIds),
+    vendorSubServices: normalizeIds(vendorIds).map((vendorId) => [
+      vendorId,
+      normalizeIds(vendorSubServices[vendorId] ?? []),
+    ]),
   });
+
+const formatDecimalInput = (value?: number | string | null) => {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return "";
+  }
+
+  return parsed.toFixed(3);
+};
+
+const areSameIds = (left: number[], right: number[]) =>
+  JSON.stringify(normalizeIds(left)) === JSON.stringify(normalizeIds(right));
 
 export function useDesignerCustomerDetails({
   eventId,
@@ -77,6 +118,7 @@ export function useDesignerCustomerDetails({
   const createEventServiceMutation = useCreateEventService();
   const deleteEventServiceMutation = useDeleteEventService(numericEventId);
   const createEventVendorMutation = useCreateEventVendor(numericEventId);
+  const updateEventVendorMutation = useUpdateEventVendor(numericEventId);
   const deleteEventVendorMutation = useDeleteEventVendor(numericEventId);
 
   const {
@@ -120,6 +162,23 @@ export function useDesignerCustomerDetails({
       ),
     [vendorLinks],
   );
+  const externalVendorSubServices = useMemo(
+    () =>
+      vendorLinks.reduce<VendorSubServiceSelectionMap>((accumulator, link) => {
+        if (typeof link.vendorId !== "number") {
+          return accumulator;
+        }
+
+        accumulator[link.vendorId] = normalizeIds(
+          (link.selectedSubServices ?? [])
+            .map((selectedSubService) => selectedSubService.vendorSubServiceId)
+            .filter((value): value is number => typeof value === "number"),
+        );
+
+        return accumulator;
+      }, {}),
+    [vendorLinks],
+  );
 
   const [committedServiceIds, setCommittedServiceIds] = useState<number[]>(
     externalServiceIds,
@@ -127,25 +186,56 @@ export function useDesignerCustomerDetails({
   const [committedVendorIds, setCommittedVendorIds] = useState<number[]>(
     externalVendorIds,
   );
+  const [committedVendorSubServices, setCommittedVendorSubServices] =
+    useState<VendorSubServiceSelectionMap>(
+      normalizeVendorSubServiceSelections(
+        externalVendorSubServices,
+        externalVendorIds,
+      ),
+    );
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>(
     externalServiceIds,
   );
   const [selectedVendorIds, setSelectedVendorIds] = useState<number[]>(
     externalVendorIds,
   );
+  const [selectedVendorSubServices, setSelectedVendorSubServices] =
+    useState<VendorSubServiceSelectionMap>(
+      normalizeVendorSubServiceSelections(
+        externalVendorSubServices,
+        externalVendorIds,
+      ),
+    );
+  const [vendorCalculatedAgreedPriceByVendorId, setVendorCalculatedAgreedPriceByVendorId] =
+    useState<Record<number, string>>({});
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const externalSignature = useMemo(
-    () => buildSignature(externalServiceIds, externalVendorIds),
-    [externalServiceIds, externalVendorIds],
+    () =>
+      buildSignature(
+        externalServiceIds,
+        externalVendorIds,
+        externalVendorSubServices,
+      ),
+    [externalServiceIds, externalVendorIds, externalVendorSubServices],
   );
   const committedSignature = useMemo(
-    () => buildSignature(committedServiceIds, committedVendorIds),
-    [committedServiceIds, committedVendorIds],
+    () =>
+      buildSignature(
+        committedServiceIds,
+        committedVendorIds,
+        committedVendorSubServices,
+      ),
+    [committedServiceIds, committedVendorIds, committedVendorSubServices],
   );
   const selectionSignature = useMemo(
-    () => buildSignature(selectedServiceIds, selectedVendorIds),
-    [selectedServiceIds, selectedVendorIds],
+    () =>
+      buildSignature(
+        selectedServiceIds,
+        selectedVendorIds,
+        selectedVendorSubServices,
+      ),
+    [selectedServiceIds, selectedVendorIds, selectedVendorSubServices],
   );
 
   useEffect(() => {
@@ -154,19 +244,27 @@ export function useDesignerCustomerDetails({
     }
 
     const shouldRefreshSelections = selectionSignature === committedSignature;
+    const normalizedExternalVendorSubServices =
+      normalizeVendorSubServiceSelections(
+        externalVendorSubServices,
+        externalVendorIds,
+      );
 
     setCommittedServiceIds(externalServiceIds);
     setCommittedVendorIds(externalVendorIds);
+    setCommittedVendorSubServices(normalizedExternalVendorSubServices);
 
     if (shouldRefreshSelections) {
       setSelectedServiceIds(externalServiceIds);
       setSelectedVendorIds(externalVendorIds);
+      setSelectedVendorSubServices(normalizedExternalVendorSubServices);
     }
   }, [
     committedSignature,
     externalServiceIds,
     externalSignature,
     externalVendorIds,
+    externalVendorSubServices,
     selectionSignature,
   ]);
 
@@ -185,6 +283,25 @@ export function useDesignerCustomerDetails({
   const committedVendorIdSet = useMemo(
     () => new Set(committedVendorIds),
     [committedVendorIds],
+  );
+
+  const serviceItemsByServiceId = useMemo(
+    () =>
+      new Map(
+        serviceItems
+          .filter((item) => typeof item.serviceId === "number")
+          .map((item) => [item.serviceId as number, item]),
+      ),
+    [serviceItems],
+  );
+  const vendorLinksByVendorId = useMemo(
+    () =>
+      new Map(
+        vendorLinks
+          .filter((link) => typeof link.vendorId === "number")
+          .map((link) => [link.vendorId as number, link]),
+      ),
+    [vendorLinks],
   );
 
   const servicesCatalog = useMemo<Service[]>(
@@ -258,31 +375,13 @@ export function useDesignerCustomerDetails({
     [selectedVendorIdSet, t, vendorsCatalog],
   );
 
-  const serviceItemsByServiceId = useMemo(
-    () =>
-      new Map(
-        serviceItems
-          .filter((item) => typeof item.serviceId === "number")
-          .map((item) => [item.serviceId as number, item]),
-      ),
-    [serviceItems],
-  );
-  const vendorLinksByVendorId = useMemo(
-    () =>
-      new Map(
-        vendorLinks
-          .filter((link) => typeof link.vendorId === "number")
-          .map((link) => [link.vendorId as number, link]),
-      ),
-    [vendorLinks],
-  );
-
   const isDirty = selectionSignature !== committedSignature;
   const isSaving =
     pendingAction !== null ||
     createEventServiceMutation.isPending ||
     deleteEventServiceMutation.isPending ||
     createEventVendorMutation.isPending ||
+    updateEventVendorMutation.isPending ||
     deleteEventVendorMutation.isPending;
 
   const toggleService = (serviceId: number, checked: boolean) => {
@@ -296,13 +395,59 @@ export function useDesignerCustomerDetails({
   };
 
   const toggleVendor = (vendorId: number, checked: boolean) => {
-    setSelectedVendorIds((current) =>
-      normalizeIds(
+    setSelectedVendorIds((current) => {
+      const nextVendorIds = normalizeIds(
         checked
           ? [...current, vendorId]
           : current.filter((value) => value !== vendorId),
+      );
+
+      setSelectedVendorSubServices((currentSelections) => {
+        if (checked) {
+          return {
+            ...currentSelections,
+            [vendorId]:
+              currentSelections[vendorId] ??
+              committedVendorSubServices[vendorId] ??
+              [],
+          };
+        }
+
+        const nextSelections = { ...currentSelections };
+        delete nextSelections[vendorId];
+        return nextSelections;
+      });
+
+      return nextVendorIds;
+    });
+  };
+
+  const toggleVendorSubService = (
+    vendorId: number,
+    subServiceId: number,
+    checked: boolean,
+  ) => {
+    setSelectedVendorSubServices((current) => ({
+      ...current,
+      [vendorId]: normalizeIds(
+        checked
+          ? [...(current[vendorId] ?? []), subServiceId]
+          : (current[vendorId] ?? []).filter((value) => value !== subServiceId),
       ),
-    );
+    }));
+  };
+
+  const setVendorCalculatedAgreedPrice = (vendorId: number, value: string) => {
+    setVendorCalculatedAgreedPriceByVendorId((current) => {
+      if (current[vendorId] === value) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [vendorId]: value,
+      };
+    });
   };
 
   const syncSelections = async (options?: { notifyIfUnchanged?: boolean }) => {
@@ -323,24 +468,39 @@ export function useDesignerCustomerDetails({
     );
     const vendorsToRemove = vendorLinks.filter(
       (link) =>
-        typeof link.vendorId === "number" && !selectedVendorIdSet.has(link.vendorId),
+        typeof link.vendorId === "number" &&
+        !selectedVendorIdSet.has(link.vendorId),
     );
+    const vendorsToUpdate = vendorLinks.filter((link) => {
+      if (
+        typeof link.vendorId !== "number" ||
+        !selectedVendorIdSet.has(link.vendorId)
+      ) {
+        return false;
+      }
+
+      return !areSameIds(
+        committedVendorSubServices[link.vendorId] ?? [],
+        selectedVendorSubServices[link.vendorId] ?? [],
+      );
+    });
 
     const hasChanges =
       servicesToAdd.length > 0 ||
       servicesToRemove.length > 0 ||
       vendorsToAdd.length > 0 ||
-      vendorsToRemove.length > 0;
+      vendorsToRemove.length > 0 ||
+      vendorsToUpdate.length > 0;
 
     if (!hasChanges) {
       if (options?.notifyIfUnchanged !== false) {
-      toast({
-        title: t("common.success", { defaultValue: "Success" }),
-        description:
-          i18n.language === "ar"
-            ? "تم حفظ تفاصيل العميل بنجاح."
-            : "Client details saved successfully.",
-      });
+        toast({
+          title: t("common.success", { defaultValue: "Success" }),
+          description:
+            i18n.language === "ar"
+              ? "تم حفظ تفاصيل العميل بنجاح."
+              : "Client details saved successfully.",
+        });
       }
       return true;
     }
@@ -370,13 +530,41 @@ export function useDesignerCustomerDetails({
         providedBy: "company",
         vendorId: String(vendor.id),
         companyNameSnapshot: vendor.name,
-        selectedSubServiceIds: [],
-        agreedPrice: "",
+        selectedSubServiceIds: selectedVendorSubServices[vendor.id] ?? [],
+        agreedPrice:
+          vendorCalculatedAgreedPriceByVendorId[vendor.id] ?? "0.000",
         notes: "",
         status: DEFAULT_EVENT_VENDOR_STATUS,
       };
 
       return createEventVendorMutation.mutateAsync(payload);
+    });
+
+    const vendorUpdateRequests = vendorsToUpdate.map((link) => {
+      const vendorId = link.vendorId as number;
+      const payload: EventVendorLinkFormData = {
+        eventId: numericEventId,
+        vendorType: link.vendorType,
+        providedBy: link.providedBy,
+        vendorId: link.vendorId ? String(link.vendorId) : "",
+        companyNameSnapshot:
+          link.companyNameSnapshot ||
+          link.resolvedCompanyName ||
+          link.vendor?.name ||
+          "",
+        selectedSubServiceIds: selectedVendorSubServices[vendorId] ?? [],
+        agreedPrice:
+          vendorCalculatedAgreedPriceByVendorId[vendorId] ??
+          formatDecimalInput(link.agreedPrice) ??
+          "0.000",
+        notes: link.notes ?? "",
+        status: link.status,
+      };
+
+      return updateEventVendorMutation.mutateAsync({
+        id: link.id,
+        values: payload,
+      });
     });
 
     const vendorDeleteRequests = vendorsToRemove.map((link) =>
@@ -388,11 +576,18 @@ export function useDesignerCustomerDetails({
         Promise.all(serviceCreateRequests),
         Promise.all(serviceDeleteRequests),
         Promise.all(vendorCreateRequests),
+        Promise.all(vendorUpdateRequests),
         Promise.all(vendorDeleteRequests),
       ]);
 
       setCommittedServiceIds(normalizeIds(selectedServiceIds));
       setCommittedVendorIds(normalizeIds(selectedVendorIds));
+      setCommittedVendorSubServices(
+        normalizeVendorSubServiceSelections(
+          selectedVendorSubServices,
+          selectedVendorIds,
+        ),
+      );
 
       return true;
     } catch {
@@ -451,6 +646,8 @@ export function useDesignerCustomerDetails({
     vendorsLoadFailed,
     serviceOptions,
     vendorOptions,
+    selectedVendorSubServices,
+    vendorCalculatedAgreedPriceByVendorId,
     linkedCatalogOnlyCounts: {
       services: externalServiceIds.length,
       vendors: externalVendorIds.length,
@@ -463,6 +660,8 @@ export function useDesignerCustomerDetails({
     },
     toggleService,
     toggleVendor,
+    toggleVendorSubService,
+    setVendorCalculatedAgreedPrice,
     save: () => runAction("save"),
     createQuotation: () => runAction("quotation"),
     createContract: () => runAction("contract"),
