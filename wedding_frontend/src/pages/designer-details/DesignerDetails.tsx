@@ -59,8 +59,10 @@ import type { Quotation } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type { EventVendorLink } from "@/pages/vendors/types";
 import { cn } from "@/lib/utils";
+import { DesignerCustomerDetailsPanel } from "./_components/DesignerCustomerDetailsPanel";
 
 type WorkspaceTabValue =
+  | "client-details"
   | "overview"
   | "services"
   | "vendors"
@@ -69,6 +71,7 @@ type WorkspaceTabValue =
   | "execution";
 
 const WORKSPACE_TAB_VALUES: WorkspaceTabValue[] = [
+  "client-details",
   "overview",
   "services",
   "vendors",
@@ -145,7 +148,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const requestedTab = searchParams.get("tab");
   const activeTab = isWorkspaceTabValue(requestedTab)
     ? requestedTab
-    : "overview";
+    : "client-details";
 
   useEffect(() => {
     if (!requestedTab) {
@@ -188,6 +191,13 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
     event.venue?.name || event.venueNameSnapshot || t("events.noVenueSelected");
   const workspaceTabs: Array<{ value: WorkspaceTabValue; label: string }> = [
     {
+      value: "client-details",
+      label:
+        i18n.language === "ar"
+          ? "تفاصيل العميل"
+          : "Client Details",
+    },
+    {
       value: "overview",
       label: t("common.overview", { defaultValue: "Overview" }),
     },
@@ -202,7 +212,7 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
   const setActiveTab = (value: WorkspaceTabValue) => {
     const nextParams = new URLSearchParams(searchParams);
 
-    if (value === "overview") {
+    if (value === "client-details") {
       nextParams.delete("tab");
     } else {
       nextParams.set("tab", value);
@@ -239,6 +249,185 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-6">
+      <Tabs
+        className="space-y-5"
+        value={activeTab}
+        onValueChange={(value) => {
+          if (isWorkspaceTabValue(value)) {
+            setActiveTab(value);
+          }
+        }}
+      >
+        <SectionCard className="overflow-hidden border border-[var(--lux-row-border)] p-0">
+          <div
+            className="border-b border-[var(--lux-row-border)] px-5 py-5 sm:px-6"
+            style={{
+              background:
+                activeTab === "client-details"
+                  ? "linear-gradient(90deg, color-mix(in srgb, var(--lux-panel-surface) 96%, transparent), color-mix(in srgb, var(--lux-gold) 12%, transparent))"
+                  : "transparent",
+            }}
+          >
+            <div
+              className={cn(
+                "flex flex-col gap-4 lg:items-start lg:justify-between",
+                "lg:flex-row",
+              )}
+            >
+              <div className={cn(isRtl ? "text-right" : "text-left")}>
+                <h3
+                  className={cn(
+                    "text-lg font-semibold sm:text-xl",
+                    activeTab === "client-details"
+                      ? "text-[var(--lux-gold)]"
+                      : "text-[var(--lux-heading)]",
+                  )}
+                >
+                  {activeTab === "client-details"
+                    ? i18n.language === "ar"
+                      ? "تفاصيل العميل"
+                      : "Client Details"
+                    : t("designerDetails.currentEventBadge")}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--lux-text-secondary)]">
+                  {activeTab === "client-details"
+                    ? i18n.language === "ar"
+                      ? "حدّد الخدمات والشركات المطلوبة للحدث ثم احفظها أو أنشئ منها عرض السعر أو العقد."
+                      : "Select the required services and companies for the event, then save them or create the quotation or contract."
+                    : t("designerDetails.shortcutsDescription")}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {activeTab === "client-details" ? (
+                  <>
+                    <span className="rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs font-semibold text-[var(--lux-gold)]">
+                      {i18n.language === "ar"
+                        ? `${serviceItems.length} خدمة`
+                        : `${serviceItems.length} Services`}
+                    </span>
+                    <span className="rounded-full border border-[var(--lux-gold-border)] bg-[var(--lux-control-hover)] px-3 py-1 text-xs font-semibold text-[var(--lux-gold)]">
+                      {i18n.language === "ar"
+                        ? `${vendorLinks.length} مورد`
+                        : `${vendorLinks.length} Vendors`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/settings/vendors">
+                        <Handshake className="h-4 w-4" />
+                        {t("designerDetails.openVendors")}
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/settings/services">
+                        <PackageOpen className="h-4 w-4" />
+                        {t("designerDetails.openServices")}
+                      </Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <TabsList
+            className={cn(
+              "w-full justify-start gap-0 rounded-none border-0 bg-transparent p-0 shadow-none",
+              isRtl ? "flex-row-reverse" : "flex-row",
+            )}
+          >
+            {workspaceTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className={cn(
+                  "min-h-[58px] flex-none rounded-none border-b-2 border-transparent px-5 py-3 text-sm font-semibold data-[state=active]:border-[var(--lux-gold)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--lux-gold)] data-[state=active]:shadow-none",
+                  isRtl ? "text-right" : "text-left",
+                )}
+              >
+                <span className="truncate">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div className="border-t border-[var(--lux-row-border)] px-4 py-5 sm:px-6">
+            <TabsContent value="overview" className="mt-0">
+              <EventOverviewPanel eventId={eventId} />
+            </TabsContent>
+
+            <TabsContent value="client-details" className="mt-0">
+              <DesignerCustomerDetailsPanel
+                eventId={eventId}
+                serviceItems={serviceItems}
+                vendorLinks={vendorLinks}
+                latestQuotation={latestQuotation as Quotation | null}
+              />
+            </TabsContent>
+
+            <TabsContent value="services" className="mt-0">
+              <EventServicesPanel
+                eventId={eventId}
+                onAdd={handleStartAddService}
+                onEdit={(serviceItem) => {
+                  setSelectedServiceForCreate(null);
+                  setEditingServiceItem(serviceItem);
+                  setServiceEditorOpen(true);
+                }}
+                onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
+              />
+            </TabsContent>
+
+            <TabsContent value="vendors" className="mt-0">
+              <EventVendorsPanel
+                eventId={eventId}
+                onAdd={() => {
+                  setEditingVendorLink(null);
+                  setVendorDialogOpen(true);
+                }}
+                onEdit={(vendorLink) => {
+                  setEditingVendorLink(vendorLink);
+                  setVendorDialogOpen(true);
+                }}
+                onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
+              />
+            </TabsContent>
+
+            <TabsContent value="quotations" className="mt-0">
+              <EventQuotationsPanel
+                eventId={eventId}
+                quotations={quotations}
+                loading={quotationsLoading}
+                error={quotationsLoadFailed}
+                onCreateQuotation={handleCreateQuotation}
+                onCreateQuotationFromEvent={handleCreateQuotation}
+                onViewQuotation={(quotationId) =>
+                  navigate(`/quotations/${quotationId}`)
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="contracts" className="mt-0">
+              <EventContractsPanel
+                eventId={eventId}
+                contracts={contracts}
+                loading={contractsLoading}
+                error={contractsLoadFailed}
+                onCreateContract={handleCreateContract}
+                onCreateContractFromQuotation={handleCreateContract}
+                onViewContract={(contractId) =>
+                  navigate(`/contracts/${contractId}`)
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="execution" className="mt-0">
+              <EventExecutionPanel eventId={eventId} />
+            </TabsContent>
+          </div>
+        </SectionCard>
+      </Tabs>
+
       <SectionCard
         className="overflow-hidden border border-[var(--lux-row-border)]"
         style={{
@@ -327,132 +516,6 @@ function DesignerEventWorkspace({ eventId }: { eventId: string }) {
         onCreateQuotation={handleCreateQuotation}
         onCreateContract={handleCreateContract}
       />
-
-      <Tabs
-        className="space-y-5"
-        value={activeTab}
-        onValueChange={(value) => {
-          if (isWorkspaceTabValue(value)) {
-            setActiveTab(value);
-          }
-        }}
-      >
-        <SectionCard className="space-y-4 border border-[var(--lux-row-border)]">
-          <div
-            className={cn(
-              "flex flex-col gap-3 lg:items-center lg:justify-between",
-              "lg:flex-row-reverse",
-            )}
-          >
-            <div className={cn(isRtl ? "text-right" : "text-left")}>
-              <h3 className="text-lg font-semibold text-[var(--lux-heading)]">
-                {t("designerDetails.currentEventBadge")}
-              </h3>
-              <p className="text-sm text-[var(--lux-text-secondary)]">
-                {t("designerDetails.shortcutsDescription")}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm" variant="outline">
-                <Link to="/settings/vendors">
-                  <Handshake className="h-4 w-4" />
-                  {t("designerDetails.openVendors")}
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link to="/settings/services">
-                  <PackageOpen className="h-4 w-4" />
-                  {t("designerDetails.openServices")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          <TabsList
-            className={cn(
-              "w-full gap-2 rounded-[22px] border border-[var(--lux-row-border)] bg-[var(--lux-control-surface)] p-2 shadow-none",
-            )}
-          >
-            {workspaceTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className={cn(
-                  "min-h-11 min-w-[110px] flex-1 rounded-[16px] border border-transparent px-4 py-2.5 text-sm font-semibold data-[state=active]:border-[var(--lux-gold-border)] data-[state=active]:bg-[color-mix(in_srgb,var(--lux-gold)_14%,var(--lux-panel-surface))] data-[state=active]:text-[var(--lux-heading)] data-[state=active]:shadow-none",
-                  isRtl ? "text-right" : "text-left",
-                )}
-              >
-                <span className="truncate">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </SectionCard>
-
-        <TabsContent value="overview">
-          <EventOverviewPanel eventId={eventId} />
-        </TabsContent>
-
-        <TabsContent value="services">
-          <EventServicesPanel
-            eventId={eventId}
-            onAdd={handleStartAddService}
-            onEdit={(serviceItem) => {
-              setSelectedServiceForCreate(null);
-              setEditingServiceItem(serviceItem);
-              setServiceEditorOpen(true);
-            }}
-            onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
-          />
-        </TabsContent>
-
-        <TabsContent value="vendors">
-          <EventVendorsPanel
-            eventId={eventId}
-            onAdd={() => {
-              setEditingVendorLink(null);
-              setVendorDialogOpen(true);
-            }}
-            onEdit={(vendorLink) => {
-              setEditingVendorLink(vendorLink);
-              setVendorDialogOpen(true);
-            }}
-            onDelete={(vendorLink) => setDeleteVendorCandidate(vendorLink)}
-          />
-        </TabsContent>
-
-        <TabsContent value="quotations">
-          <EventQuotationsPanel
-            eventId={eventId}
-            quotations={quotations}
-            loading={quotationsLoading}
-            error={quotationsLoadFailed}
-            onCreateQuotation={handleCreateQuotation}
-            onCreateQuotationFromEvent={handleCreateQuotation}
-            onViewQuotation={(quotationId) =>
-              navigate(`/quotations/${quotationId}`)
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="contracts">
-          <EventContractsPanel
-            eventId={eventId}
-            contracts={contracts}
-            loading={contractsLoading}
-            error={contractsLoadFailed}
-            onCreateContract={handleCreateContract}
-            onCreateContractFromQuotation={handleCreateContract}
-            onViewContract={(contractId) =>
-              navigate(`/contracts/${contractId}`)
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="execution">
-          <EventExecutionPanel eventId={eventId} />
-        </TabsContent>
-      </Tabs>
 
       {serviceEditorOpen ? (
         <EventServiceEditorDialog

@@ -3,14 +3,14 @@ import {
   useQueryClient,
   type MutateOptions,
 } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+//import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "@/lib/axios";
 import { appointmentsApi } from "@/lib/api/appointments";
 import { useToast } from "@/hooks/use-toast";
 import type {
   AttendAppointmentData,
-  AttendAppointmentResponse,
+  //  AttendAppointmentResponse,
   CancelAppointmentData,
   ConfirmAppointmentData,
   RescheduleAppointmentData,
@@ -88,7 +88,7 @@ export const useConfirmAppointment = () =>
 
 export const useAttendAppointment = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -100,7 +100,7 @@ export const useAttendAppointment = () => {
       id: number;
       values: AttendAppointmentData;
     }) => appointmentsApi.attend(id, values),
-    onSuccess: (response, variables) => {
+    onSuccess: (_, variables) => {
       toast({
         title: t("common.success", { defaultValue: "Success" }),
         description: t("appointments.toast.attended", {
@@ -116,10 +116,12 @@ export const useAttendAppointment = () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
 
-      const eventId = (response.data as AttendAppointmentResponse).eventId;
-      if (typeof eventId === "number" && eventId > 0) {
+      //  const eventId = (response.data as AttendAppointmentResponse).eventId;
+      /**
+      *  if (typeof eventId === "number" && eventId > 0) {
         navigate(`/events/${eventId}`);
       }
+      */
     },
     onError: (error) => {
       toast({
