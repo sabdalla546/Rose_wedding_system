@@ -1,14 +1,14 @@
 /* eslint-disable react-hooks/use-memo */
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
+// import { format } from "date-fns";
+// import { ar, enUS } from "date-fns/locale";
 import {
   ArrowLeft,
-  CalendarRange,
-  ClipboardList,
+  // CalendarRange,
+  // ClipboardList,
   Handshake,
   PackageOpen,
-  PenSquare,
+  // PenSquare,
   Plus,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -39,12 +39,12 @@ import { useCreateContractFromQuotation } from "@/hooks/contracts/useContractMut
 import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
 import { useCreateQuotation } from "@/hooks/quotations/useQuotationMutations";
 import { EventServicesChecklistDialog } from "@/pages/events/_components/EventServicesChecklistDialog";
-import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
+// import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
 import {
   EventEmptyState,
-  EventMetaChip,
+  // EventMetaChip,
 } from "@/pages/events/_components/EventDetailsPrimitives";
-import { EventWorkspaceSummary } from "@/pages/events/_components/EventWorkspaceSummary";
+// import { EventWorkspaceSummary } from "@/pages/events/_components/EventWorkspaceSummary";
 import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import type { EventCalendarRecord } from "@/pages/events/types";
@@ -66,7 +66,7 @@ import { useEventWorkspaceData } from "@/features/events/hooks/useEventWorkspace
 import { useEventWorkspaceDeleteFlows } from "@/features/events/hooks/useEventWorkspaceDeleteFlows";
 import { ContractDetailsWorkspace } from "@/pages/contracts/_components/ContractDetailsWorkspace";
 import { ContractFormWorkspace } from "@/pages/contracts/_components/ContractFormWorkspace";
-import type { Contract } from "@/pages/contracts/types";
+// import type { Contract } from "@/pages/contracts/types";
 import { QuotationDetailsWorkspace } from "@/pages/quotations/_components/QuotationDetailsWorkspace";
 import { QuotationFormWorkspace } from "@/pages/quotations/_components/QuotationFormWorkspace";
 import type { Quotation } from "@/pages/quotations/types";
@@ -151,7 +151,7 @@ function DesignerEventWorkspace({
 }: DesignerEventWorkspaceProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
-  const dateLocale = i18n.language === "ar" ? ar : enUS;
+  // const dateLocale = i18n.language === "ar" ? ar : enUS;
   const isRtl = i18n.dir() === "rtl";
 
   const {
@@ -169,8 +169,8 @@ function DesignerEventWorkspace({
     contractsLoading,
     contractsLoadFailed,
     latestQuotation,
-    latestContract,
-    readiness,
+    //  latestContract,
+    //  readiness,
   } = useEventWorkspaceData(eventId);
 
   const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
@@ -212,7 +212,7 @@ function DesignerEventWorkspace({
     form: editEventForm,
     setForm: setEditEventForm,
     error: editEventError,
-    openDialog: handleOpenEditEventDialog,
+    // openDialog: handleOpenEditEventDialog,
     save: handleSaveEvent,
     updateEventMutation,
   } = useEventEditDialog({
@@ -349,6 +349,7 @@ function DesignerEventWorkspace({
     );
   }
 
+  /**
   const eventDateLabel = format(new Date(event.eventDate), "PPP", {
     locale: dateLocale,
   });
@@ -356,6 +357,7 @@ function DesignerEventWorkspace({
     event.customer?.fullName || t("events.noCustomerSelected");
   const resolvedVenueName =
     event.venue?.name || event.venueNameSnapshot || t("events.noVenueSelected");
+  */
   const workspaceTabs: Array<{ value: WorkspaceTabValue; label: string }> = [
     {
       value: "client-details",
@@ -830,7 +832,8 @@ function DesignerEventWorkspace({
           </div>
         </SectionCard>
       </Tabs>
-
+      {/**
+   * 
       <SectionCard
         className="overflow-hidden border border-[var(--lux-row-border)]"
         style={{
@@ -901,8 +904,10 @@ function DesignerEventWorkspace({
           </div>
         </div>
       </SectionCard>
+   */}
 
-      <EventWorkspaceSummary
+      {/**
+         *  <EventWorkspaceSummary
         t={t}
         dateLocale={dateLocale}
         servicesCount={serviceItems.length}
@@ -919,6 +924,7 @@ function DesignerEventWorkspace({
         onCreateQuotation={handleCreateQuotation}
         onCreateContract={handleCreateContract}
       />
+         */}
 
       {serviceEditorOpen ? (
         <EventServiceEditorDialog
