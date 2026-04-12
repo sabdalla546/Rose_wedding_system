@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import {
+  ArrowLeft,
   CalendarRange,
   ClipboardList,
   Handshake,
@@ -10,13 +11,22 @@ import {
   PenSquare,
   Plus,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { PageContainer } from "@/components/layout/page-container";
 import { ProtectedComponent } from "@/components/routing/ProtectedComponent";
 import { SectionCard } from "@/components/shared/section-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -25,7 +35,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCreateContractFromQuotation } from "@/hooks/contracts/useContractMutations";
 import { useEventsCalendarView } from "@/hooks/events/useEventsCalendarView";
+import { useCreateQuotation } from "@/hooks/quotations/useQuotationMutations";
 import { EventServicesChecklistDialog } from "@/pages/events/_components/EventServicesChecklistDialog";
 import { EventStatusBadge } from "@/pages/events/_components/eventStatusBadge";
 import {
@@ -52,7 +64,11 @@ import {
 import { useEventEditDialog } from "@/features/events/hooks/useEventEditDialog";
 import { useEventWorkspaceData } from "@/features/events/hooks/useEventWorkspaceData";
 import { useEventWorkspaceDeleteFlows } from "@/features/events/hooks/useEventWorkspaceDeleteFlows";
+import { ContractDetailsWorkspace } from "@/pages/contracts/_components/ContractDetailsWorkspace";
+import { ContractFormWorkspace } from "@/pages/contracts/_components/ContractFormWorkspace";
 import type { Contract } from "@/pages/contracts/types";
+import { QuotationDetailsWorkspace } from "@/pages/quotations/_components/QuotationDetailsWorkspace";
+import { QuotationFormWorkspace } from "@/pages/quotations/_components/QuotationFormWorkspace";
 import type { Quotation } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type { EventVendorLink } from "@/pages/vendors/types";
@@ -84,6 +100,42 @@ function isWorkspaceTabValue(value: string | null): value is WorkspaceTabValue {
   );
 }
 
+type WorkspaceSubview = "list" | "create" | "details";
+
+function isWorkspaceSubview(value: string | null): value is WorkspaceSubview {
+  return value === "list" || value === "create" || value === "details";
+}
+
+function DesignerInlineWorkspaceHeader({
+  title,
+  subtitle,
+  backLabel,
+  onBack,
+}: {
+  title: string;
+  subtitle?: string;
+  backLabel: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-col gap-3 rounded-[8px] border border-[var(--lux-row-border)] bg-[var(--lux-control-surface)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-1">
+        <h3 className="text-base font-semibold text-[var(--lux-heading)] sm:text-lg">
+          {title}
+        </h3>
+        {subtitle ? (
+          <p className="text-sm text-[var(--lux-text-secondary)]">{subtitle}</p>
+        ) : null}
+      </div>
+
+      <Button type="button" variant="outline" size="sm" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4" />
+        {backLabel}
+      </Button>
+    </div>
+  );
+}
+
 type DesignerEventWorkspaceProps = {
   eventId: string;
   availableEvents: EventCalendarRecord[];
@@ -97,7 +149,6 @@ function DesignerEventWorkspace({
   eventsLoading,
   onEventChange,
 }: DesignerEventWorkspaceProps) {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "ar" ? ar : enUS;
@@ -131,6 +182,20 @@ function DesignerEventWorkspace({
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [editingVendorLink, setEditingVendorLink] =
     useState<EventVendorLink | null>(null);
+  const [quickQuotationDialogOpen, setQuickQuotationDialogOpen] =
+    useState(false);
+  const [quickQuotationForm, setQuickQuotationForm] = useState({
+    issueDate: new Date().toISOString().slice(0, 10),
+    validUntil: "",
+    manualServicesTotal: "",
+  });
+  const [quickQuotationError, setQuickQuotationError] = useState("");
+  const [quickContractDialogOpen, setQuickContractDialogOpen] = useState(false);
+  const [quickContractForm, setQuickContractForm] = useState({
+    signedDate: new Date().toISOString().slice(0, 10),
+    eventDate: "",
+  });
+  const [quickContractError, setQuickContractError] = useState("");
   const {
     deleteServiceCandidate,
     setDeleteServiceCandidate,
@@ -155,10 +220,59 @@ function DesignerEventWorkspace({
     event,
     eventDateRequiredMessage: t("designerDetails.eventDateRequired"),
   });
+  const quickQuotationMutation = useCreateQuotation({
+    navigateOnSuccess: false,
+    onSuccess: () => {
+      setQuickQuotationDialogOpen(false);
+      setQuickQuotationError("");
+      setQuickQuotationForm({
+        issueDate: new Date().toISOString().slice(0, 10),
+        validUntil: "",
+        manualServicesTotal: "",
+      });
+    },
+  });
+  const quickContractMutation = useCreateContractFromQuotation({
+    navigateOnSuccess: false,
+    onSuccess: () => {
+      setQuickContractDialogOpen(false);
+      setQuickContractError("");
+      setQuickContractForm({
+        signedDate: new Date().toISOString().slice(0, 10),
+        eventDate: event?.eventDate ? String(event.eventDate).slice(0, 10) : "",
+      });
+    },
+  });
   const requestedTab = searchParams.get("tab");
+  const requestedView = searchParams.get("view");
+  const requestedQuotationId = searchParams.get("quotationId");
+  const requestedContractId = searchParams.get("contractId");
   const activeTab = isWorkspaceTabValue(requestedTab)
     ? requestedTab
     : "client-details";
+  const activeSubview = isWorkspaceSubview(requestedView)
+    ? requestedView
+    : "list";
+  const quotationSubview: WorkspaceSubview =
+    activeTab === "quotations" &&
+    activeSubview === "details" &&
+    requestedQuotationId
+      ? "details"
+      : activeTab === "quotations" && activeSubview === "create"
+        ? "create"
+        : "list";
+  const contractSubview: WorkspaceSubview =
+    activeTab === "contracts" &&
+    activeSubview === "details" &&
+    requestedContractId
+      ? "details"
+      : activeTab === "contracts" && activeSubview === "create"
+        ? "create"
+        : "list";
+  const selectedQuotationId =
+    quotationSubview === "details" ? requestedQuotationId : null;
+  const selectedContractId =
+    contractSubview === "details" ? requestedContractId : null;
   const eventSelector = (
     <div className="w-full sm:max-w-[320px]">
       <Select
@@ -211,6 +325,9 @@ function DesignerEventWorkspace({
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("tab");
+    nextParams.delete("view");
+    nextParams.delete("quotationId");
+    nextParams.delete("contractId");
     setSearchParams(nextParams, { replace: true });
   }, [requestedTab, searchParams, setSearchParams]);
 
@@ -244,31 +361,91 @@ function DesignerEventWorkspace({
       value: "client-details",
       label: i18n.language === "ar" ? "تفاصيل العميل" : "Client Details",
     },
+
     /**
-     * {
+    *  {
       value: "overview",
       label: t("common.overview", { defaultValue: "Overview" }),
     },
-    { value: "execution", label: t("events.executionTab") },
-
-    { value: "contracts", label: t("events.contracts") },
-    { value: "quotations", label: t("events.quotations") },
-    { value: "services", label: t("events.services") },
-    { value: "vendors", label: t("events.vendors") },
-     */
+    {
+      value: "services",
+      label: t("events.services", { defaultValue: "Services" }),
+    },
+    {
+      value: "vendors",
+      label: t("events.vendors", { defaultValue: "Vendors" }),
+    },
+    {
+      value: "quotations",
+      label: t("events.quotations", { defaultValue: "Quotations" }),
+    },
+    {
+      value: "contracts",
+      label: t("events.contracts", { defaultValue: "Contracts" }),
+    },
+    {
+      value: "execution",
+      label: t("events.executionTab", { defaultValue: "Execution" }),
+    },
+    */
   ];
 
-  const setActiveTab = (value: WorkspaceTabValue) => {
+  const updateWorkspaceSearch = (
+    tab: WorkspaceTabValue,
+    view: WorkspaceSubview = "list",
+    extras?: Record<string, string | null | undefined>,
+  ) => {
     const nextParams = new URLSearchParams(searchParams);
 
-    if (value === "client-details") {
+    if (tab === "client-details") {
       nextParams.delete("tab");
     } else {
-      nextParams.set("tab", value);
+      nextParams.set("tab", tab);
+    }
+
+    if (view === "list") {
+      nextParams.delete("view");
+    } else {
+      nextParams.set("view", view);
+    }
+
+    nextParams.delete("quotationId");
+    nextParams.delete("contractId");
+
+    if (extras) {
+      Object.entries(extras).forEach(([key, value]) => {
+        if (value) {
+          nextParams.set(key, value);
+        } else {
+          nextParams.delete(key);
+        }
+      });
     }
 
     setSearchParams(nextParams, { replace: true });
   };
+
+  const setActiveTab = (value: WorkspaceTabValue) => {
+    updateWorkspaceSearch(value, "list");
+  };
+
+  const openQuotationList = () => updateWorkspaceSearch("quotations", "list");
+  const openQuotationCreate = () =>
+    updateWorkspaceSearch("quotations", "create");
+  const openQuotationDetails = (quotationId: number | string) =>
+    updateWorkspaceSearch("quotations", "details", {
+      quotationId: String(quotationId),
+    });
+
+  const openContractList = () => updateWorkspaceSearch("contracts", "list");
+  const openContractCreate = (options?: { quotationId?: string }) =>
+    updateWorkspaceSearch("contracts", "create", {
+      quotationId: options?.quotationId ?? String(latestQuotation?.id ?? ""),
+    });
+  const openContractDetails = (contractId: number | string) =>
+    updateWorkspaceSearch("contracts", "details", {
+      contractId: String(contractId),
+    });
 
   const handleStartAddService = () => {
     setEditingServiceItem(null);
@@ -277,24 +454,90 @@ function DesignerEventWorkspace({
     setServiceChecklistOpen(true);
   };
 
-  const handleCreateQuotation = () => {
-    navigate(`/quotations/create?mode=from-event&eventId=${eventId}`);
+  const handleCreateQuotation = () => openQuotationCreate();
+  const handleOpenQuickQuotationDialog = () => {
+    setQuickQuotationError("");
+    setQuickQuotationForm({
+      issueDate: new Date().toISOString().slice(0, 10),
+      validUntil: "",
+      manualServicesTotal: "",
+    });
+    setQuickQuotationDialogOpen(true);
+  };
+  const handleOpenQuickContractDialog = () => {
+    setQuickContractError("");
+    setQuickContractForm({
+      signedDate: new Date().toISOString().slice(0, 10),
+      eventDate: event?.eventDate ? String(event.eventDate).slice(0, 10) : "",
+    });
+    setQuickContractDialogOpen(true);
   };
 
-  const handleCreateContract = () => {
-    if (latestQuotation) {
-      const params = new URLSearchParams({
-        mode: "from-quotation",
-        quotationId: String(latestQuotation.id),
-        eventId,
-      });
-
-      navigate(`/contracts/create?${params.toString()}`);
+  const handleCreateQuickQuotation = () => {
+    if (!quickQuotationForm.issueDate.trim()) {
+      setQuickQuotationError("Issue date is required.");
       return;
     }
 
-    navigate(`/contracts/create?eventId=${eventId}`);
+    if (!quickQuotationForm.validUntil.trim()) {
+      setQuickQuotationError("Valid until is required.");
+      return;
+    }
+
+    const manualServicesTotal = Number(quickQuotationForm.manualServicesTotal);
+
+    if (!Number.isFinite(manualServicesTotal) || manualServicesTotal <= 0) {
+      setQuickQuotationError(
+        "Total services amount must be greater than zero.",
+      );
+      return;
+    }
+
+    setQuickQuotationError("");
+    quickQuotationMutation.mutate({
+      eventId,
+      issueDate: quickQuotationForm.issueDate,
+      validUntil: quickQuotationForm.validUntil,
+      discountAmount: "0",
+      status: "draft",
+      items: [
+        {
+          itemType: "service",
+          itemName: "Total Services",
+          category: "service_summary",
+          quantity: "1",
+          unitPrice: manualServicesTotal.toFixed(3),
+          totalPrice: manualServicesTotal.toFixed(3),
+          notes: "",
+          sortOrder: "0",
+        },
+      ],
+    });
   };
+  const handleCreateQuickContract = () => {
+    if (!latestQuotation) {
+      setQuickContractError("يجب إنشاء عرض سعر أولاً.");
+      return;
+    }
+
+    if (!quickContractForm.signedDate.trim()) {
+      setQuickContractError("Signed date is required.");
+      return;
+    }
+
+    setQuickContractError("");
+    quickContractMutation.mutate({
+      quotationId: String(latestQuotation.id),
+      signedDate: quickContractForm.signedDate,
+      eventDate: quickContractForm.eventDate,
+      status: "draft",
+    });
+  };
+
+  const handleCreateContract = () =>
+    openContractCreate({
+      quotationId: latestQuotation ? String(latestQuotation.id) : undefined,
+    });
 
   return (
     <div className="space-y-6">
@@ -426,6 +669,8 @@ function DesignerEventWorkspace({
                 serviceItems={serviceItems}
                 vendorLinks={vendorLinks}
                 latestQuotation={latestQuotation as Quotation | null}
+                onCreateQuotation={() => handleOpenQuickQuotationDialog()}
+                onCreateContract={() => handleOpenQuickContractDialog()}
               />
             </TabsContent>
 
@@ -460,31 +705,123 @@ function DesignerEventWorkspace({
             </TabsContent>
 
             <TabsContent value="quotations" className="mt-0">
-              <EventQuotationsPanel
-                eventId={eventId}
-                quotations={quotations}
-                loading={quotationsLoading}
-                error={quotationsLoadFailed}
-                onCreateQuotation={handleCreateQuotation}
-                onCreateQuotationFromEvent={handleCreateQuotation}
-                onViewQuotation={(quotationId) =>
-                  navigate(`/quotations/${quotationId}`)
-                }
-              />
+              {quotationSubview === "list" ? (
+                <EventQuotationsPanel
+                  eventId={eventId}
+                  quotations={quotations}
+                  loading={quotationsLoading}
+                  error={quotationsLoadFailed}
+                  onCreateQuotation={handleCreateQuotation}
+                  onCreateQuotationFromEvent={handleCreateQuotation}
+                  onViewQuotation={openQuotationDetails}
+                />
+              ) : quotationSubview === "create" ? (
+                <div>
+                  <DesignerInlineWorkspaceHeader
+                    title={t("quotations.createTitle", {
+                      defaultValue: "Create Quotation",
+                    })}
+                    subtitle={t("quotations.createDescription", {
+                      defaultValue:
+                        "Create one quotation with mixed service and vendor items, or build it directly from event selections.",
+                    })}
+                    backLabel={t("quotations.backToQuotations", {
+                      defaultValue: "Back to Quotations",
+                    })}
+                    onBack={openQuotationList}
+                  />
+                  <QuotationFormWorkspace
+                    initialMode="from_event"
+                    initialEventId={eventId}
+                    onCancel={openQuotationList}
+                    onOpenQuotation={openQuotationDetails}
+                  />
+                </div>
+              ) : selectedQuotationId ? (
+                <div>
+                  <DesignerInlineWorkspaceHeader
+                    title={t("quotations.detailsTitle", {
+                      defaultValue: "Quotation Details",
+                    })}
+                    subtitle={t("quotations.workflowStage", {
+                      defaultValue: "Commercial Snapshot",
+                    })}
+                    backLabel={t("quotations.backToQuotations", {
+                      defaultValue: "Back to Quotations",
+                    })}
+                    onBack={openQuotationList}
+                  />
+                  <QuotationDetailsWorkspace
+                    quotationId={selectedQuotationId}
+                    onOpenContractCreate={(quotationId) =>
+                      openContractCreate({ quotationId: String(quotationId) })
+                    }
+                    onOpenContract={openContractDetails}
+                    onOpenEvent={() => setActiveTab("client-details")}
+                    onDeleteSuccess={openQuotationList}
+                  />
+                </div>
+              ) : null}
             </TabsContent>
 
             <TabsContent value="contracts" className="mt-0">
-              <EventContractsPanel
-                eventId={eventId}
-                contracts={contracts}
-                loading={contractsLoading}
-                error={contractsLoadFailed}
-                onCreateContract={handleCreateContract}
-                onCreateContractFromQuotation={handleCreateContract}
-                onViewContract={(contractId) =>
-                  navigate(`/contracts/${contractId}`)
-                }
-              />
+              {contractSubview === "list" ? (
+                <EventContractsPanel
+                  eventId={eventId}
+                  contracts={contracts}
+                  loading={contractsLoading}
+                  error={contractsLoadFailed}
+                  onCreateContract={handleCreateContract}
+                  onCreateContractFromQuotation={handleCreateContract}
+                  onViewContract={openContractDetails}
+                />
+              ) : contractSubview === "create" ? (
+                <div>
+                  <DesignerInlineWorkspaceHeader
+                    title={t("contracts.createTitle", {
+                      defaultValue: "Create Contract",
+                    })}
+                    subtitle={t("contracts.createDescription", {
+                      defaultValue:
+                        "Create a manual contract or build one directly from a quotation.",
+                    })}
+                    backLabel={t("contracts.backToContracts", {
+                      defaultValue: "Back to Contracts",
+                    })}
+                    onBack={openContractList}
+                  />
+                  <ContractFormWorkspace
+                    initialMode={
+                      requestedQuotationId ? "from_quotation" : "manual"
+                    }
+                    initialEventId={eventId}
+                    initialQuotationId={requestedQuotationId ?? undefined}
+                    onCancel={openContractList}
+                    onOpenContract={openContractDetails}
+                  />
+                </div>
+              ) : selectedContractId ? (
+                <div>
+                  <DesignerInlineWorkspaceHeader
+                    title={t("contracts.detailsTitle", {
+                      defaultValue: "Contract Details",
+                    })}
+                    subtitle={t("contracts.workflowStage", {
+                      defaultValue: "Commitment Snapshot",
+                    })}
+                    backLabel={t("contracts.backToContracts", {
+                      defaultValue: "Back to Contracts",
+                    })}
+                    onBack={openContractList}
+                  />
+                  <ContractDetailsWorkspace
+                    contractId={selectedContractId}
+                    onOpenQuotation={openQuotationDetails}
+                    onOpenEvent={() => setActiveTab("client-details")}
+                    onDeleteSuccess={openContractList}
+                  />
+                </div>
+              ) : null}
             </TabsContent>
 
             <TabsContent value="execution" className="mt-0">
@@ -693,6 +1030,197 @@ function DesignerEventWorkspace({
           processing: t("common.processing"),
         }}
       />
+
+      <Dialog
+        open={quickQuotationDialogOpen}
+        onOpenChange={(open) => {
+          setQuickQuotationDialogOpen(open);
+          if (!open) {
+            setQuickQuotationError("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {t("quotations.createTitle", {
+                defaultValue: "Create Quotation",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              أدخل تاريخ الإصدار، صالح حتى، وإجمالي قيمة الخدمات ثم أنشئ عرض
+              السعر.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                تاريخ الإصدار
+              </span>
+              <Input
+                type="date"
+                value={quickQuotationForm.issueDate}
+                onChange={(event) =>
+                  setQuickQuotationForm((current) => ({
+                    ...current,
+                    issueDate: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                صالح حتى
+              </span>
+              <Input
+                type="date"
+                value={quickQuotationForm.validUntil}
+                onChange={(event) =>
+                  setQuickQuotationForm((current) => ({
+                    ...current,
+                    validUntil: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                إجمالي قيمة الخدمات
+              </span>
+              <Input
+                type="number"
+                min="0"
+                step="0.001"
+                value={quickQuotationForm.manualServicesTotal}
+                onChange={(event) =>
+                  setQuickQuotationForm((current) => ({
+                    ...current,
+                    manualServicesTotal: event.target.value,
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          {quickQuotationError ? (
+            <p className="text-sm text-[var(--lux-danger)]">
+              {quickQuotationError}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setQuickQuotationDialogOpen(false)}
+              disabled={quickQuotationMutation.isPending}
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateQuickQuotation}
+              disabled={quickQuotationMutation.isPending}
+            >
+              {quickQuotationMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.create", { defaultValue: "Create" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={quickContractDialogOpen}
+        onOpenChange={(open) => {
+          setQuickContractDialogOpen(open);
+          if (!open) {
+            setQuickContractError("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {t("contracts.createTitle", {
+                defaultValue: "Create Contract",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              أدخل تاريخ التوقيع ثم أنشئ العقد مباشرة بدون انتقال.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                تاريخ التوقيع
+              </span>
+              <Input
+                type="date"
+                value={quickContractForm.signedDate}
+                onChange={(event) =>
+                  setQuickContractForm((current) => ({
+                    ...current,
+                    signedDate: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-[var(--lux-text)]">
+                تاريخ المناسبة
+              </span>
+              <Input
+                type="date"
+                value={quickContractForm.eventDate}
+                onChange={(event) =>
+                  setQuickContractForm((current) => ({
+                    ...current,
+                    eventDate: event.target.value,
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          {!latestQuotation ? (
+            <p className="text-sm text-[var(--lux-text-secondary)]">
+              يجب أن يوجد عرض سعر أولاً حتى يتم إنشاء العقد.
+            </p>
+          ) : null}
+
+          {quickContractError ? (
+            <p className="text-sm text-[var(--lux-danger)]">
+              {quickContractError}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setQuickContractDialogOpen(false)}
+              disabled={quickContractMutation.isPending}
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateQuickContract}
+              disabled={quickContractMutation.isPending || !latestQuotation}
+            >
+              {quickContractMutation.isPending
+                ? t("common.processing", { defaultValue: "Processing..." })
+                : t("common.create", { defaultValue: "Create" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -753,6 +1281,9 @@ export default function DesignerDetailsPage() {
   const handleEventChange = (value: string) => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("eventId", value);
+    nextParams.delete("view");
+    nextParams.delete("quotationId");
+    nextParams.delete("contractId");
     setSearchParams(nextParams, { replace: true });
   };
 

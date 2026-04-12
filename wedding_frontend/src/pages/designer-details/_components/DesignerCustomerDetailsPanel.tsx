@@ -23,6 +23,11 @@ type Props = {
   serviceItems: EventServiceItem[];
   vendorLinks: EventVendorLink[];
   latestQuotation: Quotation | null;
+  onCreateQuotation: (options: { eventId: string }) => void;
+  onCreateContract: (options: {
+    eventId: string;
+    quotationId?: string;
+  }) => void;
 };
 
 function ChecklistCard({
@@ -361,6 +366,8 @@ export function DesignerCustomerDetailsPanel({
   serviceItems,
   vendorLinks,
   latestQuotation,
+  onCreateQuotation,
+  onCreateContract,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
@@ -369,6 +376,8 @@ export function DesignerCustomerDetailsPanel({
     serviceItems,
     vendorLinks,
     latestQuotation,
+    onCreateQuotation,
+    onCreateContract,
   });
 
   const isBusy = model.isSaving;

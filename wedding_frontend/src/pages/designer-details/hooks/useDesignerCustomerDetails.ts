@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -32,6 +31,11 @@ type DesignerCustomerDetailsParams = {
   serviceItems: EventServiceItem[];
   vendorLinks: EventVendorLink[];
   latestQuotation: Quotation | null;
+  onCreateQuotation?: (options: { eventId: string }) => void;
+  onCreateContract?: (options: {
+    eventId: string;
+    quotationId?: string;
+  }) => void;
 };
 
 export type DesignerChecklistServiceOption = {
@@ -108,8 +112,9 @@ export function useDesignerCustomerDetails({
   serviceItems,
   vendorLinks,
   latestQuotation,
+  onCreateQuotation,
+  onCreateContract,
 }: DesignerCustomerDetailsParams) {
-  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const numericEventId = Number(eventId || 0);
@@ -612,23 +617,15 @@ export function useDesignerCustomerDetails({
       }
 
       if (action === "quotation") {
-        navigate(`/quotations/create?mode=from-event&eventId=${eventId}`);
+        onCreateQuotation?.({ eventId });
         return;
       }
 
       if (action === "contract") {
-        if (latestQuotation) {
-          const params = new URLSearchParams({
-            mode: "from-quotation",
-            quotationId: String(latestQuotation.id),
-            eventId,
-          });
-
-          navigate(`/contracts/create?${params.toString()}`);
-          return;
-        }
-
-        navigate(`/contracts/create?eventId=${eventId}`);
+        onCreateContract?.({
+          eventId,
+          quotationId: latestQuotation ? String(latestQuotation.id) : undefined,
+        });
       }
     } finally {
       setPendingAction(null);
