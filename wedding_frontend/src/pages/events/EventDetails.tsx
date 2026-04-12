@@ -53,7 +53,6 @@ import {
   useCreateEventVendor,
   useUpdateEventVendor,
 } from "@/hooks/vendors/useEventVendorMutations";
-import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { EventDetailsHero } from "./_components/EventDetailsHero";
 import { EventServicesChecklistDialog } from "./_components/EventServicesChecklistDialog";
@@ -71,7 +70,6 @@ import {
 } from "@/features/events/components";
 import {
   EVENT_SERVICE_STATUS_OPTIONS,
-  formatMoney,
   SERVICE_CATEGORY_OPTIONS,
   toNumberValue,
 } from "@/pages/services/adapters";
@@ -86,15 +84,16 @@ import { useVendors } from "@/hooks/vendors/useVendors";
 import {
   EVENT_VENDOR_PROVIDED_BY_OPTIONS,
   EVENT_VENDOR_STATUS_OPTIONS,
+  formatMoney as formatVendorMoney,
   formatVendorType,
   getEventVendorDisplayName,
+  sumSelectedVendorSubServicePrices,
   VENDOR_TYPE_OPTIONS,
 } from "@/pages/vendors/adapters";
 import type {
   EventVendorLink,
   EventVendorProvidedBy,
   EventVendorStatus,
-  VendorPricingPlan,
   VendorType,
 } from "@/pages/vendors/types";
 import {
@@ -195,48 +194,6 @@ const formatDecimalInput = (value?: number | string | null) => {
   }
 
   return parsed.toFixed(3);
-};
-
-const findMatchingVendorPricingPlan = (
-  pricingPlans: VendorPricingPlan[],
-  selectedSubServicesCount: number,
-) => {
-  if (selectedSubServicesCount <= 0) {
-    return null;
-  }
-
-  return (
-    [...pricingPlans]
-      .sort((left, right) => {
-        if (left.minSubServices !== right.minSubServices) {
-          return right.minSubServices - left.minSubServices;
-        }
-
-        const leftMax =
-          typeof left.maxSubServices === "number"
-            ? left.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-        const rightMax =
-          typeof right.maxSubServices === "number"
-            ? right.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-
-        if (leftMax !== rightMax) {
-          return leftMax - rightMax;
-        }
-
-        return left.id - right.id;
-      })
-      .find((plan) => {
-        const matchesMin = plan.minSubServices <= selectedSubServicesCount;
-        const matchesMax =
-          plan.maxSubServices === null ||
-          typeof plan.maxSubServices === "undefined" ||
-          plan.maxSubServices >= selectedSubServicesCount;
-
-        return matchesMin && matchesMax;
-      }) ?? null
-  );
 };
 
 const createDefaultEventServiceState = (
@@ -364,19 +321,6 @@ export const EventDetailsPage = ({
     enabled:
       vendorForm.providedBy === "company" && Boolean(vendorForm.vendorId),
   });
-  const {
-    data: vendorPricingPlansResponse,
-    isLoading: vendorPricingPlansLoading,
-  } = useVendorPricingPlans({
-    currentPage: 1,
-    itemsPerPage: 200,
-    searchQuery: "",
-    vendorId: vendorForm.vendorId ? Number(vendorForm.vendorId) : undefined,
-    vendorType: "all",
-    isActive: "true",
-    enabled:
-      vendorForm.providedBy === "company" && Boolean(vendorForm.vendorId),
-  });
   const { data: serviceCatalogResponse } = useServices({
     currentPage: 1,
     itemsPerPage: 200,
@@ -416,10 +360,6 @@ export const EventDetailsPage = ({
   const vendorSubServices = useMemo(
     () => vendorSubServicesResponse?.data ?? [],
     [vendorSubServicesResponse?.data],
-  );
-  const vendorPricingPlans = useMemo(
-    () => vendorPricingPlansResponse?.data ?? [],
-    [vendorPricingPlansResponse?.data],
   );
   const serviceCatalog = useMemo(
     () => serviceCatalogResponse?.data ?? [],
@@ -489,17 +429,17 @@ export const EventDetailsPage = ({
       }),
     [vendorSubServices],
   );
-  const calculatedVendorPricingPlan = useMemo(
+  const calculatedSubServicesTotal = useMemo(
     () =>
-      findMatchingVendorPricingPlan(
-        vendorPricingPlans,
-        vendorForm.selectedSubServiceIds.length,
+      sumSelectedVendorSubServicePrices(
+        availableVendorSubServices,
+        vendorForm.selectedSubServiceIds,
       ),
-    [vendorPricingPlans, vendorForm.selectedSubServiceIds.length],
+    [availableVendorSubServices, vendorForm.selectedSubServiceIds],
   );
   const calculatedVendorPriceInput = useMemo(
-    () => formatDecimalInput(calculatedVendorPricingPlan?.price),
-    [calculatedVendorPricingPlan?.price],
+    () => formatDecimalInput(calculatedSubServicesTotal),
+    [calculatedSubServicesTotal],
   );
   const selectableServiceCatalog = useMemo(
     () =>
@@ -562,10 +502,7 @@ export const EventDetailsPage = ({
       isPriceOverride:
         typeof editingVendorLink.hasManualPriceOverride === "boolean"
           ? editingVendorLink.hasManualPriceOverride
-          : editingVendorLink.agreedPrice !== null &&
-            typeof editingVendorLink.agreedPrice !== "undefined" &&
-            toNumberValue(editingVendorLink.agreedPrice) !==
-              toNumberValue(editingVendorLink.pricingPlan?.price),
+          : false,
       notes: editingVendorLink.notes ?? "",
       status: editingVendorLink.status,
     });
@@ -2165,44 +2102,12 @@ export const EventDetailsPage = ({
                   <p className={helperTextClassName}>
                     {t("vendors.pricingSummaryHint", {
                       defaultValue:
-                        "Pricing plans are resolved from the selected vendor and stay visible for reference even if you override the agreed price manually.",
+                        "The agreed price defaults to the sum of each selected sub-service list price. Enable override to enter a different amount.",
                     })}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className={dialogInsetBoxClassName}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
-                      {t("vendors.pricingPlans.name", {
-                        defaultValue: "Pricing Plan",
-                      })}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-[var(--lux-text)]">
-                      {vendorForm.providedBy !== "company"
-                        ? t("vendors.clientModeNoPricingPlan", {
-                            defaultValue:
-                              "No auto pricing in client mode without a linked vendor",
-                          })
-                        : !vendorForm.vendorId
-                          ? t("vendors.selectVendorForPricing", {
-                              defaultValue:
-                                "Select a company vendor to load pricing plans",
-                            })
-                          : vendorPricingPlansLoading
-                            ? t("common.loading", {
-                                defaultValue: "Loading...",
-                              })
-                            : calculatedVendorPricingPlan?.name ||
-                              (vendorForm.selectedSubServiceIds.length
-                                ? t("vendors.noMatchingPricingPlan", {
-                                    defaultValue: "No matching pricing plan",
-                                  })
-                                : t("vendors.noPricingPlan", {
-                                    defaultValue: "No pricing plan selected",
-                                  }))}
-                    </p>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className={dialogInsetBoxClassName}>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lux-text-muted)]">
                       {t("vendors.selectedSubServicesCount", {
@@ -2221,8 +2126,9 @@ export const EventDetailsPage = ({
                       })}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-[var(--lux-heading)]">
-                      {calculatedVendorPricingPlan
-                        ? formatMoney(calculatedVendorPricingPlan.price)
+                      {vendorForm.providedBy === "company" &&
+                      vendorForm.selectedSubServiceIds.length > 0
+                        ? formatVendorMoney(calculatedSubServicesTotal)
                         : "-"}
                     </p>
                   </div>
@@ -2231,11 +2137,12 @@ export const EventDetailsPage = ({
                 {vendorForm.providedBy === "company" &&
                 Boolean(vendorForm.vendorId) &&
                 vendorForm.selectedSubServiceIds.length > 0 &&
-                !calculatedVendorPricingPlan &&
-                !vendorPricingPlansLoading ? (
+                calculatedSubServicesTotal === 0 &&
+                !vendorSubServicesLoading ? (
                   <div className={dialogHintBoxClassName}>
-                    {t("vendors.noMatchingPricingPlan", {
-                      defaultValue: "No matching pricing plan",
+                    {t("vendors.subServicePricesMissingHint", {
+                      defaultValue:
+                        "Selected sub-services have no list price configured. Set prices on sub-services or use a manual override.",
                     })}
                   </div>
                 ) : null}
@@ -2266,7 +2173,7 @@ export const EventDetailsPage = ({
                     <p className="text-xs text-[var(--lux-text-secondary)]">
                       {t("vendors.manualPriceOverrideHint", {
                         defaultValue:
-                          "Enable this only when the final agreed amount differs from the matched pricing plan.",
+                          "Enable this only when the final agreed amount differs from the summed sub-service prices.",
                       })}
                     </p>
                   </div>
@@ -2298,11 +2205,11 @@ export const EventDetailsPage = ({
                     {vendorForm.isPriceOverride
                       ? t("vendors.manualPriceOverrideActiveHint", {
                           defaultValue:
-                            "Manual override is active. The matched pricing plan remains linked for reference.",
+                            "Manual override is active. The contract uses the amount you enter.",
                         })
                       : t("vendors.agreedPriceAutoHint", {
                           defaultValue:
-                            "Agreed price follows the matched pricing plan until manual override is enabled.",
+                            "Agreed price follows the sum of selected sub-service prices until manual override is enabled.",
                         })}
                   </p>
                 </label>

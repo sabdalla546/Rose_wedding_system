@@ -50,7 +50,6 @@ import {
   useServices,
 } from "@/hooks/services/useServices";
 import { useToast } from "@/hooks/use-toast";
-import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import { getQuotationLockMessage } from "@/lib/workflow/workflow";
@@ -60,12 +59,12 @@ import {
   formatMoney as formatVendorMoney,
   formatVendorType,
   getEventVendorDisplayName,
+  sumSelectedVendorSubServicePrices,
   toNumberValue as toVendorNumberValue,
 } from "@/pages/vendors/adapters";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type {
   EventVendorLink,
-  VendorPricingPlan,
   VendorSubService,
   VendorType,
 } from "@/pages/vendors/types";
@@ -108,7 +107,6 @@ type CatalogVendorLike = {
 type SelectedCatalogVendorConfig = {
   vendorId: string;
   selectedSubServiceIds: number[];
-  pricingPlanId: string;
   calculatedPrice: string;
   agreedPrice: string;
   isPriceOverride: boolean;
@@ -119,7 +117,6 @@ const createDefaultCatalogVendorConfig = (
 ): SelectedCatalogVendorConfig => ({
   vendorId: String(vendorId),
   selectedSubServiceIds: [],
-  pricingPlanId: "",
   calculatedPrice: "",
   agreedPrice: "",
   isPriceOverride: false,
@@ -129,43 +126,6 @@ const formatDecimalInput = (value?: number | string | null) => {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) return "";
   return parsed.toFixed(3);
-};
-
-const findMatchingVendorPricingPlan = (
-  plans: VendorPricingPlan[],
-  count: number,
-) => {
-  if (count <= 0) return null;
-
-  return (
-    [...plans]
-      .sort((a, b) => {
-        if (a.minSubServices !== b.minSubServices) {
-          return b.minSubServices - a.minSubServices;
-        }
-
-        const aMax =
-          typeof a.maxSubServices === "number"
-            ? a.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-        const bMax =
-          typeof b.maxSubServices === "number"
-            ? b.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-
-        if (aMax !== bMax) {
-          return aMax - bMax;
-        }
-
-        return a.id - b.id;
-      })
-      .find((plan) => {
-        const matchesMin = plan.minSubServices <= count;
-        const matchesMax =
-          !plan.maxSubServices || plan.maxSubServices >= count;
-        return matchesMin && matchesMax;
-      }) ?? null
-  );
 };
 
 const getFirstErrorMessage = (value: unknown): string | null => {
@@ -226,7 +186,6 @@ const quotationFormSchema = (isEditMode: boolean) =>
           serviceId: z.string().optional(),
           eventVendorId: z.string().optional(),
           vendorId: z.string().optional(),
-          pricingPlanId: z.string().optional(),
           itemName: z.string().max(150),
           category: z.string().max(100).optional(),
           quantity: z
@@ -341,7 +300,6 @@ const createEmptyQuotationItem = (
   serviceId: "",
   eventVendorId: "",
   vendorId: "",
-  pricingPlanId: "",
   itemName: "",
   category: "",
   quantity: "1",
@@ -386,7 +344,6 @@ const buildVendorItemFromEventVendor = (
     ...createEmptyQuotationItem("vendor", sortOrder),
     eventVendorId: String(item.id),
     vendorId: item.vendorId ? String(item.vendorId) : "",
-    pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
     itemName: getEventVendorDisplayName(item),
     category: item.vendorType,
     quantity: "1",
@@ -403,7 +360,6 @@ const buildVendorItemFromCatalogVendor = (
 ): QuotationItemFormData => ({
   ...createEmptyQuotationItem("vendor", sortOrder),
   vendorId: String(vendor.id),
-  pricingPlanId: config.pricingPlanId || "",
   itemName: vendor.name,
   category: vendor.type ?? "vendor",
   quantity: "1",
@@ -906,7 +862,6 @@ const QuotationFormPage = () => {
       const mergedItem: QuotationItemFormData = {
         ...item,
         vendorId: nextVendorItem.vendorId,
-        pricingPlanId: nextVendorItem.pricingPlanId,
         itemName: nextVendorItem.itemName,
         category: nextVendorItem.category,
         quantity: nextVendorItem.quantity,
@@ -916,7 +871,6 @@ const QuotationFormPage = () => {
       };
 
       if (
-        mergedItem.pricingPlanId !== item.pricingPlanId ||
         mergedItem.unitPrice !== item.unitPrice ||
         mergedItem.totalPrice !== item.totalPrice ||
         mergedItem.itemName !== item.itemName ||
@@ -977,7 +931,6 @@ const QuotationFormPage = () => {
         serviceId: item.serviceId ? String(item.serviceId) : "",
         eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
         vendorId: item.vendorId ? String(item.vendorId) : "",
-        pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
         itemName: item.itemName,
         category: item.category ?? "",
         quantity,
@@ -2143,7 +2096,6 @@ const QuotationFormPage = () => {
                                     )}
                                     meta={[
                                       `${t("quotations.agreedPrice", { defaultValue: "Agreed Price" })}: ${safeMoney(item.agreedPrice)}`,
-                                      `${t("quotations.pricingPlan", { defaultValue: "Pricing Plan" })}: ${item.pricingPlan?.name || "-"}`,
                                       `${t("quotations.vendorType", { defaultValue: "Vendor Type" })}: ${t(`vendors.type.${item.vendorType}`, { defaultValue: formatVendorType(item.vendorType) })}`,
                                       `${t("quotations.selectedSubServicesCount", { defaultValue: "Selected Sub-Services" })}: ${item.selectedSubServicesCount ?? 0}`,
                                       `${t("quotations.itemStatus", { defaultValue: "Status" })}: ${item.status}`,
@@ -2444,17 +2396,6 @@ function CatalogVendorSelectionCard({
       isActive: "all",
       enabled: checked,
     });
-  const { data: pricingPlansResponse, isLoading: pricingPlansLoading } =
-    useVendorPricingPlans({
-      currentPage: 1,
-      itemsPerPage: 200,
-      searchQuery: "",
-      vendorId: Number(vendor.id),
-      vendorType: vendor.type ?? "all",
-      isActive: "all",
-      enabled: checked,
-    });
-
   const subServices = useMemo(
     () =>
       [...(subServicesResponse?.data ?? [])].sort((left, right) => {
@@ -2470,21 +2411,15 @@ function CatalogVendorSelectionCard({
       }),
     [subServicesResponse?.data],
   );
-  const pricingPlans = useMemo(
-    () => pricingPlansResponse?.data ?? [],
-    [pricingPlansResponse?.data],
-  );
-  const matchedPricingPlan = useMemo(
-    () =>
-      findMatchingVendorPricingPlan(
-        pricingPlans,
-        resolvedConfig.selectedSubServiceIds.length,
-      ),
-    [pricingPlans, resolvedConfig.selectedSubServiceIds.length],
-  );
   const calculatedPrice = useMemo(
-    () => formatDecimalInput(matchedPricingPlan?.price),
-    [matchedPricingPlan?.price],
+    () =>
+      formatDecimalInput(
+        sumSelectedVendorSubServicePrices(
+          subServices,
+          resolvedConfig.selectedSubServiceIds,
+        ),
+      ),
+    [subServices, resolvedConfig.selectedSubServiceIds],
   );
 
   useEffect(() => {
@@ -2492,13 +2427,9 @@ function CatalogVendorSelectionCard({
       return;
     }
 
-    const nextPricingPlanId = matchedPricingPlan
-      ? String(matchedPricingPlan.id)
-      : "";
     const nextCalculatedPrice = calculatedPrice;
 
     if (
-      resolvedConfig.pricingPlanId === nextPricingPlanId &&
       resolvedConfig.calculatedPrice === nextCalculatedPrice &&
       resolvedConfig.agreedPrice === nextCalculatedPrice
     ) {
@@ -2507,19 +2438,16 @@ function CatalogVendorSelectionCard({
 
     onConfigChange(vendorId, (current) => ({
       ...current,
-      pricingPlanId: nextPricingPlanId,
       calculatedPrice: nextCalculatedPrice,
       agreedPrice: nextCalculatedPrice,
     }));
   }, [
     calculatedPrice,
     checked,
-    matchedPricingPlan,
     onConfigChange,
     resolvedConfig.agreedPrice,
     resolvedConfig.calculatedPrice,
     resolvedConfig.isPriceOverride,
-    resolvedConfig.pricingPlanId,
     vendorId,
   ]);
 
@@ -2535,13 +2463,10 @@ function CatalogVendorSelectionCard({
             defaultValue: "Source: vendor catalog",
           }),
           checked
-            ? resolvedConfig.pricingPlanId
-              ? `${t("quotations.pricingPlan", {
-                  defaultValue: "Pricing Plan",
-                })}: ${matchedPricingPlan?.name ?? resolvedConfig.pricingPlanId}`
-              : t("quotations.vendorPriceAutoMatched", {
-                  defaultValue: "Price updates from matched pricing plans",
-                })
+            ? t("quotations.vendorPriceFromSubServices", {
+                defaultValue:
+                  "Price is the sum of selected sub-service list prices (override available).",
+              })
             : t("quotations.vendorPriceNeedsReview", {
                 defaultValue: "Set the price manually after selection",
               }),
@@ -2550,7 +2475,7 @@ function CatalogVendorSelectionCard({
           checked
             ? t("quotations.catalogVendorSelectionHint", {
                 defaultValue:
-                  "Choose sub-services to match the vendor pricing plan, then override the agreed amount only if needed.",
+                  "Choose sub-services to sum their list prices, then override the agreed amount only if needed.",
               })
             : undefined
         }
@@ -2630,11 +2555,13 @@ function CatalogVendorSelectionCard({
                             {subService.name}
                           </p>
                           <p className="text-xs text-[var(--lux-text-secondary)]">
-                            {subService.description ||
-                              subService.code ||
-                              t("quotations.noDescription", {
-                                defaultValue: "No description",
-                              })}
+                            {t("quotations.subServiceListPrice", {
+                              defaultValue: "List price",
+                            })}
+                            : {formatVendorMoney(subService.price)}
+                            {subService.description || subService.code
+                              ? ` · ${subService.description || subService.code}`
+                              : ""}
                           </p>
                         </div>
                       </label>
@@ -2661,38 +2588,12 @@ function CatalogVendorSelectionCard({
                 <p className="text-xs text-[var(--lux-text-secondary)]">
                   {t("quotations.vendorPricingSummaryHint", {
                     defaultValue:
-                      "Pricing plans are matched from the selected sub-service count and remain linked even when the agreed amount is overridden.",
+                      "Calculated price is the sum of list prices for the sub-services you select. Override the agreed amount only when needed.",
                   })}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <div
-                  className="rounded-[4px] border px-4 py-3"
-                  style={{
-                    background: "var(--lux-control-surface)",
-                    borderColor: "var(--lux-row-border)",
-                  }}
-                >
-                  <div className="text-xs text-[var(--lux-text-secondary)]">
-                    {t("quotations.pricingPlan", {
-                      defaultValue: "Pricing Plan",
-                    })}
-                  </div>
-                  <div className="mt-1 text-sm font-medium text-[var(--lux-heading)]">
-                    {pricingPlansLoading
-                      ? t("common.loading", { defaultValue: "Loading..." })
-                      : matchedPricingPlan?.name ||
-                        (resolvedConfig.selectedSubServiceIds.length
-                          ? t("quotations.noMatchingPricingPlan", {
-                              defaultValue: "No matching pricing plan",
-                            })
-                          : t("quotations.noPricingPlanSelected", {
-                              defaultValue: "No pricing plan selected",
-                            }))}
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div
                     className="rounded-[4px] border px-4 py-3"
@@ -2763,7 +2664,7 @@ function CatalogVendorSelectionCard({
                     <p className="text-xs text-[var(--lux-text-secondary)]">
                       {t("quotations.manualPriceOverrideHint", {
                         defaultValue:
-                          "Enable this only when the final agreed amount differs from the matched pricing plan.",
+                          "Enable this only when the final agreed amount differs from the summed sub-service prices.",
                       })}
                     </p>
                   </div>
@@ -2795,11 +2696,11 @@ function CatalogVendorSelectionCard({
                     {resolvedConfig.isPriceOverride
                       ? t("quotations.manualPriceOverrideActiveHint", {
                           defaultValue:
-                            "Manual override is active. The matched pricing plan remains linked for reference.",
+                            "Manual override is active. The quotation row uses the amount you enter.",
                         })
                       : t("quotations.agreedPriceAutoHint", {
                           defaultValue:
-                            "Agreed price follows the matched pricing plan until manual override is enabled.",
+                            "Agreed price follows the calculated sub-service total until manual override is enabled.",
                         })}
                   </p>
                 </label>
@@ -3011,9 +2912,6 @@ function EditableItemsSection({
                           : itemValues.vendorId
                             ? `${t("quotations.linkedVendor", { defaultValue: "Vendor" })}: #${itemValues.vendorId}`
                             : null}
-                        {itemValues.pricingPlanId
-                          ? ` • ${t("quotations.pricingPlan", { defaultValue: "Pricing Plan" })}: #${itemValues.pricingPlanId}`
-                          : null}
                         <div className="mt-1">
                           {t("quotations.snapshotOnlyHint", {
                             defaultValue:

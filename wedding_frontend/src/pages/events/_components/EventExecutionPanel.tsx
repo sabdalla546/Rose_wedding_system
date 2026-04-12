@@ -252,12 +252,6 @@ export function EventExecutionPanel({
                     }`}
                   >
                     <p>
-                      {t("vendors.pricingPlans.name", {
-                        defaultValue: "Pricing Plan",
-                      })}
-                      : {vendor.resolvedPricingLabel || "-"}
-                    </p>
-                    <p>
                       {t("vendors.selectedSubServicesCount", {
                         defaultValue: "Selected Count",
                       })}

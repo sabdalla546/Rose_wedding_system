@@ -49,6 +49,13 @@ const vendorSubServiceSchema = z.object({
     .string()
     .min(1, "Sort order is required")
     .refine(isNonNegativeInteger, "Sort order must be 0 or greater"),
+  price: z
+    .string()
+    .min(1, "Price is required")
+    .refine((value) => {
+      const parsed = Number(value);
+      return !Number.isNaN(parsed) && parsed >= 0;
+    }, "Price must be zero or greater"),
   isActive: z.boolean().default(true),
 });
 
@@ -83,6 +90,7 @@ const VendorSubServiceFormPage = () => {
       code: "",
       description: "",
       sortOrder: "0",
+      price: "0",
       isActive: true,
     },
   });
@@ -98,6 +106,10 @@ const VendorSubServiceFormPage = () => {
       code: subService.code ?? "",
       description: subService.description ?? "",
       sortOrder: String(subService.sortOrder),
+      price:
+        subService.price !== null && typeof subService.price !== "undefined"
+          ? String(subService.price)
+          : "0",
       isActive: subService.isActive,
     });
   }, [form, isEditMode, subService]);
@@ -109,6 +121,7 @@ const VendorSubServiceFormPage = () => {
   const onSubmit: SubmitHandler<VendorSubServiceFormValues> = (values) => {
     const payload: VendorSubServiceFormData = {
       ...values,
+      price: String(Number(values.price)),
       vendorType: selectedVendor?.type,
     };
 
@@ -351,6 +364,31 @@ const VendorSubServiceFormPage = () => {
                                 min="0"
                                 inputMode="numeric"
                                 placeholder="0"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t("vendors.subServices.price", {
+                                defaultValue: "List Price",
+                              })}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min="0"
+                                step="0.001"
+                                inputMode="decimal"
+                                placeholder="0.000"
                               />
                             </FormControl>
                             <FormMessage />

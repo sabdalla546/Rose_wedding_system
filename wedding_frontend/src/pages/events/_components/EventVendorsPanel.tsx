@@ -158,7 +158,6 @@ export function EventVendorsPanel({
                   <TableRow className="border-[var(--lux-row-border)]">
                     <TableHead>{t("vendors.resolvedCompanyName", { defaultValue: "Resolved Company / Vendor" })}</TableHead>
                     <TableHead>{t("vendors.typeLabel", { defaultValue: "Vendor Type" })}</TableHead>
-                    <TableHead>{t("vendors.pricingPlans.name", { defaultValue: "Pricing Plan" })}</TableHead>
                     <TableHead>{t("vendors.selectedSubServices", { defaultValue: "Selected Sub Services" })}</TableHead>
                     <TableHead>{t("vendors.costSummary", { defaultValue: "Cost Summary" })}</TableHead>
                     <TableHead>{t("vendors.assignmentStatusLabel", { defaultValue: "Status" })}</TableHead>
@@ -191,16 +190,6 @@ export function EventVendorsPanel({
                           {t(`vendors.type.${vendorLink.vendorType}`, {
                             defaultValue: formatVendorType(vendorLink.vendorType),
                           })}
-                        </TableCell>
-                        <TableCell className="align-top text-[var(--lux-text-secondary)]">
-                          {vendorLink.resolvedPricingLabel ||
-                            (vendorLink.selectedSubServicesCount > 0
-                              ? t("vendors.noMatchingPricingPlan", {
-                                  defaultValue: "No matching pricing plan",
-                                })
-                              : t("vendors.noPricingPlan", {
-                                  defaultValue: "No pricing plan selected",
-                                }))}
                         </TableCell>
                         <TableCell className="align-top text-[var(--lux-text-secondary)]">
                           {(vendorLink.selectedSubServices ?? []).length
@@ -335,22 +324,7 @@ export function EventVendorsPanel({
                           </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                          <SummaryItem
-                            label={t("vendors.pricingPlans.name", {
-                              defaultValue: "Pricing Plan",
-                            })}
-                            value={
-                              vendorLink.resolvedPricingLabel ||
-                              (vendorLink.selectedSubServicesCount > 0
-                                ? t("vendors.noMatchingPricingPlan", {
-                                    defaultValue: "No matching pricing plan",
-                                  })
-                                : t("vendors.noPricingPlan", {
-                                    defaultValue: "No pricing plan selected",
-                                  }))
-                            }
-                          />
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                           <SummaryItem
                             label={t("vendors.selectedSubServicesCount", {
                               defaultValue: t("quotations.selectedSubServicesCount", { defaultValue: "Selected Count" }),

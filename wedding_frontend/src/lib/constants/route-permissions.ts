@@ -31,9 +31,6 @@ export const routeAccessByHref: Record<string, RouteAccess> = {
   "/settings/vendors/sub-services": { permission: "vendors.read" },
   "/settings/vendors/sub-services/create": { permission: "vendors.create" },
   "/settings/vendors/sub-services/edit/:id": { permission: "vendors.update" },
-  "/settings/vendors/pricing-plans": { permission: "vendors.read" },
-  "/settings/vendors/pricing-plans/create": { permission: "vendors.create" },
-  "/settings/vendors/pricing-plans/edit/:id": { permission: "vendors.update" },
   "/designer-details": {
     anyOf: ["events.read", "vendors.read", "services.read"],
   },

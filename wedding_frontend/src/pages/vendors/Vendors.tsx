@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, Handshake, Plus, Tags } from "lucide-react";
+import { ClipboardList, Handshake, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -137,7 +137,7 @@ const VendorsPage = () => {
               <p className="text-sm text-[var(--lux-text-secondary)]">
                 {t("vendors.masterDataDescription", {
                   defaultValue:
-                    "Manage reusable vendor sub-services and pricing plans by vendor type without changing event-level vendor workflows.",
+                    "Manage reusable vendor sub-services and list prices by vendor type without changing event-level vendor workflows.",
                 })}
               </p>
             </div>
@@ -160,16 +160,6 @@ const VendorsPage = () => {
                 <ClipboardList className="h-4 w-4" />
                 {t("vendors.subServices.title", {
                   defaultValue: "Vendor Sub Services",
-                })}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/settings/vendors/pricing-plans")}
-              >
-                <Tags className="h-4 w-4" />
-                {t("vendors.pricingPlans.title", {
-                  defaultValue: "Vendor Pricing Plans",
                 })}
               </Button>
             </div>

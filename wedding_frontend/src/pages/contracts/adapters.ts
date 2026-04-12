@@ -108,15 +108,30 @@ export const getContractItemOriginLabel = (item: Partial<ContractItem>) => {
       : item.eventVendor?.vendorType
         ? formatVendorType(item.eventVendor.vendorType)
         : null;
-    const pricingPlanName =
-      item.pricingPlan?.name || item.eventVendor?.pricingPlan?.name || null;
     const vendorName =
       item.itemName ||
       (item.eventVendor ? getEventVendorDisplayName(item.eventVendor) : null) ||
       item.vendor?.name ||
       "Vendor";
+    const subCount =
+      typeof item.eventVendor?.selectedSubServicesCount === "number"
+        ? item.eventVendor.selectedSubServicesCount
+        : null;
+    const agreedLabel =
+      item.eventVendor?.agreedPrice != null
+        ? formatMoney(item.eventVendor.agreedPrice)
+        : item.unitPrice != null && item.unitPrice !== ""
+        ? formatMoney(item.unitPrice)
+        : null;
 
-    return [vendorName, vendorType, pricingPlanName].filter(Boolean).join(" • ");
+    return [
+      vendorName,
+      vendorType,
+      subCount !== null ? String(subCount) : null,
+      agreedLabel,
+    ]
+      .filter(Boolean)
+      .join(" • ");
   }
 
   const serviceName =

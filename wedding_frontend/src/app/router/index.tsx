@@ -42,8 +42,6 @@ import QuotationFormPage from "@/pages/quotations/QuotationForm";
 import QuotationsPage from "@/pages/quotations/Quotations";
 import VendorDetailsPage from "@/pages/vendors/VendorDetails";
 import VendorFormPage from "@/pages/vendors/VendorForm";
-import VendorPricingPlanFormPage from "@/pages/vendors/VendorPricingPlanForm";
-import VendorPricingPlansPage from "@/pages/vendors/VendorPricingPlans";
 import VendorSubServiceFormPage from "@/pages/vendors/VendorSubServiceForm";
 import VendorSubServicesPage from "@/pages/vendors/VendorSubServices";
 import VendorTypeFormPage from "@/pages/vendors/VendorTypeForm";
@@ -82,9 +80,6 @@ const explicitModulePaths = new Set([
   "/settings/vendors/sub-services",
   "/settings/vendors/sub-services/create",
   "/settings/vendors/sub-services/edit/:id",
-  "/settings/vendors/pricing-plans",
-  "/settings/vendors/pricing-plans/create",
-  "/settings/vendors/pricing-plans/edit/:id",
   "/designer-details",
   "/settings/services",
   "/settings/services/create",
@@ -319,18 +314,6 @@ export const router = createBrowserRouter([
           {
             path: "settings/vendors/sub-services/edit/:id",
             element: <VendorSubServiceFormPage />,
-          },
-          {
-            path: "settings/vendors/pricing-plans",
-            element: <VendorPricingPlansPage />,
-          },
-          {
-            path: "settings/vendors/pricing-plans/create",
-            element: <VendorPricingPlanFormPage />,
-          },
-          {
-            path: "settings/vendors/pricing-plans/edit/:id",
-            element: <VendorPricingPlanFormPage />,
           },
           {
             path: "designer-details",

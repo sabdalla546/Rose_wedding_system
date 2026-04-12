@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateEventVendor, useUpdateEventVendor } from "@/hooks/vendors/useEventVendorMutations";
-import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useVendors } from "@/hooks/vendors/useVendors";
 import { toNumberValue } from "@/pages/services/adapters";
@@ -39,7 +38,6 @@ import type {
   EventVendorProvidedBy,
   EventVendorStatus,
   EventVendorLinkFormData,
-  VendorPricingPlan,
   VendorType,
 } from "@/pages/vendors/types";
 
@@ -85,48 +83,6 @@ const formatDecimalInput = (value?: number | string | null) => {
   }
 
   return parsed.toFixed(3);
-};
-
-const findMatchingVendorPricingPlan = (
-  pricingPlans: VendorPricingPlan[],
-  selectedSubServicesCount: number,
-) => {
-  if (selectedSubServicesCount <= 0) {
-    return null;
-  }
-
-  return (
-    [...pricingPlans]
-      .sort((left, right) => {
-        if (left.minSubServices !== right.minSubServices) {
-          return right.minSubServices - left.minSubServices;
-        }
-
-        const leftMax =
-          typeof left.maxSubServices === "number"
-            ? left.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-        const rightMax =
-          typeof right.maxSubServices === "number"
-            ? right.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-
-        if (leftMax !== rightMax) {
-          return leftMax - rightMax;
-        }
-
-        return left.id - right.id;
-      })
-      .find((plan) => {
-        const matchesMin = plan.minSubServices <= selectedSubServicesCount;
-        const matchesMax =
-          plan.maxSubServices === null ||
-          typeof plan.maxSubServices === "undefined" ||
-          plan.maxSubServices >= selectedSubServicesCount;
-
-        return matchesMin && matchesMax;
-      }) ?? null
-  );
 };
 
 const createStateFromVendorLink = (
@@ -210,37 +166,20 @@ export function EventVendorAssignmentDialog({
       enabled: form.providedBy === "company" && Boolean(form.vendorId),
     });
 
-  const { data: vendorPricingPlansResponse, isLoading: vendorPricingPlansLoading } =
-    useVendorPricingPlans({
-      currentPage: 1,
-      itemsPerPage: 200,
-      searchQuery: "",
-      vendorId: form.vendorId ? Number(form.vendorId) : undefined,
-      vendorType: "all",
-      isActive: "true",
-      enabled: form.providedBy === "company" && Boolean(form.vendorId),
-    });
-
   const vendorSubServices = useMemo(
     () => vendorSubServicesResponse?.data ?? [],
     [vendorSubServicesResponse?.data],
   );
-  const vendorPricingPlans = useMemo(
-    () => vendorPricingPlansResponse?.data ?? [],
-    [vendorPricingPlansResponse?.data],
-  );
-  const selectedPricingPlan = useMemo(
-    () =>
-      findMatchingVendorPricingPlan(
-        vendorPricingPlans,
-        form.selectedSubServiceIds.length,
-      ),
-    [form.selectedSubServiceIds.length, vendorPricingPlans],
-  );
-  const calculatedVendorPriceInput = useMemo(
-    () => formatDecimalInput(selectedPricingPlan?.price),
-    [selectedPricingPlan?.price],
-  );
+  const calculatedVendorPriceInput = useMemo(() => {
+    let sum = 0;
+    for (const id of form.selectedSubServiceIds) {
+      const sub = vendorSubServices.find((entry) => entry.id === id);
+      if (!sub) continue;
+      const amount = toNumberValue(sub.price);
+      if (amount !== null) sum += amount;
+    }
+    return formatDecimalInput(sum);
+  }, [form.selectedSubServiceIds, vendorSubServices]);
   const resolvedAgreedPrice = form.isPriceOverride
     ? form.agreedPrice
     : calculatedVendorPriceInput;
@@ -558,7 +497,8 @@ export function EventVendorAssignmentDialog({
                           {subService.name}
                         </p>
                         <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                          {subService.code || t("vendors.noSubServiceCode")}
+                          {formatMoney(subService.price)}
+                          {subService.code ? ` · ${subService.code}` : ""}
                         </p>
                       </div>
                     </label>
@@ -571,18 +511,27 @@ export function EventVendorAssignmentDialog({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-[var(--lux-text)]">
-                    {t("vendors.suggestedPricingPlan")}
+                    {t("vendors.calculatedFromSubServices", {
+                      defaultValue: "Calculated from sub-services",
+                    })}
                   </p>
                   <p className="text-xs leading-5 text-[var(--lux-text-secondary)]">
-                    {vendorPricingPlansLoading
-                      ? t("vendors.loadingPricingPlan")
-                      : selectedPricingPlan
-                        ? selectedPricingPlan.name
-                        : t("vendors.noMatchingPricingPlan")}
+                    {t("vendors.calculatedFromSubServicesHint", {
+                      defaultValue:
+                        "Sum of list prices for the sub-services selected above.",
+                    })}
                   </p>
                 </div>
                 <Badge variant="secondary">
-                  {selectedPricingPlan ? formatMoney(selectedPricingPlan.price) : "-"}
+                  {form.selectedSubServiceIds.length
+                    ? formatMoney(
+                        form.selectedSubServiceIds.reduce((acc, id) => {
+                          const sub = vendorSubServices.find((s) => s.id === id);
+                          const n = sub ? toNumberValue(sub.price) : null;
+                          return acc + (n ?? 0);
+                        }, 0),
+                      )
+                    : "-"}
                 </Badge>
               </div>
             </div>

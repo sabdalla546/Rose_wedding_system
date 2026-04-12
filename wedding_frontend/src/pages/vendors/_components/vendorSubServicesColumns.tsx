@@ -64,6 +64,17 @@ export const useVendorSubServicesColumns = ({
       ),
     },
     {
+      id: "price",
+      header: () => (
+        <div className={alignClass}>
+          {t("vendors.subServices.price", { defaultValue: "List Price" })}
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className={alignClass}>{row.original.priceDisplay}</div>
+      ),
+    },
+    {
       accessorKey: "sortOrder",
       header: () => (
         <div className={alignClass}>

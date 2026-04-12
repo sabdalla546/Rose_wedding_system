@@ -25,6 +25,7 @@ const buildCreateVendorSubServicePayload = (
   code: normalizeOptionalString(values.code),
   description: normalizeOptionalString(values.description),
   sortOrder: Number(values.sortOrder),
+  price: Number(values.price),
   isActive: values.isActive,
 });
 
@@ -37,6 +38,7 @@ const buildUpdateVendorSubServicePayload = (
   code: normalizeNullableString(values.code),
   description: normalizeNullableString(values.description),
   sortOrder: Number(values.sortOrder),
+  price: Number(values.price),
   isActive: values.isActive,
 });
 

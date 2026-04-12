@@ -5,8 +5,6 @@ import type {
   EventVendorStatus,
   Vendor,
   VendorTypeRecord,
-  VendorPricingPlan,
-  VendorPricingPlansResponse,
   VendorSubService,
   VendorSubServicesResponse,
   VendorTypesResponse,
@@ -24,12 +22,6 @@ export type TableVendorType = VendorTypeRecord;
 export type TableVendorSubService = VendorSubService & {
   vendorDisplay: string;
   typeDisplay: string;
-};
-
-export type TableVendorPricingPlan = VendorPricingPlan & {
-  vendorDisplay: string;
-  typeDisplay: string;
-  subServiceRangeDisplay: string;
   priceDisplay: string;
 };
 
@@ -47,12 +39,6 @@ export type TableVendorTypesResponse = {
 
 export type TableVendorSubServicesResponse = {
   data: { subServices: TableVendorSubService[] };
-  total: number;
-  totalPages: number;
-};
-
-export type TableVendorPricingPlansResponse = {
-  data: { pricingPlans: TableVendorPricingPlan[] };
   total: number;
   totalPages: number;
 };
@@ -103,13 +89,21 @@ export const formatMoney = (value?: DecimalValue | null) => {
   });
 };
 
-export const formatVendorPricingRange = (
-  minSubServices: number,
-  maxSubServices?: number | null,
-) =>
-  maxSubServices === null || typeof maxSubServices === "undefined"
-    ? `${minSubServices}+`
-    : `${minSubServices} - ${maxSubServices}`;
+export const sumSelectedVendorSubServicePrices = (
+  subServices: VendorSubService[],
+  selectedIds: number[],
+) => {
+  let sum = 0;
+  for (const id of selectedIds) {
+    const sub = subServices.find((entry) => entry.id === id);
+    if (!sub) continue;
+    const amount = toNumberValue(sub.price);
+    if (amount !== null) {
+      sum += amount;
+    }
+  }
+  return sum;
+};
 
 export const formatProvidedBy = (value: EventVendorProvidedBy) =>
   value.charAt(0).toUpperCase() + value.slice(1);
@@ -156,33 +150,13 @@ export function toTableVendorSubServices(
       typeDisplay: formatVendorType(
         subService.vendor?.type ?? subService.vendorType,
       ),
+      priceDisplay: formatMoney(subService.price),
     }),
   );
 
   return {
     data: { subServices },
     total: res?.meta?.total ?? subServices.length,
-    totalPages: res?.meta?.pages ?? 1,
-  };
-}
-
-export function toTableVendorPricingPlans(
-  res?: VendorPricingPlansResponse,
-): TableVendorPricingPlansResponse {
-  const pricingPlans = (res?.data ?? []).map<TableVendorPricingPlan>((plan) => ({
-    ...plan,
-    vendorDisplay: plan.vendor?.name || "-",
-    typeDisplay: formatVendorType(plan.vendor?.type ?? plan.vendorType),
-    subServiceRangeDisplay: formatVendorPricingRange(
-      plan.minSubServices,
-      plan.maxSubServices,
-    ),
-    priceDisplay: formatMoney(plan.price),
-  }));
-
-  return {
-    data: { pricingPlans },
-    total: res?.meta?.total ?? pricingPlans.length,
     totalPages: res?.meta?.pages ?? 1,
   };
 }

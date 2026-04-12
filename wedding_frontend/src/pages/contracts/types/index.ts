@@ -2,11 +2,7 @@ import type { Customer } from "@/pages/customers/types";
 import type { Event } from "@/pages/events/types";
 import type { Quotation, QuotationItem } from "@/pages/quotations/types";
 import type { EventServiceItem, Service } from "@/pages/services/types";
-import type {
-  EventVendorLink,
-  Vendor,
-  VendorPricingPlan,
-} from "@/pages/vendors/types";
+import type { EventVendorLink, Vendor } from "@/pages/vendors/types";
 
 export type ContractStatus =
   | "draft"
@@ -59,7 +55,6 @@ export interface ContractItem {
   serviceId?: number | null;
   eventVendorId?: number | null;
   vendorId?: number | null;
-  pricingPlanId?: number | null;
   itemName: string;
   category?: string | null;
   quantity: DecimalValue;
@@ -72,7 +67,6 @@ export interface ContractItem {
   service?: Service | null;
   eventVendor?: EventVendorLink | null;
   vendor?: Vendor | null;
-  pricingPlan?: VendorPricingPlan | null;
   createdByUser?: ContractUserSummary | null;
   updatedByUser?: ContractUserSummary | null;
   createdAt?: string;
@@ -128,7 +122,6 @@ export interface ContractItemFormData {
   serviceId?: string;
   eventVendorId?: string;
   vendorId?: string;
-  pricingPlanId?: string;
   itemName: string;
   category?: string;
   quantity: string;

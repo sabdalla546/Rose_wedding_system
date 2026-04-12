@@ -40,7 +40,6 @@ import {
   useEventServiceItems,
   useServices,
 } from "@/hooks/services/useServices";
-import { useVendorPricingPlans } from "@/hooks/vendors/useVendorPricingPlans";
 import { useVendorSubServices } from "@/hooks/vendors/useVendorSubServices";
 import { useEventVendorLinks, useVendors } from "@/hooks/vendors/useVendors";
 import { getContractLockMessage } from "@/lib/workflow/workflow";
@@ -55,11 +54,11 @@ import {
   formatVendorType,
   getEventVendorDisplayName,
   formatMoney as formatVendorMoney,
+  sumSelectedVendorSubServicePrices,
 } from "@/pages/vendors/adapters";
 import type { EventServiceItem, Service } from "@/pages/services/types";
 import type {
   EventVendorLink,
-  VendorPricingPlan,
   VendorSubService,
   VendorType,
 } from "@/pages/vendors/types";
@@ -101,7 +100,6 @@ type CatalogVendorLike = {
 type SelectedCatalogVendorConfig = {
   vendorId: string;
   selectedSubServiceIds: number[];
-  pricingPlanId: string;
   calculatedPrice: string;
   agreedPrice: string;
   isPriceOverride: boolean;
@@ -112,7 +110,6 @@ const createDefaultCatalogVendorConfig = (
 ): SelectedCatalogVendorConfig => ({
   vendorId: String(vendorId),
   selectedSubServiceIds: [],
-  pricingPlanId: "",
   calculatedPrice: "",
   agreedPrice: "",
   isPriceOverride: false,
@@ -122,42 +119,6 @@ const formatDecimalInput = (value?: number | string | null) => {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) return "";
   return parsed.toFixed(3);
-};
-
-const findMatchingVendorPricingPlan = (
-  plans: VendorPricingPlan[],
-  count: number,
-) => {
-  if (count <= 0) return null;
-
-  return (
-    [...plans]
-      .sort((a, b) => {
-        if (a.minSubServices !== b.minSubServices) {
-          return b.minSubServices - a.minSubServices;
-        }
-
-        const aMax =
-          typeof a.maxSubServices === "number"
-            ? a.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-        const bMax =
-          typeof b.maxSubServices === "number"
-            ? b.maxSubServices
-            : Number.MAX_SAFE_INTEGER;
-
-        if (aMax !== bMax) {
-          return aMax - bMax;
-        }
-
-        return a.id - b.id;
-      })
-      .find((plan) => {
-        const matchesMin = plan.minSubServices <= count;
-        const matchesMax = !plan.maxSubServices || plan.maxSubServices >= count;
-        return matchesMin && matchesMax;
-      }) ?? null
-  );
 };
 
 const isServiceSummaryItem = (
@@ -184,14 +145,17 @@ const getQuotationPreviewOriginLabel = (item: QuotationItem) => {
     const vendorType = item.category
       ? formatPreviewCategory(item.category)
       : null;
-    const pricingPlanName = item.pricingPlan?.name || null;
     const vendorName =
       item.itemName ||
       (item.eventVendor ? getEventVendorDisplayName(item.eventVendor) : null) ||
       item.vendor?.name ||
       "Vendor";
+    const subCount =
+      typeof item.eventVendor?.selectedSubServicesCount === "number"
+        ? item.eventVendor.selectedSubServicesCount
+        : null;
 
-    return [vendorName, vendorType, pricingPlanName]
+    return [vendorName, vendorType, subCount !== null ? String(subCount) : null]
       .filter(Boolean)
       .join(" - ");
   }
@@ -270,7 +234,6 @@ const createContractFormSchema = (isEditMode: boolean) =>
           serviceId: z.string().optional(),
           eventVendorId: z.string().optional(),
           vendorId: z.string().optional(),
-          pricingPlanId: z.string().optional(),
           itemName: z.string().max(150),
           category: z.string().max(100).optional(),
           quantity: z
@@ -382,7 +345,6 @@ const createEmptyContractItem = (
   serviceId: "",
   eventVendorId: "",
   vendorId: "",
-  pricingPlanId: "",
   itemName: "",
   category: "",
   quantity: "1",
@@ -431,7 +393,6 @@ const buildVendorItemFromEventVendor = (
     ...createEmptyContractItem(sortOrder, "vendor"),
     eventVendorId: String(item.id),
     vendorId: item.vendorId ? String(item.vendorId) : "",
-    pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
     itemName: getEventVendorDisplayName(item),
     category: item.vendorType,
     quantity: "1",
@@ -448,7 +409,6 @@ const buildVendorItemFromCatalogVendorConfig = (
 ): ContractItemFormData => ({
   ...createEmptyContractItem(sortOrder, "vendor"),
   vendorId: String(vendor.id),
-  pricingPlanId: config.pricingPlanId || "",
   itemName: vendor.name,
   category: vendor.type ?? "vendor",
   quantity: "1",
@@ -804,7 +764,6 @@ const ContractFormPage = () => {
         serviceId: item.serviceId ? String(item.serviceId) : "",
         eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
         vendorId: item.vendorId ? String(item.vendorId) : "",
-        pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
         itemName: item.itemName,
         category: item.category ?? "",
         quantity: String(item.quantity),
@@ -827,7 +786,6 @@ const ContractFormPage = () => {
         serviceId: item.serviceId ? String(item.serviceId) : "",
         eventVendorId: item.eventVendorId ? String(item.eventVendorId) : "",
         vendorId: item.vendorId ? String(item.vendorId) : "",
-        pricingPlanId: item.pricingPlanId ? String(item.pricingPlanId) : "",
         itemName: item.itemName,
         category: item.category ?? "",
         quantity: String(item.quantity),
@@ -1000,7 +958,6 @@ const ContractFormPage = () => {
       const mergedItem: ContractItemFormData = {
         ...item,
         vendorId: nextVendorItem.vendorId,
-        pricingPlanId: nextVendorItem.pricingPlanId,
         itemName: nextVendorItem.itemName,
         category: nextVendorItem.category,
         quantity: nextVendorItem.quantity,
@@ -1010,7 +967,6 @@ const ContractFormPage = () => {
       };
 
       if (
-        mergedItem.pricingPlanId !== item.pricingPlanId ||
         mergedItem.unitPrice !== item.unitPrice ||
         mergedItem.totalPrice !== item.totalPrice ||
         mergedItem.itemName !== item.itemName ||
@@ -1127,9 +1083,7 @@ const ContractFormPage = () => {
             ...(current[rowKey] ??
               createDefaultCatalogVendorConfig(selectedItem.vendorId ?? "")),
             vendorId: String(selectedItem.vendorId),
-            pricingPlanId: selectedItem.pricingPlanId
-              ? String(selectedItem.pricingPlanId)
-              : "",
+            selectedSubServiceIds: [],
             calculatedPrice: formatDecimalInput(selectedItem.unitPrice),
             agreedPrice: formatDecimalInput(selectedItem.unitPrice),
             isPriceOverride: true,
@@ -1167,10 +1121,6 @@ const ContractFormPage = () => {
         selectedItem.itemType === "vendor" && selectedItem.vendorId
           ? String(selectedItem.vendorId)
           : "",
-      pricingPlanId:
-        selectedItem.itemType === "vendor" && selectedItem.pricingPlanId
-          ? String(selectedItem.pricingPlanId)
-          : "",
     });
   };
 
@@ -1190,7 +1140,6 @@ const ContractFormPage = () => {
       itemType: "service",
       eventVendorId: "",
       vendorId: "",
-      pricingPlanId: "",
     });
 
     if (!selectedEventService) {
@@ -1225,7 +1174,6 @@ const ContractFormPage = () => {
         : form.getValues(`items.${index}.eventServiceId`),
       eventVendorId: "",
       vendorId: "",
-      pricingPlanId: "",
     });
 
     if (!selectedService) {
@@ -1261,7 +1209,6 @@ const ContractFormPage = () => {
         quotationItemId: "",
         eventVendorId: nextEventVendorId,
         vendorId: "",
-        pricingPlanId: "",
         itemName: "",
         category: "",
         unitPrice: "0",
@@ -1280,9 +1227,6 @@ const ContractFormPage = () => {
       eventVendorId: nextEventVendorId,
       vendorId: selectedEventVendor.vendorId
         ? String(selectedEventVendor.vendorId)
-        : "",
-      pricingPlanId: selectedEventVendor.pricingPlanId
-        ? String(selectedEventVendor.pricingPlanId)
         : "",
       itemName: getEventVendorDisplayName(selectedEventVendor),
       category: selectedEventVendor.vendorType,
@@ -1314,7 +1258,6 @@ const ContractFormPage = () => {
         serviceId: "",
         eventVendorId: "",
         vendorId: existingConfig.vendorId || "",
-        pricingPlanId: existingConfig.pricingPlanId || "",
         itemName: existingConfig.vendorId
           ? catalogVendors.find(
               (vendor) => String(vendor.id) === existingConfig.vendorId,
@@ -1341,7 +1284,6 @@ const ContractFormPage = () => {
       serviceId: "",
       eventVendorId: "",
       vendorId: "",
-      pricingPlanId: "",
       itemName: "",
       category: "",
       quantity: "1",
@@ -1382,7 +1324,6 @@ const ContractFormPage = () => {
       serviceId: "",
       eventVendorId: "",
       vendorId: nextVendorId,
-      pricingPlanId: nextConfig.pricingPlanId || "",
       itemName: selectedVendor?.name ?? "",
       category: selectedVendor?.type ?? "",
       quantity: "1",
@@ -2824,12 +2765,8 @@ const ContractFormPage = () => {
                                         "catalog_vendor"
                                           ? t("contracts.catalogVendorPricingHint", {
                                               defaultValue:
-                                                "Catalog vendor rows can match pricing plans from the selected sub-services, then allow a manual override when needed.",
+                                                "Catalog vendor rows sum list prices from the selected sub-services, then allow a manual override when needed.",
                                             })
-                                          : itemValues?.pricingPlanId
-                                          ? `${t("contracts.pricingPlan", {
-                                              defaultValue: "Pricing Plan",
-                                            })}: #${itemValues.pricingPlanId}`
                                           : t(
                                               "contracts.vendorAgreedPriceHint",
                                               {
@@ -3846,7 +3783,6 @@ function ContractCatalogVendorSelectionCard({
   ) => void;
 }) {
   const vendorId = String(vendor.id);
-  const resolvedConfig = config ?? createDefaultCatalogVendorConfig(vendorId);
 
   return (
     <div className="space-y-3">
@@ -3860,13 +3796,10 @@ function ContractCatalogVendorSelectionCard({
             defaultValue: "Source: vendor catalog",
           }),
           checked
-            ? resolvedConfig.pricingPlanId
-              ? `${t("contracts.pricingPlan", {
-                  defaultValue: "Pricing Plan",
-                })}: ${resolvedConfig.pricingPlanId}`
-              : t("contracts.vendorPriceAutoMatched", {
-                  defaultValue: "Price updates from matched pricing plans",
-                })
+            ? t("contracts.vendorPriceFromSubServices", {
+                defaultValue:
+                  "Price is the sum of selected sub-service list prices (override available).",
+              })
             : t("contracts.vendorConfigAppearsAfterSelection", {
                 defaultValue: "Sub-services and pricing appear after selection",
               }),
@@ -4024,11 +3957,6 @@ function EditableContractItemsSection({
                                   defaultValue: "Catalog Vendor",
                                 })}: #${itemValues.vendorId}`
                               : "-"}
-                      {itemValues?.pricingPlanId
-                        ? ` • ${t("contracts.pricingPlan", {
-                            defaultValue: "Pricing Plan",
-                          })}: #${itemValues.pricingPlanId}`
-                        : ""}
                     </div>
                   </td>
                   <td className="min-w-[180px] px-3 py-3">
@@ -4136,24 +4064,13 @@ function ContractCatalogVendorConfigurator({
       ? {
           vendorId,
           selectedSubServiceIds: [],
-          pricingPlanId: currentItem?.pricingPlanId || "",
-          calculatedPrice: currentItem?.unitPrice || "",
-          agreedPrice: currentItem?.unitPrice || "",
+          calculatedPrice: formatDecimalInput(currentItem?.unitPrice ?? ""),
+          agreedPrice: formatDecimalInput(currentItem?.unitPrice ?? ""),
           isPriceOverride: true,
         }
       : createDefaultCatalogVendorConfig(""));
   const { data: subServicesResponse, isLoading: subServicesLoading } =
     useVendorSubServices({
-      currentPage: 1,
-      itemsPerPage: 200,
-      searchQuery: "",
-      vendorId: vendorId ? Number(vendorId) : undefined,
-      vendorType: selectedVendor?.type ?? "all",
-      isActive: "all",
-      enabled: Boolean(vendorId),
-    });
-  const { data: pricingPlansResponse, isLoading: pricingPlansLoading } =
-    useVendorPricingPlans({
       currentPage: 1,
       itemsPerPage: 200,
       searchQuery: "",
@@ -4178,21 +4095,15 @@ function ContractCatalogVendorConfigurator({
       }),
     [subServicesResponse?.data],
   );
-  const pricingPlans = useMemo(
-    () => pricingPlansResponse?.data ?? [],
-    [pricingPlansResponse?.data],
-  );
-  const matchedPricingPlan = useMemo(
-    () =>
-      findMatchingVendorPricingPlan(
-        pricingPlans,
-        resolvedConfig.selectedSubServiceIds.length,
-      ),
-    [pricingPlans, resolvedConfig.selectedSubServiceIds.length],
-  );
   const calculatedPrice = useMemo(
-    () => formatDecimalInput(matchedPricingPlan?.price),
-    [matchedPricingPlan?.price],
+    () =>
+      formatDecimalInput(
+        sumSelectedVendorSubServicePrices(
+          subServices,
+          resolvedConfig.selectedSubServiceIds,
+        ),
+      ),
+    [subServices, resolvedConfig.selectedSubServiceIds],
   );
 
   useEffect(() => {
@@ -4200,14 +4111,10 @@ function ContractCatalogVendorConfigurator({
       return;
     }
 
-    const nextPricingPlanId = matchedPricingPlan
-      ? String(matchedPricingPlan.id)
-      : "";
     const nextCalculatedPrice = calculatedPrice;
 
     if (
       resolvedConfig.vendorId === vendorId &&
-      resolvedConfig.pricingPlanId === nextPricingPlanId &&
       resolvedConfig.calculatedPrice === nextCalculatedPrice &&
       resolvedConfig.agreedPrice === nextCalculatedPrice
     ) {
@@ -4217,18 +4124,15 @@ function ContractCatalogVendorConfigurator({
     onConfigChange(rowKey, (current) => ({
       ...current,
       vendorId,
-      pricingPlanId: nextPricingPlanId,
       calculatedPrice: nextCalculatedPrice,
       agreedPrice: nextCalculatedPrice,
     }));
   }, [
     calculatedPrice,
-    matchedPricingPlan,
     onConfigChange,
     resolvedConfig.agreedPrice,
     resolvedConfig.calculatedPrice,
     resolvedConfig.isPriceOverride,
-    resolvedConfig.pricingPlanId,
     resolvedConfig.vendorId,
     rowKey,
     vendorId,
@@ -4247,9 +4151,6 @@ function ContractCatalogVendorConfigurator({
       itemType: "vendor",
       eventVendorId: "",
       vendorId: String(selectedVendor.id),
-      pricingPlanId:
-        resolvedConfig.pricingPlanId ||
-        (matchedPricingPlan ? String(matchedPricingPlan.id) : ""),
       itemName: selectedVendor.name,
       category: selectedVendor.type ?? "vendor",
       quantity: "1",
@@ -4257,12 +4158,10 @@ function ContractCatalogVendorConfigurator({
       totalPrice: nextPrice,
     });
   }, [
-    matchedPricingPlan,
     onResolvedValuesChange,
     resolvedConfig.agreedPrice,
     resolvedConfig.calculatedPrice,
     resolvedConfig.isPriceOverride,
-    resolvedConfig.pricingPlanId,
     selectedVendor,
   ]);
 
@@ -4347,11 +4246,13 @@ function ContractCatalogVendorConfigurator({
                         {subService.name}
                       </p>
                       <p className="text-xs text-[var(--lux-text-secondary)]">
-                        {subService.description ||
-                          subService.code ||
-                          t("contracts.noDescription", {
-                            defaultValue: "No description",
-                          })}
+                        {t("contracts.subServiceListPrice", {
+                          defaultValue: "List price",
+                        })}
+                        : {formatVendorMoney(subService.price)}
+                        {subService.description || subService.code
+                          ? ` · ${subService.description || subService.code}`
+                          : ""}
                       </p>
                     </div>
                   </label>
@@ -4378,32 +4279,10 @@ function ContractCatalogVendorConfigurator({
             <p className="text-xs text-[var(--lux-text-secondary)]">
               {t("contracts.vendorPricingSummaryHint", {
                 defaultValue:
-                  "The matched pricing plan fills the row amount automatically until manual override is enabled.",
+                  "Calculated price is the sum of list prices for the sub-services you select. Override only when needed.",
               })}
             </p>
           </div>
-
-          <InfoMiniTile
-            label={t("contracts.pricingPlan", {
-              defaultValue: "Pricing Plan",
-            })}
-            value={
-              !vendorId
-                ? t("contracts.noVendorSelected", {
-                    defaultValue: "No vendor selected",
-                  })
-                : pricingPlansLoading
-                  ? t("common.loading", { defaultValue: "Loading..." })
-                  : matchedPricingPlan?.name ||
-                    (resolvedConfig.selectedSubServiceIds.length
-                      ? t("contracts.noMatchingPricingPlan", {
-                          defaultValue: "No matching pricing plan",
-                        })
-                      : t("contracts.noPricingPlanSelected", {
-                          defaultValue: "No pricing plan selected",
-                        }))
-            }
-          />
 
           <div className="grid grid-cols-2 gap-3">
             <InfoMiniTile
@@ -4457,7 +4336,7 @@ function ContractCatalogVendorConfigurator({
               <p className="text-xs text-[var(--lux-text-secondary)]">
                 {t("contracts.manualPriceOverrideHint", {
                   defaultValue:
-                    "Enable this only when the final contract amount differs from the matched pricing plan.",
+                    "Enable this only when the final contract amount differs from the summed sub-service prices.",
                 })}
               </p>
             </div>
@@ -4490,11 +4369,11 @@ function ContractCatalogVendorConfigurator({
               {resolvedConfig.isPriceOverride
                 ? t("contracts.manualPriceOverrideActiveHint", {
                     defaultValue:
-                      "Manual override is active. The matched pricing plan stays linked for reference.",
+                      "Manual override is active. The contract row uses the amount you enter.",
                   })
                 : t("contracts.agreedPriceAutoHint", {
                     defaultValue:
-                      "The contract amount follows the matched pricing plan until manual override is enabled.",
+                      "The contract amount follows the calculated sub-service total until manual override is enabled.",
                   })}
             </p>
           </label>

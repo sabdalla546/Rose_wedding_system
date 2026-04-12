@@ -109,16 +109,13 @@ export interface EventVendorLink {
   providedBy: EventVendorProvidedBy;
   vendorId?: number | null;
   companyNameSnapshot?: string | null;
-  pricingPlanId?: number | null;
   selectedSubServicesCount: number;
   agreedPrice?: DecimalValue | null;
   resolvedCompanyName?: string | null;
-  resolvedPricingLabel?: string | null;
   hasManualPriceOverride?: boolean;
   notes?: string | null;
   status: EventVendorStatus;
   vendor?: Vendor | null;
-  pricingPlan?: VendorPricingPlan | null;
   selectedSubServices?: EventVendorSelectedSubService[];
   event?: EventVendorEventSummary | null;
   createdByUser?: VendorUserSummary | null;
@@ -149,6 +146,7 @@ export interface EventVendorSelectedSubService {
   nameSnapshot: string;
   notes?: string | null;
   sortOrder: number;
+  priceSnapshot?: DecimalValue | null;
   vendorSubService?: VendorSubService | null;
   createdAt?: string;
   updatedAt?: string;
@@ -173,6 +171,7 @@ export interface VendorSubService {
   name: string;
   code?: string | null;
   description?: string | null;
+  price?: DecimalValue | null;
   sortOrder: number;
   isActive: boolean;
   vendor?: Vendor | null;
@@ -204,48 +203,6 @@ export interface VendorSubServiceFormData {
   code?: string;
   description?: string;
   sortOrder: string;
-  isActive: boolean;
-}
-
-export interface VendorPricingPlan {
-  id: number;
-  vendorId?: number | null;
-  vendorType: VendorType;
-  name: string;
-  minSubServices: number;
-  maxSubServices?: number | null;
-  price: DecimalValue;
-  notes?: string | null;
-  isActive: boolean;
-  vendor?: Vendor | null;
-  createdByUser?: VendorUserSummary | null;
-  updatedByUser?: VendorUserSummary | null;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-}
-
-export interface VendorPricingPlansResponse {
-  data: VendorPricingPlan[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
-}
-
-export interface VendorPricingPlanResponse {
-  data: VendorPricingPlan;
-}
-
-export interface VendorPricingPlanFormData {
-  vendorId: string;
-  vendorType?: VendorType;
-  name: string;
-  minSubServices: string;
-  maxSubServices?: string;
   price: string;
-  notes?: string;
   isActive: boolean;
 }

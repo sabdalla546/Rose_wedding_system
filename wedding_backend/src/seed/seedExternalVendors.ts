@@ -3,6 +3,15 @@ import { initDatabase, sequelize } from "../config/database";
 import { Vendor, VendorSubService, VendorType } from "../models";
 import type { VendorType as LegacyVendorType } from "../models/vendor.model";
 
+/** One catalog sub-service row; each row has its own list `price` (no vendor pricing plans). */
+type SeedSubServiceDefinition = {
+  name: string;
+  code: string;
+  description?: string;
+  /** List price for this line; if omitted, `defaultSubServicePrice` on the vendor is used. */
+  price?: number;
+};
+
 type SeedVendorDefinition = {
   name: string;
   type: LegacyVendorType;
@@ -10,12 +19,9 @@ type SeedVendorDefinition = {
   phone?: string;
   email?: string;
   notes: string;
-  subServices: Array<{
-    name: string;
-    code: string;
-    description?: string;
-  }>;
-  subServiceBasePrice: number;
+  subServices: SeedSubServiceDefinition[];
+  /** Default list price (KWD, 3 dp) for sub-services that do not set `price`. */
+  defaultSubServicePrice: number;
 };
 
 const seedSourceNote =
@@ -40,7 +46,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "ØªØ´ØºÙŠÙ„ Ø§Ù„Ø²ÙØ§Øª", code: "seed:dj-zaffa-playback" },
       { name: "ÙØ­Øµ ØµÙˆØª Ù‚Ø¨Ù„ Ø§Ù„Ø­ÙÙ„", code: "seed:dj-sound-check" },
     ],
-    subServiceBasePrice: 120,
+    defaultSubServicePrice: 120,
   },
   {
     name: "Ø³ÙˆØ¨Øª Ù„Ø§ÙŠØª",
@@ -59,7 +65,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ø¥Ø¶Ø§Ø¡Ø© Ø§Ù„Ù…Ø¯Ø®Ù„", code: "seed:lighting-entrance" },
       { name: "Ø³ÙŠØªÙŠ ÙƒÙ„Ø±", code: "seed:lighting-city-color" },
     ],
-    subServiceBasePrice: 180,
+    defaultSubServicePrice: 180,
   },
   {
     name: "Ø­Ù†ÙŠÙ† ÙÙˆØªÙˆ",
@@ -78,7 +84,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ø£Ù„Ø¨ÙˆÙ… Ø£ÙˆÙ„ÙŠ", code: "seed:photo-preview-album" },
       { name: "ÙØ±ÙŠÙ‚ ØªØºØ·ÙŠØ© Ù…Ø²Ø¯ÙˆØ¬", code: "seed:photo-dual-team" },
     ],
-    subServiceBasePrice: 150,
+    defaultSubServicePrice: 150,
   },
   {
     name: "Ø±ÙˆØ² Ù„Ù„Ø¹Ø·ÙˆØ±",
@@ -97,7 +103,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ù‡Ø¯Ø§ÙŠØ§ Ø¹Ø·Ø±ÙŠØ©", code: "seed:perfume-gift-bottles" },
       { name: "Ø·Ø§Ù‚Ù… ØªÙˆØ²ÙŠØ¹", code: "seed:perfume-distribution-team" },
     ],
-    subServiceBasePrice: 90,
+    defaultSubServicePrice: 90,
   },
   {
     name: "Ù…Ø­Ø·Ø© Ø±ÙˆØ² ÙƒÙˆÙÙŠ",
@@ -116,7 +122,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹Ø¨Ø¦Ø©", code: "seed:coffee-refill" },
       { name: "Ø¶ÙŠØ§ÙØ© VIP", code: "seed:coffee-vip-service" },
     ],
-    subServiceBasePrice: 110,
+    defaultSubServicePrice: 110,
   },
   {
     name: "Ø±ÙƒÙ† Ø§Ù„Ø£Ø¬Ø¨Ø§Ù†",
@@ -135,7 +141,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ø£Ø¯ÙˆØ§Øª ØªÙ‚Ø¯ÙŠÙ…", code: "seed:cheese-serving-tools" },
       { name: "Ù„ÙˆØ­Ø§Øª ØªØ¹Ø±ÙŠÙ", code: "seed:cheese-labels" },
     ],
-    subServiceBasePrice: 100,
+    defaultSubServicePrice: 100,
   },
   {
     name: "Ø±ÙˆØ² Ù„Ù„Ø­Ù„ÙˆÙŠØ§Øª ÙˆØ§Ù„ØµÙˆØ§Ù†ÙŠ",
@@ -154,7 +160,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "ØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ø¨ÙˆÙÙŠÙ‡", code: "seed:sweets-buffet-styling" },
       { name: "Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„ÙƒÙ…ÙŠØ§Øª", code: "seed:sweets-quantity-tracking" },
     ],
-    subServiceBasePrice: 95,
+    defaultSubServicePrice: 95,
   },
   {
     name: "Ø¨Ø§ÙˆØ± ÙƒÙˆÙ„ Ø¬Ù†Ø±ÙŠØªØ±",
@@ -173,7 +179,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "ØµÙŠØ§Ù†Ø© Ø·Ø§Ø±Ø¦Ø©", code: "seed:power-emergency-maintenance" },
       { name: "ÙØ­Øµ Ù‚Ø¨Ù„ Ø§Ù„Ø­ÙÙ„", code: "seed:power-precheck" },
     ],
-    subServiceBasePrice: 200,
+    defaultSubServicePrice: 200,
   },
   {
     name: "Ù„Ù…Ø³Ø© Ù†Ø³Ø§Ø¦ÙŠØ©",
@@ -192,7 +198,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ù…Ù†Ø§Ø¯ÙŠÙ„ Ø§Ù„Ø­Ù„Ùˆ", code: "seed:female-sweets-napkins" },
       { name: "ÙƒÙ„Ù…Ø© Ù…Ø­Ø¬ÙˆØ²", code: "seed:female-reserved-sign" },
     ],
-    subServiceBasePrice: 80,
+    defaultSubServicePrice: 80,
   },
   {
     name: "Ø®Ø¯Ù…Ø§Øª Ø£Ù‡Ù„ Ø§Ù„Ø­ÙÙ„",
@@ -211,7 +217,7 @@ const externalVendorSeeds: SeedVendorDefinition[] = [
       { name: "Ø¹Ø§Ù…Ù„Ø© Ù„Ø¯ÙˆØ±Ø© Ø§Ù„Ù…ÙŠØ§Ù‡", code: "seed:family-bathroom-worker" },
       { name: "Ø³ÙŠØ±ÙØ³", code: "seed:family-service-staff" },
     ],
-    subServiceBasePrice: 130,
+    defaultSubServicePrice: 130,
   },
 ];
 
@@ -265,7 +271,7 @@ const upsertSeedVendor = async (
       name: subService.name,
       code: subService.code,
       description: subService.description ?? `${subService.name} - ${vendorSeed.name}`,
-      price: vendorSeed.subServiceBasePrice,
+      price: subService.price ?? vendorSeed.defaultSubServicePrice,
       sortOrder: index + 1,
       isActive: true,
       createdBy: null,
@@ -294,8 +300,12 @@ const seedExternalVendors = async () => {
     }
   });
 
+  const subServiceCount = externalVendorSeeds.reduce(
+    (sum, vendorSeed) => sum + vendorSeed.subServices.length,
+    0,
+  );
   console.log(
-    `External vendors seeded: ${externalVendorSeeds.length} vendors, ${externalVendorSeeds.length * 8} sub-services`
+    `External vendors seeded: ${externalVendorSeeds.length} vendors, ${subServiceCount} sub-services (per-line list prices)`,
   );
 };
 
