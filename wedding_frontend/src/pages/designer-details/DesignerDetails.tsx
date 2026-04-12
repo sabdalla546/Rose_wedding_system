@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/use-memo */
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -32,9 +33,7 @@ import {
   EventMetaChip,
 } from "@/pages/events/_components/EventDetailsPrimitives";
 import { EventWorkspaceSummary } from "@/pages/events/_components/EventWorkspaceSummary";
-import {
-  getEventDisplayTitle,
-} from "@/pages/events/adapters";
+import { getEventDisplayTitle } from "@/pages/events/adapters";
 import { getInitialEventsBusinessFilters } from "@/pages/events/event-query-params";
 import type { EventCalendarRecord } from "@/pages/events/types";
 import {
@@ -243,12 +242,10 @@ function DesignerEventWorkspace({
   const workspaceTabs: Array<{ value: WorkspaceTabValue; label: string }> = [
     {
       value: "client-details",
-      label:
-        i18n.language === "ar"
-          ? "تفاصيل العميل"
-          : "Client Details",
+      label: i18n.language === "ar" ? "تفاصيل العميل" : "Client Details",
     },
-    {
+    /**
+     * {
       value: "overview",
       label: t("common.overview", { defaultValue: "Overview" }),
     },
@@ -258,6 +255,7 @@ function DesignerEventWorkspace({
     { value: "quotations", label: t("events.quotations") },
     { value: "services", label: t("events.services") },
     { value: "vendors", label: t("events.vendors") },
+     */
   ];
 
   const setActiveTab = (value: WorkspaceTabValue) => {
@@ -440,7 +438,9 @@ function DesignerEventWorkspace({
                   setEditingServiceItem(serviceItem);
                   setServiceEditorOpen(true);
                 }}
-                onDelete={(serviceItem) => setDeleteServiceCandidate(serviceItem)}
+                onDelete={(serviceItem) =>
+                  setDeleteServiceCandidate(serviceItem)
+                }
               />
             </TabsContent>
 
@@ -727,7 +727,7 @@ export default function DesignerDetailsPage() {
   const effectiveSelectedEventId = availableEvents.find(
     (event) => String(event.id) === requestedEventId,
   )
-    ? requestedEventId ?? ""
+    ? (requestedEventId ?? "")
     : availableEvents[0]
       ? String(availableEvents[0].id)
       : "";
